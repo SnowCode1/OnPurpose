@@ -126,3 +126,8 @@ Committed geometry still sizes the grid because permutations preserve total heig
 The native sibling order stays stable until commit. Begin/end/menu state still use
 React, but crossings do not. Cancellation restores committed targets; completed
 drops alone enter persistence. Native fast-swipe acceptance remains pending.
+
+The founder confirmed preset icons and fast swaps work. The selected name behind
+its open context menu now uses the habit colour at 12.5% opacity over black, in
+place of neutral grey. Press feedback remains a lighter tint; dragging keeps the
+normal row appearance. This colour change does not touch the gesture/animation path.

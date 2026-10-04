@@ -675,3 +675,8 @@ Phone checks:
    slow movement and release immediately after a crossing.
 3. Repeat with wrapped names, landscape, edge scrolling, Reduce Motion, multitouch
    cancellation, and backgrounding. Only completed drops should appear in History.
+
+Founder follow-up: preset icons and fast-swap smoothness were confirmed working.
+The selected habit-name background is now a subtle tint of that habit's colour
+instead of grey. Spot-check the open context menu on several differently coloured
+habits; the held/dragged row should retain its accepted appearance and motion.

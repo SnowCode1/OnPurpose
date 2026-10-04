@@ -156,7 +156,7 @@ export function HabitName({
           backgroundColor: motion.active
             ? '#000000'
             : selected
-              ? '#171717'
+              ? `${habit.color}20`
               : pressed
                 ? `${habit.color}15`
                 : '#000000',
