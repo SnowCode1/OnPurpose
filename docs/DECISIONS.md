@@ -1,5 +1,21 @@
 # Decision log
 
+## 012 — Dim by lightness without desaturating
+
+Date: 4 October 2026. Status: founder requested correction; implemented.
+
+The founder rejected the desaturated treatment in decision 011. Preserve hue and
+chroma and lower only OKLCH lightness. Fade earlier and faster: the assistant's
+new interval starts on day 5 and finishes on day 8. Future empty cells use the
+full dimming amount immediately. Recorded values and their date headings retain
+normal emphasis.
+
+Use a nonzero lightness floor (0.5 for empty cells, 0.56 for date text). Do not
+brighten an already-darker custom colour. If lowering lightness at fixed hue/chroma
+would leave sRGB, stop at its gamut boundary instead of reducing chroma. These
+lightness limits and the day-8 endpoint are implementation choices to judge on
+phone. This supersedes decision 011's chroma reduction and days 8–14 interval.
+
 ## 011 — Muted future and older empty cells
 
 Date: 4 October 2026. Status: implemented; visual phone confirmation pending.

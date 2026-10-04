@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { type GridDay, makeGridDays, calendarDay } from './calendar';
 import { type Habit } from './habits';
-import { checkmarkColor, colorOnBlack, mutedColor } from './colors';
+import { checkmarkColor, colorOnBlack, dimmedColor } from './colors';
 import { gridLayout } from './gridLayout';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { useGridScroll } from './useGridScroll';
@@ -30,8 +30,8 @@ type Props = {
 
 function dayMuting(daysAgo: number): number {
   if (daysAgo < 0) return 1;
-  const progress = Math.max(0, Math.min(1, (daysAgo - 7) / 7));
-  // Gentle start/end rather than a sudden change at the one-week boundary.
+  const progress = Math.max(0, Math.min(1, (daysAgo - 4) / 4));
+  // Gentle start/end as the fade starts on day 5 and finishes on day 8.
   return progress * progress * (3 - 2 * progress);
 }
 
@@ -266,9 +266,10 @@ export const HabitGrid = memo(function HabitGrid({
                         styles.weekday,
                         day.daysAgo === 0 && styles.todayLabel,
                         {
-                          color: mutedColor(
+                          color: dimmedColor(
                             day.daysAgo === 0 ? '#FFFFFF' : '#979797',
                             amount,
+                            0.56,
                           ),
                         },
                       ]}
@@ -278,7 +279,7 @@ export const HabitGrid = memo(function HabitGrid({
                     <Text
                       style={[
                         styles.dayNumber,
-                        { color: mutedColor('#E8E8E8', amount) },
+                        { color: dimmedColor('#E8E8E8', amount, 0.56) },
                       ]}
                     >
                       {day.number}
@@ -349,15 +350,15 @@ export const HabitGrid = memo(function HabitGrid({
                         ? value !== undefined
                         : checked;
                       const amount = dayMuting(day.daysAgo);
-                      const emptyNumber = mutedColor(
+                      const emptyNumber = dimmedColor(
                         rowTones[habit.id].number,
                         amount,
                       );
-                      const emptyCheckbox = mutedColor(
+                      const emptyCheckbox = dimmedColor(
                         rowTones[habit.id].checkbox,
                         amount,
                       );
-                      const ruleColor = mutedColor(habit.color, amount);
+                      const ruleColor = dimmedColor(habit.color, amount);
                       return (
                         <Pressable
                           key={habit.id}

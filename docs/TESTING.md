@@ -225,3 +225,23 @@ Phone checks:
   Recorded values should stand out against empty neighbours.
 - Rotate and return to the same date. Its emphasis should follow age rather than
   position. Try at least one saturated preset and a darker custom colour.
+
+## Lightness-only dimming correction
+
+4 October 2026: the founder rejected the desaturated appearance. Dimming now
+retains OKLCH chroma/hue and changes only lightness, bounded by a visible floor
+and the sRGB gamut. History fades from day 5 to day 8; future empty cells are
+fully dimmed. The day-8 endpoint and dimming strength still need phone judgment.
+The contrast measurements above describe the superseded desaturated treatment.
+
+Check days 4–8 for the faster transition. Compare empty future/history controls
+against a completed value in the same row: the hue should stay recognisable and
+vivid while brightness decreases. Test a saturated custom colour and distant
+history; colours must stop dimming rather than disappearing. Recorded zero,
+undo/clear, date-heading emphasis, scrolling, and rotation should retain their
+previous behaviour.
+
+Correction verification: TypeScript, lint, formatting, five existing colour tests,
+and the iOS export passed. A direct check across presets and saturated/dark custom
+samples confirmed lower nonzero lightness with chroma preserved within 0.0013
+of the original after hex rounding. Updated phone appearance remains to be judged.

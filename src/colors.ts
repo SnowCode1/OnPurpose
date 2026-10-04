@@ -114,14 +114,30 @@ export function colorOnBlack(hex: string, opacity: number): string {
   );
 }
 
-export function mutedColor(hex: string, amount: number): string {
+export function dimmedColor(
+  hex: string,
+  amount: number,
+  minimumLightness = 0.5,
+): string {
   if (amount <= 0) return hex;
   const color = hexToOklch(hex);
-  const strength = clamp(amount);
-  return oklchToHex({
-    ...color,
-    // Preserve hue and avoid making already-dark custom colours even darker.
-    l: Math.min(color.l, Math.max(0.62, color.l - 0.22 * strength)),
-    c: color.c * (1 - 0.75 * strength),
-  });
+  let lightness = Math.min(
+    color.l,
+    Math.max(minimumLightness, color.l * (1 - 0.3 * clamp(amount))),
+  );
+  const inGamut = (l: number) =>
+    toLinear({ ...color, l }).every((n) => n >= -0.000001 && n <= 1.000001);
+  // Darkening saturated colours can leave sRGB. Stop at the darkest available
+  // lightness for the same chroma/hue instead of desaturating the selected colour.
+  if (!inGamut(lightness)) {
+    let low = lightness,
+      high = color.l;
+    for (let i = 0; i < 20; i++) {
+      const mid = (low + high) / 2;
+      if (inGamut(mid)) high = mid;
+      else low = mid;
+    }
+    lightness = high;
+  }
+  return oklchToHex({ ...color, l: lightness });
 }
