@@ -8,6 +8,17 @@ export function shouldRevealFuture(offset: number): boolean {
   return offset <= -FUTURE_PULL_DISTANCE;
 }
 
+// Continue the released pull by its own distance, not by the viewport width.
+// The old newest date stays nearby even when landscape shows many columns.
+export function futureRevealDay(
+  offset: number,
+  columnWidth: number,
+  futureCount: number,
+): number {
+  const distance = Math.max(1, Math.round(-offset / columnWidth));
+  return -futureCount - Math.min(FUTURE_BATCH, distance);
+}
+
 export function settledDay(
   offset: number,
   columnWidth: number,

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { FlatList } from 'react-native';
 import {
   runOnJS,
+  runOnUI,
   scrollTo,
   useAnimatedRef,
   useAnimatedScrollHandler,
@@ -11,8 +12,8 @@ import type { GridDay } from './calendar';
 import { shouldRevealFuture, settledDay } from './gridNavigation';
 import { feedback } from './haptics';
 
-// Exactly one native list drives the other. Neither synchronization nor pull
-// feedback waits for JS; React receives only the end-of-gesture date.
+// Exactly one native list drives the other. Synchronization and visual pull
+// feedback stay on the UI thread; React receives only discrete gesture events.
 export function useGridScroll({
   columnWidth,
   visibleDays,
@@ -26,7 +27,7 @@ export function useGridScroll({
   dayCount: number;
   futureCount: number;
   onSettle: (day: number) => void;
-  onReveal: (fromPull: boolean) => void;
+  onReveal: (offset: number) => void;
 }) {
   const header = useAnimatedRef<FlatList<GridDay>>();
   const body = useAnimatedRef<FlatList<GridDay>>();
@@ -78,7 +79,7 @@ export function useGridScroll({
       if (shouldRevealFuture(event.contentOffset.x)) {
         driver.set(0);
         pull.set(0);
-        runOnJS(onReveal)(true);
+        runOnJS(onReveal)(event.contentOffset.x);
       } else {
         runOnJS(onSettle)(
           dayForOffset(event.targetContentOffset?.x ?? event.contentOffset.x),
@@ -109,7 +110,7 @@ export function useGridScroll({
       if (shouldRevealFuture(event.contentOffset.x)) {
         driver.set(0);
         pull.set(0);
-        runOnJS(onReveal)(true);
+        runOnJS(onReveal)(event.contentOffset.x);
       } else {
         runOnJS(onSettle)(
           dayForOffset(event.targetContentOffset?.x ?? event.contentOffset.x),
@@ -126,5 +127,22 @@ export function useGridScroll({
     pull.set(0);
     dragging.set(false);
   }
-  return { header, body, stopSync, pull, headerScroll, bodyScroll };
+  function continueReveal(offset: number) {
+    runOnUI((target: number) => {
+      'worklet';
+      // A new user drag takes priority over the reveal animation.
+      if (dragging.value) return;
+      driver.set(2);
+      scrollTo(body, target, 0, true);
+    })(offset);
+  }
+  return {
+    header,
+    body,
+    stopSync,
+    continueReveal,
+    pull,
+    headerScroll,
+    bodyScroll,
+  };
 }

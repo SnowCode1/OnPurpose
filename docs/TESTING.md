@@ -290,4 +290,30 @@ Phone checks:
 Verification: TypeScript, ESLint, Prettier, all 23 existing automated tests, and
 iOS production bundle export passed. The founder tested the first version on
 the iPhone and found it slightly weak; completion/changed-save feedback was
-raised from Light to Medium. The revised strength still needs a phone comparison.
+raised from Light to Medium. The founder subsequently confirmed it was good.
+
+## Continuous future reveal
+
+4 October 2026: replaced the full-screen future jump with preserved native lists
+and an animated continuation based on the released pull distance.
+
+- From Today, release near the threshold: tomorrow should appear beside today
+  without a blank frame, list reset, or header/body separation. A shorter pull
+  must bounce back without unlocking dates.
+- Pull farther: travel should follow the pull distance, then snap to a column.
+  Portrait and landscape should reveal the same number of days for the same
+  physical pull/column width, rather than jumping their different screen widths.
+- Continue scrolling into the unlocked range, reach its far edge, and reveal a
+  second batch. The previous edge date must retain its position as dates load.
+- Interrupt the reveal with another drag. User control takes priority.
+- Try the month menu’s future action from both Today and history. It should
+  animate into the next future date, with the header staying aligned.
+- Return to Today, pull again, rotate, then scroll back into history. Verify the
+  normal Today boundary returns and values remain attached to the same dates.
+
+TypeScript, ESLint, Prettier, all 24 tests, and iOS production export passed. The
+new regression test verifies the first reveal brings tomorrow beside today at
+different viewport/column sizes, plus larger pulls and successive future batches.
+The founder evaluated the revised reveal on the iPhone and reported “Smooth and
+intuitive”. The broader second-batch, interruption, menu, and rotation checks
+above remain a regression checklist, not individually confirmed test results.

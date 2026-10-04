@@ -42,7 +42,8 @@ investigating jitter. Actual smoothness must be judged on the phone.
 
 Lists are inverted with the newest available date at the right edge. Initially
 that is today. Releasing a direct pull at least 64 points beyond the native scroll
-boundary reveals 30 future dates, starting with the next screenful. A fling
+boundary unlocks 30 future dates. The release distance determines how far to
+continue (normally tomorrow beside today), independently of the viewport width. A fling
 reaching the boundary does not unlock dates. The iOS rubber-band supplies
 resistance; a UI-thread progress line and release label expose the threshold.
 At the new future edge, another pull reveals the next batch. The month menu also
@@ -62,8 +63,23 @@ day headings describes the visible period, including month/year boundaries.
 Dates snap to column boundaries. A Today action appears only while browsing the
 past or future; its reserved space prevents layout shifts. Width changes remount both date
 lists with a frozen initial index anchored to the previously rightmost day.
+Adding future dates keeps both native lists mounted, preserving visible date
+positions with `maintainVisibleContentPosition` and stable date keys. Once both
+content-size callbacks confirm the new range is laid out, the body animates to
+the nearest column corresponding to the released pull; its UI-thread handler
+drives the header. A new drag takes priority over that animation. No frame loop
+or timer is added on the JavaScript thread. The explicit future menu action
+reveals one day beyond the old edge with the same transition.
+
+See [React Native’s content-position preservation](https://reactnative.dev/docs/scrollview#maintainvisiblecontentposition).
+Dates are only prepended/appended during range expansion, never reordered.
+Because inverted lists use transforms, validate the native anchoring on the
+phone, particularly while expanding a second future batch.
+
 Changing width or the future range resets scroll ownership. Returning to Today
-collapses future columns and restores the pull boundary without deleting entries. Current-day changes remount the grid at today while values retain
+explicitly remounts at today, collapses future columns, and restores the pull
+boundary without deleting entries; it cancels any pending reveal. Rotation also
+cancels a pending transition and anchors to its logical date. Current-day changes remount the grid at today while values retain
 their habit ID/local-date keys.
 
 ## Colour and typography

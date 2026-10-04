@@ -1,4 +1,11 @@
-import { type ComponentType, type Ref, memo, useMemo, useState } from 'react';
+import {
+  type ComponentType,
+  type Ref,
+  memo,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   FlatList,
   type FlatListProps,
@@ -17,7 +24,11 @@ import { checkmarkColor, colorOnBlack, dimmedColor } from './colors';
 import { gridLayout } from './gridLayout';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { useGridScroll } from './useGridScroll';
-import { FUTURE_BATCH, FUTURE_PULL_DISTANCE } from './gridNavigation';
+import {
+  FUTURE_BATCH,
+  FUTURE_PULL_DISTANCE,
+  futureRevealDay,
+} from './gridNavigation';
 import { feedback } from './haptics';
 
 type Props = {
@@ -48,6 +59,13 @@ export const HabitGrid = memo(function HabitGrid({
   const [width, setWidth] = useState(0);
   const [dayCount, setDayCount] = useState(90);
   const [futureCount, setFutureCount] = useState(0);
+  const [rangeReset, setRangeReset] = useState(0);
+  const pendingReveal = useRef<{
+    futureCount: number;
+    day: number;
+    headerReady: boolean;
+    bodyReady: boolean;
+  } | null>(null);
   const [rightmostDay, setRightmostDay] = useState(0);
   const atTodayBoundary = rightmostDay === 0 && futureCount === 0;
   const [rowHeights, setRowHeights] = useState<Record<string, number>>({});
@@ -103,23 +121,51 @@ export const HabitGrid = memo(function HabitGrid({
       ? String(newest.getFullYear())
       : `${oldest.getFullYear()} – ${newest.getFullYear()}`;
 
-  function revealFuture(fromPull = false) {
+  function revealFuture(offset?: number) {
+    if (pendingReveal.current) return;
     stopSync();
-    setRightmostDay(-futureCount - Math.min(visibleDays, FUTURE_BATCH));
-    setFutureCount((count) => count + FUTURE_BATCH);
+    pendingReveal.current = {
+      futureCount: futureCount + FUTURE_BATCH,
+      day: futureRevealDay(offset ?? -columnWidth, columnWidth, futureCount),
+      headerReady: false,
+      bodyReady: false,
+    };
+    setFutureCount(futureCount + FUTURE_BATCH);
     // The pull already ticks at its threshold. Explicit menu access gets a tick.
-    if (!fromPull) feedback('selection');
+    if (offset === undefined) feedback('selection');
   }
 
-  const { header, body, stopSync, pull, headerScroll, bodyScroll } =
-    useGridScroll({
-      columnWidth,
-      visibleDays,
-      dayCount,
-      futureCount,
-      onSettle: setRightmostDay,
-      onReveal: revealFuture,
-    });
+  const {
+    header,
+    body,
+    stopSync,
+    continueReveal,
+    pull,
+    headerScroll,
+    bodyScroll,
+  } = useGridScroll({
+    columnWidth,
+    visibleDays,
+    dayCount,
+    futureCount,
+    onSettle: setRightmostDay,
+    onReveal: revealFuture,
+  });
+
+  function revealWhenReady(list: 'header' | 'body', contentWidth: number) {
+    const pending = pendingReveal.current;
+    if (!pending) return;
+    const expectedWidth = (dayCount + pending.futureCount) * columnWidth;
+    if (contentWidth < expectedWidth - 1) return;
+    if (list === 'header') pending.headerReady = true;
+    else pending.bodyReady = true;
+    if (!pending.headerReady || !pending.bodyReady) return;
+    pendingReveal.current = null;
+    setRightmostDay(pending.day);
+    // Native anchoring preserves the visible dates as new columns are inserted.
+    // Only after both lists have that content do we smoothly settle the pull.
+    continueReveal((pending.futureCount + pending.day) * columnWidth);
+  }
   const pullHintStyle = useAnimatedStyle(() => ({
     opacity: Math.min(1, pull.value / 20),
   }));
@@ -136,9 +182,12 @@ export const HabitGrid = memo(function HabitGrid({
   function returnToToday() {
     if (!atTodayBoundary) feedback('selection');
     stopSync();
+    pendingReveal.current = null;
     setRightmostDay(0);
-    if (futureCount) setFutureCount(0);
-    else {
+    if (futureCount) {
+      setFutureCount(0);
+      setRangeReset((reset) => reset + 1);
+    } else {
       body.current?.scrollToOffset({ offset: 0, animated: false });
       header.current?.scrollToOffset({ offset: 0, animated: false });
     }
@@ -174,6 +223,7 @@ export const HabitGrid = memo(function HabitGrid({
     windowSize: 5,
     removeClippedSubviews: false,
     keyExtractor: (day: GridDay) => day.key,
+    maintainVisibleContentPosition: { minIndexForVisible: 0 },
     getItemLayout: (_: unknown, index: number) => ({
       length: columnWidth,
       offset: columnWidth * index,
@@ -190,6 +240,10 @@ export const HabitGrid = memo(function HabitGrid({
         const nextWidth = event.nativeEvent.layout.width;
         if (nextWidth !== width) {
           stopSync();
+          if (pendingReveal.current) {
+            setRightmostDay(pendingReveal.current.day);
+            pendingReveal.current = null;
+          }
           setWidth(nextWidth);
           setDayCount((count) => Math.max(count, rightmostDay + 90));
         }
@@ -249,10 +303,13 @@ export const HabitGrid = memo(function HabitGrid({
             <DateColumns
               {...shared}
               ref={header}
-              key={`header-${columnWidth}-${futureCount}`}
+              key={`header-${columnWidth}-${rangeReset}`}
               initialScrollIndex={rightmostDay + futureCount}
               style={{ width: dateWidth, flexGrow: 0 }}
               onScroll={headerScroll}
+              onContentSizeChange={(contentWidth) =>
+                revealWhenReady('header', contentWidth)
+              }
               renderItem={({ item: day }) => {
                 const amount = recordedDays.has(day.key)
                   ? 0
@@ -341,10 +398,13 @@ export const HabitGrid = memo(function HabitGrid({
               <DateColumns
                 {...shared}
                 ref={body}
-                key={`body-${columnWidth}-${futureCount}`}
+                key={`body-${columnWidth}-${rangeReset}`}
                 initialScrollIndex={rightmostDay + futureCount}
                 style={{ width: dateWidth, height: gridHeight, flexGrow: 0 }}
                 onScroll={bodyScroll}
+                onContentSizeChange={(contentWidth) =>
+                  revealWhenReady('body', contentWidth)
+                }
                 renderItem={({ item: day }) => (
                   <View style={{ width: columnWidth }}>
                     {habits.map((habit) => {

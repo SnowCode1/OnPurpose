@@ -60,7 +60,8 @@ and uncertainty about whether something was saved.
    targets, so recording a value cannot accidentally open statistics.
 5. Keep today at the right edge of the initial view. Scroll toward
    earlier dates while names stay fixed; offer a direct return to Today. Reveal
-   future days after a deliberate pull-and-release. Returning to Today restores
+   future days after a deliberate pull-and-release, continuing by the pull distance
+   rather than jumping a whole screen. Returning to Today restores
    that boundary; entries keep their dates.
 6. Change ordering only through deliberate editing, not automatic sorting.
 7. Save locally and work offline; do not require an account for everyday tracking.

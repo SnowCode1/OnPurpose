@@ -1,8 +1,31 @@
 # Decision log
 
+## 015 — Continue the future pull without a screen jump
+
+Date: 4 October 2026. Status: founder requested; implemented, founder confirmed the transition is smooth and intuitive on phone.
+
+The founder found the four-day jump disorienting. The old implementation remounted
+both lists whenever the future range changed and selected a full screen of future
+dates as the new initial position. Remove that remount for expansion. Keep stable
+date keys and preserve visible native content while inserting the next 30 dates.
+
+Retain the deliberate 64-point pull-and-release and its single threshold haptic.
+Use the released pull distance to choose the nearest whole date, with a minimum
+of one new day; a normal pull shows tomorrow next to today in either orientation.
+Once both lists have laid out the expanded content, animate the body to that
+position and let its UI-thread handler synchronize the header. A new user drag
+takes priority. This supersedes decision 010’s full-screen future positioning.
+
+Return to Today still collapses and remounts the range explicitly. Rotation and
+Today cancel pending reveal work. Menu access uses the same transition with one
+new day beyond the existing edge. Native anchoring and motion need device testing;
+automated offset tests alone cannot establish visual continuity. The founder
+subsequently tested the new reveal and confirmed it was smooth and intuitive.
+Second-batch, interruption, and rotation checks remain in the phone checklist.
+
 ## 014 — Restrained action haptics
 
-Date: 4 October 2026. Status: requested by the founder; implemented, feel to validate on phone.
+Date: 4 October 2026. Status: requested by the founder; implemented, revised strength confirmed on phone.
 
 Use the installed Expo Haptics library for immediate, single-pulse action feedback.
 Completion/changed save uses Medium, undo/clear uses Soft, discrete selection uses
@@ -20,7 +43,7 @@ No new dependency, settings screen, or extra home controls are introduced.
 
 The founder tried the first version and described it as slightly weak. Raise
 completion/changed-save feedback from Light to Medium, keeping undo Soft and
-selection ticks unchanged. The revised strength needs another phone comparison.
+selection ticks unchanged. The founder subsequently confirmed the revised feedback was good.
 
 ## 013 — Stronger and more consistent cell dimming
 
