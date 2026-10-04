@@ -1,0 +1,347 @@
+import { memo, useState } from 'react';
+import { Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
+import { Icon } from './Icon';
+import {
+  historyDayLabel,
+  historyPresentation,
+  historySections,
+} from './history';
+import type { ChangeEvent, StoredState } from './storage/model';
+import type { StoreSnapshot } from './storage/store';
+import { useLocalToday } from './useLocalToday';
+import { contrastOnBlack } from './colors';
+
+const HistoryRow = memo(function HistoryRow({
+  event,
+  state,
+  pending,
+}: {
+  event: ChangeEvent;
+  state: StoredState;
+  pending: boolean;
+}) {
+  const row = historyPresentation(event, state);
+  const accent = contrastOnBlack(row.color) >= 3 ? row.color : '#B8B8B8';
+  const time = new Date(event.recordedAt).toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  const date = row.effectiveDate
+    ? new Date(`${row.effectiveDate}T12:00:00`).toLocaleDateString(undefined, {
+        day: 'numeric',
+        month: 'short',
+        ...(row.effectiveDate.slice(0, 4) !==
+        String(new Date(event.recordedAt).getFullYear())
+          ? { year: 'numeric' }
+          : {}),
+      })
+    : null;
+  const colourDescription =
+    event.change.kind === 'colour'
+      ? `, ${event.change.before} to ${event.change.after}`
+      : '';
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${row.title}, ${row.summary}${colourDescription}${date ? `, entry for ${date}` : ''}, ${time}${pending ? ', saving' : ''}`}
+      style={styles.row}
+    >
+      <View style={styles.actionIcon}>
+        <Icon name={row.icon} size={19} color={accent} />
+      </View>
+      <View style={styles.rowContent}>
+        <View style={styles.rowHeading}>
+          <Text style={styles.habitName}>{row.title}</Text>
+          <Text style={styles.time}>{time}</Text>
+        </View>
+        <View style={styles.detailLine}>
+          <Text style={styles.detail}>
+            {row.summary}
+            {date ? ` · For ${date}` : ''}
+          </Text>
+          {event.change.kind === 'colour' && (
+            <View accessible={false} style={styles.swatches}>
+              <View
+                style={[
+                  styles.swatch,
+                  { backgroundColor: event.change.before },
+                ]}
+              />
+              <Text allowFontScaling={false} style={styles.swatchArrow}>
+                →
+              </Text>
+              <View
+                style={[styles.swatch, { backgroundColor: event.change.after }]}
+              />
+            </View>
+          )}
+          {pending && <Text style={styles.pending}>Saving…</Text>}
+        </View>
+      </View>
+    </View>
+  );
+});
+
+function HistoryButton({
+  kind,
+  onPress,
+  disabled,
+}: {
+  kind: 'undo' | 'redo';
+  onPress: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={
+        kind === 'undo' ? 'Undo last change' : 'Redo last undone change'
+      }
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.button,
+        { opacity: disabled ? 0.3 : pressed ? 0.55 : 1 },
+      ]}
+    >
+      <Icon name={kind} size={17} color="#CFCFCF" />
+      <Text style={styles.buttonLabel}>
+        {kind === 'undo' ? 'Undo' : 'Redo'}
+      </Text>
+    </Pressable>
+  );
+}
+
+export function HistoryView({
+  snapshot,
+  backupBusy,
+  onUndo,
+  onRedo,
+  onRetry,
+}: {
+  snapshot: StoreSnapshot;
+  backupBusy: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
+  onRetry: () => void;
+}) {
+  const today = useLocalToday();
+  const [limit, setLimit] = useState(100);
+  const sections = historySections(snapshot.events, limit);
+  const editable = !snapshot.error && !snapshot.busy && !backupBusy;
+  const savedCount = snapshot.events.length - snapshot.pending;
+  return (
+    <View style={styles.container}>
+      <View style={styles.controls}>
+        <View accessibilityLiveRegion="polite" style={styles.status}>
+          <View
+            style={[
+              styles.statusDot,
+              {
+                backgroundColor: snapshot.error
+                  ? '#DFAE82'
+                  : snapshot.pending
+                    ? '#B8B8B8'
+                    : '#668C7B',
+              },
+            ]}
+          />
+          <Text style={styles.statusText}>
+            {snapshot.error
+              ? 'Not saved'
+              : snapshot.pending
+                ? 'Saving…'
+                : 'Saved'}
+          </Text>
+        </View>
+        <View style={styles.buttons}>
+          <HistoryButton
+            kind="undo"
+            onPress={onUndo}
+            disabled={!editable || !snapshot.replay.undo.length}
+          />
+          <HistoryButton
+            kind="redo"
+            onPress={onRedo}
+            disabled={!editable || !snapshot.replay.redo.length}
+          />
+        </View>
+      </View>
+      {snapshot.error && (
+        <View style={styles.error}>
+          <Text style={styles.errorText}>{snapshot.error}</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onRetry}
+            style={styles.retry}
+          >
+            <Text style={styles.buttonLabel}>Retry saving</Text>
+          </Pressable>
+        </View>
+      )}
+      <SectionList
+        sections={sections}
+        extraData={snapshot}
+        keyExtractor={(event) => event.id}
+        stickySectionHeadersEnabled
+        initialNumToRender={18}
+        windowSize={7}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        renderSectionHeader={({ section }) => (
+          <View style={styles.dayHeading}>
+            <Text accessibilityRole="header" style={styles.dayTitle}>
+              {historyDayLabel(section.date, today)}
+            </Text>
+            <View style={styles.dayRule} />
+          </View>
+        )}
+        renderItem={({ item }) => (
+          <HistoryRow
+            event={item}
+            state={snapshot.replay.state}
+            pending={item.sequence > savedCount}
+          />
+        )}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Icon name="history" size={32} color="#747474" />
+            <Text style={styles.emptyTitle}>No changes yet</Text>
+            <Text style={styles.emptyDescription}>
+              Your entries and edits will appear here.
+            </Text>
+          </View>
+        }
+        ListFooterComponent={
+          snapshot.events.length - 1 > limit ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setLimit((count) => count + 100)}
+              style={styles.more}
+            >
+              <Text style={styles.buttonLabel}>Show older changes</Text>
+            </Pressable>
+          ) : null
+        }
+      />
+    </View>
+  );
+}
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  controls: {
+    paddingHorizontal: 24,
+    paddingBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  status: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  statusDot: { width: 5, height: 5, borderRadius: 3 },
+  statusText: { color: '#858585', fontSize: 12, flexShrink: 1 },
+  buttons: { flexDirection: 'row', gap: 6, flexShrink: 1 },
+  button: {
+    minHeight: 44,
+    paddingHorizontal: 11,
+    paddingVertical: 10,
+    borderRadius: 11,
+    backgroundColor: '#141414',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    flexShrink: 1,
+  },
+  buttonLabel: {
+    color: '#CFCFCF',
+    fontSize: 13,
+    fontWeight: '500',
+    flexShrink: 1,
+  },
+  list: { flexGrow: 1, paddingBottom: 24 },
+  dayHeading: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 8,
+    backgroundColor: '#000000',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  dayTitle: {
+    color: '#909090',
+    fontSize: 12,
+    fontWeight: '600',
+    flexShrink: 1,
+  },
+  dayRule: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#242424',
+    flex: 1,
+  },
+  row: {
+    minHeight: 54,
+    paddingHorizontal: 24,
+    paddingVertical: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+  },
+  actionIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: '#121212',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowContent: { flex: 1, gap: 3 },
+  rowHeading: { flexDirection: 'row', alignItems: 'baseline', gap: 12 },
+  habitName: { color: '#DDDDDD', fontSize: 14, fontWeight: '500', flex: 1 },
+  time: {
+    color: '#777777',
+    fontSize: 11,
+    fontVariant: ['tabular-nums'],
+    flexShrink: 0,
+  },
+  detailLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    columnGap: 8,
+    rowGap: 3,
+  },
+  detail: { color: '#949494', fontSize: 12, flexShrink: 1 },
+  pending: { fontSize: 10, color: '#A6A6A6' },
+  swatches: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  swatch: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#666666',
+  },
+  swatchArrow: { fontSize: 11, color: '#747474' },
+  empty: { alignItems: 'center', padding: 36, paddingTop: 60, gap: 12 },
+  emptyTitle: { color: '#DDDDDD', fontSize: 18, fontWeight: '500' },
+  emptyDescription: { color: '#969696', fontSize: 13, textAlign: 'center' },
+  error: {
+    marginHorizontal: 24,
+    marginBottom: 8,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#251C16',
+  },
+  errorText: { color: '#C9B5A6', fontSize: 13 },
+  retry: { minHeight: 44, justifyContent: 'center', paddingTop: 8 },
+  more: {
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: 24,
+    marginBottom: 0,
+    borderRadius: 12,
+    backgroundColor: '#141414',
+  },
+});

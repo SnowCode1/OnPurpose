@@ -1,6 +1,5 @@
-import { type ComponentType, useMemo, useState } from 'react';
+import { type ComponentType } from 'react';
 import {
-  FlatList,
   Modal,
   Pressable,
   ScrollView,
@@ -12,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from './Icon';
-import { describeChange, type ChangeEvent } from './storage/model';
+import { HistoryView } from './HistoryView';
 import type { StoreSnapshot } from './storage/store';
 
 function Action({
@@ -70,16 +69,7 @@ export function AppPanel({
   onRecover: () => void;
   onRetry: () => void;
 }) {
-  const [historyCount, setHistoryCount] = useState(100);
   const editable = !snapshot.error && !snapshot.busy && !backupBusy;
-  const changes = useMemo(
-    () =>
-      (page === 'history' ? snapshot.events : []).filter(
-        (event): event is ChangeEvent => event.type !== 'initialize',
-      ),
-    [page, snapshot.events],
-  );
-  const history = changes.slice(-historyCount).reverse();
   const status =
     snapshot.error ??
     (snapshot.pending
@@ -115,92 +105,12 @@ export function AppPanel({
               </Pressable>
             </View>
             {page === 'history' ? (
-              <FlatList
-                data={history}
-                keyExtractor={(event) => event.id}
-                contentContainerStyle={styles.body}
-                ListHeaderComponent={
-                  <View style={{ gap: 12, marginBottom: 20 }}>
-                    <Text
-                      accessibilityLiveRegion="polite"
-                      style={styles.description}
-                    >
-                      {status}
-                    </Text>
-                    {snapshot.error && (
-                      <Action label="Retry saving" onPress={onRetry} />
-                    )}
-                    <View style={styles.actions}>
-                      <Action
-                        label="Undo last change"
-                        onPress={onUndo}
-                        disabled={!editable || !snapshot.replay.undo.length}
-                      />
-                      <Action
-                        label="Redo"
-                        onPress={onRedo}
-                        disabled={!editable || !snapshot.replay.redo.length}
-                      />
-                    </View>
-                    <Text style={styles.description}>
-                      Changes are kept in order. Undo adds a reversing change.
-                    </Text>
-                  </View>
-                }
-                ListEmptyComponent={
-                  <View style={styles.empty}>
-                    <Icon name="history" size={36} color="#747474" />
-                    <Text style={styles.emptyTitle}>No changes yet</Text>
-                    <Text style={styles.description}>
-                      Your entries and edits will appear here.
-                    </Text>
-                  </View>
-                }
-                ListFooterComponent={
-                  changes.length > historyCount ? (
-                    <Action
-                      label="Show older changes"
-                      onPress={() => setHistoryCount((count) => count + 100)}
-                    />
-                  ) : null
-                }
-                renderItem={({ item }) => (
-                  <View style={styles.record}>
-                    <Text style={styles.label}>
-                      {item.type === 'undo'
-                        ? 'Undo · '
-                        : item.type === 'redo'
-                          ? 'Redo · '
-                          : ''}
-                      {describeChange(item.change, snapshot.replay.state)}
-                    </Text>
-                    {item.change.kind === 'entry' && (
-                      <Text style={styles.description}>
-                        {new Date(
-                          `${item.change.date}T12:00:00`,
-                        ).toLocaleDateString(undefined, {
-                          weekday: 'short',
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </Text>
-                    )}
-                    <Text style={styles.timestamp}>
-                      {new Date(item.recordedAt).toLocaleString(undefined, {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        second: '2-digit',
-                      })}
-                      {item.sequence > snapshot.events.length - snapshot.pending
-                        ? ' · Saving…'
-                        : ''}
-                    </Text>
-                  </View>
-                )}
+              <HistoryView
+                snapshot={snapshot}
+                backupBusy={backupBusy}
+                onUndo={onUndo}
+                onRedo={onRedo}
+                onRetry={onRetry}
               />
             ) : (
               <ScrollView
@@ -317,14 +227,6 @@ const styles = StyleSheet.create({
   description: { fontSize: 14, lineHeight: 21, color: '#969696' },
   about: { marginTop: 36, gap: 6 },
   aboutName: { fontSize: 13, fontWeight: '500', color: '#B8B8B8' },
-  empty: { alignItems: 'center', paddingTop: 40, gap: 14 },
-  emptyTitle: {
-    fontSize: 19,
-    fontWeight: '500',
-    color: '#DDDDDD',
-    textAlign: 'center',
-  },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   action: {
     minHeight: 48,
     paddingVertical: 12,
@@ -334,11 +236,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginVertical: 4,
   },
-  record: {
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#252525',
-    gap: 6,
-  },
-  timestamp: { fontSize: 12, color: '#707070' },
 });

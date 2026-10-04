@@ -1,5 +1,26 @@
 # Decision log
 
+## 018 — Compact, day-grouped change History
+
+Date: 4 October 2026. Status: founder requested; implemented, founder approved the appearance on phone.
+
+The founder asked for action icons, denser rows, and grouping by day so each row
+only needs the edit time. Use a native SectionList with sticky day headings,
+compact two-line rows, and labelled action icons. Keep Undo/Redo and save status
+above the list. Show numeric before/after totals and old/new colour swatches;
+keep full meaning available to VoiceOver and allow larger text to expand rows.
+
+Group by the edit instant displayed in the viewing device's local time zone.
+Habit-entry dates are separate: add a small For-date label when different from
+the edit day. Keep reverse sequence order rather than timestamp sorting;
+contiguous grouping preserves chronology even if the clock was adjusted. Batch
+loading can extend a day without duplicating or dropping its records.
+
+This changes presentation only; event versions, log contents, persistence,
+undo coverage, and backup semantics remain the existing v1 contract. Tests cover
+local midnight/DST/travel grouping, pagination, clock rollback, effective-date
+labelling, numeric zero/clear, and undo/redo presentation.
+
 ## 017 — Durable incremental local storage, undo, and backups
 
 Date: 4 October 2026. Status: founder requested implementation after accepting the

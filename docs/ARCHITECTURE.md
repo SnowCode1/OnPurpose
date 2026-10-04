@@ -14,6 +14,8 @@ App.tsx        screen, dialogs, optimistic store actions and backup confirmation
 src/storage/   versioned event/replay model, SQLite transactions, queue and backups
 src/usePersistentStore.ts  store subscription, opening and foreground retry
 src/AppPanel.tsx  native History/Settings sheets, keeping the grid mounted
+src/HistoryView.tsx  compact action rows, pinned controls, sticky day headings
+src/history.ts  edit-day grouping and action/effective-date presentation
 src/Icon.tsx   code-native outline icons rendered with react-native-svg
 src/HabitGrid.tsx  compact toolbar, fixed names/date headers; virtualized date columns and future pull feedback
 src/gridLayout.ts  adaptive name/day widths from measured space and text scale
@@ -215,3 +217,27 @@ preview uses a separate localStorage adapter; SQLite is the native iOS store.
 Revisit backend/sync only if agreed requirements need them. Widgets/native
 extensions can require a development build and native configuration; evaluate
 separately from the list.
+
+## History presentation
+
+HistoryView uses React Native SectionList with sticky day headings and compact,
+expandable rows (minimum 54 points at default text size). Icons distinguish checked,
+unchecked, numeric, cleared, colour, haptic, undo, and redo actions. Text retains
+meaning; each whole row exposes one VoiceOver label, including old/new colour
+values and any effective entry date. Dark custom colours use a neutral icon
+fallback so the action remains visible. Rows have no fixed height or truncation.
+
+Day/time labels use the viewing device's local zone consistently. The recorded
+zone metadata and the original habit date remain intact in storage. Group adjacent
+same-day records in reverse sequence; never sort the log by timestamps or move
+an edit to a different position after a clock change. Loading older records can
+extend the last section without changing its key or dropping entries. The local
+midnight hook refreshes Today/Yesterday headings while History is open.
+
+Undo/Redo are compact labelled icon buttons with at least 44-point height. Save
+status and retry remain explicit above the list; closing preserves the grid.
+Numeric corrections show before → after and units, and colour corrections show
+a pair of swatches. Different effective dates get a small For-date caption;
+regular same-day entry rows avoid repeating the date.
+
+[React Native SectionList reference](https://reactnative.dev/docs/0.86/sectionlist).

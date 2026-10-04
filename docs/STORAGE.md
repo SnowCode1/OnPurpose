@@ -116,10 +116,18 @@ on this preview for irreplaceable data.
 
 ## Undo, redo, and History
 
-History is now a virtualized list of actual changes, newest first, with explicit
-effective dates for entries and edit times. It reveals older records in batches of 100. Initialization is not shown as a user edit. Colour/preference changes appear
-alongside entry changes. It is a change browser, not yet a historical whole-screen
-snapshot/reconstruction interface.
+History is a virtualized sectioned list of actual changes, newest first, grouped
+by edit day in the viewing device's local time zone. Sticky day headings show
+Today/Yesterday or a calendar date; rows show the edit time. Entry dates appear as
+“For …” when different from the edit day. Compact rows pair action icons with
+text, numeric before/after totals, and old/new colour swatches. Undo/Redo and save
+status stay above the list. Older records load in batches of 100, retaining
+contiguous log order if a clock adjustment causes a date to recur. Initialization
+is not shown as a user edit. Colour/preference changes currently appear alongside
+entry changes. It is a change browser, not yet a historical whole-screen
+snapshot/reconstruction interface. The founder approved its appearance and is
+considering a cleaner active-action timeline and grouped repeated edits; those
+behaviour changes are not implemented by this visual update.
 
 Undo reverses the latest active action and appends an `undo` event referencing it.
 Redo reverses the latest undo and appends a `redo` event. Both validate the exact

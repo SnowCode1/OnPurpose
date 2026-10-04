@@ -421,3 +421,27 @@ with 27 before the storage dependencies. The extra report is expo-sharing throug
 the already-used @expo/config-plugins chain; npm proposes an incompatible older
 major as its fix. No forced dependency downgrade was applied. Resolve the SDK's
 audit findings before release; successful Doctor/export checks do not resolve them.
+
+## Compact grouped History — 4 October 2026
+
+Implemented on founder request: dense action-icon rows with time at right,
+sticky edit-day headings, fixed save status and Undo/Redo controls. Numeric rows
+show before/after values; colour rows show paired swatches. A differing entry
+calendar date uses a For-date caption. Grouping uses the viewing local zone;
+event sequence and stored data remain intact.
+
+Automated: the full suite passes 53 tests, including eight new History tests for
+local-midnight grouping, pagination into one day, clock rollback order, daylight
+saving and travel, effective habit dates, numeric zero/clear, undo/redo, settings
+and year-boundary headings. TypeScript/lint/format and iOS bundle checks pass.
+The founder approved the appearance on the iPhone. No screenshots of this
+revised layout have been inspected; large-text/VoiceOver and paging checks remain
+to be confirmed. Behaviour changes to filtering settings, undo presentation, and
+repeated-toggle grouping are being discussed separately.
+
+Phone checks: inspect normal and large text, long names, colour changes, explicit
+numeric zero, past/future corrections, undo/redo, pending/retry status, sticky
+heading readability, and older-record loading. VoiceOver should read a whole row
+once with habit/action/effective date/time; icons and swatches are decorative.
+Same-day rows should not repeat the date. Confirm closing History still preserves
+horizontal grid position, and no changes to entries are made by browsing.

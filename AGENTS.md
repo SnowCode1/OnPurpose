@@ -28,6 +28,9 @@ once; never reset or reseed an existing store during loading or an error.
   Month/year stays beside the day headings; future pull streak grows left from the
   fixed right edge of the existing divider beneath the headings. Do not add a border.
 - `src/AppPanel.tsx` owns real change History/undo and the Settings/backup sheet; `src/Icon.tsx` owns outline icons.
+- `src/HistoryView.tsx` renders compact action rows and sticky edit-day groups;
+  `src/history.ts` keeps grouping separate from effective habit dates. Preserve
+  reverse sequence order; do not reorder logged actions by their timestamps.
 - `src/gridLayout.ts` calculates adaptive column geometry for both orientations.
 - `src/useGridScroll.ts` synchronizes native scrolling on the UI thread; never
   put per-frame list synchronization back on the JavaScript thread.

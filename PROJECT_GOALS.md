@@ -52,6 +52,8 @@ and uncertainty about whether something was saved.
 - Store app changes incrementally. This is the underlying storage approach and
   export format, separate from the habit/day model; it also enables a separate
   history feature for browsing prior activity, checked boxes, and comments.
+- Show change history in compact rows with action icons, grouped by edit day,
+  with time per row. Preserve clarity about different habit-entry dates.
 - Develop without owning a Mac; use the physical iPhone for actual testing.
 - Maintain project goals, agent guidance including CLAUDE.md, and a docs folder.
 
