@@ -12,6 +12,7 @@ A local-midnight timer and foreground check update the current day.
 index.ts       registers the app with Expo
 App.tsx        screen, in-memory state, colour picker and daily-total editor
 src/HabitGrid.tsx  fixed names/date headers; virtualized past-only date columns
+src/gridLayout.ts  adaptive name/day widths from measured space and text scale
 src/calendar.ts   local calendar keys and past-date arithmetic
 src/useLocalToday.ts  midnight and foreground date refresh
 src/habits.ts   typed demo habits and colour palette
@@ -36,10 +37,18 @@ every historical cell at once. A vertical ScrollView moves names and cells
 together while date headings remain visible.
 
 Row heights are measured from habit names/units so wrapped names and larger text
-remain aligned. Three columns are visible normally, two for larger text or narrow
-layouts. Dates snap to column boundaries, and a Today control resets horizontal
-position without changing habit order. Current-day changes remount the grid at
-today while values retain their habit ID/local-date keys.
+remain aligned. Measured width and system text size determine the number of whole
+columns, with a minimum day width of 48 points (scaled for larger text). Name
+width is bounded so landscape gives its extra space to dates. The screen uses
+both orientations and safe areas, including dialogs. The month/year beside the
+day headings describes the visible period, including month/year boundaries.
+
+Dates snap to column boundaries. A Today action appears only while browsing the
+past; its reserved space prevents layout shifts. Width changes remount both date
+lists with a frozen initial index anchored to the previously rightmost day.
+Scroll synchronization starts on a user drag and ignores events from an earlier
+column width. Current-day changes remount the grid at today while values retain
+their habit ID/local-date keys.
 
 ## Proposed next step — durable storage
 

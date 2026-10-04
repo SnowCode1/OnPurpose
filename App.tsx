@@ -80,8 +80,8 @@ export default function App() {
       <SafeAreaView style={styles.screen}>
         <StatusBar style="light" />
         <View style={styles.content}>
-          <PreviewHeading style={styles.brand}>ONPURPOSE</PreviewHeading>
           <HabitGrid
+            HeadingComponent={PreviewHeading}
             key={today}
             today={today}
             habits={habits}
@@ -96,6 +96,11 @@ export default function App() {
         <Modal
           visible={editing !== null || detail !== undefined}
           animationType="fade"
+          supportedOrientations={[
+            'portrait',
+            'landscape-left',
+            'landscape-right',
+          ]}
           transparent
           onRequestClose={closeDialog}
         >
@@ -243,17 +248,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     width: '100%',
-    maxWidth: 600,
     alignSelf: 'center',
     paddingHorizontal: 18,
-  },
-  brand: {
-    color: '#A0A0A0',
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 2.5,
-    paddingTop: 12,
-    paddingBottom: 18,
   },
   footer: {
     color: '#777777',

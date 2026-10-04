@@ -1,5 +1,22 @@
 # Decision log
 
+## 009 — Adaptive density and landscape
+
+Date: 4 October 2026. Status: requested by the founder; implemented; founder confirmed both orientations work and stay aligned.
+
+Replace the fixed three-column layout with as many complete dates as the measured
+width and system text size can comfortably fit. Enable landscape and use the
+extra width for dates; retain safe areas, fixed habit names, and past-only bounds.
+Keep the rightmost visible date when rotating. Day touch targets are at least
+48 points wide at normal text size, growing with larger text.
+
+The founder questioned the redundant date header. This polish pass keeps a
+compact month/year beside the date headings and removes the separate large date
+range. This visual treatment is an assistant proposal to evaluate on the phone.
+Today remains subtly highlighted; the return action appears only in history,
+without moving any rows. Reduce excess vertical space and soften row rules while
+retaining colour across habit names, checkboxes, and numeric entries.
+
 ## 008 — Past-only grid and habit colours
 
 Date: 4 October 2026. Status: requested by the founder; implemented in the demo.

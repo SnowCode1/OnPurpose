@@ -9,7 +9,7 @@ import {
 
 process.env.TZ = 'Australia/Melbourne';
 
-test('initial columns are today and the preceding two dates, never a future date', () => {
+test('history starts at today and proceeds backwards, never to a future date', () => {
   const days = makeHistoryDays('2026-10-04', 90);
   assert.deepEqual(
     days.slice(0, 3).map((day) => day.key),

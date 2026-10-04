@@ -165,3 +165,12 @@ the affected paths before beta/public release. Audit counts can change over time
 - [Expo SDK 57 release notes](https://expo.dev/changelog/sdk-57)
 - [iOS simulator requirements](https://docs.expo.dev/workflow/ios-simulator/)
 - [Development builds](https://docs.expo.dev/develop/development-builds/introduction/)
+
+## Portrait and landscape
+
+The app configuration permits rotation; the grid measures usable width after
+safe-area insets. Disable iPhone Portrait Orientation Lock to test landscape.
+After changing `app.json`, exit and reopen the project in Expo Go so the manifest
+is reloaded; Fast Refresh alone may keep the previous orientation setting.
+Share both orientations using the same long press on ONPURPOSE. Test numeric
+entry with the keyboard open in landscape as well as the main grid.

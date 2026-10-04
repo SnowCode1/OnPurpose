@@ -17,9 +17,10 @@ and uncertainty about whether something was saved.
 - Build an iOS habit tracker intended for an actual App Store release.
 - Release the source under an open-source licence, still to be selected.
 - Use a compact, spreadsheet-like home screen: habits run vertically, dates run
-  horizontally, with roughly three day columns depending on available space.
-- Start at today and the previous two days. Scroll horizontally into the past;
-  do not show future days.
+  horizontally. Fit as many whole day columns as space and text size allow;
+  support portrait and landscape, with more dates visible in landscape.
+- Start at today and the recent past. Scroll horizontally into the past;
+  do not show future days. Adaptive density replaces the initial three-column idea.
 - Use a pure black background and user-selectable habit colours across each row,
   including the habit name, checkboxes, and numeric entries.
 - The founder has published the repository at https://github.com/SnowCode1/OnPurpose
@@ -47,7 +48,7 @@ and uncertainty about whether something was saved.
 3. Tap a numeric date cell to enter/edit that day's total.
 4. Tap the habit name to open statistics. Names and date cells have distinct hit
    targets, so recording a value cannot accidentally open statistics.
-5. Keep today at the right edge of the initial three-day view. Scroll toward
+5. Keep today at the right edge of the initial view. Scroll toward
    earlier dates while names stay fixed; offer a direct return to Today.
 6. Change ordering only through deliberate editing, not automatic sorting.
 7. Save locally and work offline; do not require an account for everyday tracking.
@@ -104,8 +105,9 @@ The following capabilities are desired; their milestone order is proposed:
 5. Add comments and the separate history browser on top of the same stored changes.
 6. Validate accessibility, data recovery/upgrades, TestFlight, and App Store release.
 
-The current starter is a disposable 12-row grid with a three-day viewport (two
-columns at larger text sizes or narrow widths). It supports scrolling into the
+The current starter is a disposable 12-row grid with an adaptive day viewport
+(typically four columns on the test phone in portrait, more in landscape, fewer
+with larger text). It supports scrolling into the
 past, returning to Today, editing dated checkbox/numeric values, automatic local
 date rollover, and choosing a row colour in habit details. Statistics remain a
 placeholder. Entries and colours are in memory and reset on reload; durable
@@ -122,7 +124,7 @@ and incremental history are desired scope, not excluded candidates.
 
 | Question                                                               | Current status                                          |
 | ---------------------------------------------------------------------- | ------------------------------------------------------- |
-| Which three dates, in which direction? How do we browse older dates?   | Today on the right; past-only scrolling implemented     |
+| How many dates and in which direction? How do we browse history?       | Adaptive columns; today on right; past-only scrolling   |
 | All habits daily, selected weekdays, or frequency targets?             | Open                                                    |
 | Do numeric habits have units, targets, and a “lower is better” option? | Daily-total input confirmed; goal rules open            |
 | What exactly counts toward a numeric or scheduled habit's streak?      | Open                                                    |

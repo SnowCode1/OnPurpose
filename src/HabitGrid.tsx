@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type ComponentType, type Ref, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
+  type FlatListProps,
+  type TextProps,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   Pressable,
@@ -12,8 +14,10 @@ import {
 } from 'react-native';
 import { type GridDay, makeHistoryDays, pastDay } from './calendar';
 import { type Habit } from './habits';
+import { gridLayout } from './gridLayout';
 
 type Props = {
+  HeadingComponent: ComponentType<TextProps>;
   today: string;
   habits: Habit[];
   values: Record<string, number>;
@@ -22,6 +26,7 @@ type Props = {
 };
 
 export function HabitGrid({
+  HeadingComponent,
   today,
   habits,
   values,
@@ -31,44 +36,49 @@ export function HabitGrid({
   const { fontScale } = useWindowDimensions();
   const [width, setWidth] = useState(0);
   const [dayCount, setDayCount] = useState(90);
-  const [position, setPosition] = useState({ width: 0, day: 0 });
+  const [rightmostDay, setRightmostDay] = useState(0);
   const [rowHeights, setRowHeights] = useState<Record<string, number>>({});
   const header = useRef<FlatList<GridDay>>(null);
   const body = useRef<FlatList<GridDay>>(null);
-  const driver = useRef<'header' | 'body'>('body');
+  const driver = useRef<{
+    source: 'header' | 'body';
+    columnWidth: number;
+  } | null>(null);
   const days = useMemo(
     () => makeHistoryDays(today, dayCount),
     [today, dayCount],
   );
-  const visibleDays = fontScale > 1.35 || width < 320 ? 2 : 3;
-  const nameWidth = Math.round(width * 0.46);
-  const dateWidth = width - nameWidth;
-  const columnWidth = dateWidth / visibleDays;
-  const rightmostDay = position.width === columnWidth ? position.day : 0;
-  const baseRowHeight = Math.max(54, Math.ceil(48 * fontScale));
+  const { visibleDays, nameWidth, dateWidth, columnWidth } = gridLayout(
+    width,
+    fontScale,
+  );
+  const baseRowHeight = Math.max(52, Math.ceil(48 * fontScale));
   const gridHeight = habits.reduce(
     (total, habit) => total + (rowHeights[habit.id] ?? baseRowHeight),
     0,
   );
   const newest = pastDay(today, rightmostDay);
   const oldest = pastDay(today, rightmostDay + visibleDays - 1);
-  const month = newest.toLocaleDateString(undefined, {
-    month: 'long',
-    year: 'numeric',
-  });
-  const range = `${oldest.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} – ${newest.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`;
-
-  useEffect(() => {
-    driver.current = 'body';
-    header.current?.scrollToOffset({ offset: 0, animated: false });
-    body.current?.scrollToOffset({ offset: 0, animated: false });
-  }, [columnWidth]);
+  const sameMonth =
+    newest.getMonth() === oldest.getMonth() &&
+    newest.getFullYear() === oldest.getFullYear();
+  const month = sameMonth
+    ? newest.toLocaleDateString(undefined, { month: 'long' })
+    : `${oldest.toLocaleDateString(undefined, { month: 'short' })} – ${newest.toLocaleDateString(undefined, { month: 'short' })}`;
+  const year =
+    oldest.getFullYear() === newest.getFullYear()
+      ? String(newest.getFullYear())
+      : `${oldest.getFullYear()} – ${newest.getFullYear()}`;
 
   function sync(
     source: 'header' | 'body',
     event: NativeSyntheticEvent<NativeScrollEvent>,
   ) {
-    if (driver.current !== source) return;
+    if (
+      driver.current?.source !== source ||
+      driver.current.columnWidth !== columnWidth
+    )
+      return;
     const offset = Math.max(0, event.nativeEvent.contentOffset.x);
     const follower = source === 'body' ? header : body;
     follower.current?.scrollToOffset({ offset, animated: false });
@@ -76,19 +86,15 @@ export function HabitGrid({
       dayCount - visibleDays,
       Math.max(0, Math.round(offset / columnWidth)),
     );
-    setPosition((previous) =>
-      previous.width === columnWidth && previous.day === day
-        ? previous
-        : { width: columnWidth, day },
-    );
+    setRightmostDay(day);
   }
 
   function returnToToday() {
-    driver.current = 'body';
+    driver.current = null;
     // An immediate jump also avoids traversing years of dates in an animation.
     body.current?.scrollToOffset({ offset: 0, animated: false });
     header.current?.scrollToOffset({ offset: 0, animated: false });
-    setPosition({ width: columnWidth, day: 0 });
+    setRightmostDay(0);
   }
 
   const shared = {
@@ -103,8 +109,8 @@ export function HabitGrid({
     snapToInterval: columnWidth,
     decelerationRate: 'fast' as const,
     scrollEventThrottle: 16,
-    initialNumToRender: 6,
-    maxToRenderPerBatch: 12,
+    initialNumToRender: Math.max(6, visibleDays + 2),
+    maxToRenderPerBatch: Math.max(12, visibleDays + 2),
     windowSize: 5,
     removeClippedSubviews: false,
     keyExtractor: (day: GridDay) => day.key,
@@ -120,39 +126,49 @@ export function HabitGrid({
   return (
     <View
       style={styles.container}
-      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+      onLayout={(event) => {
+        const nextWidth = event.nativeEvent.layout.width;
+        if (nextWidth !== width) {
+          driver.current = null;
+          setWidth(nextWidth);
+          setDayCount((count) => Math.max(count, rightmostDay + 90));
+        }
+      }}
     >
-      <View style={styles.period}>
-        <View style={styles.periodText}>
-          <Text style={styles.month}>{month}</Text>
-          <Text style={styles.range}>{range}</Text>
-        </View>
+      <View style={styles.toolbar}>
+        <HeadingComponent style={styles.brand}>ONPURPOSE</HeadingComponent>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Return to today"
-          accessibilityState={{ disabled: rightmostDay === 0 }}
+          accessibilityElementsHidden={rightmostDay === 0}
+          importantForAccessibility={
+            rightmostDay === 0 ? 'no-hide-descendants' : 'auto'
+          }
           disabled={rightmostDay === 0}
           onPress={returnToToday}
           style={({ pressed }) => [
             styles.todayButton,
-            { opacity: rightmostDay === 0 ? 0.45 : pressed ? 0.65 : 1 },
+            { opacity: rightmostDay === 0 ? 0 : pressed ? 0.65 : 1 },
           ]}
         >
-          <Text style={styles.todayText}>Today ↗</Text>
+          <Text style={styles.todayText}>Today →</Text>
         </Pressable>
       </View>
       {width > 0 && (
         <>
           <View style={styles.header}>
             <View style={[styles.namesHeader, { width: nameWidth }]}>
-              <Text style={styles.habitsLabel}>HABITS</Text>
+              <Text style={styles.month}>{month}</Text>
+              <Text style={styles.year}>{year}</Text>
             </View>
-            <FlatList
+            <DateColumns
               {...shared}
               ref={header}
+              key={`header-${columnWidth}`}
+              initialScrollIndex={rightmostDay}
               style={{ width: dateWidth, flexGrow: 0 }}
               onScrollBeginDrag={() => {
-                driver.current = 'header';
+                driver.current = { source: 'header', columnWidth };
               }}
               onScroll={(event) => sync('header', event)}
               renderItem={({ item: day }) => (
@@ -203,7 +219,7 @@ export function HabitGrid({
                       styles.habit,
                       {
                         minHeight: baseRowHeight,
-                        borderBottomColor: `${habit.color}24`,
+                        borderBottomColor: `${habit.color}20`,
                         backgroundColor: pressed
                           ? `${habit.color}15`
                           : '#000000',
@@ -221,14 +237,14 @@ export function HabitGrid({
                   </Pressable>
                 ))}
               </View>
-              <FlatList
+              <DateColumns
                 {...shared}
                 ref={body}
-                // Width changes remount the list so columns start aligned at Today.
-                key={columnWidth}
+                key={`body-${columnWidth}`}
+                initialScrollIndex={rightmostDay}
                 style={{ width: dateWidth, height: gridHeight, flexGrow: 0 }}
                 onScrollBeginDrag={() => {
-                  driver.current = 'body';
+                  driver.current = { source: 'body', columnWidth };
                 }}
                 onScroll={(event) => sync('body', event)}
                 renderItem={({ item: day }) => (
@@ -255,11 +271,11 @@ export function HabitGrid({
                             styles.cell,
                             {
                               height: rowHeights[habit.id] ?? baseRowHeight,
-                              borderBottomColor: `${habit.color}24`,
+                              borderBottomColor: `${habit.color}20`,
                               backgroundColor: pressed
                                 ? `${habit.color}20`
                                 : day.daysAgo === 0
-                                  ? '#0B0B0B'
+                                  ? '#090909'
                                   : '#000000',
                             },
                           ]}
@@ -273,7 +289,7 @@ export function HabitGrid({
                                 styles.numeric,
                                 {
                                   color: habit.color,
-                                  opacity: value === undefined ? 0.55 : 1,
+                                  opacity: value === undefined ? 0.65 : 1,
                                 },
                               ]}
                             >
@@ -286,7 +302,7 @@ export function HabitGrid({
                                 {
                                   borderColor: checked
                                     ? habit.color
-                                    : `${habit.color}88`,
+                                    : `${habit.color}AA`,
                                   backgroundColor: checked
                                     ? habit.color
                                     : 'transparent',
@@ -317,48 +333,68 @@ export function HabitGrid({
   );
 }
 
+// Each width gets a fresh pair of lists, anchored to the same logical date.
+// Freeze the initial index: later history loading must not trigger another jump.
+function DateColumns({
+  initialScrollIndex,
+  ...props
+}: FlatListProps<GridDay> & {
+  ref: Ref<FlatList<GridDay>>;
+}) {
+  const [initialIndex] = useState(initialScrollIndex);
+  return <FlatList {...props} initialScrollIndex={initialIndex} />;
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  period: {
+  toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: 20,
+    minHeight: 44,
+    marginBottom: 8,
   },
-  periodText: { flex: 1, paddingRight: 8 },
-  month: {
-    color: '#F4F4F4',
-    fontSize: 24,
+  brand: {
+    color: '#A0A0A0',
+    fontSize: 11,
     fontWeight: '600',
-    letterSpacing: -0.6,
+    letterSpacing: 2.5,
+    paddingVertical: 12,
   },
-  range: { color: '#929292', fontSize: 12, marginTop: 5 },
+  month: {
+    color: '#E8E8E8',
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: -0.3,
+  },
+  year: {
+    color: '#929292',
+    fontSize: 11,
+    marginTop: 4,
+    fontVariant: ['tabular-nums'],
+  },
   todayButton: {
     minHeight: 44,
     justifyContent: 'center',
-    paddingHorizontal: 14,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: '#3A3A3A',
+    paddingLeft: 16,
+    paddingRight: 4,
   },
-  todayText: { color: '#E5E5E5', fontSize: 13, fontWeight: '500' },
+  todayText: { color: '#DADADA', fontSize: 13, fontWeight: '500' },
   header: {
     flexDirection: 'row',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#363636',
   },
-  namesHeader: { justifyContent: 'center' },
-  habitsLabel: {
-    color: '#8B8B8B',
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 1.6,
+  namesHeader: {
+    justifyContent: 'center',
+    paddingRight: 10,
+    paddingVertical: 8,
   },
   dayHeader: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    minHeight: 60,
+    paddingVertical: 8,
+    minHeight: 56,
   },
   weekday: { color: '#979797', fontSize: 11, fontWeight: '500' },
   dayNumber: {
@@ -369,9 +405,9 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   todayColumn: {
-    backgroundColor: '#0B0B0B',
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
+    backgroundColor: '#090909',
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
   },
   todayLabel: { color: '#FFFFFF' },
   rows: { flex: 1 },
@@ -380,22 +416,22 @@ const styles = StyleSheet.create({
   habit: {
     justifyContent: 'center',
     paddingRight: 12,
-    paddingVertical: 12,
+    paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  habitName: { fontSize: 15, fontWeight: '500' },
-  unit: { fontSize: 11, marginTop: 3, opacity: 0.8 },
+  habitName: { fontSize: 15, lineHeight: 20, fontWeight: '500' },
+  unit: { fontSize: 11, lineHeight: 13, marginTop: 2, opacity: 0.8 },
   cell: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  numeric: { fontSize: 20, fontWeight: '500', fontVariant: ['tabular-nums'] },
+  numeric: { fontSize: 18, fontWeight: '500', fontVariant: ['tabular-nums'] },
   checkbox: {
-    width: 23,
-    height: 23,
-    borderRadius: 7,
+    width: 22,
+    height: 22,
+    borderRadius: 6,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',

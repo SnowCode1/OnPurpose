@@ -109,11 +109,12 @@ receiver responded successfully to an authenticated health check.
 - Entries use habit ID plus local date; virtualized columns never own entry state.
 - Main background is pure black; eight selectable habit colours apply to row
   labels, units, checkbox states, numbers, and separators.
-- Phone visual/scroll verification for this grid update is pending.
+- The founder shared a phone screenshot of the three-column version. Its main
+  grid rendering was inspected; scroll interaction verification remains pending.
 
 Manual checks for the current grid:
 
-1. Open at today and the two preceding days. Swiping past today cannot reveal
+1. Open at today and as many preceding days as fit. Swiping past today cannot reveal
    future dates. Swipe older dates through a month boundary and beyond 90 days.
 2. Drag both the date headings and the cells: headings and cells should stay
    aligned while habit names stay fixed. Scroll down: headings stay visible and
@@ -131,3 +132,30 @@ To check manually: share the grid, share a dialog, stop the receiver and verify
 that an error appears instead of a success message, then restart and retry.
 Set the flag false and fully reload to verify the headings stay visually
 identical but no longer capture.
+
+## Adaptive grid and visual polish
+
+4 October 2026: responsive columns and portrait/landscape support implemented.
+The shared portrait screenshot informed narrower names, a quieter calendar header,
+smaller row gaps, and adjusted checkbox/number weights. The founder confirmed both orientations work and columns stay aligned on the
+iPhone. No updated captures had arrived at the time of that confirmation, so the
+latest visual details have not yet been inspected from a new screenshot. Date
+retention when rotating, larger text, and landscape dialogs still need explicit
+phone checks.
+
+TypeScript, ESLint, formatting, all 15 automated tests, and the iOS release bundle
+export passed. Three new geometry tests cover whole columns, portrait/landscape
+widths, minimum touch widths, larger text, and unmeasured layouts. These tests do
+not substitute for native gesture and rotation checks.
+
+- Compare portrait/landscape: whole columns fill available width, today stays at
+  the right, and all controls clear the notch/home indicator.
+- Browse older dates, rotate both ways, and confirm the rightmost date is retained
+  with headings/cells aligned. Tap Today and confirm it returns immediately.
+- Change text size: fewer days should fit, names can wrap, rows stay aligned, and
+  a previously recorded value remains attached to the same date.
+- Cross month/year boundaries; the compact heading must describe both months/years.
+- In landscape, open a numeric entry and the keyboard, save/cancel/clear it, then
+  open colour details. Content and actions must remain reachable by scrolling.
+- Compare screenshot density, blank/checked states, and numeric totals. Confirm
+  that five rapid checkoffs still hit the intended cells without accidental swipes.
