@@ -18,6 +18,7 @@ import {
   type Oklch,
 } from './colors';
 import { habitColors } from './habits';
+import { feedback } from './haptics';
 
 export function ColourPicker({
   color,
@@ -34,6 +35,7 @@ export function ColourPicker({
   const lowContrast = contrastOnBlack(preview) < 4.5;
 
   function selectPreset(value: string) {
+    if (value !== validHex) feedback('selection');
     setHex(value);
     setDraft(hexToOklch(value));
     onChange(value);
@@ -61,6 +63,7 @@ export function ColourPicker({
             accessibilityRole="tab"
             accessibilityState={{ selected: tab === option }}
             onPress={() => {
+              if (tab !== option) feedback('selection');
               Keyboard.dismiss();
               setTab(option);
             }}

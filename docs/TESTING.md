@@ -260,3 +260,34 @@ A direct check confirmed all eight demo colours reach about 30% lower OKLCH
 lightness while retaining chroma/hue. Judge the revised result on the phone,
 particularly Read, Drink water, and the today/tomorrow boundary. Checked values
 and recorded totals should continue to stand out. History still fades on days 5–8.
+
+## Action haptics
+
+4 October 2026: implemented single-pulse completion/confirmation, softer undo/clear,
+selection ticks, and one future-ready threshold tick per direct drag. Physical
+feel and first-tap latency need founder evaluation on the iPhone 16 Pro.
+
+Phone checks:
+
+- Check five separate habits quickly. Each accepted tap should get one short
+  pulse and immediate visual feedback, with no queued pattern afterwards.
+- Undo a check; compare its softer feedback. Swipe starting over a cell: cancelling
+  the press to scroll must not produce a checkoff pulse or change its value.
+- Open a numeric editor, save a changed value, save it again unchanged, clear it,
+  and Cancel. Opening selects, changed save confirms, clear gives undo; unchanged
+  save and Cancel are quiet. Include zero as a recorded value.
+- Select different colour presets/tabs; repeated selection is quiet. Drag sliders
+  and type hex: no per-step buzzing. Done confirms only an actual applied colour
+  change, while Close stays quiet and discards it.
+- From both header and body, pull to future readiness: one firmer tick. Move back
+  and forth across the threshold without lifting: no extra tick. Release: no second
+  pulse. A fling or an under-threshold pull must not produce the readiness tick.
+- Return to Today: one selection tick for a real jump. Already at the normal
+  Today boundary, the menu's no-op return should stay quiet.
+- Repeat with iOS Low Power Mode or haptics disabled: UI actions must still work.
+  Native feel cannot be established by tests or Linux bundle export.
+
+Verification: TypeScript, ESLint, Prettier, all 23 existing automated tests, and
+iOS production bundle export passed. The founder tested the first version on
+the iPhone and found it slightly weak; completion/changed-save feedback was
+raised from Light to Medium. The revised strength still needs a phone comparison.

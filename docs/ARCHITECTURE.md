@@ -17,6 +17,7 @@ src/useGridScroll.ts  Reanimated UI-thread synchronization and release handlers
 src/gridNavigation.ts  pull threshold and scroll-offset-to-calendar-day mapping
 src/calendar.ts   local calendar keys and signed date arithmetic
 src/ColourPicker.tsx  presets, native sliders, custom preview and hex input
+src/haptics.ts   nonblocking native feedback for accepted actions
 src/colors.ts   OKLCH/sRGB conversion, gamut mapping and contrast helpers
 src/useLocalToday.ts  midnight and foreground date refresh
 src/habits.ts   typed demo habits and colour palette
@@ -104,6 +105,32 @@ No custom font family is set or font files loaded. iOS uses its system font
 ([San Francisco](https://developer.apple.com/fonts/)); names use medium 15-point text, dates semibold 19-point text,
 and numeric cells medium 18-point tabular figures. System text scaling remains
 enabled. Font alternatives are a future visual comparison, not a selected change.
+
+## Haptic feedback
+
+The existing Expo Haptics dependency supplies native feedback. `src/haptics.ts`
+centralizes single-pulse confirmation (Medium), undo/clear (Soft), selection ticks,
+and the future-pull threshold (Medium). Android uses native semantic haptic
+constants; web previews stay silent. Calls catch native failures and never block
+state changes. Haptics run from event handlers, not render, effects, or state
+updaters, so replayed updater functions cannot duplicate them.
+
+Checkbox feedback follows completion/undo. Opening numeric entry gets a selection
+tick; changed numeric saves and clears use confirmation/undo. A changed colour's
+Done confirms, while preset/tab changes get selection ticks. Unchanged saves,
+unchanged selections, Close/Cancel, typing, and continuous sliders are quiet.
+A deliberate Today jump or future menu action gets a selection tick.
+
+Future pulls track dragging and whether the threshold has ticked on the UI thread.
+Only the active list can request it, once per drag. A fling, follower list event,
+or recrossing the same threshold cannot generate repeated ticks. Release after
+that tick reveals dates without an extra pulse. Haptics use the JS bridge only
+for this discrete threshold event; scroll synchronization remains on the UI thread.
+
+No app settings screen exists yet. Feedback is currently enabled for native
+platforms and follows OS availability; a future settings screen can expose an
+app preference. [Expo's haptics reference](https://docs.expo.dev/versions/v57.0.0/sdk/haptics/)
+documents cases such as iOS Low Power Mode and system settings suppressing output.
 
 ## Proposed next step — durable storage
 

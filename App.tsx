@@ -19,6 +19,7 @@ import { demoHabits, type Habit } from './src/habits';
 import { ColourPicker } from './src/ColourPicker';
 import { checkmarkColor } from './src/colors';
 import { useLocalToday } from './src/useLocalToday';
+import { feedback } from './src/haptics';
 
 // Metro removes this branch (and its module) from release JavaScript.
 const PreviewHeading: ComponentType<TextProps> =
@@ -53,11 +54,13 @@ export default function App() {
       if (habit.unit) {
         setInput(values[key] === undefined ? '' : String(values[key]));
         setEditing({ key, habit, day });
+        feedback('selection');
       } else {
         setValues((previous) => ({
           ...previous,
           [key]: previous[key] === 1 ? 0 : 1,
         }));
+        feedback(values[key] === 1 ? 'undo' : 'confirm');
       }
     },
     [values],
@@ -70,6 +73,9 @@ export default function App() {
 
   function saveNumber() {
     if (!editing || !valid) return;
+    const previousValue = values[editing.key];
+    const changed =
+      trimmed === '' ? previousValue !== undefined : previousValue !== numeric;
     setValues((previous) => {
       const next = { ...previous };
       if (trimmed === '') delete next[editing.key];
@@ -77,6 +83,7 @@ export default function App() {
       return next;
     });
     setEditing(null);
+    if (changed) feedback(trimmed === '' ? 'undo' : 'confirm');
   }
 
   function closeDialog() {
@@ -92,6 +99,7 @@ export default function App() {
         habit.id === detail.id ? { ...habit, color: draftColor } : habit,
       ),
     );
+    if (draftColor !== detail.color) feedback('confirm');
     closeDialog();
   }
 

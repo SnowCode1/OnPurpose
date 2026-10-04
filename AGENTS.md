@@ -26,6 +26,8 @@ Incremental change storage and export are confirmed requirements; read
   put per-frame list synchronization back on the JavaScript thread.
 - `src/gridNavigation.ts` owns the future-pull threshold and signed date offsets.
 - `src/ColourPicker.tsx` and `src/colors.ts` own preset/custom colours and OKLCH.
+- `src/haptics.ts` owns action feedback; never trigger it from state updaters
+  or await it before updating UI. Keep routine scrolling quiet.
 - `src/calendar.ts` and `src/useLocalToday.ts` handle local dates and rollover.
 - `src/habits.ts` contains demo habits/colours. `index.ts` registers the app.
 - `app.json` owns Expo configuration. Generated native folders stay ignored.

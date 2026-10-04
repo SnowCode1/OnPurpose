@@ -18,6 +18,7 @@ import { gridLayout } from './gridLayout';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { useGridScroll } from './useGridScroll';
 import { FUTURE_BATCH, FUTURE_PULL_DISTANCE } from './gridNavigation';
+import { feedback } from './haptics';
 
 type Props = {
   HeadingComponent: ComponentType<TextProps>;
@@ -102,10 +103,12 @@ export const HabitGrid = memo(function HabitGrid({
       ? String(newest.getFullYear())
       : `${oldest.getFullYear()} – ${newest.getFullYear()}`;
 
-  function revealFuture() {
+  function revealFuture(fromPull = false) {
     stopSync();
     setRightmostDay(-futureCount - Math.min(visibleDays, FUTURE_BATCH));
     setFutureCount((count) => count + FUTURE_BATCH);
+    // The pull already ticks at its threshold. Explicit menu access gets a tick.
+    if (!fromPull) feedback('selection');
   }
 
   const { header, body, stopSync, pull, headerScroll, bodyScroll } =
@@ -131,6 +134,7 @@ export const HabitGrid = memo(function HabitGrid({
   }));
 
   function returnToToday() {
+    if (!atTodayBoundary) feedback('selection');
     stopSync();
     setRightmostDay(0);
     if (futureCount) setFutureCount(0);
@@ -145,7 +149,7 @@ export const HabitGrid = memo(function HabitGrid({
       'Browse dates',
       'Pull past the newest day and release to reveal future dates.',
       [
-        { text: 'Show future dates', onPress: revealFuture },
+        { text: 'Show future dates', onPress: () => revealFuture() },
         { text: 'Return to today', onPress: returnToToday },
         { text: 'Cancel', style: 'cancel' },
       ],

@@ -1,5 +1,27 @@
 # Decision log
 
+## 014 — Restrained action haptics
+
+Date: 4 October 2026. Status: requested by the founder; implemented, feel to validate on phone.
+
+Use the installed Expo Haptics library for immediate, single-pulse action feedback.
+Completion/changed save uses Medium, undo/clear uses Soft, discrete selection uses
+a selection tick, and the future-pull threshold uses Medium. These mappings are
+assistant design choices to tune on the founder's iPhone. Avoid long success
+patterns for ordinary checkoff; the development preview's success notification
+remains a separate tool response.
+
+Emit feedback only from accepted actions, outside React state updater functions.
+Do not await native feedback before updating state. Catch unsupported/native failures;
+visual confirmation stays authoritative. No-op saves, cancellations, ordinary
+scrolling, typing, and continuous colour sliders are quiet. Future readiness ticks
+once per direct drag at the threshold, with no duplicate on release or recrossing.
+No new dependency, settings screen, or extra home controls are introduced.
+
+The founder tried the first version and described it as slightly weak. Raise
+completion/changed-save feedback from Light to Medium, keeping undo Soft and
+selection ticks unchanged. The revised strength needs another phone comparison.
+
 ## 013 — Stronger and more consistent cell dimming
 
 Date: 4 October 2026. Status: implemented after inspecting a founder phone preview.

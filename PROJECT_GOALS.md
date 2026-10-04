@@ -38,6 +38,8 @@ and uncertainty about whether something was saved.
   its code, assets, scoring formula, or every feature.
 - Support checkbox habits and numeric habits. Numeric entries are primarily a
   daily total, rather than repeated increments throughout the day.
+- Add restrained haptic feedback to recording and deliberate selections. Keep
+  rapid checkoff immediate and routine scrolling quiet.
 - Let users arrange their own habit order. Completed habits stay in place.
 - Design for muscle memory; the aspiration is opening the app and recording five
   checkbox habits in about three seconds.
@@ -62,7 +64,8 @@ and uncertainty about whether something was saved.
    that boundary; entries keep their dates.
 6. Change ordering only through deliberate editing, not automatic sorting.
 7. Save locally and work offline; do not require an account for everyday tracking.
-8. Use restrained feedback. Explore optional haptics, with no blocking celebration.
+8. Use restrained haptics for accepted actions, with no blocking celebration.
+   Pulse choices are a phone experiment; visual state must remain sufficient.
 9. Preserve readable text, VoiceOver support, and usable touch targets. Scroll
    when necessary instead of squeezing all 20 habits into uncomfortably small rows.
 
@@ -166,7 +169,7 @@ and incremental history are desired scope, not excluded candidates.
 3. Consider a date picker for jumping to a distant date without repeated swipes.
 4. Discuss an explicit “skipped/not applicable” value before calculating streaks,
    so intentionally skipping a habit need not look like a missed day.
-5. Decide whether optional completion haptics help rapid checkoff on the phone.
+5. Refine the implemented haptic strength through rapid checkoff trials on the phone.
 
 Items 3–5 are suggestions, not approved product requirements. Keep further ideas
 connected to reducing cognitive friction rather than adding screen clutter.
