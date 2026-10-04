@@ -127,7 +127,7 @@ export const GridDateColumn = memo(function GridDateColumn({
   onPress: CellProps['onPress'];
 }) {
   return (
-    <View style={{ width, height }}>
+    <View style={{ width, height, backgroundColor: '#000000' }}>
       {habits.map((habit) => (
         <GridCell
           key={habit.id}
@@ -164,6 +164,17 @@ export const GridDateHeading = memo(function GridDateHeading({
     selection.getSnapshot,
   );
   recordPerformance('grid.heading.render');
+  return <GridDateLabel day={day} width={width} recorded={recorded} />;
+});
+export const GridDateLabel = memo(function GridDateLabel({
+  day,
+  width,
+  recorded,
+}: {
+  day: GridDay;
+  width: number;
+  recorded: boolean;
+}) {
   const tone = dateTones[recorded ? 0 : dayTone(day.daysAgo)];
   return (
     <View
@@ -189,6 +200,7 @@ export const GridDateHeading = memo(function GridDateHeading({
 });
 const styles = StyleSheet.create({
   dayHeader: {
+    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,

@@ -28,6 +28,8 @@ import type { RowMotion } from './ReorderRow';
 import { useHabitReorder } from './useHabitReorder';
 import { createGridPalette } from './gridAppearance';
 import { GridDateColumn, GridDateHeading } from './GridCells';
+import { GridDateBackdrop, GridLoadingBackdrop } from './GridLoadingBackdrop';
+import { gridRenderBudget } from './gridLoading';
 import type { ChangeStore } from './storage/store';
 import { recordPerformance } from './performance';
 import { gridLayout } from './gridLayout';
@@ -240,6 +242,7 @@ export const HabitGrid = memo(function HabitGrid({
     continueReveal,
     scrollToToday,
     pull,
+    offset,
     headerScroll,
     bodyScroll,
   } = useGridScroll({
@@ -313,6 +316,7 @@ export const HabitGrid = memo(function HabitGrid({
     );
   }
 
+  const renderBudget = gridRenderBudget(visibleDays);
   const shared = {
     data: days,
     horizontal: true,
@@ -327,8 +331,9 @@ export const HabitGrid = memo(function HabitGrid({
     decelerationRate: 'fast' as const,
     scrollEventThrottle: 16,
     initialNumToRender: Math.max(6, visibleDays + 2),
-    maxToRenderPerBatch: Math.max(12, visibleDays + 2),
-    windowSize: 5,
+    maxToRenderPerBatch: renderBudget.bodyBatch,
+    updateCellsBatchingPeriod: renderBudget.batchPeriod,
+    windowSize: renderBudget.bodyWindow,
     removeClippedSubviews: false,
     keyExtractor: (day: GridDay) => day.key,
     maintainVisibleContentPosition: { minIndexForVisible: 0 },
@@ -476,18 +481,29 @@ export const HabitGrid = memo(function HabitGrid({
                 <Text style={styles.dateYear}>{year}</Text>
               </DateButtonComponent>
             </View>
-            <DateColumns
-              {...shared}
-              ref={header}
-              key={`header-${columnWidth}-${rangeReset}`}
-              initialScrollIndex={rightmostDay + futureCount}
-              style={{ width: dateWidth, flexGrow: 0 }}
-              onScroll={headerScroll}
-              onContentSizeChange={(contentWidth) =>
-                revealWhenReady('header', contentWidth)
-              }
-              renderItem={renderHeading}
-            />
+            <View
+              style={{ width: dateWidth, minHeight: 56, overflow: 'hidden' }}
+            >
+              <GridDateBackdrop
+                days={days}
+                width={columnWidth}
+                offset={offset}
+              />
+              <DateColumns
+                {...shared}
+                maxToRenderPerBatch={renderBudget.headerBatch}
+                windowSize={renderBudget.headerWindow}
+                ref={header}
+                key={`header-${columnWidth}-${rangeReset}`}
+                initialScrollIndex={rightmostDay + futureCount}
+                style={{ width: dateWidth, flex: 1 }}
+                onScroll={headerScroll}
+                onContentSizeChange={(contentWidth) =>
+                  revealWhenReady('header', contentWidth)
+                }
+                renderItem={renderHeading}
+              />
+            </View>
           </View>
           <View
             accessibilityElementsHidden={!!habitMenu}
@@ -558,18 +574,43 @@ export const HabitGrid = memo(function HabitGrid({
                     />
                   ))}
                 </View>
-                <DateColumns
-                  {...shared}
-                  ref={body}
-                  key={`body-${columnWidth}-${rangeReset}`}
-                  initialScrollIndex={rightmostDay + futureCount}
-                  style={{ width: dateWidth, height: gridHeight, flexGrow: 0 }}
-                  onScroll={bodyScroll}
-                  onContentSizeChange={(contentWidth) =>
-                    revealWhenReady('body', contentWidth)
-                  }
-                  renderItem={renderColumn}
-                />
+                <View
+                  style={{
+                    width: dateWidth,
+                    height: gridHeight,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <GridLoadingBackdrop
+                    habits={habits}
+                    motions={rowMotion}
+                    heights={rowHeights}
+                    baseHeight={baseRowHeight}
+                    columnWidth={columnWidth}
+                    viewportWidth={dateWidth}
+                    maximumOffset={Math.max(
+                      0,
+                      days.length * columnWidth - dateWidth,
+                    )}
+                    offset={offset}
+                  />
+                  <DateColumns
+                    {...shared}
+                    ref={body}
+                    key={`body-${columnWidth}-${rangeReset}`}
+                    initialScrollIndex={rightmostDay + futureCount}
+                    style={{
+                      width: dateWidth,
+                      height: gridHeight,
+                      flexGrow: 0,
+                    }}
+                    onScroll={bodyScroll}
+                    onContentSizeChange={(contentWidth) =>
+                      revealWhenReady('body', contentWidth)
+                    }
+                    renderItem={renderColumn}
+                  />
+                </View>
               </View>
               <Animated.View layout={rowTransition}>
                 <Pressable

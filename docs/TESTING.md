@@ -13,6 +13,18 @@ result or browser test alone is not proof that an iPhone habit was saved.
 
 ## First iPhone smoke test
 
+Fast-fling fallback checks (4 October 2026; phone acceptance pending):
+
+- Rapidly fling across months using both the body and headings. Any gap should
+  retain correct dates and aligned muted dashes until actual entries render.
+- Reverse direction, tap Today from past/future, rotate and use larger text.
+  There must be no date mismatch, doubled labels, or placeholder showing through
+  a loaded checkbox/number. Header dragging must remain available.
+- Edge rubber-banding must not show dashes for unopened future/out-of-range days.
+  Future reveal must still continue smoothly with the existing border streak.
+- Loading dashes must not accept entry taps or appear as controls in VoiceOver.
+  Once loaded, rapid toggles/numeric entry and row reordering must still work.
+
 Performance pass checks (4 October 2026; device acceptance pending):
 
 - In sample mode, rapidly check/uncheck five habits; then edit numeric zero/clear
@@ -100,6 +112,14 @@ habit counts, one-handed use, and accessibility settings; document limitations.
 - History preserves effective habit dates separately from edit timestamps.
 
 ## Evidence log
+
+4 October 2026 fast-fling loading structure:
+
+- 113 tests pass, including fractional/inverted placeholder alignment, portrait
+  and landscape geometry, future/past edge masks, and viewport-sized batch budgets.
+- TypeScript, ESLint, formatting and the iOS JavaScript/Hermes export pass.
+- Native fallback visibility, memory at long ranges, and perceived fill speed
+  remain unverified until the physical-iPhone check.
 
 4 October 2026 grid performance pass:
 

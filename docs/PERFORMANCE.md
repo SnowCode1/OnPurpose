@@ -38,7 +38,31 @@ updates. Statistics calculations themselves still run when their data changes.
 - Native UI-thread header/body synchronization, Today animation, future reveal,
   reorder transforms, cancellation, and completed-drop persistence are preserved.
   No per-frame synchronization was moved to JavaScript, and no list dependency was
-  introduced. Window size/batching were left unchanged pending device evidence.
+  introduced. Subsequent fast-fling feedback prompted the loading/batch changes below.
+
+## Fast-fling loading structure
+
+The founder confirmed checkbox improvements but still saw black gaps when native
+scrolling outran React rendering. GridLoadingBackdrop now paints muted dashes per
+row beneath the body list, using a viewport-width-plus-two-columns SVG pattern.
+It has no entry subscriptions or press handlers. Its translation follows native
+offset modulo column width on the UI thread; reorder geometry remains shared.
+Two transform-only masks hide dashes beyond the real content on edge pulls.
+
+A separate read-only date strip pre-renders labels for the loaded date range.
+It translates with the same native offset and preserves date-key identity while
+extending history. This costs lightweight text for the loaded range, not all
+habit/day controls. Check native memory/render cost when browsing very long ranges.
+Fallback content is hidden from VoiceOver, and real columns/headings paint opaque
+backgrounds over it. A missing control is never tappable or presented as an unchecked
+saved value. Fallback movement requires no JavaScript scroll synchronisation.
+
+The installed `VirtualizedList`/`computeWindowedRenderLimits` already prioritises
+the visible area then nearby overscan with direction bias. Keep that ordering,
+reduce body batches from at least 12 dates to visibleDays + 1, and reduce ordinary
+batch delay from 50 to 16 ms. Headings use an 11-viewport window and larger batches;
+the body retains its 5-viewport window. Exact sizing remains a device experiment.
+React Native documents this [batch-size/frequency tradeoff](https://reactnative.dev/docs/optimizing-flatlist-configuration).
 
 ## Development timing
 

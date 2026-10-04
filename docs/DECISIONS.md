@@ -1,5 +1,26 @@
 # Decision log
 
+## 030 — Visible loading structure during fast date scrolling
+
+Date: 4 October 2026. Status: founder confirmed quicker checkbox feedback but
+reported black gaps on fast flings; requested loading cells/dates and nearby-first
+rendering. Implemented, native appearance/scroll review pending.
+
+Place read-only date labels and a bounded native SVG dash pattern underneath the
+virtualized lists. Both follow the actual shared UI-thread scroll offset, so list
+spacers expose a calendar/loading structure rather than empty black. Dashes are
+muted and non-interactive for both habit types; they do not assert an unchecked
+state. Loaded columns/headings have opaque backgrounds and cover the fallback.
+Hide fallback content from accessibility and mask body dashes beyond real content
+while rubber-banding. Keep future reveal and Today behaviour.
+
+The installed VirtualizedList already starts with the visible area and expands
+towards adjacent columns, biased by scroll direction. Retain that scheduler; use
+smaller body batches (visible days + one) at 16 ms instead of the default 50 ms,
+with larger batches/window for inexpensive headings. These sizes are tuning choices
+for phone review, not measured guarantees. Eager fallback dates add lightweight
+text proportional to the loaded range, not a second set of habit controls.
+
 ## 029 — Reduce grid update work before changing persistence
 
 Date: 4 October 2026. Status: founder authorised the proposed performance pass;

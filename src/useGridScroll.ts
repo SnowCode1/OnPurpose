@@ -130,7 +130,8 @@ export function useGridScroll({
       thresholdTicked.set(false);
     },
     onScroll: (event) => {
-      if (driver.value !== 3) offset.set(event.contentOffset.x);
+      if (driver.value === 0 || driver.value === 2)
+        offset.set(event.contentOffset.x);
       if (driver.value !== 2) return;
       scrollTo(header, event.contentOffset.x, 0, false);
       pull.set(Math.max(0, -event.contentOffset.x));
@@ -210,6 +211,7 @@ export function useGridScroll({
     continueReveal,
     scrollToToday,
     pull,
+    offset,
     headerScroll,
     bodyScroll,
   };

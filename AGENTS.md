@@ -30,6 +30,9 @@ The requested preset icon update uses normal undoable edits in
   Keep grid callbacks/definitions stable across save acknowledgements. Cache colour
   levels in `gridAppearance.ts` and retain date identities when extending history.
   See `docs/PERFORMANCE.md`; never infer iPhone frame rates from Node benchmarks.
+- `GridLoadingBackdrop.tsx` paints non-interactive fallback dates/dashes beneath
+  virtualized columns. Keep it on the UI-thread offset, outside the virtualized
+  render window, and hidden from accessibility. Real columns must cover it fully.
 - Keep the compact top bar visible, with Today centred and History/Settings at right.
   Month/year stays beside the day headings; future pull streak grows left from the
   fixed right edge of the existing divider beneath the headings. Do not add a border.
