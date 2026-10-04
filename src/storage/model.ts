@@ -1,3 +1,4 @@
+import { isHabitIcon } from '../habitIcons.ts';
 import { isNumericHabit, type Habit } from '../habits.ts';
 
 export type StoredState = {
@@ -25,7 +26,7 @@ export type Change =
   | { kind: 'haptics'; before: boolean; after: boolean };
 export type HabitChange = Exclude<Change, { kind: 'haptics' }>;
 export type EventMeta = {
-  version: 1 | 2 | 3;
+  version: 1 | 2 | 3 | 4;
   id: string;
   sequence: number;
   recordedAt: string;
@@ -36,7 +37,7 @@ export type LegacyChangeEvent = EventMeta & { version: 1 } & (
     | { type: 'change'; change: Change }
     | { type: 'undo' | 'redo'; targetId: string; change: Change }
   );
-export type CurrentChangeEvent = EventMeta & { version: 2 | 3 } & (
+export type CurrentChangeEvent = EventMeta & { version: 2 | 3 | 4 } & (
     | { type: 'change'; groupId: string; change: HabitChange }
     | { type: 'undo' | 'redo'; targetId: string; change: HabitChange }
     | { type: 'preference'; change: Extract<Change, { kind: 'haptics' }> }
@@ -62,6 +63,7 @@ export type Replay = {
   legacyRedo: LegacyChangeEvent[];
   hasV2: boolean;
   hasV3: boolean;
+  hasV4: boolean;
 };
 export const emptyReplay = (): Replay => ({
   state: { habits: [], values: {}, hapticsEnabled: true },
@@ -72,6 +74,7 @@ export const emptyReplay = (): Replay => ({
   legacyRedo: [],
   hasV2: false,
   hasV3: false,
+  hasV4: false,
 });
 export const GROUP_INACTIVITY_MS = 2 * 60 * 1000;
 
@@ -134,16 +137,18 @@ function sameValue(left: unknown, right: unknown): boolean {
 }
 function validateHabit(
   value: unknown,
-  extended: boolean,
+  version: number,
 ): asserts value is Habit {
   object(value);
   keys(value, [
     'id',
     'name',
     'color',
-    ...['unit', ...(extended ? ['type', 'archived'] : [])].filter((key) =>
-      Object.hasOwn(value, key),
-    ),
+    ...[
+      'unit',
+      ...(version >= 3 ? ['type', 'archived'] : []),
+      ...(version >= 4 ? ['icon'] : []),
+    ].filter((key) => Object.hasOwn(value, key)),
   ]);
   id(value.id);
   colour(value.color);
@@ -165,6 +170,8 @@ function validateHabit(
       value.type === 'checkbox' || value.type === 'number',
       'Invalid habit type.',
     );
+  if (Object.hasOwn(value, 'icon'))
+    insist(isHabitIcon(value.icon), 'Invalid habit icon.');
   if (Object.hasOwn(value, 'archived'))
     insist(typeof value.archived === 'boolean', 'Invalid archived state.');
   insist(
@@ -172,7 +179,10 @@ function validateHabit(
     'Checkbox habits cannot have a unit.',
   );
 }
-export function validateChange(value: unknown): asserts value is Change {
+export function validateChange(
+  value: unknown,
+  version = 4,
+): asserts value is Change {
   object(value);
   if (value.kind === 'entry') {
     keys(value, ['kind', 'habitId', 'date', 'before', 'after']);
@@ -198,7 +208,7 @@ export function validateChange(value: unknown): asserts value is Change {
     );
     for (const habit of [value.before, value.after])
       if (habit !== null) {
-        validateHabit(habit, true);
+        validateHabit(habit, version);
         insist(habit.id === value.habitId, 'Habit identity cannot change.');
       }
   } else if (value.kind === 'order') {
@@ -235,7 +245,10 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
     'type',
   ];
   insist(
-    value.version === 1 || value.version === 2 || value.version === 3,
+    value.version === 1 ||
+      value.version === 2 ||
+      value.version === 3 ||
+      value.version === 4,
     'Unsupported event version.',
   );
   id(value.id);
@@ -264,13 +277,13 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
     keys(value, [...common, 'habits']);
     insist(
       Array.isArray(value.habits) &&
-        (value.habits.length > 0 || value.version === 3) &&
+        (value.habits.length > 0 || value.version >= 3) &&
         value.habits.length <= 1000,
       'Invalid initial habits.',
     );
     const ids = new Set<string>();
     for (const habit of value.habits) {
-      validateHabit(habit, value.version === 3);
+      validateHabit(habit, value.version);
       insist(!ids.has(habit.id), 'Duplicate habit identifier.');
       ids.add(habit.id);
     }
@@ -287,9 +300,9 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
       ...(value.type === 'undo' || value.type === 'redo' ? ['targetId'] : []),
       ...(grouped ? ['groupId'] : []),
     ]);
-    validateChange(value.change);
+    validateChange(value.change, value.version);
     insist(
-      value.version === 3 ||
+      value.version >= 3 ||
         (value.change.kind !== 'habit' && value.change.kind !== 'order'),
       'Habit management requires version 3.',
     );
@@ -408,7 +421,8 @@ function reduceEvent(
         hapticsEnabled: true,
       },
       hasV2: event.version !== 1,
-      hasV3: event.version === 3,
+      hasV3: event.version >= 3,
+      hasV4: event.version === 4,
     };
   }
   insist(
@@ -420,8 +434,12 @@ function reduceEvent(
     'Legacy events cannot follow version-2 events.',
   );
   insist(
-    !previous.hasV3 || event.version === 3,
+    !previous.hasV3 || event.version >= 3,
     'Older events cannot follow version-3 events.',
+  );
+  insist(
+    !previous.hasV4 || event.version === 4,
+    'Older events cannot follow version-4 events.',
   );
   const undo = mutable ? previous.undo : [...previous.undo];
   const redo = mutable ? previous.redo : [...previous.redo];
@@ -556,7 +574,8 @@ function reduceEvent(
     legacyUndo,
     legacyRedo,
     hasV2: previous.hasV2 || event.version !== 1,
-    hasV3: previous.hasV3 || event.version === 3,
+    hasV3: previous.hasV3 || event.version >= 3,
+    hasV4: previous.hasV4 || event.version === 4,
   };
 }
 export function applyChange(state: StoredState, change: Change): StoredState {

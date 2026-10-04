@@ -553,3 +553,29 @@ Phone checks:
 5. Try the statistics screen and archive list in landscape, larger text, and
    VoiceOver. Check chart increment/decrement actions and calendar announcements.
    Holding Statistics, the habit title, or Archived habits sends a dev preview.
+
+## Optional icons and actual-row dragging — 4 October 2026
+
+Implemented after founder feedback: optional None/Phosphor/Emoji selection, saved
+icons in grid/statistics/archive, version-4 events/backups, and dragging the actual
+row with a faster spring. The earlier translation was confirmed smooth but too
+slow; its visual swap was rejected. This revision awaits device acceptance.
+
+Automated: 89 tests plus TypeScript, lint, formatting, and an iOS production export.
+New coverage checks single emoji sequences, invalid inputs, stable pack IDs with
+bundled glyphs, icon-only History descriptions, SQLite reload/removal, Undo/Redo,
+archive restore, old-format rejection of icons, version downgrade protection,
+and a new v4 backup fixture preserving the unchanged v3 prefix.
+
+Phone checks:
+
+1. Edit a habit → Icon → search Icons or enter Emoji. Inner Done updates the draft;
+   outer Done saves. Close should discard the current draft. None removes the icon.
+   Change colour and confirm pack icons follow it while emoji keep their colours.
+2. Reload, Undo/Redo the icon edit, archive/restore, and export/restore via Files.
+   Confirm the same icon and entries return. Try numeric habits with long units.
+3. Hold/wait/drag and release/re-hold/drag from an open menu. The actual name,
+   optional icon, units, and date cells should move together and retain their
+   appearance when dropped. Neighbours should settle quicker than the prior build.
+4. Recheck variable-height names, both viewport edges, large text, landscape,
+   multi-touch cancellation, backgrounding, Reduce Motion, and VoiceOver move actions.

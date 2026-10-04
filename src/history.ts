@@ -70,7 +70,15 @@ export function historyPresentation(event: HistoryAction, state: StoredState) {
           ? change.after.archived
             ? 'Archived'
             : 'Restored'
-          : 'Habit edited';
+          : change.before.icon !== change.after.icon &&
+              change.before.name === change.after.name &&
+              change.before.color === change.after.color &&
+              change.before.unit === change.after.unit &&
+              isNumericHabit(change.before) === isNumericHabit(change.after)
+            ? change.after.icon
+              ? 'Icon changed'
+              : 'Icon removed'
+            : 'Habit edited';
     return {
       title: habit.name,
       summary,

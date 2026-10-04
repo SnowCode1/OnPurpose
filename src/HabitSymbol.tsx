@@ -1,0 +1,51 @@
+import { Text, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+import type { HabitIcon } from './habitIcons';
+import { phosphorPaths } from './phosphorPaths';
+
+// Decorative beside the habit name, whose accessible label remains authoritative.
+export function HabitSymbol({
+  icon,
+  colour,
+  size = 20,
+}: {
+  icon?: HabitIcon;
+  colour: string;
+  size?: number;
+}) {
+  if (!icon) return null;
+  return (
+    <View
+      accessible={false}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={{
+        width: size,
+        height: size,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {icon.startsWith('emoji:') ? (
+        <Text
+          allowFontScaling={false}
+          style={{ fontSize: size * 0.9, lineHeight: size * 1.15 }}
+        >
+          {icon.slice(6)}
+        </Text>
+      ) : (
+        <Svg
+          width={size}
+          height={size}
+          viewBox="0 0 256 256"
+          fill={colour}
+          accessible={false}
+        >
+          {phosphorPaths[icon.slice(9)]?.map((d, index) => (
+            <Path key={index} d={d} />
+          ))}
+        </Svg>
+      )}
+    </View>
+  );
+}

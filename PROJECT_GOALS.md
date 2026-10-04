@@ -27,6 +27,8 @@ and uncertainty about whether something was saved.
   including the habit name, checkboxes, and numeric entries. Provide more presets
   and a visual custom picker with optional hex input; use familiar user-facing
   labels rather than colour-space jargon.
+- Optionally give a habit an emoji or a pack icon. Pack icons use the habit colour;
+  icons are not required and existing habits stay without one until selected.
 - Mute unused future dates and entries while keeping recorded values prominent.
   Preserve habit hue and colourfulness; reduce only OKLCH lightness with a floor
   so empty cells remain visible. The history fade starts at day 5 and reaches its
@@ -100,9 +102,9 @@ separate history-browsing feature. A correction made today to Tuesday's value
 has two different dates: the date being recorded and the time of the edit.
 Comments belong in this history design too. See [STORAGE.md](docs/STORAGE.md).
 
-The architectural direction is confirmed. Version-3 events, grouped compensating
+The architectural direction is confirmed. Version-4 events, grouped compensating
 undo/redo, and JSON change-based backup/replay are implemented, retaining support
-for existing version-1/2 records and backups. The visible History is an active-action
+for existing version-1/2/3 records and backups. The visible History is an active-action
 projection; the exported log retains every accepted edit. Comments, permanent erasure,
 and richer historical browsing still need design. See docs/STORAGE.md.
 
@@ -171,7 +173,7 @@ and incremental history are desired scope, not excluded candidates.
 | Midnight cutoff, late-night logging, backdating, and travel?           | Local midnight implemented; later cutoff/travel policy pending     |
 | Comments on a habit, a day, a particular entry, or multiple kinds?     | Comments desired; attachment semantics open                        |
 | Which app changes enter the history; how do deletion and undo work?    | Active habit actions; preferences excluded; deletion/erasure open  |
-| Export/import format, backup location, and cross-device sync?          | Version-3 JSON backup; v1/v2 import retained; sync deferred        |
+| Export/import format, backup location, and cross-device sync?          | Version-4 JSON backup; v1/v2/v3 import retained; sync deferred     |
 | Any reminders or widgets required for version one?                     | Open                                                               |
 | Free, paid, donations, or another model?                               | Open                                                               |
 | Licence and copyright holder?                                          | Open; choose before public release                                 |

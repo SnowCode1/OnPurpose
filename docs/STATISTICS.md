@@ -63,7 +63,7 @@ Today has an outline. Each day has a spoken date and value.
 
 `src/statistics.ts` is pure derived logic. `src/HabitStatsScreen.tsx` owns the screen,
 charts, and month/range selection. Nothing is stored separately; the existing
-version-1/2/3 logs and projection remain authoritative.
+version-1/2/3/4 logs and projection remain authoritative.
 
 `node --test scripts/statistics.test.mjs` covers denominators, unfinished today,
 streaks, zero versus blank, future exclusion, archive/restore including Undo/Redo,

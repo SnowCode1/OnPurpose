@@ -205,8 +205,8 @@ test('clock rollback cannot create overlapping archive intervals', () => {
   const result = stats({}, events, '2026-10-08', 'all');
   assert.equal(result.eligible, 7);
 });
-test('statistics can derive from unchanged v1/v2/v3 backup fixtures', () => {
-  for (const version of [1, 2, 3]) {
+test('statistics can derive from unchanged v1/v2/v3/v4 backup fixtures', () => {
+  for (const version of [1, 2, 3, 4]) {
     const archive = JSON.parse(
       readFileSync(
         new URL(`../docs/examples/storage-v${version}.json`, import.meta.url),

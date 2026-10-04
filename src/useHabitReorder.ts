@@ -40,8 +40,9 @@ export function useHabitReorder(
   const [mode, setMode] = useState(false);
   const [draft, setDraft] = useState<string[] | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
-  const ghostY = useSharedValue(0);
-  const ghostHeight = useSharedValue(fallback);
+  const dragY = useSharedValue(0);
+  const bodyTop = useSharedValue(0);
+  const scrollOffset = useSharedValue(0);
   const drag = useRef<{
     id: string;
     ids: string[];
@@ -68,9 +69,11 @@ export function useHabitReorder(
         rootY: y,
         rootHeight: height,
       });
+      bodyTop.set(geometry.current.bodyY - y);
     });
     viewport.current?.measureInWindow((_, y, __, height) => {
       Object.assign(geometry.current, { bodyY: y, bodyHeight: height });
+      bodyTop.set(y - geometry.current.rootY);
     });
   }
   function stop() {
@@ -79,7 +82,7 @@ export function useHabitReorder(
   }
   function cancel() {
     stop();
-    cancelAnimation(ghostY);
+    cancelAnimation(dragY);
     settling.current = null;
     drag.current = null;
     setDragId(null);
@@ -93,7 +96,7 @@ export function useHabitReorder(
     return () => {
       subscription.remove();
       stop();
-      cancelAnimation(ghostY);
+      cancelAnimation(dragY);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const identity = habits.map((habit) => habit.id).join('|');
@@ -109,7 +112,7 @@ export function useHabitReorder(
     if (!d) return;
     const g = geometry.current;
     const delta = d.pageY - d.startY;
-    ghostY.set(
+    dragY.set(
       Math.max(
         g.bodyY - g.rootY,
         Math.min(
@@ -154,6 +157,7 @@ export function useHabitReorder(
     );
     if (next !== g.offset) {
       g.offset = next;
+      scrollOffset.set(next);
       scroll.current?.scrollTo({ y: next, animated: false });
       update();
     }
@@ -184,7 +188,6 @@ export function useHabitReorder(
         height,
         target: source,
       };
-      ghostHeight.set(height);
       setDragId(id);
       setMenu(null);
       setDraft(ids);
@@ -224,7 +227,7 @@ export function useHabitReorder(
           sum + (latest.current.heights[id] ?? latest.current.fallback),
         0,
       );
-    ghostY.set(
+    dragY.set(
       withSpring(
         geometry.current.bodyY -
           geometry.current.rootY +
@@ -244,6 +247,7 @@ export function useHabitReorder(
     viewport,
     updateOffset: (offset: number) => {
       geometry.current.offset = offset;
+      scrollOffset.set(offset);
     },
     measure,
     menu,
@@ -252,8 +256,9 @@ export function useHabitReorder(
     setMode,
     draft,
     dragId,
-    ghostY,
-    ghostHeight,
+    dragY,
+    bodyTop,
+    scrollOffset,
     cancel,
     beginOrMove,
     drop,

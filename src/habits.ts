@@ -1,3 +1,4 @@
+import type { HabitIcon } from './habitIcons.ts';
 export type Habit = {
   id: string;
   name: string;
@@ -5,6 +6,7 @@ export type Habit = {
   unit?: string;
   type?: 'checkbox' | 'number';
   archived?: boolean;
+  icon?: HabitIcon;
 };
 export const isNumericHabit = (habit: Habit) =>
   habit.type ? habit.type === 'number' : !!habit.unit;

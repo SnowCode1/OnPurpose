@@ -8,8 +8,8 @@ import {
 } from 'react-native';
 import type { Habit } from './habits';
 import { Icon } from './Icon';
-import Animated from 'react-native-reanimated';
-import { rowTransition } from './motion';
+import { HabitSymbol } from './HabitSymbol';
+import { ReorderRow, type RowMotion } from './ReorderRow';
 
 export type HabitAction =
   'colour' | 'edit' | 'reorder' | 'archive' | 'moveUp' | 'moveDown';
@@ -23,7 +23,7 @@ export function HabitName({
   habit,
   height,
   selected,
-  dragging,
+  motion,
   reorder,
   disabled,
   onPress,
@@ -37,7 +37,7 @@ export function HabitName({
   habit: Habit;
   height: number;
   selected: boolean;
-  dragging: boolean;
+  motion: RowMotion;
   reorder: boolean;
   disabled: boolean;
   onPress: () => void;
@@ -100,8 +100,8 @@ export function HabitName({
     }),
   );
   return (
-    <Animated.View
-      layout={rowTransition}
+    <ReorderRow
+      motion={motion}
       ref={view}
       collapsable={false}
       {...pan.panHandlers}
@@ -153,18 +153,20 @@ export function HabitName({
           paddingRight: 10,
           borderBottomWidth: 0.5,
           borderBottomColor: `${habit.color}20`,
-          backgroundColor: selected
-            ? '#171717'
-            : pressed
-              ? `${habit.color}15`
-              : '#000000',
-          opacity: dragging ? 0.18 : 1,
+          backgroundColor: motion.active
+            ? '#000000'
+            : selected
+              ? '#171717'
+              : pressed
+                ? `${habit.color}15`
+                : '#000000',
           flexDirection: 'row',
           alignItems: 'center',
           gap: 8,
         })}
       >
         {reorder && <Icon name="reorder" size={17} color={habit.color} />}
+        <HabitSymbol icon={habit.icon} colour={habit.color} />
         <View style={{ flex: 1, gap: 2 }}>
           <Text
             style={{
@@ -190,6 +192,6 @@ export function HabitName({
           )}
         </View>
       </Pressable>
-    </Animated.View>
+    </ReorderRow>
   );
 }

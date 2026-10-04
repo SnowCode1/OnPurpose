@@ -23,6 +23,7 @@ import {
   type StatsRange,
 } from './statistics';
 import { Icon } from './Icon';
+import { HabitSymbol } from './HabitSymbol';
 import { checkmarkColor } from './colors';
 
 const format = (value: number | null) =>
@@ -250,12 +251,15 @@ export function HabitStatsScreen({
         showsVerticalScrollIndicator={false}
       >
         <View style={{ gap: 8 }}>
-          <Heading
-            accessibilityRole="header"
-            style={[styles.name, { color: habit.color }]}
-          >
-            {habit.name}
-          </Heading>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <HabitSymbol icon={habit.icon} colour={habit.color} size={30} />
+            <Heading
+              accessibilityRole="header"
+              style={[styles.name, { color: habit.color, flex: 1 }]}
+            >
+              {habit.name}
+            </Heading>
+          </View>
           <Text style={styles.caption}>
             {stats.numeric
               ? `Daily total${unit ? ` · ${unit}` : ''}`

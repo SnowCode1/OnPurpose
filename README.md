@@ -8,6 +8,8 @@ Expo/React Native foundation and a 12-row grid demo. Adaptive columns work in
 portrait and landscape. Scroll into the past or deliberately pull beyond today
 to reveal future dates; checkbox and daily-total entries work in both directions.
 Habit details offer 24 colour presets, a custom visual picker, and hex input.
+Optional emoji or searchable Phosphor icons help identify habits; pack icons use
+the row colour.
 Entries, colours, and the haptic setting now persist locally in SQLite. History
 shows active habit actions with grouped undo/redo; rapid corrections to the same
 entry become one action, and global settings stay outside History/Undo. Settings

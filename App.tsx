@@ -227,7 +227,8 @@ function PersistentApp({ store }: { store: ChangeStore }) {
       before.color === after.color &&
       before.unit === after.unit &&
       isNumericHabit(before) === isNumericHabit(after) &&
-      before.archived === after.archived
+      before.archived === after.archived &&
+      before.icon === after.icon
     )
       return true;
     const accepted = store.change({

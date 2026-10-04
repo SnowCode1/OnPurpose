@@ -1,5 +1,31 @@
 # Decision log
 
+## 022 — Optional habit icons and unchanged row appearance during drag
+
+Date: 4 October 2026. Status: founder requested; implemented, device acceptance
+pending. The previous context-menu motion and archive restoration were accepted.
+
+The founder wants optional emoji or pack icons that follow the habit colour. Add
+None/Icons/Emoji in the editor, with the existing nested draft, Done, and Close
+behaviour. Bundle a searchable selection of 56 regular Phosphor icons and provide
+emoji presets plus keyboard/paste input. Catalogue size and presets are assistant
+implementation choices; Phosphor is the founder's suggested example. Preserve
+name-only rows by default and show chosen icons in the grid, statistics, and archive.
+
+Use a small vendored SVG subset from Phosphor core 2.1.1 with its MIT notice, rendered
+through existing react-native-svg. A pinned emoji-regex 11.0.0 dependency validates
+single Unicode emoji sequences. No remote icon fetch or native dependency.
+Version-4 definitions add an optional namespaced icon string. Keep versions 1–3
+readable and unchanged; no SQL schema change or reseeding. Icons participate in
+habit Undo/Redo, History, and backups. See [HABIT_ICONS.md](HABIT_ICONS.md).
+
+The founder described the drag translation as smooth but slow, and the switch
+from the floating card to the real row as abrupt. Translate the actual name and
+date-cell views instead, retaining their contents and appearance during the entire
+gesture and drop. Use a faster overdamped spring for neighbour movement and the
+final settle. Keep existing hold/menu continuation, cancellation, edge scrolling,
+and UI-thread horizontal synchronization.
+
 ## 021 — Full-screen statistics and grid-first habit management
 
 Date: 4 October 2026. Status: founder requested and authorized; implemented,

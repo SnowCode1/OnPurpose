@@ -306,7 +306,7 @@ test('current backup round-trip preserves raw edits, cancelled groups, active hi
     '2026-10-04T06:00:00.000Z',
     digest,
   );
-  assert.equal(JSON.parse(text).version, 3);
+  assert.equal(JSON.parse(text).version, 4);
   const decoded = await decodeArchive(text, digest);
   assert.deepEqual(decoded.replay, store.getSnapshot().replay);
   await store.exclusive(() => store.replace(decoded.events));
@@ -475,7 +475,7 @@ test('a v1 manifest cannot disguise v2 events and future versions stay protected
   await assert.rejects(decodeArchive(JSON.stringify(archive), digest));
   archive.version = 2;
   await assert.rejects(decodeArchive(JSON.stringify(archive), digest));
-  archive.version = 4;
+  archive.version = 5;
   await assert.rejects(decodeArchive(JSON.stringify(archive), digest));
   assert.throws(() =>
     replayEvents([
@@ -712,4 +712,146 @@ test('the documented v3 fixture preserves archived definitions, zero and reorder
   assert.equal(replay.state.values['practice:2026-10-04'], 0);
   assert.equal(replay.undo.length, 5);
   assert.equal(replay.state.hapticsEnabled, false);
+});
+
+test('v4 icon edits survive SQLite reopen, removal, archive restore, Undo/Redo and backup', async (t) => {
+  const { store, repository, metadata } = await fixture(t);
+  store.change(entry(null, 1));
+  const original = store.getSnapshot().replay.state.habits[0];
+  function edit(after) {
+    const before = store.getSnapshot().replay.state.habits[0];
+    assert.equal(
+      store.change({
+        kind: 'habit',
+        habitId: before.id,
+        index: 0,
+        before,
+        after,
+      }),
+      true,
+    );
+  }
+  const packed = { ...original, icon: 'phosphor:person-simple-walk' };
+  edit(packed);
+  edit({ ...packed, icon: 'emoji:🚶🏽‍♀️' });
+  edit(original); // None is absence, not a null/string sentinel.
+  assert.equal(store.getSnapshot().replay.undo.length, 4);
+  assert.equal(store.undo(), true);
+  assert.equal(store.getSnapshot().replay.state.habits[0].icon, 'emoji:🚶🏽‍♀️');
+  assert.equal(store.undo(), true);
+  assert.equal(store.getSnapshot().replay.state.habits[0].icon, packed.icon);
+  await store.flush();
+  const reopened = new ChangeStore(repository, metadata);
+  await reopened.load();
+  assert.equal(reopened.redo(), true);
+  assert.equal(reopened.getSnapshot().replay.state.habits[0].icon, 'emoji:🚶🏽‍♀️');
+  const before = reopened.getSnapshot().replay.state.habits[0];
+  const archived = { ...before, archived: true };
+  reopened.change({
+    kind: 'habit',
+    habitId: before.id,
+    index: 0,
+    before,
+    after: archived,
+  });
+  reopened.change({
+    kind: 'habit',
+    habitId: before.id,
+    index: 0,
+    before: archived,
+    after: before,
+  });
+  await reopened.flush();
+  assert.equal(
+    reopened.getSnapshot().replay.state.values['walk:2026-10-04'],
+    1,
+  );
+  const backup = await encodeArchive(
+    reopened.getSnapshot().events,
+    '2026-10-04T06:00:00.000Z',
+    digest,
+  );
+  assert.equal(JSON.parse(backup).version, 4);
+  const decoded = await decodeArchive(backup, digest);
+  assert.deepEqual(decoded.replay, reopened.getSnapshot().replay);
+  assert.equal(decoded.events.at(-1).version, 4);
+  const disguised = JSON.parse(backup);
+  disguised.version = 3;
+  await assert.rejects(decodeArchive(JSON.stringify(disguised), digest));
+  const backToOld = {
+    ...decoded.events.at(-1),
+    id: 'downgrade',
+    sequence: decoded.events.length + 1,
+    version: 3,
+    type: 'preference',
+    change: { kind: 'haptics', before: true, after: false },
+  };
+  delete backToOld.groupId;
+  assert.throws(() => applyEvent(decoded.replay, backToOld), /version-4/);
+});
+
+test('icons are validated before persistence and cannot be smuggled into v1/v2/v3 definitions', async (t) => {
+  const { store } = await fixture(t);
+  const before = store.getSnapshot().replay.state.habits[0];
+  for (const icon of [
+    null,
+    '',
+    'emoji:',
+    'emoji:abc',
+    'emoji:💧📚',
+    'phosphor:missing',
+    'https://example.com/icon.svg',
+    { type: 'emoji', value: '💧' },
+  ]) {
+    assert.throws(() =>
+      store.change({
+        kind: 'habit',
+        habitId: before.id,
+        index: 0,
+        before,
+        after: { ...before, icon },
+      }),
+    );
+  }
+  assert.equal(store.getSnapshot().events.length, 1);
+  for (const version of [1, 2, 3]) {
+    const seed = {
+      ...initial(),
+      version,
+      habits: [{ ...before, icon: 'emoji:💧' }],
+    };
+    assert.throws(() => replayEvents([seed]));
+  }
+  const seed = {
+    ...initial(),
+    version: 4,
+    habits: [{ ...before, icon: 'phosphor:drop' }],
+  };
+  assert.equal(
+    replayEvents([seed]).replay.state.habits[0].icon,
+    'phosphor:drop',
+  );
+});
+
+test('the v4 synthetic backup preserves icons and their Undo/Redo alongside unchanged v3 events', async () => {
+  const text = readFileSync(
+    new URL('../docs/examples/storage-v4.json', import.meta.url),
+    'utf8',
+  );
+  const decoded = await decodeArchive(text, digest);
+  assert.equal(
+    decoded.replay.state.habits.find((habit) => habit.id === 'walk').icon,
+    'phosphor:person-simple-walk',
+  );
+  assert.equal(
+    decoded.replay.state.habits.find((habit) => habit.id === 'read').icon,
+    'emoji:📚',
+  );
+  const old = JSON.parse(
+    readFileSync(
+      new URL('../docs/examples/storage-v3.json', import.meta.url),
+      'utf8',
+    ),
+  ).events;
+  assert.deepEqual(decoded.events.slice(0, old.length), old);
 });

@@ -7,11 +7,11 @@ import {
 } from 'react-native-reanimated';
 // A damped settle keeps row movement continuous without an elastic bounce.
 export const reorderSpring = {
-  damping: 34,
-  stiffness: 260,
+  damping: 54,
+  stiffness: 650,
   mass: 1,
   overshootClamping: true,
-  energyThreshold: 1e-5,
+  energyThreshold: 1e-4,
   reduceMotion: ReduceMotion.System,
 };
 export const rowTransition = LinearTransition.springify()

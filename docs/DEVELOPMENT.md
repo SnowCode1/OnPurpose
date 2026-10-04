@@ -220,10 +220,10 @@ Metro with `npm run start:clear` if it cannot resolve an installed module).
 Settings → Export backup opens the share sheet; choose Save to Files. Restore
 backup validates first and asks before replacing data, retaining a local copy.
 
-New habit edits use version-3 events with grouped actions; global preferences save
-outside visible History/Undo. Exports use container version 3; existing version-1/2
+New habit edits use version-4 events with grouped actions; global preferences save
+outside visible History/Undo. Exports use container version 4; existing version-1/2/3
 backups remain importable and old log records stay unchanged. Fully reload Expo Go
-to test storage updates. Do not downgrade to an older build after writing v3 data;
+to test storage updates. Do not downgrade to an older build after writing v4 data;
 older builds cannot interpret it and will refuse to load rather than reset.
 The web preview uses separate browser localStorage, not the iPhone SQLite file.
 
@@ -237,3 +237,8 @@ restores rows with their entries and retained slots; History can undo these chan
 Tap a name for a full-screen statistics view. See [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md)
 for gestures and [STATISTICS.md](STATISTICS.md) for calculation rules. Run
 `node --test scripts/statistics.test.mjs` for focused statistics coverage.
+
+Habit icons are optional editor drafts (None, Icons, Emoji). See
+[HABIT_ICONS.md](HABIT_ICONS.md) for the bundled Phosphor catalogue, licence, and
+version-4 representation. ReorderRow moves the actual name and cell views with
+shared geometry; there is no separately styled floating row.

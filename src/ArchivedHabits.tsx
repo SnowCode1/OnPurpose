@@ -3,6 +3,7 @@ import Animated from 'react-native-reanimated';
 import type { Habit } from './habits';
 import { isNumericHabit } from './habits';
 import { Icon } from './Icon';
+import { HabitSymbol } from './HabitSymbol';
 import { appear, disappear, rowTransition } from './motion';
 export function ArchivedHabits({
   habits,
@@ -52,7 +53,11 @@ export function ArchivedHabits({
             layout={rowTransition}
             style={styles.row}
           >
-            <View style={[styles.dot, { backgroundColor: habit.color }]} />
+            {habit.icon ? (
+              <HabitSymbol icon={habit.icon} colour={habit.color} />
+            ) : (
+              <View style={[styles.dot, { backgroundColor: habit.color }]} />
+            )}
             <View style={{ flex: 1, gap: 5 }}>
               <Text style={[styles.name, { color: habit.color }]}>
                 {habit.name}

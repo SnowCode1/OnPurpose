@@ -22,6 +22,7 @@ import {
 import { type GridDay, makeGridDays, calendarDay } from './calendar';
 import { isNumericHabit, type Habit } from './habits';
 import { HabitName, type HabitAction } from './HabitName';
+import { ReorderRow, type RowMotion } from './ReorderRow';
 import { useHabitReorder } from './useHabitReorder';
 import { checkmarkColor, colorOnBlack, dimmedColor } from './colors';
 import { gridLayout } from './gridLayout';
@@ -108,8 +109,9 @@ export const HabitGrid = memo(function HabitGrid({
     setMode: setReorderMode,
     draft: reorderDraft,
     dragId,
-    ghostY,
-    ghostHeight,
+    dragY,
+    bodyTop,
+    scrollOffset,
     cancel: cancelReorder,
     beginOrMove: moveReorder,
     drop: dropReorder,
@@ -119,11 +121,6 @@ export const HabitGrid = memo(function HabitGrid({
   const habits = reorderDraft
     ? reorderDraft.map((id) => byId.get(id)!).filter(Boolean)
     : sourceHabits;
-  const floatingStyle = useAnimatedStyle(() => ({
-    top: ghostY.value,
-    height: ghostHeight.value,
-  }));
-  const floatingHabit = sourceHabits.find((habit) => habit.id === dragId);
   const menuHabit = sourceHabits.find((habit) => habit.id === habitMenu?.id);
   const [menuHeight, setMenuHeight] = useState(250);
   const days = useMemo(
@@ -162,10 +159,18 @@ export const HabitGrid = memo(function HabitGrid({
     width,
     fontScale,
   );
-  const gridHeight = habits.reduce(
-    (total, habit) => total + (rowHeights[habit.id] ?? baseRowHeight),
-    0,
-  );
+  let gridHeight = 0;
+  const rowMotion: Record<string, RowMotion> = {};
+  for (const habit of habits) {
+    rowMotion[habit.id] = {
+      active: dragId === habit.id,
+      top: gridHeight,
+      dragY,
+      bodyTop,
+      scrollOffset,
+    };
+    gridHeight += rowHeights[habit.id] ?? baseRowHeight;
+  }
   const newest = calendarDay(today, rightmostDay);
   const oldest = calendarDay(today, rightmostDay + visibleDays - 1);
   const sameMonth =
@@ -526,7 +531,7 @@ export const HabitGrid = memo(function HabitGrid({
                       habit={habit}
                       height={baseRowHeight}
                       selected={habitMenu?.id === habit.id}
-                      dragging={dragId === habit.id}
+                      motion={rowMotion[habit.id]}
                       reorder={reorderMode}
                       disabled={!editable}
                       onPress={() => {
@@ -583,7 +588,10 @@ export const HabitGrid = memo(function HabitGrid({
                         );
                         const ruleColor = dimmedColor(habit.color, amount);
                         return (
-                          <Animated.View key={habit.id} layout={rowTransition}>
+                          <ReorderRow
+                            key={habit.id}
+                            motion={rowMotion[habit.id]}
+                          >
                             <Pressable
                               testID={`cell-${habit.id}-${day.key}`}
                               disabled={!editable || !!dragId || reorderMode}
@@ -604,7 +612,6 @@ export const HabitGrid = memo(function HabitGrid({
                                 styles.cell,
                                 {
                                   height: rowHeights[habit.id] ?? baseRowHeight,
-                                  opacity: dragId === habit.id ? 0.18 : 1,
                                   borderBottomColor: `${ruleColor}20`,
                                   backgroundColor: pressed
                                     ? `${habit.color}20`
@@ -658,7 +665,7 @@ export const HabitGrid = memo(function HabitGrid({
                                 </View>
                               )}
                             </Pressable>
-                          </Animated.View>
+                          </ReorderRow>
                         );
                       })}
                     </View>
@@ -697,43 +704,6 @@ export const HabitGrid = memo(function HabitGrid({
             </ScrollView>
           </View>
         </>
-      )}
-      {dragId && floatingHabit && (
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            {
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              backgroundColor: '#191919',
-              borderWidth: 1,
-              borderColor: `${floatingHabit.color}66`,
-              borderRadius: 12,
-              paddingHorizontal: 14,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              shadowColor: '#000000',
-              shadowOpacity: 0.5,
-              shadowRadius: 10,
-              elevation: 8,
-            },
-            floatingStyle,
-          ]}
-        >
-          <Text
-            style={{
-              color: floatingHabit.color,
-              fontSize: 15,
-              fontWeight: '600',
-              flex: 1,
-            }}
-          >
-            {floatingHabit.name}
-          </Text>
-          <Icon name="reorder" color={floatingHabit.color} />
-        </Animated.View>
       )}
       {habitMenu && menuHabit && (
         <Animated.View

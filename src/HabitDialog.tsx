@@ -14,6 +14,9 @@ import {
 import { ColourPicker } from './ColourPicker';
 import { isNumericHabit, type Habit } from './habits';
 import { Icon } from './Icon';
+import { HabitIconPicker } from './HabitIconPicker';
+import { HabitSymbol } from './HabitSymbol';
+import { habitIconLabel, type HabitIcon } from './habitIcons';
 
 export type HabitDialogMode = 'colour' | 'edit' | 'create';
 export function HabitDialog({
@@ -39,15 +42,21 @@ export function HabitDialog({
   const [colour, setColour] = useState(habit.color),
     [picker, setPicker] = useState(false),
     [pickerDraft, setPickerDraft] = useState(habit.color);
+  const [icon, setIcon] = useState(habit.icon);
+  const [iconPicker, setIconPicker] = useState(false);
+  const [iconDraft, setIconDraft] = useState<HabitIcon | undefined | null>(
+    habit.icon,
+  );
   const valid =
     !!name.trim() && name.trim().length <= 200 && unit.trim().length <= 80;
   const editing = mode === 'edit' || mode === 'create';
   function save() {
-    const { unit: _unit, ...base } = habit;
+    const { unit: _unit, icon: _icon, ...base } = habit;
     const after: Habit = {
       ...base,
       name: name.trim(),
       color: colour,
+      ...(icon ? { icon } : {}),
       ...(numeric && unit.trim() ? { unit: unit.trim() } : {}),
       type: numeric ? 'number' : 'checkbox',
     };
@@ -79,19 +88,22 @@ export function HabitDialog({
         <View style={styles.dialog} accessibilityViewIsModal>
           <View style={styles.header}>
             <Text style={styles.eyebrow}>
-              {picker
-                ? 'COLOUR'
-                : mode === 'colour'
+              {iconPicker
+                ? 'ICON'
+                : picker
                   ? 'COLOUR'
-                  : mode === 'create'
-                    ? 'NEW HABIT'
-                    : 'EDIT HABIT'}
+                  : mode === 'colour'
+                    ? 'COLOUR'
+                    : mode === 'create'
+                      ? 'NEW HABIT'
+                      : 'EDIT HABIT'}
             </Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Close without applying changes"
               onPress={() => {
-                if (picker) setPicker(false);
+                if (iconPicker) setIconPicker(false);
+                else if (picker) setPicker(false);
                 else onClose();
               }}
               style={styles.close}
@@ -103,10 +115,17 @@ export function HabitDialog({
             {mode === 'create' ? 'Make it yours' : habit.name}
           </Heading>
           <ScrollView
+            key={iconPicker ? 'icon' : picker ? 'colour' : 'form'}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {mode === 'colour' || picker ? (
+            {iconPicker ? (
+              <HabitIconPicker
+                icon={icon}
+                colour={colour}
+                onChange={setIconDraft}
+              />
+            ) : mode === 'colour' || picker ? (
               <ColourPicker
                 color={picker ? colour : habit.color}
                 onChange={(value) => {
@@ -185,6 +204,34 @@ export function HabitDialog({
                 )}
                 <Pressable
                   accessibilityRole="button"
+                  accessibilityLabel={`Habit icon, ${habitIconLabel(icon)}`}
+                  onPress={() => {
+                    setIconDraft(icon);
+                    setIconPicker(true);
+                  }}
+                  style={[
+                    styles.button,
+                    {
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                    },
+                  ]}
+                >
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      gap: 10,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <HabitSymbol icon={icon} colour={colour} />
+                    <Text style={styles.buttonText}>Icon</Text>
+                  </View>
+                  <Text style={styles.description}>{habitIconLabel(icon)}</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
                   accessibilityLabel="Choose habit colour"
                   onPress={() => {
                     setPickerDraft(colour);
@@ -222,7 +269,12 @@ export function HabitDialog({
               {button(
                 'Done',
                 () => {
-                  if (picker) {
+                  if (iconPicker) {
+                    if (iconDraft !== null) {
+                      setIcon(iconDraft);
+                      setIconPicker(false);
+                    }
+                  } else if (picker) {
                     setColour(pickerDraft);
                     setPicker(false);
                   } else if (mode === 'colour') {
@@ -230,9 +282,10 @@ export function HabitDialog({
                   } else save();
                 },
                 !editable ||
+                  (iconPicker && iconDraft === null) ||
                   ((picker || mode === 'colour') &&
                     !/^#[0-9a-f]{6}$/i.test(picker ? pickerDraft : colour)) ||
-                  (editing && !picker && !valid),
+                  (editing && !picker && !iconPicker && !valid),
               )}
             </View>
           )}
