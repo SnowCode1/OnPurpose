@@ -22,6 +22,10 @@ Incremental change storage and export are confirmed requirements; read
 - React Native + Expo SDK 57, TypeScript strict mode, npm with package-lock.json.
 - `App.tsx` owns screen state and dialogs; `src/HabitGrid.tsx` renders the grid.
 - `src/gridLayout.ts` calculates adaptive column geometry for both orientations.
+- `src/useGridScroll.ts` synchronizes native scrolling on the UI thread; never
+  put per-frame list synchronization back on the JavaScript thread.
+- `src/gridNavigation.ts` owns the future-pull threshold and signed date offsets.
+- `src/ColourPicker.tsx` and `src/colors.ts` own preset/custom colours and OKLCH.
 - `src/calendar.ts` and `src/useLocalToday.ts` handle local dates and rollover.
 - `src/habits.ts` contains demo habits/colours. `index.ts` registers the app.
 - `app.json` owns Expo configuration. Generated native folders stay ignored.

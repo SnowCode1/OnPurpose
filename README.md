@@ -4,8 +4,10 @@ A proposed iPhone habit tracker designed to make recording a completed habit
 almost effortless. Open the list, tap familiar positions, and get on with life.
 
 **Early development.** The name is provisional. This repository currently has an
-Expo/React Native foundation and a 12-row grid demo. Dates scroll into the past with today at the right edge, and
-habit details include a row-colour picker. Numeric daily-total entry works.
+Expo/React Native foundation and a 12-row grid demo. Adaptive columns work in
+portrait and landscape. Scroll into the past or deliberately pull beyond today
+to reveal future dates; checkbox and daily-total entries work in both directions.
+Habit details offer 24 colour presets, a custom visual picker, and hex input.
 Entries and colours reset on reload; habit management, durable saving, statistics,
 and the separate change-history browser are not implemented yet.
 
@@ -27,7 +29,7 @@ the full first-run steps and troubleshooting.
 ```sh
 npm run web          # browser preview on Linux
 npm run check        # TypeScript, lint, and formatting
-npm test             # calendar logic and preview receiver tests
+npm test             # calendar, navigation, layout, colour, and receiver tests
 npm run export:ios   # verify the iOS JS bundle; not a signed iOS build
 ```
 

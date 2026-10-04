@@ -148,10 +148,11 @@ and [native screenshots](https://docs.expo.dev/versions/latest/sdk/captureRef/).
 
 ## Known dependency audit findings
 
-After adding preview capture, npm audit reports 24 findings (17 high, 7 moderate), including
+After adding UI-thread scrolling and custom colour controls, npm audit reports 27 findings
+(20 high, 7 moderate), including
 transitive `braces`, `node-forge`, and `uuid` dependencies in the Expo/React Native
-toolchain. The additional view-shot finding inherits the existing React Native
-advisory through its dependency relationship. The suggested automatic fixes include downgrading Expo to SDK 44 and
+toolchain. The view-shot, Reanimated, Worklets and related Metro findings inherit existing
+React Native/toolchain advisories through dependency relationships. The suggested automatic fixes include downgrading Expo to SDK 44 and
 React Native to 0.72; these are incompatible with this setup. Do not run
 `npm audit fix --force` as a routine fix. Expo Doctor compatibility checks pass,
 but that does not resolve the audit findings. Track upstream patches and reassess
@@ -174,3 +175,14 @@ After changing `app.json`, exit and reopen the project in Expo Go so the manifes
 is reloaded; Fast Refresh alone may keep the previous orientation setting.
 Share both orientations using the same long press on ONPURPOSE. Test numeric
 entry with the keyboard open in landscape as well as the main grid.
+
+## Animation and colour controls
+
+Reanimated/Worklets, the community Slider, and Expo LinearGradient are installed
+with SDK-compatible versions for Expo Go. Reanimated's Babel plugin is supplied
+by `babel-preset-expo`; no custom Babel configuration is needed. Restart Metro
+with `npm run start:clear` and fully reload Expo Go after adding these libraries
+so cached transforms do not retain the previous configuration.
+
+[Expo Reanimated setup](https://docs.expo.dev/versions/v57.0.0/sdk/reanimated/)
+and [UI-thread scroll synchronization](https://docs.swmansion.com/react-native-reanimated/docs/scroll/scrollTo/).

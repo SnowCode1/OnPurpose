@@ -1,10 +1,9 @@
-import { type ComponentType, type Ref, useMemo, useRef, useState } from 'react';
+import { type ComponentType, type Ref, memo, useMemo, useState } from 'react';
 import {
   FlatList,
   type FlatListProps,
   type TextProps,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,9 +11,13 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { type GridDay, makeHistoryDays, pastDay } from './calendar';
+import { type GridDay, makeGridDays, calendarDay } from './calendar';
 import { type Habit } from './habits';
+import { checkmarkColor } from './colors';
 import { gridLayout } from './gridLayout';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import { useGridScroll } from './useGridScroll';
+import { FUTURE_BATCH, FUTURE_PULL_DISTANCE } from './gridNavigation';
 
 type Props = {
   HeadingComponent: ComponentType<TextProps>;
@@ -25,7 +28,7 @@ type Props = {
   onCellPress: (habit: Habit, day: GridDay) => void;
 };
 
-export function HabitGrid({
+export const HabitGrid = memo(function HabitGrid({
   HeadingComponent,
   today,
   habits,
@@ -36,17 +39,13 @@ export function HabitGrid({
   const { fontScale } = useWindowDimensions();
   const [width, setWidth] = useState(0);
   const [dayCount, setDayCount] = useState(90);
+  const [futureCount, setFutureCount] = useState(0);
   const [rightmostDay, setRightmostDay] = useState(0);
+  const atTodayBoundary = rightmostDay === 0 && futureCount === 0;
   const [rowHeights, setRowHeights] = useState<Record<string, number>>({});
-  const header = useRef<FlatList<GridDay>>(null);
-  const body = useRef<FlatList<GridDay>>(null);
-  const driver = useRef<{
-    source: 'header' | 'body';
-    columnWidth: number;
-  } | null>(null);
   const days = useMemo(
-    () => makeHistoryDays(today, dayCount),
-    [today, dayCount],
+    () => makeGridDays(today, dayCount, futureCount),
+    [today, dayCount, futureCount],
   );
   const { visibleDays, nameWidth, dateWidth, columnWidth } = gridLayout(
     width,
@@ -57,8 +56,8 @@ export function HabitGrid({
     (total, habit) => total + (rowHeights[habit.id] ?? baseRowHeight),
     0,
   );
-  const newest = pastDay(today, rightmostDay);
-  const oldest = pastDay(today, rightmostDay + visibleDays - 1);
+  const newest = calendarDay(today, rightmostDay);
+  const oldest = calendarDay(today, rightmostDay + visibleDays - 1);
   const sameMonth =
     newest.getMonth() === oldest.getMonth() &&
     newest.getFullYear() === oldest.getFullYear();
@@ -70,39 +69,63 @@ export function HabitGrid({
       ? String(newest.getFullYear())
       : `${oldest.getFullYear()} – ${newest.getFullYear()}`;
 
-  function sync(
-    source: 'header' | 'body',
-    event: NativeSyntheticEvent<NativeScrollEvent>,
-  ) {
-    if (
-      driver.current?.source !== source ||
-      driver.current.columnWidth !== columnWidth
-    )
-      return;
-    const offset = Math.max(0, event.nativeEvent.contentOffset.x);
-    const follower = source === 'body' ? header : body;
-    follower.current?.scrollToOffset({ offset, animated: false });
-    const day = Math.min(
-      dayCount - visibleDays,
-      Math.max(0, Math.round(offset / columnWidth)),
-    );
-    setRightmostDay(day);
+  function revealFuture() {
+    stopSync();
+    setRightmostDay(-futureCount - Math.min(visibleDays, FUTURE_BATCH));
+    setFutureCount((count) => count + FUTURE_BATCH);
   }
 
+  const { header, body, stopSync, pull, headerScroll, bodyScroll } =
+    useGridScroll({
+      columnWidth,
+      visibleDays,
+      dayCount,
+      futureCount,
+      onSettle: setRightmostDay,
+      onReveal: revealFuture,
+    });
+  const pullHintStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(1, pull.value / 20),
+  }));
+  const pullLabelStyle = useAnimatedStyle(() => ({
+    opacity: pull.value < FUTURE_PULL_DISTANCE ? 1 : 0,
+  }));
+  const releaseLabelStyle = useAnimatedStyle(() => ({
+    opacity: pull.value >= FUTURE_PULL_DISTANCE ? 1 : 0,
+  }));
+  const pullProgressStyle = useAnimatedStyle(() => ({
+    width: 80 * Math.min(1, pull.value / FUTURE_PULL_DISTANCE),
+  }));
+
   function returnToToday() {
-    driver.current = null;
-    // An immediate jump also avoids traversing years of dates in an animation.
-    body.current?.scrollToOffset({ offset: 0, animated: false });
-    header.current?.scrollToOffset({ offset: 0, animated: false });
+    stopSync();
     setRightmostDay(0);
+    if (futureCount) setFutureCount(0);
+    else {
+      body.current?.scrollToOffset({ offset: 0, animated: false });
+      header.current?.scrollToOffset({ offset: 0, animated: false });
+    }
+  }
+
+  function openDateActions() {
+    Alert.alert(
+      'Browse dates',
+      'Pull past the newest day and release to reveal future dates.',
+      [
+        { text: 'Show future dates', onPress: revealFuture },
+        { text: 'Return to today', onPress: returnToToday },
+        { text: 'Cancel', style: 'cancel' },
+      ],
+    );
   }
 
   const shared = {
     data: days,
     horizontal: true,
     inverted: true,
-    bounces: false,
-    overScrollMode: 'never' as const,
+    bounces: true,
+    alwaysBounceHorizontal: true,
+    overScrollMode: 'auto' as const,
     showsHorizontalScrollIndicator: false,
     directionalLockEnabled: true,
     nestedScrollEnabled: true,
@@ -129,7 +152,7 @@ export function HabitGrid({
       onLayout={(event) => {
         const nextWidth = event.nativeEvent.layout.width;
         if (nextWidth !== width) {
-          driver.current = null;
+          stopSync();
           setWidth(nextWidth);
           setDayCount((count) => Math.max(count, rightmostDay + 90));
         }
@@ -137,40 +160,62 @@ export function HabitGrid({
     >
       <View style={styles.toolbar}>
         <HeadingComponent style={styles.brand}>ONPURPOSE</HeadingComponent>
+        <Animated.View
+          pointerEvents="none"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={[styles.pullHint, pullHintStyle]}
+        >
+          <Animated.Text
+            style={[styles.pullText, styles.overlaidPullText, pullLabelStyle]}
+          >
+            Pull for future dates
+          </Animated.Text>
+          <Animated.Text style={[styles.pullText, releaseLabelStyle]}>
+            Release for future dates
+          </Animated.Text>
+          <View style={styles.pullTrack}>
+            <Animated.View style={[styles.pullProgress, pullProgressStyle]} />
+          </View>
+        </Animated.View>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Return to today"
-          accessibilityElementsHidden={rightmostDay === 0}
+          accessibilityElementsHidden={atTodayBoundary}
           importantForAccessibility={
-            rightmostDay === 0 ? 'no-hide-descendants' : 'auto'
+            atTodayBoundary ? 'no-hide-descendants' : 'auto'
           }
-          disabled={rightmostDay === 0}
+          disabled={atTodayBoundary}
           onPress={returnToToday}
           style={({ pressed }) => [
             styles.todayButton,
-            { opacity: rightmostDay === 0 ? 0 : pressed ? 0.65 : 1 },
+            { opacity: atTodayBoundary ? 0 : pressed ? 0.65 : 1 },
           ]}
         >
-          <Text style={styles.todayText}>Today →</Text>
+          <Text style={styles.todayText}>
+            {rightmostDay < 0 ? '← Today' : 'Today →'}
+          </Text>
         </Pressable>
       </View>
       {width > 0 && (
         <>
           <View style={styles.header}>
-            <View style={[styles.namesHeader, { width: nameWidth }]}>
-              <Text style={styles.month}>{month}</Text>
+            <Pressable
+              style={[styles.namesHeader, { width: nameWidth }]}
+              accessibilityRole="button"
+              accessibilityLabel={`${month} ${year}, browse dates`}
+              onPress={openDateActions}
+            >
+              <Text style={styles.month}>{month} ⌄</Text>
               <Text style={styles.year}>{year}</Text>
-            </View>
+            </Pressable>
             <DateColumns
               {...shared}
               ref={header}
-              key={`header-${columnWidth}`}
-              initialScrollIndex={rightmostDay}
+              key={`header-${columnWidth}-${futureCount}`}
+              initialScrollIndex={rightmostDay + futureCount}
               style={{ width: dateWidth, flexGrow: 0 }}
-              onScrollBeginDrag={() => {
-                driver.current = { source: 'header', columnWidth };
-              }}
-              onScroll={(event) => sync('header', event)}
+              onScroll={headerScroll}
               renderItem={({ item: day }) => (
                 <View
                   style={[
@@ -240,13 +285,10 @@ export function HabitGrid({
               <DateColumns
                 {...shared}
                 ref={body}
-                key={`body-${columnWidth}`}
-                initialScrollIndex={rightmostDay}
+                key={`body-${columnWidth}-${futureCount}`}
+                initialScrollIndex={rightmostDay + futureCount}
                 style={{ width: dateWidth, height: gridHeight, flexGrow: 0 }}
-                onScrollBeginDrag={() => {
-                  driver.current = { source: 'body', columnWidth };
-                }}
-                onScroll={(event) => sync('body', event)}
+                onScroll={bodyScroll}
                 renderItem={({ item: day }) => (
                   <View style={{ width: columnWidth }}>
                     {habits.map((habit) => {
@@ -312,7 +354,10 @@ export function HabitGrid({
                               {checked && (
                                 <Text
                                   allowFontScaling={false}
-                                  style={styles.checkmark}
+                                  style={[
+                                    styles.checkmark,
+                                    { color: checkmarkColor(habit.color) },
+                                  ]}
                                 >
                                   ✓
                                 </Text>
@@ -331,21 +376,41 @@ export function HabitGrid({
       )}
     </View>
   );
-}
+});
 
 // Each width gets a fresh pair of lists, anchored to the same logical date.
 // Freeze the initial index: later history loading must not trigger another jump.
 function DateColumns({
   initialScrollIndex,
   ...props
-}: FlatListProps<GridDay> & {
+}: Omit<FlatListProps<GridDay>, 'CellRendererComponent'> & {
   ref: Ref<FlatList<GridDay>>;
 }) {
   const [initialIndex] = useState(initialScrollIndex);
-  return <FlatList {...props} initialScrollIndex={initialIndex} />;
+  return <Animated.FlatList {...props} initialScrollIndex={initialIndex} />;
 }
 
 const styles = StyleSheet.create({
+  pullHint: {
+    position: 'absolute',
+    right: 0,
+    top: 5,
+    alignItems: 'flex-end',
+    backgroundColor: '#000000',
+    zIndex: 1,
+    paddingVertical: 4,
+  },
+  pullText: { color: '#BBBBBB', fontSize: 11 },
+  overlaidPullText: { position: 'absolute', top: 4, right: 0 },
+  pullTrack: {
+    width: 80,
+    height: 2,
+    marginTop: 7,
+    backgroundColor: '#252525',
+    overflow: 'hidden',
+    borderRadius: 1,
+  },
+  pullProgress: { height: 2, backgroundColor: '#DADADA' },
   container: { flex: 1 },
   toolbar: {
     flexDirection: 'row',

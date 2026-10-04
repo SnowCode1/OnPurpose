@@ -3,9 +3,9 @@ export function localDateKey(date: Date): string {
 }
 
 // Calendar arithmetic at local noon avoids assuming every day is 24 hours.
-export function pastDay(today: string, daysAgo: number): Date {
-  if (!Number.isInteger(daysAgo) || daysAgo < 0) {
-    throw new Error('A history offset must be a non-negative integer.');
+export function calendarDay(today: string, daysAgo: number): Date {
+  if (!Number.isInteger(daysAgo)) {
+    throw new Error('A calendar offset must be an integer.');
   }
   const date = new Date(`${today}T12:00:00`);
   date.setDate(date.getDate() - daysAgo);
@@ -26,9 +26,14 @@ export type GridDay = {
   fullLabel: string;
 };
 
-export function makeHistoryDays(today: string, count: number): GridDay[] {
-  return Array.from({ length: count }, (_, daysAgo) => {
-    const date = pastDay(today, daysAgo);
+export function makeGridDays(
+  today: string,
+  count: number,
+  futureCount = 0,
+): GridDay[] {
+  return Array.from({ length: count + futureCount }, (_, index) => {
+    const daysAgo = index - futureCount;
+    const date = calendarDay(today, daysAgo);
     return {
       key: localDateKey(date),
       daysAgo,

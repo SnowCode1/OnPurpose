@@ -1,5 +1,33 @@
 # Decision log
 
+## 010 — Smooth scrolling, deliberate future access, and custom colours
+
+Date: 4 October 2026. Status: implemented; founder confirmed smoother scrolling and working future pull.
+
+The founder reported jitter while side-scrolling. Replace JavaScript per-frame
+synchronization/state updates with Reanimated UI-thread scroll handlers and send
+only settled dates back to React. Install SDK-compatible Reanimated/Worklets;
+use native sliders and gradient tracks for colour controls.
+
+The founder now wants future browsing with extra scrolling effort and explicitly
+confirmed future entries should be allowed. This supersedes decision 008's
+past-only limit. Start at today, require a resisted 64-point pull and release,
+then reveal future dates in batches of 30. The month menu supplies an explicit
+alternative. Today collapses future columns and restores the boundary while
+preserving recorded values. Threshold and batch size are implementation choices
+to tune with phone feedback. Future values' treatment in streaks remains a
+statistics-design question; statistics are not implemented.
+
+Provide 24 curated colours plus optional custom controls and hex. Use OKLCH
+internally, with plain Hue/Colourfulness/Lightness labels and sRGB hex storage.
+Offer a contrast hint on black, and preserve exact valid hex choices. Keep the
+existing system font pending a deliberate typography comparison.
+
+The founder found the first stacked picker too tall. Use Presets/Custom tabs and
+one fixed Done action. The founder explicitly requested Done to apply and close,
+and a separate close button to discard changes. All colour selection stays a draft
+until Done, including preset choices; there is no additional apply button.
+
 ## 009 — Adaptive density and landscape
 
 Date: 4 October 2026. Status: requested by the founder; implemented; founder confirmed both orientations work and stay aligned.

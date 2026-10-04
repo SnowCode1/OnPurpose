@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { type ComponentType, useState } from 'react';
+import { type ComponentType, useCallback, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -13,9 +13,11 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { type GridDay, localDateKey } from './src/calendar';
+import { type GridDay } from './src/calendar';
 import { HabitGrid } from './src/HabitGrid';
-import { demoHabits, habitColors, type Habit } from './src/habits';
+import { demoHabits, type Habit } from './src/habits';
+import { ColourPicker } from './src/ColourPicker';
+import { checkmarkColor } from './src/colors';
 import { useLocalToday } from './src/useLocalToday';
 
 // Metro removes this branch (and its module) from release JavaScript.
@@ -34,6 +36,7 @@ export default function App() {
     habit: Habit;
     day: GridDay;
   } | null>(null);
+  const [draftColor, setDraftColor] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const detail = habits.find((habit) => habit.id === detailId);
   const [input, setInput] = useState('');
@@ -44,23 +47,29 @@ export default function App() {
     (/^\d+(\.\d*)?$/.test(trimmed) && Number.isFinite(numeric));
   const accent = editing?.habit.color ?? detail?.color ?? '#FFFFFF';
 
-  function pressCell(habit: Habit, day: GridDay) {
-    if (day.key > localDateKey(new Date())) return;
-    const key = `${habit.id}:${day.key}`;
-    if (habit.unit) {
-      setInput(values[key] === undefined ? '' : String(values[key]));
-      setEditing({ key, habit, day });
-    } else {
-      setValues((previous) => ({
-        ...previous,
-        [key]: previous[key] === 1 ? 0 : 1,
-      }));
-    }
-  }
+  const pressCell = useCallback(
+    (habit: Habit, day: GridDay) => {
+      const key = `${habit.id}:${day.key}`;
+      if (habit.unit) {
+        setInput(values[key] === undefined ? '' : String(values[key]));
+        setEditing({ key, habit, day });
+      } else {
+        setValues((previous) => ({
+          ...previous,
+          [key]: previous[key] === 1 ? 0 : 1,
+        }));
+      }
+    },
+    [values],
+  );
+
+  const openDetails = useCallback((habit: Habit) => {
+    setDraftColor(habit.color);
+    setDetailId(habit.id);
+  }, []);
 
   function saveNumber() {
-    if (!editing || !valid || editing.day.key > localDateKey(new Date()))
-      return;
+    if (!editing || !valid) return;
     setValues((previous) => {
       const next = { ...previous };
       if (trimmed === '') delete next[editing.key];
@@ -73,6 +82,17 @@ export default function App() {
   function closeDialog() {
     setEditing(null);
     setDetailId(null);
+    setDraftColor(null);
+  }
+
+  function applyColour() {
+    if (!detail || !draftColor) return;
+    setHabits((previous) =>
+      previous.map((habit) =>
+        habit.id === detail.id ? { ...habit, color: draftColor } : habit,
+      ),
+    );
+    closeDialog();
   }
 
   return (
@@ -86,7 +106,7 @@ export default function App() {
             today={today}
             habits={habits}
             values={values}
-            onHabitPress={(habit) => setDetailId(habit.id)}
+            onHabitPress={openDetails}
             onCellPress={pressCell}
           />
           <Text style={styles.footer}>
@@ -109,13 +129,28 @@ export default function App() {
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           >
             <View accessibilityViewIsModal style={styles.dialog}>
+              {detail && !editing && (
+                <View style={styles.dialogHeader}>
+                  <Text style={[styles.eyebrow, { marginBottom: 0 }]}>
+                    HABIT DETAILS
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Close without applying colour"
+                    onPress={closeDialog}
+                    style={styles.closeButton}
+                  >
+                    <Text allowFontScaling={false} style={styles.closeText}>
+                      ×
+                    </Text>
+                  </Pressable>
+                </View>
+              )}
               <ScrollView
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
               >
-                <Text style={styles.eyebrow}>
-                  {editing ? 'DAILY TOTAL' : 'HABIT DETAILS'}
-                </Text>
+                {editing && <Text style={styles.eyebrow}>DAILY TOTAL</Text>}
                 <PreviewHeading style={[styles.dialogTitle, { color: accent }]}>
                   {editing?.habit.name ?? detail?.name}
                 </PreviewHeading>
@@ -168,7 +203,14 @@ export default function App() {
                           { backgroundColor: accent, opacity: valid ? 1 : 0.4 },
                         ]}
                       >
-                        <Text style={styles.primaryActionText}>Save total</Text>
+                        <Text
+                          style={[
+                            styles.primaryActionText,
+                            { color: checkmarkColor(accent) },
+                          ]}
+                        >
+                          Save total
+                        </Text>
                       </Pressable>
                     </View>
                   </>
@@ -177,64 +219,29 @@ export default function App() {
                     <Text style={styles.secondary}>
                       Statistics and streaks are coming next.
                     </Text>
-                    <Text style={styles.sectionLabel}>ROW COLOUR</Text>
-                    <View style={styles.swatches}>
-                      {habitColors.map((color) => (
-                        <Pressable
-                          key={color.value}
-                          accessibilityRole="radio"
-                          accessibilityLabel={color.name}
-                          accessibilityState={{
-                            selected: detail.color === color.value,
-                          }}
-                          onPress={() =>
-                            setHabits((previous) =>
-                              previous.map((habit) =>
-                                habit.id === detail.id
-                                  ? { ...habit, color: color.value }
-                                  : habit,
-                              ),
-                            )
-                          }
-                          style={styles.swatchTarget}
-                        >
-                          <View
-                            style={[
-                              styles.swatch,
-                              { backgroundColor: color.value },
-                            ]}
-                          >
-                            {detail.color === color.value && (
-                              <Text
-                                allowFontScaling={false}
-                                style={styles.swatchCheck}
-                              >
-                                ✓
-                              </Text>
-                            )}
-                          </View>
-                        </Pressable>
-                      ))}
-                    </View>
-                    <Text style={styles.secondary}>
-                      Used for this habit’s name, checkboxes and numbers.
-                    </Text>
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={closeDialog}
-                      style={[
-                        styles.action,
-                        styles.doneAction,
-                        { borderColor: `${accent}66` },
-                      ]}
-                    >
-                      <Text style={{ color: accent, fontWeight: '600' }}>
-                        Done
-                      </Text>
-                    </Pressable>
+                    <ColourPicker
+                      key={detail.id}
+                      color={detail.color}
+                      onChange={setDraftColor}
+                    />
                   </>
                 ) : null}
               </ScrollView>
+              {detail && !editing && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: !draftColor }}
+                  disabled={!draftColor}
+                  onPress={applyColour}
+                  style={[
+                    styles.action,
+                    styles.doneAction,
+                    { opacity: draftColor ? 1 : 0.4 },
+                  ]}
+                >
+                  <Text style={styles.actionText}>Done</Text>
+                </Pressable>
+              )}
             </View>
           </KeyboardAvoidingView>
         </Modal>
@@ -244,6 +251,21 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  dialogHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: -10,
+    marginBottom: 4,
+  },
+  closeButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: -10,
+  },
+  closeText: { color: '#BBBBBB', fontSize: 27, lineHeight: 30 },
   screen: { flex: 1, backgroundColor: '#000000' },
   content: {
     flex: 1,
@@ -303,33 +325,9 @@ const styles = StyleSheet.create({
   actionText: { color: '#D0D0D0' },
   primaryAction: { borderRadius: 14 },
   primaryActionText: { color: '#000000', fontWeight: '600' },
-  sectionLabel: {
-    color: '#929292',
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 1.5,
-    marginTop: 28,
-    marginBottom: 10,
+  doneAction: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#333333',
+    marginTop: 12,
   },
-  swatches: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginBottom: 12,
-  },
-  swatchTarget: {
-    width: 52,
-    height: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  swatch: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  swatchCheck: { color: '#000000', fontSize: 20, fontWeight: '700' },
-  doneAction: { borderWidth: 1, borderRadius: 14, marginTop: 24 },
 });

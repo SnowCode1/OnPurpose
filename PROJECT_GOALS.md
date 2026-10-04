@@ -20,9 +20,13 @@ and uncertainty about whether something was saved.
   horizontally. Fit as many whole day columns as space and text size allow;
   support portrait and landscape, with more dates visible in landscape.
 - Start at today and the recent past. Scroll horizontally into the past;
-  do not show future days. Adaptive density replaces the initial three-column idea.
+  ordinary scrolling stops at today, with an intentional extra pull to reveal
+  future dates. Future checkbox and numeric entries are allowed. This supersedes
+  the initial past-only rule. Adaptive density replaces the three-column idea.
 - Use a pure black background and user-selectable habit colours across each row,
-  including the habit name, checkboxes, and numeric entries.
+  including the habit name, checkboxes, and numeric entries. Provide more presets
+  and a visual custom picker with optional hex input; use familiar user-facing
+  labels rather than colour-space jargon.
 - The founder has published the repository at https://github.com/SnowCode1/OnPurpose
   and authorised local commits. A project licence is still to be selected.
 - Use [Loop Habit Tracker for Android](https://github.com/iSoron/uhabits) as a
@@ -49,7 +53,9 @@ and uncertainty about whether something was saved.
 4. Tap the habit name to open statistics. Names and date cells have distinct hit
    targets, so recording a value cannot accidentally open statistics.
 5. Keep today at the right edge of the initial view. Scroll toward
-   earlier dates while names stay fixed; offer a direct return to Today.
+   earlier dates while names stay fixed; offer a direct return to Today. Reveal
+   future days after a deliberate pull-and-release. Returning to Today restores
+   that boundary; entries keep their dates.
 6. Change ordering only through deliberate editing, not automatic sorting.
 7. Save locally and work offline; do not require an account for everyday tracking.
 8. Use restrained feedback. Explore optional haptics, with no blocking celebration.
@@ -109,7 +115,8 @@ The current starter is a disposable 12-row grid with an adaptive day viewport
 (typically four columns on the test phone in portrait, more in landscape, fewer
 with larger text). It supports scrolling into the
 past, returning to Today, editing dated checkbox/numeric values, automatic local
-date rollover, and choosing a row colour in habit details. Statistics remain a
+date rollover, deliberate future browsing/entries, and choosing preset or custom
+row colours in habit details. Statistics remain a
 placeholder. Entries and colours are in memory and reset on reload; durable
 storage and the change log are subsequent milestones.
 
@@ -122,21 +129,21 @@ and incremental history are desired scope, not excluded candidates.
 
 ## Decisions to make together
 
-| Question                                                               | Current status                                          |
-| ---------------------------------------------------------------------- | ------------------------------------------------------- |
-| How many dates and in which direction? How do we browse history?       | Adaptive columns; today on right; past-only scrolling   |
-| All habits daily, selected weekdays, or frequency targets?             | Open                                                    |
-| Do numeric habits have units, targets, and a “lower is better” option? | Daily-total input confirmed; goal rules open            |
-| What exactly counts toward a numeric or scheduled habit's streak?      | Open                                                    |
-| Midnight cutoff, late-night logging, backdating, and travel?           | Open; decide before persistence                         |
-| Comments on a habit, a day, a particular entry, or multiple kinds?     | Comments desired; attachment semantics open             |
-| Which app changes enter the history; how do deletion and undo work?    | Incremental storage confirmed; policy open              |
-| Export/import format, backup location, and cross-device sync?          | Change-based export confirmed; details open             |
-| Any reminders or widgets required for version one?                     | Open                                                    |
-| Free, paid, donations, or another model?                               | Open                                                    |
-| Licence and copyright holder?                                          | Open; choose before public release                      |
-| Final name and visual personality?                                     | Name open; black background and habit colours confirmed |
-| iOS version, Expo account, Apple Developer membership?                 | iPhone 16 Pro confirmed; account/OS status open         |
+| Question                                                               | Current status                                                     |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| How many dates and in which direction? How do we browse history?       | Adaptive columns; deliberate future reveal; future entries allowed |
+| All habits daily, selected weekdays, or frequency targets?             | Open                                                               |
+| Do numeric habits have units, targets, and a “lower is better” option? | Daily-total input confirmed; goal rules open                       |
+| What exactly counts toward a numeric or scheduled habit's streak?      | Open                                                               |
+| Midnight cutoff, late-night logging, backdating, and travel?           | Open; decide before persistence                                    |
+| Comments on a habit, a day, a particular entry, or multiple kinds?     | Comments desired; attachment semantics open                        |
+| Which app changes enter the history; how do deletion and undo work?    | Incremental storage confirmed; policy open                         |
+| Export/import format, backup location, and cross-device sync?          | Change-based export confirmed; details open                        |
+| Any reminders or widgets required for version one?                     | Open                                                               |
+| Free, paid, donations, or another model?                               | Open                                                               |
+| Licence and copyright holder?                                          | Open; choose before public release                                 |
+| Final name and visual personality?                                     | Name open; black background and habit colours confirmed            |
+| iOS version, Expo account, Apple Developer membership?                 | iPhone 16 Pro confirmed; account/OS status open                    |
 
 ## Milestones
 

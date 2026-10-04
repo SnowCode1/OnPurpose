@@ -9,6 +9,22 @@ export const habitColors = [
   { name: 'Lime', value: '#C5E788' },
   { name: 'Aqua', value: '#7DDDD9' },
   { name: 'Gold', value: '#F6D780' },
+  { name: 'Coral', value: '#FF8F86' },
+  { name: 'Orange', value: '#FFAB63' },
+  { name: 'Lemon', value: '#EBE36F' },
+  { name: 'Leaf', value: '#9CD978' },
+  { name: 'Jade', value: '#64D7A2' },
+  { name: 'Teal', value: '#56CBC4' },
+  { name: 'Cyan', value: '#6CDCF2' },
+  { name: 'Blue', value: '#8AAEFF' },
+  { name: 'Periwinkle', value: '#A6ACFF' },
+  { name: 'Violet', value: '#C394F5' },
+  { name: 'Orchid', value: '#E29CE8' },
+  { name: 'Pink', value: '#ED8DC3' },
+  { name: 'Sand', value: '#D9C6AA' },
+  { name: 'Silver', value: '#BFC8D4' },
+  { name: 'Cloud', value: '#E3E7EE' },
+  { name: 'White', value: '#FFFFFF' },
 ];
 
 export const demoHabits: Habit[] = [

@@ -115,7 +115,8 @@ receiver responded successfully to an authenticated health check.
 Manual checks for the current grid:
 
 1. Open at today and as many preceding days as fit. Swiping past today cannot reveal
-   future dates. Swipe older dates through a month boundary and beyond 90 days.
+   future dates with a light pull. Pull farther and release to reveal future days.
+   Swipe older dates through a month boundary and beyond 90 days.
 2. Drag both the date headings and the cells: headings and cells should stay
    aligned while habit names stay fixed. Scroll down: headings stay visible and
    names/cells move vertically together.
@@ -159,3 +160,43 @@ not substitute for native gesture and rotation checks.
   open colour details. Content and actions must remain reachable by scrolling.
 - Compare screenshot density, blank/checked states, and numeric totals. Confirm
   that five rapid checkoffs still hit the intended cells without accidental swipes.
+
+## UI-thread scrolling, future dates, and custom colours
+
+4 October 2026: the founder reported jitter in the prior grid. Source inspection
+identified per-frame JavaScript follower scroll commands and React state updates.
+The replacement uses native UI-thread synchronization. The founder confirmed
+scrolling is smoother and the future pull works on the iPhone. The initial picker
+needs layout improvements; the follow-up replaces stacked controls with Presets/Custom tabs and a fixed
+Done action. The founder confirmed the shorter layout is better, and requested one Done action
+that applies the choice plus a close button that discards it. This final apply/cancel
+flow still needs phone confirmation.
+
+All 23 automated tests passed, along with TypeScript, lint, formatting, the iOS
+bundle export, and all 21 Expo Doctor checks. The running iOS development bundle
+contains compiled worklets. Release export is still not native performance or
+App Store validation. Dependency audit findings remain documented in DEVELOPMENT.md.
+
+Automated coverage now includes signed future dates across DST/leap/year edges,
+future batch identity, the pull threshold, scroll-to-date mapping before/after
+rotation or batch changes, hex validation, OKLCH round-trips/reference values,
+gamut mapping, preset contrast, and contrasting checkmarks.
+
+Phone checks for this change:
+
+1. Compare slow drag, quick fling, direction reversal, and a diagonal gesture on
+   both header and body. Check alignment during motion, not just after settling.
+2. Pull slightly past today and release: it should bounce back. Pull farther:
+   progress fills and the label changes to Release for future dates. Release to
+   reveal a screenful of future dates. A fling alone must not unlock them.
+3. Enter a future checkbox and numeric total, return to Today, then reveal again.
+   Both values must remain tied to their dates. Pull again at the future edge to
+   extend the range. Try the month menu with VoiceOver as well.
+4. Rotate in history and in future dates; confirm date and row alignment. Repeat
+   at larger text sizes. Values must not migrate when column counts change.
+5. Select presets; switch to Custom; adjust each slider; type valid shorthand
+   and six-digit hex, then invalid text. Only Done commits any draft and closes. Close must discard preset, slider, and
+   hex changes; reopening must show the last committed colour. Invalid hex disables
+   Done. Check low-lightness contrast guidance and black/white checkmarks.
+6. Test picker scrolling and hex keyboard in both orientations. Share a preview
+   by holding the habit title. Reload still resets demo entries/colours.
