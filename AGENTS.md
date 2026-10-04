@@ -47,6 +47,10 @@ once; never reset or reseed an existing store during loading or an error.
 - Use functional state updates when new state depends on previous state.
 - Preserve append-only normal edits, atomic log/projection transactions, serialized
   rapid writes, and visible save failure/retry. Undo adds events; it does not erase.
+- Visible History contains active habit actions, not raw events. Global preferences
+  persist outside History/Undo and must preserve Redo. Consecutive same-field/date
+  edits group for two minutes of inactivity; Undo/Redo close the group and net-zero
+  groups disappear. Keep legacy v1 replay semantics and fixtures unchanged.
 - Restores validate fully, require a concrete native confirmation, and retain a
   pre-restore copy atomically. Never delete a database to recover silently.
 

@@ -122,7 +122,7 @@ test('replay rejects malformed dates, nonfinite totals, unsupported schemas, unk
   ]) {
     assert.throws(() => replayEvents([initial, change(2, value)]));
   }
-  assert.throws(() => replayEvents([{ ...initial, version: 2 }]));
+  assert.throws(() => replayEvents([{ ...initial, version: 99 }]));
   assert.throws(() => replayEvents([{ ...initial, unwanted: true }]));
   assert.throws(() =>
     replayEvents([{ ...initial, habits: [...habits, habits[0]] }]),
@@ -233,7 +233,11 @@ test('reopen a disk database preserves entries, colours, preferences and undo wi
     assert.deepEqual(reopened.getSnapshot().replay, expected.replay);
     assert.equal(reopened.undo(), true);
     await reopened.flush();
-    assert.equal(reopened.getSnapshot().replay.state.hapticsEnabled, true);
+    assert.equal(reopened.getSnapshot().replay.state.hapticsEnabled, false);
+    assert.equal(
+      reopened.getSnapshot().replay.state.habits[0].color,
+      '#82E6BC',
+    );
   } finally {
     raw.close();
     rmSync(directory, { recursive: true });
@@ -489,7 +493,7 @@ test('failed startup exposes a retry without creating a replacement log', async 
   assert.equal(store.getSnapshot().events.length, 1);
 });
 
-test('every recorded pre-reload edit remains undoable, then redo reconstructs the same state', async (t) => {
+test('every pre-reload habit edit remains undoable while settings persist independently', async (t) => {
   const { store, repository } = await fixture(t);
   store.change(entry(null, 1, 'walk', '2026-10-03'));
   store.change(entry(null, 0, 'read', '2026-10-05'));
@@ -506,17 +510,17 @@ test('every recorded pre-reload edit remains undoable, then redo reconstructs th
   await reopened.load();
   let count = 0;
   while (reopened.undo()) count++;
-  assert.equal(count, 4);
+  assert.equal(count, 3);
   await reopened.flush();
-  assert.deepEqual(
-    reopened.getSnapshot().replay.state,
-    replayEvents([store.getSnapshot().events[0]]).replay.state,
-  );
+  assert.deepEqual(reopened.getSnapshot().replay.state, {
+    ...replayEvents([store.getSnapshot().events[0]]).replay.state,
+    hapticsEnabled: false,
+  });
   reopened = new ChangeStore(repository, metadata);
   await reopened.load();
   count = 0;
   while (reopened.redo()) count++;
-  assert.equal(count, 4);
+  assert.equal(count, 3);
   await reopened.flush();
   assert.deepEqual(reopened.getSnapshot().replay.state, expected);
 });

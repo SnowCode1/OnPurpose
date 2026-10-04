@@ -9,8 +9,10 @@ portrait and landscape. Scroll into the past or deliberately pull beyond today
 to reveal future dates; checkbox and daily-total entries work in both directions.
 Habit details offer 24 colour presets, a custom visual picker, and hex input.
 Entries, colours, and the haptic setting now persist locally in SQLite. History
-shows the incremental changes with undo/redo, and Settings supports change-based
-backup export/restore. Habit management, comments, and statistics remain to be
+shows active habit actions with grouped undo/redo; rapid corrections to the same
+entry become one action, and global settings stay outside History/Undo. Settings
+supports change-based backup export/restore, retaining the full underlying log.
+Habit management, comments, and statistics remain to be
 implemented. Sample habits are seeded once; they no longer reset on reload.
 
 ## Run locally

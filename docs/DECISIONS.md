@@ -1,5 +1,33 @@
 # Decision log
 
+## 019 — Active habit History and grouped Undo
+
+Date: 4 October 2026. Status: founder authorized the recommendation; implemented,
+updated behaviour awaiting phone confirmation.
+
+Keep global preferences in the unified incremental storage/export format, while
+excluding them from visible History and its Undo/Redo sequence. Habit entries
+and applied habit colours remain visible and undoable; future habit-definition
+edits should follow the same distinction. Preference changes must not discard
+habit Redo or interrupt an eligible edit group.
+
+History represents active meaningful actions. Undo removes an action from the
+view; Redo restores the original action, without adding undo/redo rows. Repeated
+consecutive edits to the same habit field and effective date become one action
+using a two-minute inactivity window. A net-zero group disappears. Every edit
+still saves immediately; grouping never delays persistence. Show the next Undo
+target above the list.
+
+The two-minute rolling window and consecutive-edit boundary are implementation
+choices. Another habit/date/field, Undo/Redo, midnight, time-zone changes, or a
+backwards clock close the group. A grouped Undo uses one net inverse and one
+atomic transaction. Preserve raw edits in append-only storage and exports.
+
+New events and backup containers use version 2. Keep existing v1 records and
+backup fixtures unchanged and replay their original semantics; old habit edits
+remain separate steps rather than being retroactively grouped. The SQLite schema
+stays version 1. See [STORAGE.md](STORAGE.md) for compatibility and validation.
+
 ## 018 — Compact, day-grouped change History
 
 Date: 4 October 2026. Status: founder requested; implemented, founder approved the appearance on phone.

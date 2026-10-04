@@ -204,8 +204,10 @@ are seeded only when creating a genuinely new database.
 Versioned events preserve before/after values, explicit effective calendar dates,
 UTC edit instants, stable IDs, sequence, and time-zone metadata. Replay validates
 causality and reconstructs undo/redo stacks. Undo appends the inverse of the latest
-active change rather than deleting it. History shows actual changes, including
-corrections and undo/redo. Settings exports/restores a checksum-validated JSON
+active grouped action rather than deleting source events. History projects active
+habit actions; Undo removes the row and Redo restores it. Global preferences stay
+in storage without appearing in History or affecting habit Undo/Redo. Settings
+exports/restores a checksum-validated version-2 JSON
 change archive; confirmed restore atomically retains a pre-restore copy.
 
 The local-midnight boundary remains the current default; recorded date keys do
@@ -222,7 +224,7 @@ separately from the list.
 
 HistoryView uses React Native SectionList with sticky day headings and compact,
 expandable rows (minimum 54 points at default text size). Icons distinguish checked,
-unchecked, numeric, cleared, colour, haptic, undo, and redo actions. Text retains
+unchecked, numeric, cleared, and colour actions. Text retains
 meaning; each whole row exposes one VoiceOver label, including old/new colour
 values and any effective entry date. Dark custom colours use a neutral icon
 fallback so the action remains visible. Rows have no fixed height or truncation.
@@ -236,6 +238,11 @@ midnight hook refreshes Today/Yesterday headings while History is open.
 
 Undo/Redo are compact labelled icon buttons with at least 44-point height. Save
 status and retry remain explicit above the list; closing preserves the grid.
+The next Undo target appears beneath the controls. Actions come from replay's
+active undo stack, with consecutive same-field/date corrections coalesced during
+a two-minute inactivity window. Net-zero groups vanish; raw edits remain saved.
+Redo restores the action's original time/order; its latest mutation sequence
+marks it pending until the new event commits. Preferences never become rows.
 Numeric corrections show before → after and units, and colour corrections show
 a pair of swatches. Different effective dates get a small For-date caption;
 regular same-day entry rows avoid repeating the date.

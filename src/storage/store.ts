@@ -1,5 +1,6 @@
 import {
   applyEvent,
+  canCoalesce,
   emptyReplay,
   inverse,
   replayEvents,
@@ -78,21 +79,27 @@ export class ChangeStore {
     !this.snapshot.busy;
   change(change: Change): boolean {
     if (!this.canEdit() || change.before === change.after) return false;
-    return this.enqueue({
+    const meta = {
       ...this.metadata(this.snapshot.events.length + 1),
-      type: 'change',
-      change,
-    });
+      version: 2 as const,
+    };
+    if (change.kind === 'haptics')
+      return this.enqueue({ ...meta, type: 'preference', change });
+    const group = this.snapshot.replay.lastGroup;
+    const groupId = canCoalesce(group, meta, change) ? group!.id : meta.id;
+    return this.enqueue({ ...meta, type: 'change', groupId, change });
   }
+
   undo = (): boolean => {
     if (!this.canEdit()) return false;
     const target = this.snapshot.replay.undo.at(-1);
     if (!target) return false;
     return this.enqueue({
       ...this.metadata(this.snapshot.events.length + 1),
+      version: 2,
       type: 'undo',
       targetId: target.id,
-      change: inverse(target.change),
+      change: inverse(target.change) as typeof target.change,
     });
   };
   redo = (): boolean => {
@@ -101,9 +108,10 @@ export class ChangeStore {
     if (!target) return false;
     return this.enqueue({
       ...this.metadata(this.snapshot.events.length + 1),
+      version: 2,
       type: 'redo',
-      targetId: target.id,
-      change: inverse(target.change),
+      targetId: target.undoId,
+      change: target.action.change,
     });
   };
   private enqueue(event: StoredEvent): boolean {

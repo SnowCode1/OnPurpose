@@ -1,0 +1,164 @@
+{
+  "format": "onpurpose.changes",
+  "version": 2,
+  "exportedAt": "2026-10-04T05:33:00.000Z",
+  "eventCount": 9,
+  "sha256": "032c10c735e518cd919138cbb3b216986dfd2880c43212469ad96938e3df146e",
+  "events": [
+    {
+      "version": 2,
+      "id": "example-v2-1",
+      "sequence": 1,
+      "recordedAt": "2026-10-04T05:30:00.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "initialize",
+      "habits": [
+        {
+          "id": "read",
+          "name": "Read",
+          "unit": "minutes",
+          "color": "#BDA5FF"
+        },
+        {
+          "id": "walk",
+          "name": "Walk",
+          "color": "#82E6BC"
+        }
+      ]
+    },
+    {
+      "version": 2,
+      "id": "example-v2-2",
+      "sequence": 2,
+      "recordedAt": "2026-10-04T05:30:01.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "change",
+      "groupId": "example-v2-2",
+      "change": {
+        "kind": "entry",
+        "habitId": "read",
+        "date": "2026-10-04",
+        "before": null,
+        "after": 20
+      }
+    },
+    {
+      "version": 2,
+      "id": "example-v2-3",
+      "sequence": 3,
+      "recordedAt": "2026-10-04T05:32:01.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "change",
+      "groupId": "example-v2-3",
+      "change": {
+        "kind": "entry",
+        "habitId": "read",
+        "date": "2026-10-04",
+        "before": 20,
+        "after": 25
+      }
+    },
+    {
+      "version": 2,
+      "id": "example-v2-4",
+      "sequence": 4,
+      "recordedAt": "2026-10-04T05:32:11.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "change",
+      "groupId": "example-v2-3",
+      "change": {
+        "kind": "entry",
+        "habitId": "read",
+        "date": "2026-10-04",
+        "before": 25,
+        "after": 30
+      }
+    },
+    {
+      "version": 2,
+      "id": "example-v2-5",
+      "sequence": 5,
+      "recordedAt": "2026-10-04T05:32:12.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "undo",
+      "targetId": "example-v2-3",
+      "change": {
+        "kind": "entry",
+        "habitId": "read",
+        "date": "2026-10-04",
+        "before": 30,
+        "after": 20
+      }
+    },
+    {
+      "version": 2,
+      "id": "example-v2-6",
+      "sequence": 6,
+      "recordedAt": "2026-10-04T05:32:13.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "preference",
+      "change": {
+        "kind": "haptics",
+        "before": true,
+        "after": false
+      }
+    },
+    {
+      "version": 2,
+      "id": "example-v2-7",
+      "sequence": 7,
+      "recordedAt": "2026-10-04T05:32:14.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "redo",
+      "targetId": "example-v2-5",
+      "change": {
+        "kind": "entry",
+        "habitId": "read",
+        "date": "2026-10-04",
+        "before": 20,
+        "after": 30
+      }
+    },
+    {
+      "version": 2,
+      "id": "example-v2-8",
+      "sequence": 8,
+      "recordedAt": "2026-10-04T05:32:15.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "change",
+      "groupId": "example-v2-8",
+      "change": {
+        "kind": "entry",
+        "habitId": "walk",
+        "date": "2026-10-05",
+        "before": null,
+        "after": 1
+      }
+    },
+    {
+      "version": 2,
+      "id": "example-v2-9",
+      "sequence": 9,
+      "recordedAt": "2026-10-04T05:32:16.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "change",
+      "groupId": "example-v2-8",
+      "change": {
+        "kind": "entry",
+        "habitId": "walk",
+        "date": "2026-10-05",
+        "before": 1,
+        "after": null
+      }
+    }
+  ]
+}

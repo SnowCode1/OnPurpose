@@ -202,7 +202,7 @@ The threshold haptic still marks readiness; release continues smoothly into
 future dates. Date headings remain scrollable, without a hidden tap-to-return.
 
 Hold ONPURPOSE, month/year, or a dialog/panel title to share a development preview.
-History shows real stored changes with undo/redo. Settings has a persistent haptic
+History shows active habit actions with grouped undo/redo. Settings has a persistent haptic
 toggle and full change-based backup export/restore. The grid stays mounted behind
 these panels. See STORAGE.md and the persistence phone checks in TESTING.md. Icons use `react-native-svg` 15.15.4, installed
 with Expo’s SDK-compatible installer and included in Expo Go.
@@ -219,6 +219,12 @@ After adding native storage/file dependencies, fully reload Expo Go (restart
 Metro with `npm run start:clear` if it cannot resolve an installed module).
 Settings → Export backup opens the share sheet; choose Save to Files. Restore
 backup validates first and asks before replacing data, retaining a local copy.
+
+New habit edits use version-2 events with grouped actions; global preferences save
+outside visible History/Undo. Exports use container version 2; existing version-1
+backups remain importable and old log records stay unchanged. Fully reload Expo Go
+to test storage updates. Do not downgrade to an older build after writing v2 data;
+older builds cannot interpret it and will refuse to load rather than reset.
 The web preview uses separate browser localStorage, not the iPhone SQLite file.
 
 Run `node --test scripts/storage.test.mjs` for focused storage/recovery tests, and

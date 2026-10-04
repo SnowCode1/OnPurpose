@@ -15,31 +15,55 @@ export type Change =
     }
   | { kind: 'colour'; habitId: string; before: string; after: string }
   | { kind: 'haptics'; before: boolean; after: boolean };
+export type HabitChange = Exclude<Change, { kind: 'haptics' }>;
 export type EventMeta = {
-  version: 1;
+  version: 1 | 2;
   id: string;
   sequence: number;
   recordedAt: string;
   timeZone: string;
   utcOffsetMinutes: number;
 };
-export type ChangeEvent = EventMeta &
-  (
+export type LegacyChangeEvent = EventMeta & { version: 1 } & (
     | { type: 'change'; change: Change }
     | { type: 'undo' | 'redo'; targetId: string; change: Change }
   );
+export type CurrentChangeEvent = EventMeta & { version: 2 } & (
+    | { type: 'change'; groupId: string; change: HabitChange }
+    | { type: 'undo' | 'redo'; targetId: string; change: HabitChange }
+    | { type: 'preference'; change: Extract<Change, { kind: 'haptics' }> }
+  );
+export type ChangeEvent = LegacyChangeEvent | CurrentChangeEvent;
 export type StoredEvent =
   (EventMeta & { type: 'initialize'; habits: Habit[] }) | ChangeEvent;
+export type HistoryAction = EventMeta & {
+  type: 'change';
+  change: HabitChange;
+  firstRecordedAt: string;
+  firstSequence: number;
+  editCount: number;
+  lastChangedSequence: number;
+};
+export type RedoAction = { action: HistoryAction; undoId: string };
 export type Replay = {
   state: StoredState;
-  undo: ChangeEvent[];
-  redo: ChangeEvent[];
+  undo: HistoryAction[];
+  redo: RedoAction[];
+  lastGroup: HistoryAction | null;
+  legacyUndo: LegacyChangeEvent[];
+  legacyRedo: LegacyChangeEvent[];
+  hasV2: boolean;
 };
 export const emptyReplay = (): Replay => ({
   state: { habits: [], values: {}, hapticsEnabled: true },
   undo: [],
   redo: [],
+  lastGroup: null,
+  legacyUndo: [],
+  legacyRedo: [],
+  hasV2: false,
 });
+export const GROUP_INACTIVITY_MS = 2 * 60 * 1000;
 
 function insist(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -120,7 +144,10 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
     'utcOffsetMinutes',
     'type',
   ];
-  insist(value.version === 1, 'Unsupported event version.');
+  insist(
+    value.version === 1 || value.version === 2,
+    'Unsupported event version.',
+  );
   id(value.id);
   insist(
     Number.isSafeInteger(value.sequence) && Number(value.sequence) > 0,
@@ -181,17 +208,29 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
   } else if (
     value.type === 'change' ||
     value.type === 'undo' ||
-    value.type === 'redo'
+    value.type === 'redo' ||
+    (value.version === 2 && value.type === 'preference')
   ) {
+    const grouped = value.version === 2 && value.type === 'change';
     keys(value, [
       ...common,
       'change',
-      ...(value.type === 'change' ? [] : ['targetId']),
+      ...(value.type === 'undo' || value.type === 'redo' ? ['targetId'] : []),
+      ...(grouped ? ['groupId'] : []),
     ]);
     validateChange(value.change);
-    if (value.type !== 'change') id(value.targetId);
+    if (value.type === 'undo' || value.type === 'redo') id(value.targetId);
+    if (grouped) id(value.groupId);
+    if (value.version === 2)
+      insist(
+        value.type === 'preference'
+          ? value.change.kind === 'haptics'
+          : value.change.kind !== 'haptics',
+        'Preferences cannot be habit actions.',
+      );
   } else throw new Error('Unsupported event type.');
 }
+
 export function inverse(change: Change): Change {
   return { ...change, before: change.after, after: change.before } as Change;
 }
@@ -209,7 +248,49 @@ function sameChange(left: Change, right: Change): boolean {
 export function applyEvent(previous: Replay, event: StoredEvent): Replay {
   return reduceEvent(previous, event, false);
 }
-// Replay owns its fresh state, so it can avoid copying the entire history for each event.
+function sameField(left: Change, right: Change) {
+  return (
+    left.kind === right.kind &&
+    (left.kind === 'haptics' ||
+      (right.kind !== 'haptics' && left.habitId === right.habitId)) &&
+    (left.kind !== 'entry' ||
+      (right.kind === 'entry' && left.date === right.date))
+  );
+}
+function editDay(meta: EventMeta): string {
+  return new Date(Date.parse(meta.recordedAt) + meta.utcOffsetMinutes * 60000)
+    .toISOString()
+    .slice(0, 10);
+}
+export function canCoalesce(
+  group: HistoryAction | null,
+  meta: EventMeta,
+  change: HabitChange,
+): boolean {
+  if (!group) return false;
+  const elapsed = Date.parse(meta.recordedAt) - Date.parse(group.recordedAt);
+  return (
+    sameField(group.change, change) &&
+    group.change.after === change.before &&
+    elapsed >= 0 &&
+    elapsed < GROUP_INACTIVITY_MS &&
+    group.timeZone === meta.timeZone &&
+    group.utcOffsetMinutes === meta.utcOffsetMinutes &&
+    editDay(group) === editDay(meta)
+  );
+}
+function actionFrom(event: EventMeta, change: HabitChange): HistoryAction {
+  return {
+    ...event,
+    type: 'change',
+    change,
+    firstRecordedAt: event.recordedAt,
+    firstSequence: event.sequence,
+    editCount: 1,
+    lastChangedSequence: event.sequence,
+  };
+}
+// Replay owns its fresh state; live reductions preserve previous snapshots.
 function reduceEvent(
   previous: Replay,
   event: StoredEvent,
@@ -222,46 +303,149 @@ function reduceEvent(
       'Initialization must be first and unique.',
     );
     return {
+      ...emptyReplay(),
       state: {
         habits: event.habits.map((habit) => ({ ...habit })),
         values: {},
         hapticsEnabled: true,
       },
-      undo: [],
-      redo: [],
+      hasV2: event.version === 2,
     };
   }
   insist(previous.state.habits.length > 0, 'Missing initialization.');
+  insist(
+    !previous.hasV2 || event.version === 2,
+    'Legacy events cannot follow version-2 events.',
+  );
   const undo = mutable ? previous.undo : [...previous.undo];
   const redo = mutable ? previous.redo : [...previous.redo];
-  if (event.type === 'undo') {
-    const target = undo.at(-1);
-    insist(
-      target &&
-        target.id === event.targetId &&
-        sameChange(event.change, inverse(target.change)),
-      'Invalid undo target or inverse.',
-    );
-    undo.pop();
-    redo.push(event);
-  } else if (event.type === 'redo') {
-    const target = redo.at(-1);
-    insist(
-      target &&
-        target.id === event.targetId &&
-        sameChange(event.change, inverse(target.change)),
-      'Invalid redo target or inverse.',
-    );
-    redo.pop();
-    undo.push(event);
+  let legacyUndo = mutable ? previous.legacyUndo : [...previous.legacyUndo];
+  let legacyRedo = mutable ? previous.legacyRedo : [...previous.legacyRedo];
+  let lastGroup = previous.lastGroup;
+  if (event.version === 1) {
+    // Interpret historical v1 undo exactly as written, including old preferences.
+    if (event.type === 'undo') {
+      const target = legacyUndo.at(-1);
+      insist(
+        target &&
+          target.id === event.targetId &&
+          sameChange(event.change, inverse(target.change)),
+        'Invalid legacy undo target or inverse.',
+      );
+      legacyUndo.pop();
+      legacyRedo.push(event);
+      if (event.change.kind !== 'haptics') {
+        const action = undo.at(-1);
+        insist(
+          action && action.id === event.targetId,
+          'Invalid habit undo target.',
+        );
+        undo.pop();
+        redo.push({ action, undoId: event.id });
+      }
+    } else if (event.type === 'redo') {
+      const target = legacyRedo.at(-1);
+      insist(
+        target &&
+          target.id === event.targetId &&
+          sameChange(event.change, inverse(target.change)),
+        'Invalid legacy redo target or inverse.',
+      );
+      legacyRedo.pop();
+      legacyUndo.push(event);
+      if (event.change.kind !== 'haptics') {
+        const targetAction = redo.at(-1);
+        insist(
+          targetAction && targetAction.undoId === event.targetId,
+          'Invalid habit redo target.',
+        );
+        redo.pop();
+        // v1 used the redo event ID as the next undo target. Keep that identity.
+        undo.push({
+          ...targetAction.action,
+          id: event.id,
+          lastChangedSequence: event.sequence,
+        });
+      }
+    } else {
+      legacyUndo.push(event);
+      legacyRedo.length = 0;
+      // Old preference edits also abandoned the redo branch. Respect that
+      // recorded v1 behaviour; only new v2 preferences preserve habit redo.
+      redo.length = 0;
+      if (event.change.kind !== 'haptics') {
+        undo.push(actionFrom(event, event.change));
+      }
+    }
+    lastGroup = null;
   } else {
-    undo.push(event);
-    redo.length = 0;
+    legacyUndo = [];
+    legacyRedo = [];
+    if (event.type === 'change') {
+      let action: HistoryAction;
+      if (event.groupId === event.id) action = actionFrom(event, event.change);
+      else {
+        insist(
+          lastGroup &&
+            lastGroup.id === event.groupId &&
+            canCoalesce(lastGroup, event, event.change),
+          'Invalid edit group or inactivity window.',
+        );
+        if (lastGroup.change.before !== lastGroup.change.after) {
+          insist(
+            undo.at(-1)?.id === lastGroup.id,
+            'Group is no longer the latest action.',
+          );
+          undo.pop();
+        }
+        action = {
+          ...lastGroup,
+          recordedAt: event.recordedAt,
+          sequence: event.sequence,
+          change: {
+            ...event.change,
+            before: lastGroup.change.before,
+          } as HabitChange,
+          editCount: lastGroup.editCount + 1,
+          lastChangedSequence: event.sequence,
+        };
+      }
+      if (action.change.before !== action.change.after) undo.push(action);
+      redo.length = 0;
+      lastGroup = action;
+    } else if (event.type === 'undo') {
+      const target = undo.at(-1);
+      insist(
+        target &&
+          target.id === event.targetId &&
+          sameChange(event.change, inverse(target.change)),
+        'Invalid grouped undo target or inverse.',
+      );
+      undo.pop();
+      redo.push({ action: target, undoId: event.id });
+      lastGroup = null;
+    } else if (event.type === 'redo') {
+      const target = redo.at(-1);
+      insist(
+        target &&
+          target.undoId === event.targetId &&
+          sameChange(event.change, target.action.change),
+        'Invalid grouped redo target or change.',
+      );
+      redo.pop();
+      undo.push({ ...target.action, lastChangedSequence: event.sequence });
+      lastGroup = null;
+    }
+    // Preferences only update saved state. They leave habit undo/redo/groups intact.
   }
   return {
     state: reduceChange(previous.state, event.change, mutable),
     undo,
     redo,
+    lastGroup,
+    legacyUndo,
+    legacyRedo,
+    hasV2: previous.hasV2 || event.version === 2,
   };
 }
 export function applyChange(state: StoredState, change: Change): StoredState {

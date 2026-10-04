@@ -13,7 +13,8 @@ preference now survive a reload. The existing 12 sample habits are initialized
 once, not on every launch. Habit creation, renaming, ordering, archival, comments,
 and statistics are not implemented by this milestone.
 
-`src/storage/model.ts` defines version-1 events and deterministic replay.
+`src/storage/model.ts` defines version-2 events and deterministic replay, with
+backward-compatible interpretation of existing version-1 records.
 `repository.ts` implements the native database operations against a small SQL
 interface; `native.ts` connects it to Expo SQLite and native UUID/SHA-256 support.
 `store.ts` owns loading, immediate UI state, the serialized write queue, undo,
@@ -48,7 +49,7 @@ Replay owns fresh mutable state to avoid copying the entire history on each even
 live UI updates remain immutable. Native launch performance still needs measurement.
 
 Future database migrations must be explicit transactional steps; reject newer
-versions. Future event reducers must continue to interpret existing v1 events.
+versions. Future event reducers must continue to interpret existing v1/v2 events.
 Do not rewrite old events just to match a newer domain model. Keep tests for old
 exports and migration fixtures. Version 1 is the first schema, so there is no
 migration from an earlier persisted OnPurpose version.
@@ -57,19 +58,31 @@ migration from an earlier persisted OnPurpose version.
 
 Every event carries:
 
-| Field              | Meaning                                                                   |
-| ------------------ | ------------------------------------------------------------------------- |
-| `version`          | Event schema version, currently `1`                                       |
-| `id`               | Stable UUID generated once, retained on save retry                        |
-| `sequence`         | Contiguous order starting at `1`; authoritative even if the clock changes |
-| `recordedAt`       | UTC edit instant in ISO form with milliseconds                            |
-| `timeZone`         | Device time-zone name at edit time, or `unknown` if unavailable           |
-| `utcOffsetMinutes` | Local offset east of UTC at edit time                                     |
-| `type`             | `initialize`, `change`, `undo`, or `redo`                                 |
+| Field              | Meaning                                                                    |
+| ------------------ | -------------------------------------------------------------------------- |
+| `version`          | Event schema version, currently `2`; existing `1` records remain supported |
+| `id`               | Stable UUID generated once, retained on save retry                         |
+| `sequence`         | Contiguous order starting at `1`; authoritative even if the clock changes  |
+| `recordedAt`       | UTC edit instant in ISO form with milliseconds                             |
+| `timeZone`         | Device time-zone name at edit time, or `unknown` if unavailable            |
+| `utcOffsetMinutes` | Local offset east of UTC at edit time                                      |
+| `type`             | `initialize`, `change`, `undo`, `redo`, or `preference`                    |
 
 `initialize` records the ordered habit definitions and starts with no entries and
-haptics enabled. Each subsequent change targets one daily entry, one habit colour,
-or the haptic setting, and includes `before` and `after` values.
+haptics enabled. Each subsequent edit includes `before` and `after` values.
+Version-2 `change` events target an entry or habit colour and include a `groupId`.
+A new group's ID is its first event's ID; corrections retain that ID. Version-2
+`preference` events persist global settings (currently haptics) in the same log
+and export, outside habit History and Undo/Redo. Undo targets an active group ID;
+Redo targets its latest undo event ID and restores the original action.
+
+Existing version-1 logs retain their original interpretation, including historical
+preference undo/redo and abandoned redo branches. Their habit edits remain
+individual undo steps, with settings and undo/redo rows filtered from the view.
+New events are version 2; a log may have a version-1 prefix followed by version 2,
+but cannot switch back. No old records are rewritten and no database reset or SQL
+schema change is required. Older builds cannot read newly exported version-2
+backups and must reject them rather than discard unfamiliar events.
 
 Daily entries use stable habit IDs and explicit calendar dates. Numeric zero is a
 recorded value; `null` is absent/cleared. Checkbox values are `1` or `null`, so
@@ -116,44 +129,63 @@ on this preview for irreplaceable data.
 
 ## Undo, redo, and History
 
-History is a virtualized sectioned list of actual changes, newest first, grouped
+History is a virtualized sectioned list of active habit actions, newest first, grouped
 by edit day in the viewing device's local time zone. Sticky day headings show
 Today/Yesterday or a calendar date; rows show the edit time. Entry dates appear as
 “For …” when different from the edit day. Compact rows pair action icons with
 text, numeric before/after totals, and old/new colour swatches. Undo/Redo and save
-status stay above the list. Older records load in batches of 100, retaining
-contiguous log order if a clock adjustment causes a date to recur. Initialization
-is not shown as a user edit. Colour/preference changes currently appear alongside
-entry changes. It is a change browser, not yet a historical whole-screen
-snapshot/reconstruction interface. The founder approved its appearance and is
-considering a cleaner active-action timeline and grouped repeated edits; those
-behaviour changes are not implemented by this visual update.
+status and a description of the next Undo target stay above the list. Older
+actions load in batches of 100, retaining contiguous action order if a clock
+adjustment causes a date to recur. Initialization and global preferences are not
+shown. Habit colours remain visible and undoable. It is a change browser, not yet
+a historical whole-screen snapshot/reconstruction interface.
 
 Undo reverses the latest active action and appends an `undo` event referencing it.
-Redo reverses the latest undo and appends a `redo` event. Both validate the exact
-inverse and current before-value. The stacks are reconstructed from events and
-survive reopening/export/restore. A new ordinary edit clears the redo branch
-without deleting its prior events. One accepted cell tap, number save, applied
-colour, or preference toggle is one undo step. Arbitrary selective undo, gesture
-batching, comments, and permanent erasure require later rules.
+Redo reapplies that action and appends a `redo` event. The visible row disappears
+on Undo and returns with its original identity, order, and edit time on Redo;
+undo/redo never create extra rows. Both validate the exact net change and current
+before-value. The stacks are reconstructed from events and survive reopening,
+export, and restore. New habit edits clear the redo branch without deleting its
+events. New preferences neither enter Undo nor clear Redo.
 
-Undo is not permanent erasure. Version 1 has no deletion or erasure UI. Decide
+Consecutive edits to the same habit field coalesce while less than two minutes
+have elapsed since its latest edit. Entries must also have the same effective
+date. Each group shows the first before-value and latest after-value, with the
+latest edit time. Check/uncheck returning to the original value removes the
+active action; another immediate check can resume that group. Every individual
+edit still writes immediately to disk. The two-minute window is a grouping rule,
+not a save delay. Undo reverses the whole net group in one atomic transaction.
+
+Editing another habit, date, or field starts a separate action and closes the
+previous group, preserving chronological undo. Undo/Redo also close the group.
+Midnight, time-zone/offset changes, a backwards clock, or two minutes of inactivity
+close it. Preferences do not break an otherwise eligible group. Reopening within
+the window preserves the group; grouping rules use captured edit-zone metadata,
+while list headings use the viewing local zone. Selective undo, gesture batching,
+comments, and permanent erasure require later rules.
+
+Undo is not permanent erasure. There is no deletion or erasure UI. Decide
 privacy/erasure rules before implementing comments; do not assume append-only
 history makes erasure impossible or unwanted.
 
-## Portable backup version 1
+## Portable backup version 2
 
 Settings → Export backup opens the iOS share sheet; save the JSON to Files or
 another destination. The app first waits for pending saves and captures a stable
 log. The export is a readable JSON container of **changes**, not a replacement
-snapshot of habit/day values. See [the synthetic example](examples/storage-v1.json).
+snapshot of habit/day values. See [the version-2 synthetic example](examples/storage-v2.json)
+and [the unchanged legacy version-1 fixture](examples/storage-v1.json).
 
-The container has `format: "onpurpose.changes"`, `version: 1`, `exportedAt`,
+The container has `format: "onpurpose.changes"`, `version: 2`, `exportedAt`,
 `eventCount`, `sha256`, and `events`. The digest is SHA-256 of UTF-8
 `JSON.stringify(events)` with its existing property order. It detects accidental
 modification/incompleteness; it is not an authenticated signature. Exports are not
 encrypted and may reveal habit names, dated values, colours, and preference/edit
-metadata. Pre-restore copies are not bundled into the active export.
+metadata. Pre-restore copies are not bundled into the active export. The exporter
+always writes container version 2. The importer accepts versions 1 and 2; a
+version-1 container must contain only version-1 events. Version-2 containers can
+retain legacy prefixes, including full raw edits and undo/redo operations that
+are omitted from the active History view.
 
 Restore backup opens the system document picker, reads the selected cached file,
 checks format/version/count/checksum, and fully validates/replays it before asking
@@ -167,7 +199,7 @@ another copy of the data it replaces. Copies survive reopening; repeated restore
 retain older copies too, although the UI exposes only the latest. A retention and
 permanent-removal policy must be designed before release.
 
-Version-1 import/export is bounded to 20 MB and 100,000 events; oversized files
+Import/export is bounded to 20 MB and 100,000 events; oversized files
 are rejected before replacing data. Native logging itself has no event-count cap.
 Revisit the backup container/streaming limits before very large histories, and
 measure native replay/write latency as daily records accumulate. Cache files from

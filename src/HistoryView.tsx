@@ -6,7 +6,7 @@ import {
   historyPresentation,
   historySections,
 } from './history';
-import type { ChangeEvent, StoredState } from './storage/model';
+import type { HistoryAction, StoredState } from './storage/model';
 import type { StoreSnapshot } from './storage/store';
 import { useLocalToday } from './useLocalToday';
 import { contrastOnBlack } from './colors';
@@ -16,7 +16,7 @@ const HistoryRow = memo(function HistoryRow({
   state,
   pending,
 }: {
-  event: ChangeEvent;
+  event: HistoryAction;
   state: StoredState;
   pending: boolean;
 }) {
@@ -128,8 +128,25 @@ export function HistoryView({
 }) {
   const today = useLocalToday();
   const [limit, setLimit] = useState(100);
-  const sections = historySections(snapshot.events, limit);
+  const sections = historySections(snapshot.replay.undo, limit);
   const editable = !snapshot.error && !snapshot.busy && !backupBusy;
+  const undoTarget = snapshot.replay.undo.at(-1);
+  const targetRow = undoTarget
+    ? historyPresentation(undoTarget, snapshot.replay.state)
+    : null;
+  const targetDate =
+    undoTarget?.change.kind === 'entry' && undoTarget.change.date !== today
+      ? new Date(`${undoTarget.change.date}T12:00:00`).toLocaleDateString(
+          undefined,
+          {
+            day: 'numeric',
+            month: 'short',
+            ...(undoTarget.change.date.slice(0, 4) !== today.slice(0, 4)
+              ? { year: 'numeric' }
+              : {}),
+          },
+        )
+      : null;
   const savedCount = snapshot.events.length - snapshot.pending;
   return (
     <View style={styles.container}>
@@ -168,6 +185,11 @@ export function HistoryView({
           />
         </View>
       </View>
+      <Text style={styles.undoTarget} accessibilityLiveRegion="polite">
+        {targetRow
+          ? `Undo: ${targetRow.title} · ${targetRow.summary}${targetDate ? ` · ${targetDate}` : ''}`
+          : 'Nothing to undo'}
+      </Text>
       {snapshot.error && (
         <View style={styles.error}>
           <Text style={styles.errorText}>{snapshot.error}</Text>
@@ -201,20 +223,20 @@ export function HistoryView({
           <HistoryRow
             event={item}
             state={snapshot.replay.state}
-            pending={item.sequence > savedCount}
+            pending={item.lastChangedSequence > savedCount}
           />
         )}
         ListEmptyComponent={
           <View style={styles.empty}>
             <Icon name="history" size={32} color="#747474" />
-            <Text style={styles.emptyTitle}>No changes yet</Text>
+            <Text style={styles.emptyTitle}>No active changes</Text>
             <Text style={styles.emptyDescription}>
-              Your entries and edits will appear here.
+              Your habit entries and edits will appear here.
             </Text>
           </View>
         }
         ListFooterComponent={
-          snapshot.events.length - 1 > limit ? (
+          snapshot.replay.undo.length > limit ? (
             <Pressable
               accessibilityRole="button"
               onPress={() => setLimit((count) => count + 100)}
@@ -258,6 +280,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     flexShrink: 1,
+  },
+  undoTarget: {
+    marginHorizontal: 24,
+    marginBottom: 8,
+    fontSize: 12,
+    lineHeight: 17,
+    color: '#909090',
   },
   list: { flexGrow: 1, paddingBottom: 24 },
   dayHeading: {

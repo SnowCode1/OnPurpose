@@ -395,8 +395,9 @@ report resolved solely from automated tests.
 Remaining iPhone checks:
 
 1. Record five checkbox changes rapidly, undo and redo them, fully close/reopen
-   Expo Go, and repeat. The newest remaining edit is the next undo; undo records
-   stay in History. Test another day and tomorrow, and a numeric explicit zero.
+   Expo Go, and repeat. The newest remaining habit action is the next undo; its
+   row disappears on Undo and returns on Redo. Test another day and tomorrow,
+   and a numeric explicit zero. See the grouped-action checks below.
 2. In Settings wait for Saved, export via Save to Files, and verify a JSON file
    exists. Cancelling sharing must not alter data or claim an external backup.
 3. Make a fresh entry after exporting, restore that file, and inspect the native
@@ -437,7 +438,7 @@ and year-boundary headings. TypeScript/lint/format and iOS bundle checks pass.
 The founder approved the appearance on the iPhone. No screenshots of this
 revised layout have been inspected; large-text/VoiceOver and paging checks remain
 to be confirmed. Behaviour changes to filtering settings, undo presentation, and
-repeated-toggle grouping are being discussed separately.
+repeated-toggle grouping were subsequently authorized; see the following milestone.
 
 Phone checks: inspect normal and large text, long names, colour changes, explicit
 numeric zero, past/future corrections, undo/redo, pending/retry status, sticky
@@ -445,3 +446,36 @@ heading readability, and older-record loading. VoiceOver should read a whole row
 once with habit/action/effective date/time; icons and swatches are decorative.
 Same-day rows should not repeat the date. Confirm closing History still preserves
 horizontal grid position, and no changes to entries are made by browsing.
+
+## Active actions and grouped Undo — 4 October 2026
+
+Implemented: global preferences save outside visible History/Undo, retaining
+habit Redo. Undo removes a row and Redo restores the original action. Consecutive
+corrections to one entry/field coalesce within two minutes of inactivity, net-zero
+groups disappear, and a target description explains the next Undo. Every raw edit
+still writes immediately. New version-2 events/containers retain legacy v1 import
+and replay; the SQLite schema stays version 1.
+
+Automated: all 67 tests pass, along with TypeScript, lint, formatting, and an iOS
+production bundle export. Coverage includes grouping/cancellation/resumption, numeric net Undo,
+exact inactivity boundaries across reopen, separate habits/dates/fields,
+midnight/zone/clock changes, preferences preserving Redo, Undo/Redo boundaries,
+atomic grouped-undo failure/retry, backup round-trips, legacy preferences and
+abandoned redo branches, rejected malformed groups, and synthetic v1/v2 fixtures.
+Phone acceptance of the new behaviour remains pending; prior persistence and
+History appearance approvals do not establish this milestone's native behaviour.
+
+Phone checks:
+
+1. Check/uncheck an empty cell rapidly: no active row remains. Check again:
+   one row returns. Undo removes it; Redo restores it with its original time.
+2. Set a numeric total, then correct it several times: one row shows the initial
+   value → final total. Undo restores the initial value in one step. Repeat after
+   two minutes of inactivity: a separate correction appears. Test explicit zero.
+3. Change another habit/date between corrections: they remain separate actions.
+   Undo/Redo followed by a correction also starts a new group.
+4. Toggle haptics: no History row, no changed Undo target, no lost Redo. Reload:
+   values, preference, grouped actions, and Redo survive. Old v1 habit edits remain
+   separate steps; their settings and undo/redo rows are hidden.
+5. Export/restore through Files, verify both a v1 backup and a v2 backup. Inspect
+   target labels and save/error status with large text, landscape, and VoiceOver.

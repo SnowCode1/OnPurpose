@@ -15,7 +15,7 @@ export async function encodeArchive(
   const archive = JSON.stringify(
     {
       format: 'onpurpose.changes',
-      version: 1,
+      version: 2,
       exportedAt,
       eventCount: events.length,
       sha256: await digest(body),
@@ -47,7 +47,7 @@ export async function decodeArchive(text: string, digest: Digest) {
     Object.keys(archive).length !== fields.length ||
     !fields.every((key) => Object.hasOwn(archive, key)) ||
     archive.format !== 'onpurpose.changes' ||
-    archive.version !== 1
+    (archive.version !== 1 && archive.version !== 2)
   )
     throw new Error('Unsupported backup format or version.');
   if (
@@ -68,5 +68,11 @@ export async function decodeArchive(text: string, digest: Digest) {
       archive.sha256.toLowerCase()
   )
     throw new Error('The backup checksum does not match.');
-  return replayEvents(archive.events);
+  const result = replayEvents(archive.events);
+  if (
+    archive.version === 1 &&
+    result.events.some((event) => event.version !== 1)
+  )
+    throw new Error('Version-2 events require a version-2 backup.');
+  return result;
 }

@@ -54,6 +54,10 @@ and uncertainty about whether something was saved.
   history feature for browsing prior activity, checked boxes, and comments.
 - Show change history in compact rows with action icons, grouped by edit day,
   with time per row. Preserve clarity about different habit-entry dates.
+- Keep global preferences in incremental storage/export but outside visible
+  History and Undo. Show active habit actions: Undo removes their rows and Redo
+  restores them. Group rapid corrections to one entry and hide net-zero groups;
+  show the next Undo target. Start with two minutes of inactivity between groups.
 - Develop without owning a Mac; use the physical iPhone for actual testing.
 - Maintain project goals, agent guidance including CLAUDE.md, and a docs folder.
 
@@ -90,8 +94,10 @@ separate history-browsing feature. A correction made today to Tuesday's value
 has two different dates: the date being recorded and the time of the edit.
 Comments belong in this history design too. See [STORAGE.md](docs/STORAGE.md).
 
-The architectural direction is confirmed. Version-1 events, compensating undo/redo,
-and JSON change-based backup/replay are implemented. Comments, permanent erasure,
+The architectural direction is confirmed. Version-2 events, grouped compensating
+undo/redo, and JSON change-based backup/replay are implemented, retaining support
+for existing version-1 records and backups. The visible History is an active-action
+projection; the exported log retains every accepted edit. Comments, permanent erasure,
 and richer historical browsing still need design. See docs/STORAGE.md.
 
 ## How we will judge the experience
@@ -132,7 +138,7 @@ with larger text). It supports scrolling into the
 past, returning to Today, editing dated checkbox/numeric values, automatic local
 date rollover, deliberate future browsing/entries, and choosing preset or custom
 row colours in habit details. Statistics remain a
-placeholder. History now lists changes with undo/redo. Entries, colours, and the haptic preference
+placeholder. History lists active habit actions with grouped undo/redo. Entries, colours, and the haptic preference
 persist locally in SQLite; Settings supports full change-based backup/restore.
 The 12 sample habits are seeded once. Habit management and statistics remain
 unimplemented. Persistence is confirmed on phone; an older-undo report and
@@ -155,8 +161,8 @@ and incremental history are desired scope, not excluded candidates.
 | What exactly counts toward a numeric or scheduled habit's streak?      | Open                                                               |
 | Midnight cutoff, late-night logging, backdating, and travel?           | Local midnight implemented; later cutoff/travel policy pending     |
 | Comments on a habit, a day, a particular entry, or multiple kinds?     | Comments desired; attachment semantics open                        |
-| Which app changes enter the history; how do deletion and undo work?    | Version-1 undo/redo implemented; deletion/erasure policy open      |
-| Export/import format, backup location, and cross-device sync?          | Version-1 JSON backup/restore implemented; sync deferred           |
+| Which app changes enter the history; how do deletion and undo work?    | Active habit actions; preferences excluded; deletion/erasure open  |
+| Export/import format, backup location, and cross-device sync?          | Version-2 JSON backup; v1 import retained; sync deferred           |
 | Any reminders or widgets required for version one?                     | Open                                                               |
 | Free, paid, donations, or another model?                               | Open                                                               |
 | Licence and copyright holder?                                          | Open; choose before public release                                 |
