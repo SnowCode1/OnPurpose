@@ -1,4 +1,4 @@
-import { type ComponentType } from 'react';
+import { type ComponentType, type ReactNode } from 'react';
 import type { Habit } from './habits';
 import { ArchivedHabits } from './ArchivedHabits';
 import Animated from 'react-native-reanimated';
@@ -43,6 +43,8 @@ function Action({
   );
 }
 export function AppPanel({
+  sampleData = false,
+  developmentControls,
   page,
   visible,
   HeadingComponent,
@@ -61,6 +63,8 @@ export function AppPanel({
   onBack,
   onRestoreHabit,
 }: {
+  sampleData?: boolean;
+  developmentControls?: ReactNode;
   page: 'history' | 'settings' | 'archive';
   onArchive: () => void;
   onBack: () => void;
@@ -84,7 +88,9 @@ export function AppPanel({
     snapshot.error ??
     (snapshot.pending
       ? `Saving ${snapshot.pending} ${snapshot.pending === 1 ? 'change' : 'changes'}…`
-      : 'Saved on this device');
+      : sampleData
+        ? 'Sample changes kept for this session'
+        : 'Saved on this device');
   return (
     <Modal
       visible={visible}
@@ -131,6 +137,7 @@ export function AppPanel({
             <Animated.View key={page} entering={appear} style={{ flex: 1 }}>
               {page === 'history' ? (
                 <HistoryView
+                  sampleData={sampleData}
                   snapshot={snapshot}
                   backupBusy={backupBusy}
                   onUndo={onUndo}
@@ -139,6 +146,7 @@ export function AppPanel({
                 />
               ) : page === 'archive' ? (
                 <ArchivedHabits
+                  sampleData={sampleData}
                   habits={snapshot.replay.state.habits}
                   editable={editable}
                   onRestore={onRestoreHabit}
@@ -152,6 +160,16 @@ export function AppPanel({
                   contentContainerStyle={styles.body}
                   showsVerticalScrollIndicator={false}
                 >
+                  {developmentControls && (
+                    <View
+                      pointerEvents={
+                        backupBusy || snapshot.busy ? 'none' : 'auto'
+                      }
+                      accessibilityElementsHidden={backupBusy || snapshot.busy}
+                    >
+                      {developmentControls}
+                    </View>
+                  )}
                   <Action
                     label={`Archived habits · ${snapshot.replay.state.habits.filter((habit) => habit.archived).length}`}
                     onPress={onArchive}
@@ -176,50 +194,55 @@ export function AppPanel({
                       ios_backgroundColor="#303030"
                     />
                   </View>
-                  <Text
-                    style={[
-                      styles.section,
-                      { marginTop: 32, marginBottom: 12 },
-                    ]}
-                  >
-                    LOCAL DATA
-                  </Text>
-                  <Text
-                    accessibilityLiveRegion="polite"
-                    style={styles.description}
-                  >
-                    {status}
-                  </Text>
-                  {snapshot.error && (
-                    <Action label="Retry saving" onPress={onRetry} />
+                  {!sampleData && (
+                    <>
+                      <Text
+                        style={[
+                          styles.section,
+                          { marginTop: 32, marginBottom: 12 },
+                        ]}
+                      >
+                        LOCAL DATA
+                      </Text>
+                      <Text
+                        accessibilityLiveRegion="polite"
+                        style={styles.description}
+                      >
+                        {status}
+                      </Text>
+                      {snapshot.error && (
+                        <Action label="Retry saving" onPress={onRetry} />
+                      )}
+                      <Action
+                        label={backupBusy ? 'Working…' : 'Export backup'}
+                        onPress={onExport}
+                        disabled={!editable}
+                      />
+                      <Action
+                        label="Restore backup…"
+                        onPress={onRestore}
+                        disabled={!editable}
+                      />
+                      {snapshot.hasRecovery && (
+                        <Action
+                          label="Restore pre-restore copy…"
+                          onPress={onRecover}
+                          disabled={!editable}
+                        />
+                      )}
+                      <Text style={styles.description}>
+                        Backups include all changes and undo history. Save a
+                        copy outside the app to protect against uninstalling it
+                        or losing this device.
+                      </Text>
+                    </>
                   )}
-                  <Action
-                    label={backupBusy ? 'Working…' : 'Export backup'}
-                    onPress={onExport}
-                    disabled={!editable}
-                  />
-                  <Action
-                    label="Restore backup…"
-                    onPress={onRestore}
-                    disabled={!editable}
-                  />
-                  {snapshot.hasRecovery && (
-                    <Action
-                      label="Restore pre-restore copy…"
-                      onPress={onRecover}
-                      disabled={!editable}
-                    />
-                  )}
-                  <Text style={styles.description}>
-                    Backups include all changes and undo history. Save a copy
-                    outside the app to protect against uninstalling it or losing
-                    this device.
-                  </Text>
                   <View style={styles.about}>
                     <Text style={styles.aboutName}>OnPurpose · Preview</Text>
                     <Text style={styles.description}>
-                      Entries, colours, and settings are stored locally. The
-                      habits can be edited, arranged, and archived.
+                      {sampleData
+                        ? 'Sample data is temporary. Your saved habits and entries are untouched.'
+                        : 'Entries, colours, and settings are stored locally. The habits can be edited, arranged, and archived.'}
                     </Text>
                   </View>
                 </ScrollView>

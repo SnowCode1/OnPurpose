@@ -243,6 +243,15 @@ measure native replay/write latency as daily records accumulate. Cache files fro
 export/import are removed when the action completes. Exporting or cancelling the
 share sheet is not proof that the user saved an external copy.
 
+## Development sample store
+
+For statistics review, development builds can temporarily select a separate
+in-memory ChangeStore populated with 180 days of synthetic v4 events. It receives
+neither real values nor a native/browser repository and cannot replace/restore
+backups. Its writes and Undo/Redo use the normal event logic but never reach SQLite,
+localStorage, exports, or real History. Returning to real data restores the original
+store; resetting/reloading discards only the sample. No persistence format changes.
+
 ## Browser preview
 
 Platform-specific `native.web.ts`/`browserRepository.ts` keep the existing web

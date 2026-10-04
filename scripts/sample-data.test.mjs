@@ -1,0 +1,131 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {
+  createSampleEvents,
+  createSampleStore,
+  SAMPLE_DAYS,
+} from '../src/dev/sampleData.ts';
+import { replayEvents } from '../src/storage/model.ts';
+import { habitStatistics, dayNumber } from '../src/statistics.ts';
+import { demoHabits, isNumericHabit } from '../src/habits.ts';
+
+const today = '2026-10-04';
+test('sample history is deterministic, valid and bounded to 180 local dates across DST and leap days', () => {
+  for (const date of [today, '2024-03-05', '2026-04-05']) {
+    const events = createSampleEvents(date);
+    assert.deepEqual(events, createSampleEvents(date));
+    const { replay } = replayEvents(events);
+    assert.equal(events[0].type, 'initialize');
+    assert.equal(events[0].version, 4);
+    assert.deepEqual(replay.state.habits, demoHabits);
+    const seen = new Set();
+    for (const event of events.slice(1)) {
+      const { habitId, date: day, after, before } = event.change;
+      assert.equal(before, null);
+      const ago = dayNumber(date) - dayNumber(day);
+      assert.ok(ago >= 0 && ago < SAMPLE_DAYS);
+      const key = `${habitId}:${day}`;
+      assert.equal(seen.has(key), false);
+      seen.add(key);
+      assert.equal(replay.state.values[key], after);
+      assert.ok(Number.isFinite(after) && after >= 0);
+      const habit = demoHabits.find((habit) => habit.id === habitId);
+      if (!isNumericHabit(habit)) assert.equal(after, 1);
+    }
+    assert.equal(Object.keys(replay.state.values).length, seen.size);
+  }
+});
+test('sample statistics expose streaks, gaps, zeros, varied success rates and numeric totals in every range', () => {
+  const events = createSampleEvents(today);
+  const { state } = replayEvents(events).replay;
+  const rates = new Set();
+  for (const habit of state.habits) {
+    for (const range of [30, 90, 365, 'all']) {
+      const stats = habitStatistics(habit, state.values, events, today, range);
+      assert.ok(stats.recorded > 0 && stats.recorded <= stats.eligible);
+      assert.ok(stats.buckets.some((bucket) => bucket.value !== null));
+      assert.equal(stats.weekday.length, 7);
+      if (!stats.numeric) {
+        assert.ok(stats.rate > 0 && stats.rate < 1);
+        rates.add(stats.rate);
+      } else assert.ok(stats.total > 0 && stats.average > 0);
+    }
+  }
+  assert.ok(rates.size > 10);
+  const walk = habitStatistics(
+    state.habits.find((habit) => habit.id === 'walk'),
+    state.values,
+    events,
+    today,
+    30,
+  );
+  const meditate = habitStatistics(
+    state.habits.find((habit) => habit.id === 'meditate'),
+    state.values,
+    events,
+    today,
+    30,
+  );
+  assert.ok(walk.streak >= 8);
+  assert.equal(meditate.streak, 0);
+  for (const id of ['read', 'water']) {
+    const values = Object.entries(state.values)
+      .filter(([key]) => key.startsWith(`${id}:`))
+      .map(([, value]) => value);
+    assert.ok(values.includes(0));
+    assert.ok(values.length < SAMPLE_DAYS);
+    assert.ok(new Set(values).size > 5);
+  }
+  assert.ok(
+    Object.entries(state.values).some(
+      ([key, value]) => key.startsWith('water:') && value % 1 !== 0,
+    ),
+  );
+  const read = habitStatistics(
+    state.habits.find((habit) => habit.id === 'read'),
+    state.values,
+    events,
+    today,
+    90,
+  );
+  assert.ok(read.average > read.previous.average);
+});
+test('sample edits and Undo/Redo affect only their own in-memory store; a fresh sample resets them', async () => {
+  const first = await createSampleStore(today);
+  const second = await createSampleStore(today);
+  const untouched = structuredClone(second.getSnapshot());
+  const key = `read:${today}`;
+  const before = first.getSnapshot().replay.state.values[key] ?? null;
+  assert.equal(
+    first.change({
+      kind: 'entry',
+      habitId: 'read',
+      date: today,
+      before,
+      after: 999,
+    }),
+    true,
+  );
+  await first.flush();
+  assert.equal(first.getSnapshot().replay.state.values[key], 999);
+  assert.equal(first.undo(), true);
+  assert.equal(first.getSnapshot().replay.state.values[key] ?? null, before);
+  assert.equal(first.redo(), true);
+  await first.flush();
+  assert.equal(first.getSnapshot().replay.state.values[key], 999);
+  assert.deepEqual(second.getSnapshot(), untouched);
+  const reset = await createSampleStore(today);
+  assert.equal(reset.getSnapshot().replay.state.values[key] ?? null, before);
+  assert.deepEqual(demoHabits, createSampleEvents(today)[0].habits);
+});
+test('sample mode cannot restore a backup or overwrite a persistent repository', async () => {
+  const sample = await createSampleStore(today);
+  const before = structuredClone(sample.getSnapshot().events);
+  await assert.rejects(
+    sample.exclusive(() => sample.replace(createSampleEvents('2026-10-01'))),
+    /unavailable in sample mode/,
+  );
+  await assert.rejects(sample.recoveryEvents(), /no recovery archive/);
+  assert.deepEqual(sample.getSnapshot().events, before);
+  assert.equal(sample.getSnapshot().busy, false);
+});

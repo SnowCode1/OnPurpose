@@ -114,12 +114,14 @@ function HistoryButton({
 }
 
 export function HistoryView({
+  sampleData = false,
   snapshot,
   backupBusy,
   onUndo,
   onRedo,
   onRetry,
 }: {
+  sampleData?: boolean;
   snapshot: StoreSnapshot;
   backupBusy: boolean;
   onUndo: () => void;
@@ -169,7 +171,9 @@ export function HistoryView({
               ? 'Not saved'
               : snapshot.pending
                 ? 'Saving…'
-                : 'Saved'}
+                : sampleData
+                  ? 'Sample · temporary'
+                  : 'Saved'}
           </Text>
         </View>
         <View style={styles.buttons}>

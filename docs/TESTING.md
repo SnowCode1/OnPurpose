@@ -680,3 +680,25 @@ Founder follow-up: preset icons and fast-swap smoothness were confirmed working.
 The selected habit-name background is now a subtle tint of that habit's colour
 instead of grey. Spot-check the open context menu on several differently coloured
 habits; the held/dragged row should retain its accepted appearance and motion.
+
+## Statistics sample data — 4 October 2026
+
+103 automated tests pass, including deterministic 180-day fixtures across DST/leap
+dates, valid v4 replay, varied stats in all ranges, current/broken streaks, numeric
+zero/gap/decimal coverage, in-memory isolation, Undo/Redo, reset, and rejected sample
+restore. Code checks and an iOS production export pass. The exported Hermes bundle
+was inspected for sample fixture/control markers: none are present despite the
+local startup flag being true. The founder confirmed sample data and populated
+statistics appear on the iPhone; detailed layout/interaction checks remain.
+
+Phone:
+
+1. Fully reload with EXPO_PUBLIC_DEV_MOCK_DATA=true. SAMPLE DATA should replace the
+   brand label, and all presets should contain mixed entries across six months.
+2. Tap Read for numeric charts and improving totals; Drink water for decimals,
+   zeros and missing days; Go for a walk for a current streak; Meditate for a gap.
+   Inspect chart buckets, 30/90/year/all ranges, weekday patterns and past months.
+3. Edit a sample value and try Undo/Redo. Reset sample data in Settings to discard
+   those edits. Turn Sample data off to verify your real entries and settings return.
+4. Backup controls should be absent in sample mode. History and archive status
+   should identify sample changes as temporary. Test larger text and landscape.

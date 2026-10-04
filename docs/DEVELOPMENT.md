@@ -242,3 +242,28 @@ Habit icons are optional editor drafts (None, Icons, Emoji). See
 [HABIT_ICONS.md](HABIT_ICONS.md) for the bundled Phosphor/Tabler catalogues, licences, and
 version-4 representation. ReorderRow moves the actual name and cell views with
 shared geometry; there is no separately styled floating row.
+
+## Sample history for statistics
+
+In Expo Go, Settings → Sample data switches to an isolated, in-memory history with
+all 12 presets and 180 days of fictional checkbox/numeric entries. The existing
+brand label becomes SAMPLE DATA. Use the normal grid and statistics screens;
+cell edits, Undo/Redo, colours, and archive actions affect only this sample session.
+Settings → Reset sample data rebuilds the fixture relative to today's local date.
+Turning Sample data off returns to the real store. A new sample session is created
+on full reload; in-session toggles retain the sample until it is reset.
+
+`EXPO_PUBLIC_DEV_MOCK_DATA=true` in ignored `.env.local` starts directly in sample
+mode after each full reload. Set it to false to start with real data. The founder's
+local flag was enabled for the statistics review; `.env.example` defaults false.
+The Settings toggle affects the running session, while a full reload follows this
+startup flag. No app-data reset, seeding into an existing database, or backup import
+is involved. Backup controls are hidden/disabled in sample mode, and its repository
+rejects restore operations. History/archive indicate that sample changes are temporary.
+
+`src/dev/sampleData.ts` builds deterministic valid v4 events and an independent
+ChangeStore backed only by memory. `SampleDataMode.tsx` owns the development switch.
+App loads both behind `__DEV__`; the production iOS export excludes their code
+regardless of the env value. Verify this when changing the gate. Tests exercise
+valid replay, DST/leap dates, statistics diversity, numeric zeros versus gaps,
+independent stores, sample Undo/Redo, reset, and blocked sample backup replacement.

@@ -1,5 +1,22 @@
 # Decision log
 
+## 026 — Isolated sample history for statistics review
+
+Date: 4 October 2026. Status: founder confirmed sample data and populated statistics
+are showing on the iPhone. Detailed interaction checks remain.
+
+Provide 180 days across all 12 presets using the real statistics calculations.
+Implementation choice: an isolated development sample store rather than adding
+fictional entries to the real append-only log. Include streaks/gaps, improving
+and declining rates, weekday patterns, variable daily totals, decimal water values,
+zeros, and unrecorded days. Never fabricate future entries.
+
+Settings offers Sample data and Reset sample data. The toolbar's existing brand
+space says SAMPLE DATA. Edits remain in memory, real entries stay separate, and
+backups are unavailable in sample mode. A development env flag selects the startup
+mode; it is enabled locally for this review and false in the example file. The
+sample module is loaded behind **DEV** and removed from production bundles.
+
 ## 025 — Preset icons and removing grid renders from drag swaps
 
 Date: 4 October 2026. Status: founder requested; implemented, phone acceptance pending.

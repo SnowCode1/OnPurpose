@@ -6,6 +6,7 @@ import { Icon } from './Icon';
 import { HabitSymbol } from './HabitSymbol';
 import { appear, disappear, rowTransition } from './motion';
 export function ArchivedHabits({
+  sampleData = false,
   habits,
   values,
   editable,
@@ -14,6 +15,7 @@ export function ArchivedHabits({
   onRestore,
   onRetry,
 }: {
+  sampleData?: boolean;
   habits: Habit[];
   values: Record<string, number>;
   editable: boolean;
@@ -30,7 +32,12 @@ export function ArchivedHabits({
         grid.
       </Text>
       <Text accessibilityLiveRegion="polite" style={styles.status}>
-        {error ?? (pending ? 'Saving changes…' : 'Saved on this device')}
+        {error ??
+          (pending
+            ? 'Saving changes…'
+            : sampleData
+              ? 'Sample · temporary'
+              : 'Saved on this device')}
       </Text>
       {!!error && (
         <Pressable

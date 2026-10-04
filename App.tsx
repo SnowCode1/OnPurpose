@@ -1,5 +1,11 @@
 import { StatusBar } from 'expo-status-bar';
-import { type ComponentType, useCallback, useEffect, useState } from 'react';
+import {
+  type ComponentType,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -46,13 +52,30 @@ const PreviewDateButton: ComponentType<PressableProps> =
       require('./src/dev/DevPreviewText').DevPreviewButton
     : Pressable;
 
+// Development sample history is excluded from production bundles.
+const SampleDataMode:
+  typeof import('./src/dev/SampleDataMode').SampleDataMode | null = __DEV__
+  ? // eslint-disable-next-line @typescript-eslint/no-require-imports -- Do not bundle sample fixtures in release JS.
+    require('./src/dev/SampleDataMode').SampleDataMode
+  : null;
+
 export default function App() {
   const { store, error, retry } = useStoreOpening();
-  return store ? (
-    <PersistentApp store={store} />
-  ) : (
-    <StorageGate error={error} onRetry={retry} />
-  );
+  if (!store) return <StorageGate error={error} onRetry={retry} />;
+  if (SampleDataMode)
+    return (
+      <SampleDataMode store={store}>
+        {(activeStore, sampleData, developmentControls) => (
+          <PersistentApp
+            key={sampleData ? 'sample' : 'real'}
+            store={activeStore}
+            sampleData={sampleData}
+            developmentControls={developmentControls}
+          />
+        )}
+      </SampleDataMode>
+    );
+  return <PersistentApp store={store} />;
 }
 
 function StorageGate({
@@ -95,11 +118,19 @@ function StorageGate({
   );
 }
 
-function PersistentApp({ store }: { store: ChangeStore }) {
+function PersistentApp({
+  store,
+  sampleData = false,
+  developmentControls,
+}: {
+  store: ChangeStore;
+  sampleData?: boolean;
+  developmentControls?: ReactNode;
+}) {
   const snapshot = usePersistentStore(store);
   useEffect(() => {
-    if (snapshot.status === 'ready') applyPresetIcons(store);
-  }, [store, snapshot.status]);
+    if (!sampleData && snapshot.status === 'ready') applyPresetIcons(store);
+  }, [store, snapshot.status, sampleData]);
   const { habits, values, hapticsEnabled } = snapshot.replay.state;
   const [backupBusy, setBackupBusy] = useState(false);
   useEffect(() => {
@@ -307,6 +338,7 @@ function PersistentApp({ store }: { store: ChangeStore }) {
     if (store.redo()) feedback('confirm');
   }
   async function backupAction(action: () => Promise<void>) {
+    if (sampleData) return;
     setBackupBusy(true);
     try {
       await action();
@@ -423,6 +455,7 @@ function PersistentApp({ store }: { store: ChangeStore }) {
             }
           >
             <HabitGrid
+              sampleData={sampleData}
               HeadingComponent={PreviewHeading}
               DateButtonComponent={PreviewDateButton}
               key={today}
@@ -544,6 +577,8 @@ function PersistentApp({ store }: { store: ChangeStore }) {
         </Modal>
         {habitDialog}
         <AppPanel
+          sampleData={sampleData}
+          developmentControls={developmentControls}
           page={panel.page}
           onArchive={() => setPanel({ page: 'archive', visible: true })}
           onBack={() => setPanel({ page: 'settings', visible: true })}

@@ -45,6 +45,7 @@ import { Icon } from './Icon';
 import { appear, disappear, rowTransition, menuAppear } from './motion';
 
 type Props = {
+  sampleData?: boolean;
   HeadingComponent: ComponentType<TextProps>;
   DateButtonComponent: ComponentType<PressableProps>;
   today: string;
@@ -68,6 +69,7 @@ function dayMuting(daysAgo: number): number {
 }
 
 export const HabitGrid = memo(function HabitGrid({
+  sampleData = false,
   HeadingComponent,
   DateButtonComponent,
   today,
@@ -337,7 +339,7 @@ export const HabitGrid = memo(function HabitGrid({
       >
         <View style={styles.toolbarBrand}>
           <HeadingComponent accessibilityRole="header" style={styles.brand}>
-            ONPURPOSE
+            {sampleData ? 'SAMPLE DATA' : 'ONPURPOSE'}
           </HeadingComponent>
         </View>
         <View style={styles.toolbarCentre}>

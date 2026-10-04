@@ -71,3 +71,17 @@ backdating, timezone offsets, DST dates, leap years, weekday/bucket partitioning
 previous periods, clock rollback, and unchanged legacy backup fixtures.
 Native chart interaction, VoiceOver, larger text, landscape, and animation feel
 remain device acceptance checks in [TESTING.md](TESTING.md).
+
+## Reviewing with fictional history
+
+Development Settings → Sample data supplies 180 days for every preset without
+mixing with real entries. Read has increasing minutes; Drink water has decimal
+values, zeros, and missing days. Go for a walk has a recent uninterrupted streak;
+Meditate has a recent gap. Stretch/Learn trend upward, while Write a little trends
+downward; outdoor/cooking/contact habits vary by weekday. Today is partly recorded,
+and no future sample entries are generated. These are synthetic UI test scenarios,
+not proposed habit targets or product scoring rules.
+
+Test 30-day/90-day/year/all ranges, bucket inspection, weekday bars, and calendar
+months. Settings can reset the sample or return to real data. Sample edits are
+session-only; see DEVELOPMENT.md for the startup env switch.
