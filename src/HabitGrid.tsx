@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { type GridDay, makeGridDays, calendarDay } from './calendar';
 import { type Habit } from './habits';
-import { checkmarkColor } from './colors';
+import { checkmarkColor, colorOnBlack, mutedColor } from './colors';
 import { gridLayout } from './gridLayout';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { useGridScroll } from './useGridScroll';
@@ -27,6 +27,13 @@ type Props = {
   onHabitPress: (habit: Habit) => void;
   onCellPress: (habit: Habit, day: GridDay) => void;
 };
+
+function dayMuting(daysAgo: number): number {
+  if (daysAgo < 0) return 1;
+  const progress = Math.max(0, Math.min(1, (daysAgo - 7) / 7));
+  // Gentle start/end rather than a sudden change at the one-week boundary.
+  return progress * progress * (3 - 2 * progress);
+}
 
 export const HabitGrid = memo(function HabitGrid({
   HeadingComponent,
@@ -47,6 +54,32 @@ export const HabitGrid = memo(function HabitGrid({
     () => makeGridDays(today, dayCount, futureCount),
     [today, dayCount, futureCount],
   );
+  const rowTones = useMemo(
+    () =>
+      Object.fromEntries(
+        habits.map((habit) => [
+          habit.id,
+          {
+            checkbox: colorOnBlack(habit.color, 170 / 255),
+            number: colorOnBlack(habit.color, 0.65),
+          },
+        ]),
+      ),
+    [habits],
+  );
+  const recordedDays = useMemo(() => {
+    const numericIds = new Set(
+      habits.filter((habit) => habit.unit).map((habit) => habit.id),
+    );
+    const recorded = new Set<string>();
+    for (const [key, value] of Object.entries(values)) {
+      const separator = key.lastIndexOf(':');
+      if (value === 1 || numericIds.has(key.slice(0, separator))) {
+        recorded.add(key.slice(separator + 1));
+      }
+    }
+    return recorded;
+  }, [habits, values]);
   const { visibleDays, nameWidth, dateWidth, columnWidth } = gridLayout(
     width,
     fontScale,
@@ -216,25 +249,43 @@ export const HabitGrid = memo(function HabitGrid({
               initialScrollIndex={rightmostDay + futureCount}
               style={{ width: dateWidth, flexGrow: 0 }}
               onScroll={headerScroll}
-              renderItem={({ item: day }) => (
-                <View
-                  style={[
-                    styles.dayHeader,
-                    { width: columnWidth },
-                    day.daysAgo === 0 && styles.todayColumn,
-                  ]}
-                >
-                  <Text
+              renderItem={({ item: day }) => {
+                const amount = recordedDays.has(day.key)
+                  ? 0
+                  : dayMuting(day.daysAgo);
+                return (
+                  <View
                     style={[
-                      styles.weekday,
-                      day.daysAgo === 0 && styles.todayLabel,
+                      styles.dayHeader,
+                      { width: columnWidth },
+                      day.daysAgo === 0 && styles.todayColumn,
                     ]}
                   >
-                    {day.label}
-                  </Text>
-                  <Text style={styles.dayNumber}>{day.number}</Text>
-                </View>
-              )}
+                    <Text
+                      style={[
+                        styles.weekday,
+                        day.daysAgo === 0 && styles.todayLabel,
+                        {
+                          color: mutedColor(
+                            day.daysAgo === 0 ? '#FFFFFF' : '#979797',
+                            amount,
+                          ),
+                        },
+                      ]}
+                    >
+                      {day.label}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.dayNumber,
+                        { color: mutedColor('#E8E8E8', amount) },
+                      ]}
+                    >
+                      {day.number}
+                    </Text>
+                  </View>
+                );
+              }}
             />
           </View>
           <ScrollView
@@ -294,6 +345,19 @@ export const HabitGrid = memo(function HabitGrid({
                     {habits.map((habit) => {
                       const value = values[`${habit.id}:${day.key}`];
                       const checked = value === 1;
+                      const recorded = habit.unit
+                        ? value !== undefined
+                        : checked;
+                      const amount = dayMuting(day.daysAgo);
+                      const emptyNumber = mutedColor(
+                        rowTones[habit.id].number,
+                        amount,
+                      );
+                      const emptyCheckbox = mutedColor(
+                        rowTones[habit.id].checkbox,
+                        amount,
+                      );
+                      const ruleColor = mutedColor(habit.color, amount);
                       return (
                         <Pressable
                           key={habit.id}
@@ -313,7 +377,7 @@ export const HabitGrid = memo(function HabitGrid({
                             styles.cell,
                             {
                               height: rowHeights[habit.id] ?? baseRowHeight,
-                              borderBottomColor: `${habit.color}20`,
+                              borderBottomColor: `${ruleColor}20`,
                               backgroundColor: pressed
                                 ? `${habit.color}20`
                                 : day.daysAgo === 0
@@ -330,8 +394,7 @@ export const HabitGrid = memo(function HabitGrid({
                               style={[
                                 styles.numeric,
                                 {
-                                  color: habit.color,
-                                  opacity: value === undefined ? 0.65 : 1,
+                                  color: recorded ? habit.color : emptyNumber,
                                 },
                               ]}
                             >
@@ -344,7 +407,7 @@ export const HabitGrid = memo(function HabitGrid({
                                 {
                                   borderColor: checked
                                     ? habit.color
-                                    : `${habit.color}AA`,
+                                    : emptyCheckbox,
                                   backgroundColor: checked
                                     ? habit.color
                                     : 'transparent',

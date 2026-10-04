@@ -1,5 +1,26 @@
 # Decision log
 
+## 011 — Muted future and older empty cells
+
+Date: 4 October 2026. Status: implemented; visual phone confirmation pending.
+
+The founder wants future dates and entries muted unless recorded, and suggested
+similar treatment beyond seven days. They clarified that muting can use OKLCH
+and should not require greyscale. Keep each habit's hue while reducing chroma and
+lightness. Checked boxes and entered numeric totals (including zero) retain the
+selected colour. A date heading returns to normal brightness when any habit has
+a recorded value for that date.
+
+The assistant proposes a smooth transition beginning after day 7 and reaching
+its maximum at day 14. Fade by calendar age so a date looks consistent regardless
+of screen position, orientation, and column count. Bound the fade rather than
+continuing to darken distant history. Keep controls active and accessibility
+state independent of visual emphasis. This treatment is a phone experiment to
+refine with founder feedback.
+
+The founder confirmed scrolling and the colour dialog's Done/close behaviour
+work correctly on the phone before this visual change.
+
 ## 010 — Smooth scrolling, deliberate future access, and custom colours
 
 Date: 4 October 2026. Status: implemented; founder confirmed smoother scrolling and working future pull.

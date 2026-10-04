@@ -95,3 +95,33 @@ export function contrastOnBlack(hex: string): number {
 export function checkmarkColor(hex: string): string {
   return contrastOnBlack(hex) >= Math.sqrt(21) ? '#000000' : '#FFFFFF';
 }
+
+// Resolve the existing empty-cell opacity against the grid's black background,
+// so OKLCH muting starts from the colour the user already sees.
+export function colorOnBlack(hex: string, opacity: number): string {
+  const valid = normalizeHex(hex);
+  if (!valid) throw new Error('Expected an RGB hex colour.');
+  return (
+    '#' +
+    [1, 3, 5]
+      .map((start) =>
+        Math.round(parseInt(valid.slice(start, start + 2), 16) * clamp(opacity))
+          .toString(16)
+          .padStart(2, '0'),
+      )
+      .join('')
+      .toUpperCase()
+  );
+}
+
+export function mutedColor(hex: string, amount: number): string {
+  if (amount <= 0) return hex;
+  const color = hexToOklch(hex);
+  const strength = clamp(amount);
+  return oklchToHex({
+    ...color,
+    // Preserve hue and avoid making already-dark custom colours even darker.
+    l: Math.min(color.l, Math.max(0.62, color.l - 0.22 * strength)),
+    c: color.c * (1 - 0.75 * strength),
+  });
+}

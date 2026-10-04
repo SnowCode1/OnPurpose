@@ -67,6 +67,20 @@ their habit ID/local-date keys.
 
 ## Colour and typography
 
+Unused future cells use a muted version of their habit hue. History keeps normal
+emphasis through day 7, then smoothly increases muting to day 14. The fade is
+based on signed calendar age and stays bounded thereafter. Checkbox outlines,
+empty numeric marks, separators, and unused date headings follow that emphasis.
+Recorded checkbox/numeric values retain full colour, including explicit numeric
+zero. A date with any recorded value keeps its heading bright. Clear/undo restores
+the empty treatment immediately.
+
+Empty-cell alpha is first resolved against black; OKLCH then reduces chroma by
+up to 75% and lightness by up to 0.22, with a 0.62 lightness floor unless the
+selected custom colour was already darker. This avoids making dark custom choices
+even darker. Muting is computed during rendering; no new per-frame scroll work
+is introduced.
+
 Presets and Custom tabs show one colour mode at a time to avoid a tall dialog.
 The 24 presets occupy four rows at the usual phone width. Done stays outside the
 scrolling dialog body. Native sliders expose

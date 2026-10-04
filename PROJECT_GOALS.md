@@ -27,6 +27,10 @@ and uncertainty about whether something was saved.
   including the habit name, checkboxes, and numeric entries. Provide more presets
   and a visual custom picker with optional hex input; use familiar user-facing
   labels rather than colour-space jargon.
+- Mute unused future dates and entries while keeping recorded values prominent.
+  Preserve habit hue using OKLCH rather than forcing the cells to grey. Explore
+  a soft fade for history older than seven days; the initial implementation fades
+  empty cells/date headings from day 8 to day 14.
 - The founder has published the repository at https://github.com/SnowCode1/OnPurpose
   and authorised local commits. A project licence is still to be selected.
 - Use [Loop Habit Tracker for Android](https://github.com/iSoron/uhabits) as a

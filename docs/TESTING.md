@@ -169,8 +169,8 @@ The replacement uses native UI-thread synchronization. The founder confirmed
 scrolling is smoother and the future pull works on the iPhone. The initial picker
 needs layout improvements; the follow-up replaces stacked controls with Presets/Custom tabs and a fixed
 Done action. The founder confirmed the shorter layout is better, and requested one Done action
-that applies the choice plus a close button that discards it. This final apply/cancel
-flow still needs phone confirmation.
+that applies the choice plus a close button that discards it. The founder subsequently confirmed
+scrolling and Done/close work correctly on the phone.
 
 All 23 automated tests passed, along with TypeScript, lint, formatting, the iOS
 bundle export, and all 21 Expo Doctor checks. The running iOS development bundle
@@ -200,3 +200,28 @@ Phone checks for this change:
    Done. Check low-lightness contrast guidance and black/white checkmarks.
 6. Test picker scrolling and hex keyboard in both orientations. Share a preview
    by holding the habit title. Reload still resets demo entries/colours.
+
+## Muted future and older empty cells
+
+4 October 2026: implemented OKLCH muting while preserving habit hue. Empty future
+cells are muted immediately. History fades smoothly after day 7, reaching maximum
+muting at day 14. Checked boxes and recorded numeric totals retain their colour;
+any recorded value also restores that date heading's brightness. Explicit numeric
+zero counts as recorded. Phone visual confirmation for this treatment is pending.
+
+TypeScript, lint, formatting, and the existing five colour tests passed. A numeric
+check across the preset palette found the weakest fully-muted empty numeric mark
+has 4.22:1 contrast against black; the fully-muted date number has 8.23:1. These
+checks do not establish contrast for arbitrary custom choices, which already have
+contrast guidance in the picker. The iOS export is checked before committing.
+
+Phone checks:
+
+- Reveal future dates: compare an empty cell, a checked box, and an entered total.
+  Check that the cells remain usable, and their hue still relates to the habit.
+- Check, then undo the last completion on a future date. Its heading should regain
+  brightness and then return to muted. Repeat with entering/clearing numeric zero.
+- Browse days 7–14: the transition should be gentle with no abrupt boundary.
+  Recorded values should stand out against empty neighbours.
+- Rotate and return to the same date. Its emphasis should follow age rather than
+  position. Try at least one saturated preset and a darker custom colour.
