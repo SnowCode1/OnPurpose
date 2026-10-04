@@ -1,5 +1,22 @@
 # Decision log
 
+## 028 — Statistics interaction and formatting polish
+
+Date: 4 October 2026. Status: founder requested; implemented, phone review pending.
+
+The founder reported no way to deselect chart bars and an unnecessary outline on
+monthly day cells. Tap the selected period again to clear it; also provide a Clear
+button and VoiceOver action. Remove the calendar's Today border. These are the
+requested changes; the following supporting polish is an implementation choice.
+
+Keep chart inspection in a reserved two-line area, separate the vertical zero/max
+scale from date labels, and include years for ranges crossing a year boundary.
+Store selection by date bounds to avoid silently selecting another bucket after
+backdating changes All-time grouping. Range changes/local rollover reset it.
+Use unambiguous weekday headings and numeric units. Numeric calendar backgrounds
+retain intensity, while date text stays opaque with contrast calculated against
+that background. No statistics calculations, entry semantics, or storage changes.
+
 ## 027 — Animated Today return and editable statistics calendar
 
 Date: 4 October 2026. Status: founder requested; implemented, phone acceptance pending.

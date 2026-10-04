@@ -23,13 +23,22 @@ Charts show checkbox completion percentages or numeric totals. Numeric 30-day
 charts use daily bars; longer ranges aggregate into labelled multi-day buckets.
 Checkbox charts use up to seven days per bar for shorter ranges, with wider
 buckets for long histories. Partial last buckets are labelled with their actual
-bounds. Tap the chart to inspect a bucket; VoiceOver increment/decrement actions
-provide the same information. Weekday breakdowns use the selected range.
+bounds. Tap a bar/period to inspect it; tap it again or use Clear to deselect it.
+VoiceOver provides previous/next period and Clear selection actions. Keep the
+detail area and Clear space reserved to avoid shifting the screen on selection.
+Selection uses the bucket's date bounds, not its array index; if an older edit
+changes those bounds, the chart stops highlighting rather than inspecting another
+period. Changing range or rolling into a new day resets selection. The vertical
+value scale is separate from the date labels, which include years across year
+boundaries. Weekday breakdowns use the selected range and show numeric units.
 
 The calendar browses months independently of the range. Coloured checkbox days
 are completed; numeric colour intensity scales against that month's highest
 recorded total. Zero remains coloured, blanks remain empty, future dates are dim.
-Today has an outline. Each day has a spoken date and value.
+Day cells have no selection/Today border, as requested by the founder. Today
+remains identified in its accessibility label. Dim numeric backgrounds separately
+from text and choose text contrast against the actual background, so small totals
+and zero retain readable dates. Each day has a spoken date and value.
 
 Tap any calendar day to toggle a checkbox or open the grid's daily-total editor.
 The exact selected date is passed to the same entry handler, including future days

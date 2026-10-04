@@ -13,6 +13,17 @@ result or browser test alone is not proof that an iPhone habit was saved.
 
 ## First iPhone smoke test
 
+Statistics polish checks (4 October 2026; device acceptance pending):
+
+- Select a chart bar, tap it again, and select another then use Clear. All bars
+  return to normal emphasis; inspection controls should not shift nearby content.
+- Inspect a missing or zero period. Switch range and verify selection clears.
+  Try VoiceOver previous/next period and Clear selection actions.
+- Check long date ranges spanning a year boundary and numeric units; zero belongs
+  to the value axis, not the rightmost date label.
+- Monthly cells have no Today/selection border. Small numeric totals and zero
+  retain readable date text. Checkbox toggles and numeric editing still work.
+
 Latest Today/calendar checks (4 October 2026; device acceptance pending):
 
 - Scroll several weeks into history and tap Today: a quick continuous return,
@@ -77,6 +88,13 @@ habit counts, one-handed use, and accessibility settings; document limitations.
 - History preserves effective habit dates separately from edit timestamps.
 
 ## Evidence log
+
+4 October 2026 statistics polish:
+
+- All 105 existing tests, TypeScript, ESLint, formatting, and iOS bundle export pass.
+- No storage/calculation changes or new dependencies. Chart selection and calendar
+  contrast/border changes are UI behaviour, requiring the phone checklist above.
+- Browser inventory was empty, so no visual browser verification was available.
 
 4 October 2026 animated Today and editable statistics calendar:
 

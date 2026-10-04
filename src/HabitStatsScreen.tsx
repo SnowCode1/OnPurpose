@@ -24,17 +24,18 @@ import {
 } from './statistics';
 import { Icon } from './Icon';
 import { HabitSymbol } from './HabitSymbol';
-import { checkmarkColor } from './colors';
+import { checkmarkColor, colorOnBlack } from './colors';
 import { entryDay, type EntryDay } from './calendar';
 
 const format = (value: number | null) =>
   value === null
     ? '—'
     : value.toLocaleString(undefined, { maximumFractionDigits: 1 });
-const dateLabel = (key: string) =>
+const dateLabel = (key: string, withYear = false) =>
   new Date(`${key}T12:00:00`).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
+    ...(withYear ? { year: 'numeric' as const } : {}),
   });
 const entering = SlideInRight.duration(230).reduceMotion(ReduceMotion.System);
 const exiting = SlideOutRight.duration(190).reduceMotion(ReduceMotion.System);
@@ -51,100 +52,168 @@ function Chart({
   unit: string;
 }) {
   const [width, setWidth] = useState(300);
-  const [selected, setSelected] = useState<number | null>(null);
+  // Date identity prevents a correction/backdated entry moving selection to a
+  // different period when All-time bucket boundaries change.
+  const [selected, setSelected] = useState<string | null>(null);
+  const bucketKey = (bucket: StatsBucket) => `${bucket.start}:${bucket.end}`;
+  const selectedIndex = buckets.findIndex(
+    (bucket) => bucketKey(bucket) === selected,
+  );
+  const current = buckets[selectedIndex];
   const max = numeric
     ? Math.max(1, ...buckets.map((bucket) => bucket.value ?? 0))
     : 100;
-  const current =
-    selected === null ? null : buckets[Math.min(selected, buckets.length - 1)];
-  const step = width / buckets.length;
-  const description = current
-    ? `${dateLabel(current.start)}${current.end !== current.start ? ` – ${dateLabel(current.end)}` : ''}: ${current.value === null ? 'No records' : `${format(current.value)}${numeric ? ` ${unit}` : '% completed'}`}`
-    : 'Tap the chart to inspect a period';
+  const step = width / Math.max(1, buckets.length);
+  const showYear =
+    buckets[0]?.start.slice(0, 4) !== buckets.at(-1)?.end.slice(0, 4);
+  const period = current
+    ? `${dateLabel(current.start, showYear)}${current.end !== current.start ? ` – ${dateLabel(current.end, showYear)}` : ''}`
+    : 'Tap a bar to inspect';
+  const value = current
+    ? current.value === null
+      ? 'No records'
+      : `${format(current.value)}${numeric ? (unit ? ` ${unit}` : '') : '% completed'}`
+    : 'Tap it again to clear';
   return (
     <View style={{ gap: 10 }}>
-      <View style={styles.axis}>
-        <Text style={styles.small}>
-          {format(max)}
-          {numeric ? '' : '%'}
-        </Text>
-        <Text style={styles.small}>
-          {numeric ? unit || 'total' : 'completion'}
-        </Text>
-      </View>
-      <Pressable
-        accessibilityRole="adjustable"
-        accessibilityLabel="Trend chart"
-        accessibilityValue={{ text: description }}
-        accessibilityActions={[
-          { name: 'increment', label: 'Next period' },
-          { name: 'decrement', label: 'Previous period' },
-        ]}
-        onAccessibilityAction={(event) =>
-          setSelected((index) =>
-            Math.max(
-              0,
-              Math.min(
-                buckets.length - 1,
-                (index ?? -1) +
-                  (event.nativeEvent.actionName === 'increment' ? 1 : -1),
-              ),
-            ),
-          )
-        }
-        onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
-        onPress={(event) =>
-          setSelected(
-            Math.max(
-              0,
-              Math.min(
-                buckets.length - 1,
-                Math.floor(event.nativeEvent.locationX / step),
-              ),
-            ),
-          )
-        }
-        style={{ height: 154 }}
-      >
-        <Svg width={width} height={154} pointerEvents="none" accessible={false}>
-          {[2, 76, 150].map((y) => (
-            <Line
-              key={y}
-              x1={0}
-              x2={width}
-              y1={y}
-              y2={y}
-              stroke="#242424"
-              strokeWidth={1}
-            />
-          ))}
-          {buckets.map(
-            (bucket, index) =>
-              bucket.value !== null && (
-                <Rect
-                  key={bucket.start}
-                  x={index * step + step * 0.16}
-                  y={150 - Math.max(2, (bucket.value / max) * 148)}
-                  width={Math.max(1, step * 0.68)}
-                  height={Math.max(2, (bucket.value / max) * 148)}
-                  rx={Math.min(3, step * 0.2)}
-                  fill={colour}
-                  opacity={selected === null || selected === index ? 0.9 : 0.3}
-                />
-              ),
-          )}
-        </Svg>
-      </Pressable>
-      <View style={styles.axis}>
-        <Text style={styles.small}>{dateLabel(buckets[0].start)}</Text>
-        <Text style={styles.small}>0 · {dateLabel(buckets.at(-1)!.end)}</Text>
-      </View>
-      <Text accessibilityLiveRegion="polite" style={styles.caption}>
-        {description}
+      <Text style={styles.small}>
+        {numeric ? unit || 'total' : 'completion (%)'}
       </Text>
+      <View style={styles.chartPlot}>
+        <View style={styles.chartScale} accessible={false}>
+          <Text style={styles.small}>{format(max)}</Text>
+          <Text style={styles.small}>0</Text>
+        </View>
+        <View style={{ flex: 1, minWidth: 0, gap: 8 }}>
+          <Pressable
+            accessibilityRole="adjustable"
+            accessibilityLabel="Trend chart"
+            accessibilityValue={{
+              text: current ? `${period}: ${value}` : 'No period selected',
+            }}
+            accessibilityHint="Adjust to inspect periods. Use Clear selection to show all bars."
+            accessibilityActions={[
+              { name: 'increment', label: 'Next period' },
+              { name: 'decrement', label: 'Previous period' },
+              { name: 'clearSelection', label: 'Clear selection' },
+            ]}
+            onAccessibilityAction={(event) => {
+              const action = event.nativeEvent.actionName;
+              if (action === 'clearSelection') setSelected(null);
+              else if (action === 'increment' || action === 'decrement') {
+                const index =
+                  selectedIndex < 0
+                    ? action === 'increment'
+                      ? 0
+                      : buckets.length - 1
+                    : Math.max(
+                        0,
+                        Math.min(
+                          buckets.length - 1,
+                          selectedIndex + (action === 'increment' ? 1 : -1),
+                        ),
+                      );
+                setSelected(buckets[index] ? bucketKey(buckets[index]) : null);
+              }
+            }}
+            onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+            onPress={(event) => {
+              if (!buckets.length || width <= 0) return;
+              const index = Math.max(
+                0,
+                Math.min(
+                  buckets.length - 1,
+                  Math.floor(event.nativeEvent.locationX / step),
+                ),
+              );
+              const key = bucketKey(buckets[index]);
+              setSelected((previous) => (previous === key ? null : key));
+            }}
+            style={{ height: 154 }}
+          >
+            <Svg
+              width={width}
+              height={154}
+              pointerEvents="none"
+              accessible={false}
+            >
+              {[2, 76, 150].map((y) => (
+                <Line
+                  key={y}
+                  x1={0}
+                  x2={width}
+                  y1={y}
+                  y2={y}
+                  stroke="#242424"
+                  strokeWidth={1}
+                />
+              ))}
+              {current && (
+                <Rect
+                  x={selectedIndex * step}
+                  y={0}
+                  width={step}
+                  height={152}
+                  rx={3}
+                  fill={colour}
+                  opacity={0.08}
+                />
+              )}
+              {buckets.map(
+                (bucket, index) =>
+                  bucket.value !== null && (
+                    <Rect
+                      key={bucketKey(bucket)}
+                      x={index * step + step * 0.16}
+                      y={150 - Math.max(2, (bucket.value / max) * 148)}
+                      width={Math.max(1, step * 0.68)}
+                      height={Math.max(2, (bucket.value / max) * 148)}
+                      rx={Math.min(3, step * 0.2)}
+                      fill={colour}
+                      opacity={!current || selectedIndex === index ? 0.9 : 0.35}
+                    />
+                  ),
+              )}
+            </Svg>
+          </Pressable>
+          {!!buckets.length && (
+            <View style={[styles.axis, { alignItems: 'flex-start' }]}>
+              <Text style={[styles.small, { flex: 1 }]}>
+                {dateLabel(buckets[0].start, showYear)}
+              </Text>
+              <Text style={[styles.small, { flex: 1, textAlign: 'right' }]}>
+                {dateLabel(buckets.at(-1)!.end, showYear)}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+      <View style={styles.chartDetail}>
+        <View style={{ flex: 1, gap: 2 }} accessibilityLiveRegion="polite">
+          <Text style={styles.caption}>{period}</Text>
+          <Text style={[styles.small, current && { color: colour }]}>
+            {value}
+          </Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Clear chart selection"
+          accessibilityElementsHidden={!current}
+          importantForAccessibility={current ? 'auto' : 'no-hide-descendants'}
+          disabled={!current}
+          onPress={() => setSelected(null)}
+          style={({ pressed }) => [
+            styles.clearSelection,
+            { opacity: !current ? 0 : pressed ? 0.5 : 1 },
+          ]}
+        >
+          <Text style={styles.caption}>Clear</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
+
 function Metric({
   value,
   label,
@@ -265,8 +334,7 @@ export function HabitStatsScreen({
             {stats.numeric
               ? `Daily total${unit ? ` · ${unit}` : ''}`
               : 'Daily checkbox'}{' '}
-            · Since {dateLabel(stats.trackingStart)},{' '}
-            {stats.trackingStart.slice(0, 4)}
+            · Since {dateLabel(stats.trackingStart, true)}
           </Text>
         </View>
         <View accessibilityRole="tablist" style={styles.ranges}>
@@ -363,7 +431,7 @@ export function HabitStatsScreen({
               : `Each bar covers up to ${stats.bucketDays} days${stats.numeric ? ' · added together' : ''}`}
           </Text>
           <Chart
-            key={`${habit.id}-${range}`}
+            key={`${habit.id}-${range}-${today}`}
             buckets={stats.buckets}
             colour={habit.color}
             numeric={stats.numeric}
@@ -380,8 +448,8 @@ export function HabitStatsScreen({
             By day of the week
           </Text>
           <Text style={styles.caption}>
-            {stats.numeric ? 'Average on recorded days' : 'Completion rate'} ·
-            selected period
+            {stats.numeric ? 'Average on recorded days' : 'Completion rate'}
+            {stats.numeric && unit ? ` · ${unit}` : ''} · selected period
           </Text>
           {stats.weekday.map((day, index) => {
             const maximum = stats.numeric
@@ -432,6 +500,9 @@ export function HabitStatsScreen({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Previous month"
+              accessibilityState={{
+                disabled: month <= stats.trackingStart.slice(0, 7),
+              }}
               disabled={month <= stats.trackingStart.slice(0, 7)}
               onPress={() => changeMonth(-1)}
               style={[
@@ -446,6 +517,7 @@ export function HabitStatsScreen({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Next month"
+              accessibilityState={{ disabled: month >= today.slice(0, 7) }}
               disabled={month >= today.slice(0, 7)}
               onPress={() => changeMonth(1)}
               style={[
@@ -457,7 +529,7 @@ export function HabitStatsScreen({
             </Pressable>
           </View>
           <View style={styles.calendar}>
-            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((label, index) => (
+            {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((label, index) => (
               <Text key={index} style={styles.calendarHeading}>
                 {label}
               </Text>
@@ -471,6 +543,14 @@ export function HabitStatsScreen({
                 ? value !== undefined
                 : value === 1;
               const date = entryDay(day);
+              const background = recorded
+                ? colorOnBlack(
+                    habit.color,
+                    stats.numeric ? 0.35 + (0.65 * value) / monthMax : 1,
+                  )
+                : day > today
+                  ? '#0C0C0C'
+                  : '#161616';
               return (
                 <Pressable
                   key={day}
@@ -479,7 +559,7 @@ export function HabitStatsScreen({
                     disabled: !editable,
                     ...(stats.numeric ? {} : { checked: recorded }),
                   }}
-                  accessibilityLabel={`${habit.name}, ${date.fullLabel}${day > today ? ', future date' : ''}, ${recorded ? (stats.numeric ? `${format(value)} ${unit}` : 'completed') : 'not recorded'}`}
+                  accessibilityLabel={`${habit.name}, ${date.fullLabel}${day === today ? ', today' : ''}${day > today ? ', future date' : ''}, ${recorded ? (stats.numeric ? `${format(value)} ${unit}` : 'completed') : 'not recorded'}`}
                   accessibilityHint={
                     stats.numeric ? 'Edit daily total' : 'Toggle completion'
                   }
@@ -494,23 +574,17 @@ export function HabitStatsScreen({
                     style={[
                       styles.dayFace,
                       {
-                        backgroundColor: recorded ? habit.color : '#161616',
-                        opacity:
-                          day > today && !recorded
-                            ? 0.3
-                            : stats.numeric && recorded
-                              ? 0.35 + (0.65 * value) / monthMax
-                              : 1,
-                        borderColor: day === today ? '#FFFFFF' : 'transparent',
-                        borderWidth: 1,
+                        backgroundColor: background,
                       },
                     ]}
                   >
                     <Text
                       style={{
                         color: recorded
-                          ? checkmarkColor(habit.color)
-                          : '#868686',
+                          ? checkmarkColor(background)
+                          : day > today
+                            ? '#606060'
+                            : '#A0A0A0',
                         fontSize: 13,
                       }}
                     >
@@ -524,7 +598,7 @@ export function HabitStatsScreen({
           <Text style={styles.caption}>
             {stats.numeric
               ? 'Tap a day to edit its total. Brighter days have higher totals; zero still has colour.'
-              : 'Tap a day to check or uncheck it. Coloured days are completed. Today has an outline.'}
+              : 'Tap a day to check or uncheck it. Coloured days are completed.'}
           </Text>
         </View>
         <Text style={styles.note}>
@@ -629,6 +703,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 8,
+  },
+  chartPlot: { flexDirection: 'row', gap: 10 },
+  chartScale: {
+    minWidth: 24,
+    height: 154,
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  chartDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 48,
+  },
+  clearSelection: {
+    minHeight: 44,
+    minWidth: 52,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   weekday: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   track: { flex: 1, height: 5, borderRadius: 3, backgroundColor: '#232323' },
