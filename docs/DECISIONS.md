@@ -1,8 +1,41 @@
 # Decision log
 
+## 017 — Durable incremental local storage, undo, and backups
+
+Date: 4 October 2026. Status: founder requested implementation after accepting the
+main-page UI; implemented, phone persistence confirmed; older undo report and
+backup UI acceptance pending.
+
+Use Expo SQLite with an ordered version-1 event log and a derived JSON projection
+committed together. The projection is small and sufficient for the current grid;
+separate SQL habit/day tables can be added when queries justify them. Read the
+validated log on launch, initialize the sample habits once, and never reset data
+on load failure. Preserve explicit date keys and the existing local-midnight
+boundary; a later cutoff remains a product choice.
+
+Log accepted entry, colour, and haptic-preference edits with before/after values,
+stable IDs, sequence, UTC edit time and local-zone metadata. Apply immediate
+optimistic state and serialize writes. Save failure retains the queue, blocks new
+edits, and exposes retry. Each accepted action is one undo step; undo/redo append
+inverse changes and reconstruct across launches. Initialization and ephemeral UI
+actions are not undoable edits.
+
+Implement actual History, JSON change-based backup export, and validated restore.
+The v1 container includes a SHA-256 checksum and event count; fully replay it
+before asking for native replacement confirmation. Restore keeps a pre-restore
+copy in the same transaction; no automatic merge. Browser preview uses a separate
+localStorage adapter to preserve Linux layout preview without native SQLite/WASM
+setup. See STORAGE.md for the contract and remaining limitations.
+
+Tests cover real SQLite reopen/rollback, initialization, save retry including an
+uncertain commit, rapid edits, inverse validation, malformed archives, round-trip,
+and restore recovery. Native Expo bridge and share/picker flows remain phone tests.
+No cloud service, comment schema, erasure policy, or statistics rules are inferred
+from this storage milestone.
+
 ## 016 — Visible bar, centred Today, and border pull feedback
 
-Date: 4 October 2026. Status: founder chose always visible and compact; revised placement confirmed on phone; streak toned down after specific visual feedback, with final brightness acceptance pending.
+Date: 4 October 2026. Status: founder chose always visible and compact; revised placement confirmed on phone; final streak brightness accepted on phone.
 
 The founder requested date, history, and settings controls and chose an
 always-visible bar. After the first phone preview they liked the History/Settings

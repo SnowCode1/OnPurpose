@@ -15,16 +15,19 @@ Protect stable row positions, direct access to the list, and immediate feedback.
 Do not add navigation, dashboards, celebrations, login, or a backend without a
 requirement. Distinguish founder decisions from assistant proposals in the docs.
 Incremental change storage and export are confirmed requirements; read
-`docs/STORAGE.md` before implementing persistence. Current screen data is explicitly a disposable demo, not real saved habit data.
+`docs/STORAGE.md` before implementing persistence. Entries, colours, and haptic preferences now persist. Sample habits are initialized
+once; never reset or reseed an existing store during loading or an error.
 
 ## Stack and layout
 
 - React Native + Expo SDK 57, TypeScript strict mode, npm with package-lock.json.
+- `src/storage/` owns versioned events, replay, native SQLite, the write queue,
+  undo/redo, and backup restore. Read STORAGE.md before changing these invariants.
 - `App.tsx` owns screen state and dialogs; `src/HabitGrid.tsx` renders the grid.
 - Keep the compact top bar visible, with Today centred and History/Settings at right.
   Month/year stays beside the day headings; future pull streak grows left from the
   fixed right edge of the existing divider beneath the headings. Do not add a border.
-- `src/AppPanel.tsx` owns the History placeholder and Settings sheet; `src/Icon.tsx` owns outline icons.
+- `src/AppPanel.tsx` owns real change History/undo and the Settings/backup sheet; `src/Icon.tsx` owns outline icons.
 - `src/gridLayout.ts` calculates adaptive column geometry for both orientations.
 - `src/useGridScroll.ts` synchronizes native scrolling on the UI thread; never
   put per-frame list synchronization back on the JavaScript thread.
@@ -39,8 +42,10 @@ Incremental change storage and export are confirmed requirements; read
 - Use `npx expo install <package>` for Expo/native dependencies to match the SDK.
 - Keep dependencies and architecture small. Add structure when a feature needs it.
 - Use functional state updates when new state depends on previous state.
-- When persistence is added, define schema/versioning, local-day semantics,
-  error handling, and recovery before relying on it for user data.
+- Preserve append-only normal edits, atomic log/projection transactions, serialized
+  rapid writes, and visible save failure/retry. Undo adds events; it does not erase.
+- Restores validate fully, require a concrete native confirmation, and retain a
+  pre-restore copy atomically. Never delete a database to recover silently.
 
 ## UI and accessibility
 

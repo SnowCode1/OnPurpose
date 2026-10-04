@@ -8,8 +8,10 @@ Expo/React Native foundation and a 12-row grid demo. Adaptive columns work in
 portrait and landscape. Scroll into the past or deliberately pull beyond today
 to reveal future dates; checkbox and daily-total entries work in both directions.
 Habit details offer 24 colour presets, a custom visual picker, and hex input.
-Entries and colours reset on reload; habit management, durable saving, statistics,
-and the separate change-history browser are not implemented yet.
+Entries, colours, and the haptic setting now persist locally in SQLite. History
+shows the incremental changes with undo/redo, and Settings supports change-based
+backup export/restore. Habit management, comments, and statistics remain to be
+implemented. Sample habits are seeded once; they no longer reset on reload.
 
 ## Run locally
 
@@ -29,7 +31,7 @@ the full first-run steps and troubleshooting.
 ```sh
 npm run web          # browser preview on Linux
 npm run check        # TypeScript, lint, and formatting
-npm test             # calendar, navigation, layout, colour, and receiver tests
+npm test             # storage/replay/recovery, calendar, layout, colour, receiver tests
 npm run export:ios   # verify the iOS JS bundle; not a signed iOS build
 ```
 

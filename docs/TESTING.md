@@ -7,9 +7,9 @@ for Expo diagnostics, and `npm run export:ios` to catch iOS bundle problems.
 An exported JS bundle does not validate native compilation, signing, installation,
 or actual phone performance.
 
-The initial demo has no persistence or complex domain logic. Introduce focused
-automated tests as those behaviours arrive; don't treat a clean lint result as
-proof that a habit was saved.
+Run `npm test` for the domain, receiver, and real SQLite storage tests. The native
+store now persists entries, colours, preferences, and undo history. A clean lint
+result or browser test alone is not proof that an iPhone habit was saved.
 
 ## First iPhone smoke test
 
@@ -365,3 +365,59 @@ The colour picker destructures preset hex before JSX style use, avoiding
 Worklets’ false-positive warning for plain objects named `.value` without
 disabling actual animation diagnostics. A development Babel transform confirmed
 no `getUseOfValueInStyleWarning` call is injected for these preset styles.
+
+## Incremental persistence and backup — 4 October 2026
+
+Automated: 45 tests passed, including 21 focused storage tests against the actual
+SQL/replay/queue/archive modules. TypeScript/lint/format, iOS and web exports passed;
+Expo Doctor passed 21/21. Node SQLite tests use memory and a reopened disk file;
+they are not a test of Expo's native bridge. A separate development-host replay
+check processed 50,001 synthetic events in approximately 191 ms; do not infer
+native launch performance from this number.
+
+Tests cover explicit zero/clear, backdated/future dates, malformed values and
+versions, duplicate IDs/missing order, inverse targets, redo branching, 101 rapid
+same-cell edits, persisted colours/settings/undo, failed projection writes,
+idempotent retry after an uncertain commit, projection repair, protected corrupt
+logs, rejected newer databases, atomic initial setup, checksum round-trip and
+malformed archives, restore rollback, retained pre-restore copies, exclusive
+backup work, startup retry, undoing every recorded edit after reopening, long-log
+replay without source mutation, the checked-in example export, and browser quota
+failure. No storage fixtures contain real founder data.
+
+Phone evidence: the founder confirmed checkbox/numeric entries, colour, and the
+haptic preference survive reloading, and said the feature works overall. They
+reported some older changes appeared impossible to undo, from before refreshing.
+Clarification is pending about whether those actions exist in the persisted
+History or predate the transition from temporary state. Do not claim this undo
+report resolved solely from automated tests.
+
+Remaining iPhone checks:
+
+1. Record five checkbox changes rapidly, undo and redo them, fully close/reopen
+   Expo Go, and repeat. The newest remaining edit is the next undo; undo records
+   stay in History. Test another day and tomorrow, and a numeric explicit zero.
+2. In Settings wait for Saved, export via Save to Files, and verify a JSON file
+   exists. Cancelling sharing must not alter data or claim an external backup.
+3. Make a fresh entry after exporting, restore that file, and inspect the native
+   count/replacement confirmation. Cancel once first. Confirming must restore the
+   exported state and its undo stack. Restore pre-restore copy must bring back
+   the fresh entry. Reopen to verify persistence of the copy.
+4. Try a malformed file; validation must reject it without changing the grid.
+5. Try force-quitting after Saved, and separately immediately after rapid edits.
+   Record any uncommitted loss honestly; there is no guarantee after a force kill
+   before writes finish. Test offline, midnight rollover, timezone changes, and
+   larger accumulated histories in a development/release build.
+6. Verify VoiceOver labels/disabled Undo/Redo, large text and landscape in History
+   and Settings, safe-area dismissal, and no grid position change after closing.
+
+Permanent corruption has no destructive auto-reset. Developer-assisted recovery
+and external backups are the current recovery path for an unreadable log.
+Uninstalling Expo Go/a standalone build may remove its container. Expo Go data
+will not automatically appear in a standalone app; use export/restore.
+
+The dependency audit reports 28 transitive findings (8 moderate/20 high), compared
+with 27 before the storage dependencies. The extra report is expo-sharing through
+the already-used @expo/config-plugins chain; npm proposes an incompatible older
+major as its fix. No forced dependency downgrade was applied. Resolve the SDK's
+audit findings before release; successful Doctor/export checks do not resolve them.

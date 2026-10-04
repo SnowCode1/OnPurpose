@@ -43,8 +43,7 @@ and uncertainty about whether something was saved.
 - Keep a compact top bar always visible, with Today in the centre and change
   history/settings at right. Keep the month/year date control beside the day
   headings. Future-pull feedback should grow leftwards from a fixed right edge
-  on the existing divider beneath the day headings, without text or a new border. Settle this UI before durable incremental
-  storage with undo.
+  on the existing divider beneath the day headings, without text or a new border. The founder accepted this UI; local incremental storage with undo is now implemented.
 - Let users arrange their own habit order. Completed habits stay in place.
 - Design for muscle memory; the aspiration is opening the app and recording five
   checkbox habits in about three seconds.
@@ -89,8 +88,9 @@ separate history-browsing feature. A correction made today to Tuesday's value
 has two different dates: the date being recorded and the time of the edit.
 Comments belong in this history design too. See [STORAGE.md](docs/STORAGE.md).
 
-The architectural direction is confirmed. The event schema, correction/deletion
-policy, export container, and exact history interface still need design.
+The architectural direction is confirmed. Version-1 events, compensating undo/redo,
+and JSON change-based backup/replay are implemented. Comments, permanent erasure,
+and richer historical browsing still need design. See docs/STORAGE.md.
 
 ## How we will judge the experience
 
@@ -124,15 +124,17 @@ The following capabilities are desired; their milestone order is proposed:
 5. Add comments and the separate history browser on top of the same stored changes.
 6. Validate accessibility, data recovery/upgrades, TestFlight, and App Store release.
 
-The current starter is a disposable 12-row grid with an adaptive day viewport
+The current starter uses 12 sample habits in a grid with an adaptive day viewport
 (typically four columns on the test phone in portrait, more in landscape, fewer
 with larger text). It supports scrolling into the
 past, returning to Today, editing dated checkbox/numeric values, automatic local
 date rollover, deliberate future browsing/entries, and choosing preset or custom
 row colours in habit details. Statistics remain a
-placeholder. History has a clearly marked placeholder sheet; Settings offers a
-session-only haptic toggle. Entries and colours are in memory and reset on reload; durable
-storage and the change log are subsequent milestones.
+placeholder. History now lists changes with undo/redo. Entries, colours, and the haptic preference
+persist locally in SQLite; Settings supports full change-based backup/restore.
+The 12 sample habits are seeded once. Habit management and statistics remain
+unimplemented. Persistence is confirmed on phone; an older-undo report and
+backup acceptance testing remain pending.
 
 ## Deferred candidates, not permanent exclusions
 
@@ -149,10 +151,10 @@ and incremental history are desired scope, not excluded candidates.
 | All habits daily, selected weekdays, or frequency targets?             | Open                                                               |
 | Do numeric habits have units, targets, and a “lower is better” option? | Daily-total input confirmed; goal rules open                       |
 | What exactly counts toward a numeric or scheduled habit's streak?      | Open                                                               |
-| Midnight cutoff, late-night logging, backdating, and travel?           | Open; decide before persistence                                    |
+| Midnight cutoff, late-night logging, backdating, and travel?           | Local midnight implemented; later cutoff/travel policy pending     |
 | Comments on a habit, a day, a particular entry, or multiple kinds?     | Comments desired; attachment semantics open                        |
-| Which app changes enter the history; how do deletion and undo work?    | Incremental storage and undo confirmed; detailed policy open       |
-| Export/import format, backup location, and cross-device sync?          | Change-based export confirmed; details open                        |
+| Which app changes enter the history; how do deletion and undo work?    | Version-1 undo/redo implemented; deletion/erasure policy open      |
+| Export/import format, backup location, and cross-device sync?          | Version-1 JSON backup/restore implemented; sync deferred           |
 | Any reminders or widgets required for version one?                     | Open                                                               |
 | Free, paid, donations, or another model?                               | Open                                                               |
 | Licence and copyright holder?                                          | Open; choose before public release                                 |
@@ -171,7 +173,7 @@ and incremental history are desired scope, not excluded candidates.
 
 ## Next suggested work
 
-1. Implement the agreed incremental local store and export/replay before daily use.
+1. Validate local saving, undo, and backup/restore on the iPhone before daily use.
 2. Add a real habit editor for names, types, units, colour, and manual ordering.
 3. Consider a date picker for jumping to a distant date without repeated swipes.
 4. Discuss an explicit “skipped/not applicable” value before calculating streaks,

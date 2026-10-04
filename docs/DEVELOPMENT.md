@@ -40,7 +40,7 @@ Use the lockfile for the exact installed dependencies.
    local-network access if iOS asks.
 6. Tap checkbox cells in the sample grid; a second tap unchecks them. Tap a
    numeric cell to enter a daily total. Names open a statistics placeholder.
-   This demo does not save; entries and colours reset on reload. The founder
+   Entries, colours, and haptic preferences now save locally; reload to verify. The founder
    requested removal of the bottom demo notice to give the grid more space.
 7. Edit `App.tsx` and save. The phone should refresh with the change.
 
@@ -202,8 +202,25 @@ The threshold haptic still marks readiness; release continues smoothly into
 future dates. Date headings remain scrollable, without a hidden tap-to-return.
 
 Hold ONPURPOSE, month/year, or a dialog/panel title to share a development preview.
-History is explicitly a placeholder until the incremental store and undo are
-implemented. Settings has a working haptic toggle for this session; it resets
-on reload, like the demo entries. Icons use `react-native-svg` 15.15.4, installed
+History shows real stored changes with undo/redo. Settings has a persistent haptic
+toggle and full change-based backup export/restore. The grid stays mounted behind
+these panels. See STORAGE.md and the persistence phone checks in TESTING.md. Icons use `react-native-svg` 15.15.4, installed
 with Expo’s SDK-compatible installer and included in Expo Go.
 [Expo SVG reference](https://docs.expo.dev/versions/v57.0.0/sdk/svg/).
+
+## Local storage in development
+
+The iPhone now keeps a versioned SQLite database across Expo reloads. Changing
+code does not deliberately wipe the store or reseed sample habits. Expo Go and a
+standalone app have separate containers: export a backup before moving builds or
+uninstalling. No reset command or destructive recovery button is provided.
+
+After adding native storage/file dependencies, fully reload Expo Go (restart
+Metro with `npm run start:clear` if it cannot resolve an installed module).
+Settings → Export backup opens the share sheet; choose Save to Files. Restore
+backup validates first and asks before replacing data, retaining a local copy.
+The web preview uses separate browser localStorage, not the iPhone SQLite file.
+
+Run `node --test scripts/storage.test.mjs` for focused storage/recovery tests, and
+`npm test` for the full suite. These tests use Node 24's SQLite binding against the
+production SQL/replay logic. Native bridge and Files UI still need phone testing.

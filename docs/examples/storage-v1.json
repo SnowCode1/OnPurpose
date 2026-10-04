@@ -1,0 +1,113 @@
+{
+  "format": "onpurpose.changes",
+  "version": 1,
+  "exportedAt": "2026-10-04T05:31:00.000Z",
+  "eventCount": 6,
+  "sha256": "1825a8f5b20f4bbece9ea66255ba06ce7a5ff07f3901098e513e69c2a548a504",
+  "events": [
+    {
+      "version": 1,
+      "id": "example-1",
+      "sequence": 1,
+      "recordedAt": "2026-10-04T05:30:01.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "initialize",
+      "habits": [
+        {
+          "id": "read",
+          "name": "Read",
+          "unit": "minutes",
+          "color": "#BDA5FF"
+        },
+        {
+          "id": "walk",
+          "name": "Walk",
+          "color": "#82E6BC"
+        }
+      ]
+    },
+    {
+      "version": 1,
+      "id": "example-2",
+      "sequence": 2,
+      "recordedAt": "2026-10-04T05:30:02.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "change",
+      "change": {
+        "kind": "entry",
+        "habitId": "read",
+        "date": "2026-10-03",
+        "before": null,
+        "after": 0
+      }
+    },
+    {
+      "version": 1,
+      "id": "example-3",
+      "sequence": 3,
+      "recordedAt": "2026-10-04T05:30:03.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "change",
+      "change": {
+        "kind": "entry",
+        "habitId": "read",
+        "date": "2026-10-03",
+        "before": 0,
+        "after": 30
+      }
+    },
+    {
+      "version": 1,
+      "id": "example-4",
+      "sequence": 4,
+      "recordedAt": "2026-10-04T05:30:04.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "undo",
+      "targetId": "example-3",
+      "change": {
+        "kind": "entry",
+        "habitId": "read",
+        "date": "2026-10-03",
+        "before": 30,
+        "after": 0
+      }
+    },
+    {
+      "version": 1,
+      "id": "example-5",
+      "sequence": 5,
+      "recordedAt": "2026-10-04T05:30:05.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "redo",
+      "targetId": "example-4",
+      "change": {
+        "kind": "entry",
+        "habitId": "read",
+        "date": "2026-10-03",
+        "before": 0,
+        "after": 30
+      }
+    },
+    {
+      "version": 1,
+      "id": "example-6",
+      "sequence": 6,
+      "recordedAt": "2026-10-04T05:30:06.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "change",
+      "change": {
+        "kind": "entry",
+        "habitId": "walk",
+        "date": "2026-10-05",
+        "before": null,
+        "after": 1
+      }
+    }
+  ]
+}

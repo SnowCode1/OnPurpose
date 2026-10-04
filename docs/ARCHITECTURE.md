@@ -3,14 +3,16 @@
 ## Implemented foundation
 
 One React Native screen written in strict TypeScript, running under Expo SDK 57.
-It uses React state for disposable dated entries and habit colours, with safe
-areas for phone notches/home indicators. The app uses pure black with bright
+It uses a subscribed change store for persistent dated entries, habit colours,
+and haptic preferences, with safe areas for phone notches/home indicators. The app uses pure black with bright
 per-habit colours. Habit names open a colour picker and statistics placeholder.
 A local-midnight timer and foreground check update the current day.
 
 ```text
 index.ts       registers the app with Expo
-App.tsx        screen, in-memory state, colour picker and daily-total editor
+App.tsx        screen, dialogs, optimistic store actions and backup confirmations
+src/storage/   versioned event/replay model, SQLite transactions, queue and backups
+src/usePersistentStore.ts  store subscription, opening and foreground retry
 src/AppPanel.tsx  native History/Settings sheets, keeping the grid mounted
 src/Icon.tsx   code-native outline icons rendered with react-native-svg
 src/HabitGrid.tsx  compact toolbar, fixed names/date headers; virtualized date columns and future pull feedback
@@ -30,7 +32,8 @@ src/dev/       optional native screenshot gesture, excluded from release JS
 scripts/       local preview receiver and its integration tests
 ```
 
-There is no database, backend, account flow, implemented statistics/history, scheduler, analytics SDK,
+Native SQLite and a real change-history browser are implemented. There is no
+backend, account flow, implemented statistics, scheduler, analytics SDK,
 or navigation library. The web target is a development convenience; iOS is the
 release target. Android is not part of the committed release scope.
 
@@ -113,8 +116,8 @@ App owns the selected panel and visibility separately so closing preserves panel
 content throughout its native dismissal animation. AppPanel uses a pageSheet
 Modal with Close and iOS swipe dismissal; it has a local safe-area provider and
 scrollable content for larger text/landscape. The grid remains mounted behind it.
-History explicitly states it is coming next; no fabricated change records or undo
-are shown. Settings has an in-memory haptic preference. The module’s enable flag
+History now lists stored changes with undo/redo. Settings has a persisted haptic
+preference and backup export/restore controls. The module’s enable flag
 is read at each feedback event, including future-threshold events bridged from
 the UI thread. Preview capture’s tool-success haptic remains independent.
 
@@ -184,27 +187,31 @@ or recrossing the same threshold cannot generate repeated ticks. Release after
 that tick reveals dates without an extra pulse. Haptics use the JS bridge only
 for this discrete threshold event; scroll synchronization remains on the UI thread.
 
-Settings exposes an in-memory haptic toggle, enabled by default. Feedback
+Settings exposes a persisted haptic toggle, enabled by default. Feedback
 follows both this preference and OS availability. [Expo's haptics reference](https://docs.expo.dev/versions/v57.0.0/sdk/haptics/)
 documents cases such as iOS Low Power Mode and system settings suppressing output.
 
-## Proposed next step — durable storage
+## Durable local storage
 
-Separate the Today screen, habit domain logic, and local storage when we add real
-habits. Prefer a small number of clear modules over a framework of abstractions.
-Incremental change storage is a confirmed requirement; SQLite with an append-only
-log and derived current-state tables is the proposal in STORAGE.md.
+SQLite stores an append-only ordered change log and a derived current-state JSON
+projection. One transaction commits both. The store immediately updates the UI,
+serializes native writes, retains pending edits on failure, and exposes retry.
+Loading never renders an editable demo over saved data. The initial sample habits
+are seeded only when creating a genuinely new database.
 
-Use stable habit IDs and explicit user ordering. Store completion by habit and
-local calendar date rather than destructively clearing yesterday's state at
-midnight. Date boundaries, late-night habits, travel, backdating, and archival
-semantics need decisions and targeted tests before shipping.
+Versioned events preserve before/after values, explicit effective calendar dates,
+UTC edit instants, stable IDs, sequence, and time-zone metadata. Replay validates
+causality and reconstructs undo/redo stacks. Undo appends the inverse of the latest
+active change rather than deleting it. History shows actual changes, including
+corrections and undo/redo. Settings exports/restores a checksum-validated JSON
+change archive; confirmed restore atomically retains a pre-restore copy.
 
-UI feedback must not wait for a network round trip. Persistence must handle
-rapid taps without losing writes, expose failures honestly, and never overwrite
-saved data with an empty initial state during loading. Plan schema migrations
-and export/replay/recovery before collecting meaningful history.
+The local-midnight boundary remains the current default; recorded date keys do
+not change during travel. No comments, habit management, permanent erasure, or
+statistics semantics have been added. See [STORAGE.md](STORAGE.md) for the exact
+schema, file contract, limits, failure policy, and recovery limitations. Browser
+preview uses a separate localStorage adapter; SQLite is the native iOS store.
 
-Revisit navigation once there is more than one real screen. Revisit backend and
-sync only if agreed requirements need them. Widgets/native extensions can require
-a development build and native configuration; evaluate separately from the list.
+Revisit backend/sync only if agreed requirements need them. Widgets/native
+extensions can require a development build and native configuration; evaluate
+separately from the list.
