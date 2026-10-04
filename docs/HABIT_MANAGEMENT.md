@@ -61,14 +61,14 @@ outside Undo.
 
 ## Storage compatibility
 
-New events and backup containers use version 5 (editable start dates and row spacing); version 3 introduced definitions
+New events and backup containers use version 6 (display settings); version 5 added editable start dates and row spacing; version 3 introduced definitions
 and ordering, and version 4 adds optional icons. A habit change captures its stable
 ID, position, and before/after definition; creation uses a null before-definition.
 Undoing creation can remove it only after its entries have been undone. This is
 not a permanent deletion feature. An order change carries exact before/after ID
 lists, validated as a permutation of every stored habit.
 
-Old v1/v2/v3/v4 logs and backups remain readable, unchanged. Legacy numeric habits are
+Old v1/v2/v3/v4/v5 logs and backups remain readable, unchanged. Legacy numeric habits are
 inferred from their unit field; new definitions may use an explicit type and an
 archived flag. No SQL schema change or reseeding occurs. See [STORAGE.md](STORAGE.md)
 and [the synthetic v4 export](examples/storage-v4.json).
@@ -146,3 +146,5 @@ Font scaling can increase all three choices. Compact uses less vertical name
 padding. Changing spacing keeps habit order, entries and horizontal position.
 The preference persists outside habit History/Undo and is included in backups.
 Sample-mode settings stay in its separate disposable store.
+
+Column spacing, date fading and week start are documented in [SETTINGS.md](SETTINGS.md).

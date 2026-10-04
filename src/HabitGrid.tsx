@@ -1,3 +1,4 @@
+import type { ColumnSpacing } from './displayPreferences';
 import { gridRowHeight, type RowSpacing } from './rowSpacing';
 import {
   type ComponentType,
@@ -53,6 +54,8 @@ import { appear, disappear, rowTransition, menuAppear } from './motion';
 
 type Props = {
   rowSpacing: RowSpacing;
+  columnSpacing: ColumnSpacing;
+  dateFading: boolean;
   sampleData?: boolean;
   HeadingComponent: ComponentType<TextProps>;
   DateButtonComponent: ComponentType<PressableProps>;
@@ -71,6 +74,8 @@ type Props = {
 
 export const HabitGrid = memo(function HabitGrid({
   rowSpacing,
+  columnSpacing,
+  dateFading,
   sampleData = false,
   HeadingComponent,
   DateButtonComponent,
@@ -135,13 +140,17 @@ export const HabitGrid = memo(function HabitGrid({
   const palettes = useMemo(
     () =>
       Object.fromEntries(
-        habits.map((habit) => [habit.id, createGridPalette(habit.color)]),
+        habits.map((habit) => [
+          habit.id,
+          createGridPalette(habit.color, dateFading),
+        ]),
       ),
-    [habits],
+    [habits, dateFading],
   );
   const { visibleDays, nameWidth, dateWidth, columnWidth } = gridLayout(
     width,
     fontScale,
+    columnSpacing,
   );
   const { tops, total: gridHeight } = useMemo(
     () =>
@@ -173,13 +182,14 @@ export const HabitGrid = memo(function HabitGrid({
   const renderHeading = useCallback(
     ({ item: day }: { item: GridDay }) => (
       <GridDateHeading
+        dateFading={dateFading}
         store={store}
         habits={habits}
         day={day}
         width={columnWidth}
       />
     ),
-    [store, habits, columnWidth],
+    [store, habits, columnWidth, dateFading],
   );
   const cellsDisabled = !editable || !!dragId || reorderMode;
   const renderColumn = useCallback(
@@ -488,6 +498,7 @@ export const HabitGrid = memo(function HabitGrid({
               style={{ width: dateWidth, minHeight: 56, overflow: 'hidden' }}
             >
               <GridDateBackdrop
+                dateFading={dateFading}
                 days={days}
                 width={columnWidth}
                 offset={offset}

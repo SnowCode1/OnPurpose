@@ -1,3 +1,9 @@
+import {
+  columnSpacingOptions,
+  weekStartOptions,
+  type ColumnSpacing,
+  type WeekStart,
+} from './displayPreferences';
 import { rowSpacingOptions, type RowSpacing } from './rowSpacing';
 import { type ComponentType, type ReactNode } from 'react';
 import type { Habit } from './habits';
@@ -43,12 +49,73 @@ function Action({
     </Pressable>
   );
 }
+function ChoiceSetting<T extends string>({
+  label,
+  description,
+  value,
+  options,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  description: string;
+  value: T;
+  options: readonly { value: T; label: string }[];
+  onChange: (value: T) => void;
+  disabled: boolean;
+}) {
+  return (
+    <View style={{ gap: 8 }}>
+      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.description}>{description}</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {options.map((option) => (
+          <Pressable
+            key={option.value}
+            accessibilityRole="button"
+            accessibilityLabel={`${label}, ${option.label}`}
+            accessibilityState={{ selected: value === option.value, disabled }}
+            disabled={disabled}
+            onPress={() => onChange(option.value)}
+            style={({ pressed }) => ({
+              flexGrow: 1,
+              flexBasis: 90,
+              minHeight: 48,
+              padding: 12,
+              borderRadius: 12,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: value === option.value ? '#74BBA525' : '#181818',
+              opacity: disabled ? 0.35 : pressed ? 0.6 : 1,
+            })}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: '500',
+                color: value === option.value ? '#9BDBBE' : '#AAAAAA',
+              }}
+            >
+              {option.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
 export function AppPanel({
   sampleData = false,
   developmentControls,
   page,
   visible,
   HeadingComponent,
+  columnSpacing,
+  onColumnSpacingChange,
+  weekStart,
+  onWeekStartChange,
+  dateFading,
+  onDateFadingChange,
   rowSpacing,
   onRowSpacingChange,
   hapticsEnabled,
@@ -74,6 +141,12 @@ export function AppPanel({
   onRestoreHabit: (habit: Habit) => void;
   visible: boolean;
   HeadingComponent: ComponentType<TextProps>;
+  columnSpacing: ColumnSpacing;
+  onColumnSpacingChange: (value: ColumnSpacing) => void;
+  weekStart: WeekStart;
+  onWeekStartChange: (value: WeekStart) => void;
+  dateFading: boolean;
+  onDateFadingChange: (value: boolean) => void;
   rowSpacing: RowSpacing;
   onRowSpacingChange: (value: RowSpacing) => void;
   hapticsEnabled: boolean;
@@ -180,60 +253,54 @@ export function AppPanel({
                     onPress={onArchive}
                   />
                   <Text style={[styles.section, { marginTop: 28 }]}>GRID</Text>
-                  <Text style={styles.label}>Row spacing</Text>
-                  <Text style={styles.description}>
-                    Fit more habits, or give each one more room. Larger text
-                    still has space to grow.
-                  </Text>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      flexWrap: 'wrap',
-                      gap: 8,
-                      marginTop: 12,
-                    }}
-                  >
-                    {rowSpacingOptions.map((option) => (
-                      <Pressable
-                        key={option.value}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${option.label} row spacing`}
-                        accessibilityState={{
-                          selected: rowSpacing === option.value,
-                          disabled: !editable,
-                        }}
-                        disabled={!editable}
-                        onPress={() => onRowSpacingChange(option.value)}
-                        style={({ pressed }) => ({
-                          flexGrow: 1,
-                          flexBasis: 90,
-                          minHeight: 48,
-                          padding: 12,
-                          borderRadius: 12,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          backgroundColor:
-                            rowSpacing === option.value
-                              ? '#74BBA525'
-                              : '#181818',
-                          opacity: !editable ? 0.35 : pressed ? 0.6 : 1,
-                        })}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            fontWeight: '500',
-                            color:
-                              rowSpacing === option.value
-                                ? '#9BDBBE'
-                                : '#AAAAAA',
-                          }}
-                        >
-                          {option.label}
+                  <View style={{ gap: 24 }}>
+                    <ChoiceSetting
+                      label="Row spacing"
+                      description="Fit more habits, or give each one more room. Larger text still has space to grow."
+                      value={rowSpacing}
+                      options={rowSpacingOptions}
+                      onChange={onRowSpacingChange}
+                      disabled={!editable}
+                    />
+                    <ChoiceSetting
+                      label="Column spacing"
+                      description="Compact shows more days. Wider columns give numbers more room."
+                      value={columnSpacing}
+                      options={columnSpacingOptions}
+                      onChange={onColumnSpacingChange}
+                      disabled={!editable}
+                    />
+                    <View style={styles.preference}>
+                      <View style={styles.preferenceText}>
+                        <Text style={styles.label}>Fade distant dates</Text>
+                        <Text style={styles.description}>
+                          Dim empty cells and dates in the grid’s older and
+                          future days. Turn off for stronger contrast; recorded
+                          entries stay bright.
                         </Text>
-                      </Pressable>
-                    ))}
+                      </View>
+                      <Switch
+                        accessibilityLabel="Fade distant dates"
+                        disabled={!editable}
+                        value={dateFading}
+                        onValueChange={onDateFadingChange}
+                        trackColor={{ false: '#303030', true: '#74BBA5' }}
+                        thumbColor="#FFFFFF"
+                        ios_backgroundColor="#303030"
+                      />
+                    </View>
                   </View>
+                  <Text style={[styles.section, { marginTop: 28 }]}>
+                    CALENDAR
+                  </Text>
+                  <ChoiceSetting
+                    label="Week starts on"
+                    description="Used by the statistics calendar and weekday breakdown."
+                    value={weekStart}
+                    options={weekStartOptions}
+                    onChange={onWeekStartChange}
+                    disabled={!editable}
+                  />
                   <Text style={[styles.section, { marginTop: 28 }]}>
                     FEEDBACK
                   </Text>

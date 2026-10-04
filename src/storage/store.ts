@@ -3,6 +3,7 @@ import {
   canCoalesce,
   emptyReplay,
   inverse,
+  isPreference,
   replayEvents,
   type Change,
   type EventMeta,
@@ -83,11 +84,11 @@ export class ChangeStore {
     const started = performanceEnabled ? performance.now() : 0;
     const meta = {
       ...this.metadata(this.snapshot.events.length + 1),
-      version: 5 as const,
+      version: 6 as const,
     };
     if (performanceEnabled)
       recordPerformance('store.metadata', performance.now() - started);
-    if (change.kind === 'haptics' || change.kind === 'rowSpacing')
+    if (isPreference(change))
       return this.enqueue({ ...meta, type: 'preference', change });
     const group = this.snapshot.replay.lastGroup;
     const groupId = canCoalesce(group, meta, change) ? group!.id : meta.id;
@@ -100,7 +101,7 @@ export class ChangeStore {
     if (!target) return false;
     return this.enqueue({
       ...this.metadata(this.snapshot.events.length + 1),
-      version: 5,
+      version: 6,
       type: 'undo',
       targetId: target.id,
       change: inverse(target.change) as typeof target.change,
@@ -112,7 +113,7 @@ export class ChangeStore {
     if (!target) return false;
     return this.enqueue({
       ...this.metadata(this.snapshot.events.length + 1),
-      version: 5,
+      version: 6,
       type: 'redo',
       targetId: target.undoId,
       change: target.action.change,

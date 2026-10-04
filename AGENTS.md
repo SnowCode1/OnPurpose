@@ -59,8 +59,9 @@ The requested preset icon update uses normal undoable edits in
   name control so position animation does not report per-frame layout to JS.
   `src/motion.ts` shares reduced-motion-aware row/menu transitions; keep name and
   date-cell layout timing aligned.
+- `src/displayPreferences.ts` owns column spacing, week start and date fading defaults; keep absent-field defaults compatible with old logs and all preferences outside History/Undo. Read docs/SETTINGS.md.
 - `src/rowSpacing.ts` owns saved Compact/Standard/Roomy geometry; preserve font scaling and measured row heights.
-- `src/StartDateField.tsx` owns the native draft date picker; existing dates remain inferred until edited. Explicit start dates bound statistics without deleting entries. New edits/exports use v5, retaining v1–v4 replay.
+- `src/StartDateField.tsx` owns the native draft date picker; existing dates remain inferred until edited. Explicit start dates bound statistics without deleting entries. New edits/exports use v6, retaining v1–v5 replay.
 - `src/useStatsDismissal.ts` owns UI-thread pull dismissal; only a drag starting at the top qualifies. Keep an accessible Back button.
 - `src/gridLayout.ts` calculates adaptive column geometry for both orientations.
 - `src/useGridScroll.ts` synchronizes native scrolling on the UI thread; never

@@ -14,10 +14,12 @@ import { loadingStripOffset, loadingEdgeMasks } from './gridLoading';
 // These dates are cheap, read-only native text. They are prepared with each date
 // range, so a virtualized-list spacer never hides the calendar during a JS stall.
 const FallbackDate = memo(function FallbackDate({
+  dateFading,
   day,
   index,
   width,
 }: {
+  dateFading: boolean;
   day: GridDay;
   index: number;
   width: number;
@@ -32,15 +34,22 @@ const FallbackDate = memo(function FallbackDate({
         width,
       }}
     >
-      <GridDateLabel day={day} width={width} recorded={false} />
+      <GridDateLabel
+        day={day}
+        width={width}
+        recorded={false}
+        dateFading={dateFading}
+      />
     </View>
   );
 });
 export const GridDateBackdrop = memo(function GridDateBackdrop({
+  dateFading,
   days,
   width,
   offset,
 }: {
+  dateFading: boolean;
   days: GridDay[];
   width: number;
   offset: SharedValue<number>;
@@ -69,7 +78,13 @@ export const GridDateBackdrop = memo(function GridDateBackdrop({
         ]}
       >
         {days.map((day, index) => (
-          <FallbackDate key={day.key} day={day} index={index} width={width} />
+          <FallbackDate
+            dateFading={dateFading}
+            key={day.key}
+            day={day}
+            index={index}
+            width={width}
+          />
         ))}
       </Animated.View>
     </View>

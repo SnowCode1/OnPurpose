@@ -638,7 +638,7 @@ test('v5 start dates and spacing survive SQLite reload, undo/redo and backup rou
     '2026-10-04T06:00:00.000Z',
     digest,
   );
-  assert.equal(JSON.parse(text).version, 5);
+  assert.equal(JSON.parse(text).version, 6);
   const decoded = await decodeArchive(text, digest);
   assert.deepEqual(decoded.replay, reopened.getSnapshot().replay);
   const archive = JSON.parse(text);
@@ -782,4 +782,157 @@ test('documented v5 backup keeps the v4 prefix and date Undo/Redo across a prefe
   assert.equal(replay.state.habits[0].startDate, '2026-09-01');
   assert.equal(replay.undo.at(-1).id, 'v5-start');
   assert.equal(replay.redo.length, 0);
+});
+
+test('v6 display settings persist through SQLite, preserve Redo and round-trip with backups', async (t) => {
+  const { store, repository } = await fixture(t);
+  store.change(entry(null, 1));
+  store.undo();
+  const original = store.getSnapshot().replay;
+  for (const change of [
+    { kind: 'columnSpacing', before: 'compact', after: 'roomy' },
+    { kind: 'weekStart', before: 'monday', after: 'sunday' },
+    { kind: 'dateFading', before: true, after: false },
+  ])
+    assert.ok(store.change(change));
+  assert.deepEqual(store.getSnapshot().replay.undo, original.undo);
+  assert.deepEqual(store.getSnapshot().replay.redo, original.redo);
+  await store.flush();
+  const reopened = new ChangeStore(repository, metadata);
+  await reopened.load();
+  assert.deepEqual(reopened.getSnapshot().replay.state, {
+    ...original.state,
+    columnSpacing: 'roomy',
+    weekStart: 'sunday',
+    dateFading: false,
+  });
+  assert.ok(reopened.redo());
+  await reopened.flush();
+  const archive = await encodeArchive(
+    reopened.getSnapshot().events,
+    '2026-10-04T08:00:00.000Z',
+    digest,
+  );
+  assert.equal(JSON.parse(archive).version, 6);
+  const decoded = await decodeArchive(archive, digest);
+  assert.deepEqual(decoded.replay, reopened.getSnapshot().replay);
+  assert.equal(decoded.replay.state.values['walk:2026-10-04'], 1);
+  const disguised = JSON.parse(archive);
+  disguised.version = 5;
+  await assert.rejects(
+    decodeArchive(JSON.stringify(disguised), digest),
+    /version/,
+  );
+  assert.throws(
+    () =>
+      applyEvent(decoded.replay, {
+        ...metadata(decoded.events.length + 1),
+        version: 5,
+        type: 'preference',
+        change: { kind: 'haptics', before: true, after: false },
+      }),
+    /version-6/,
+  );
+});
+test('v6 preferences preserve correction grouping and restore default values', async (t) => {
+  const { store } = await fixture(t);
+  store.change(entry(null, 1));
+  const group = store.getSnapshot().replay.lastGroup;
+  const choices = [
+    { kind: 'columnSpacing', before: 'compact', after: 'standard' },
+    { kind: 'weekStart', before: 'monday', after: 'sunday' },
+    { kind: 'dateFading', before: true, after: false },
+  ];
+  for (const change of choices) store.change(change);
+  assert.deepEqual(store.getSnapshot().replay.lastGroup, group);
+  store.change(entry(1, null));
+  assert.equal(store.getSnapshot().replay.undo.length, 0);
+  for (const change of choices) store.change(inverse(change));
+  await store.flush();
+  const state = store.getSnapshot().replay.state;
+  assert.equal(state.columnSpacing, 'compact');
+  assert.equal(state.weekStart, 'monday');
+  assert.equal(state.dateFading, true);
+  assert.equal(store.getSnapshot().replay.undo.length, 0);
+});
+test('v6 preferences reject invalid values, old event versions and habit-action disguises', async (t) => {
+  const { store } = await fixture(t);
+  const cases = [
+    { kind: 'columnSpacing', before: 'compact', after: 'roomy' },
+    { kind: 'weekStart', before: 'monday', after: 'sunday' },
+    { kind: 'dateFading', before: true, after: false },
+  ];
+  for (const change of cases) {
+    for (const version of [1, 2, 3, 4, 5])
+      assert.throws(() =>
+        replayEvents([
+          initialize(),
+          { ...metadata(2), version, type: 'preference', change },
+        ]),
+      );
+    for (const invalid of [null, 0, {}, 'unknown'])
+      assert.throws(() => store.change({ ...change, after: invalid }));
+    assert.throws(() => store.change(inverse(change)), /precondition/);
+    assert.throws(
+      () =>
+        replayEvents([
+          initialize(),
+          {
+            ...metadata(2),
+            version: 6,
+            type: 'change',
+            groupId: 'disguised',
+            change,
+          },
+        ]),
+      /Preferences/,
+    );
+  }
+  assert.equal(store.getSnapshot().events.length, 1);
+});
+test('v1–v5 fixtures accept v6 preferences while retaining every original record', async () => {
+  const { readFileSync } = await import('node:fs');
+  for (const version of [1, 2, 3, 4, 5]) {
+    const text = readFileSync(
+      new URL(`../docs/examples/storage-v${version}.json`, import.meta.url),
+      'utf8',
+    );
+    const { events, replay } = await decodeArchive(text, digest);
+    const change = { kind: 'weekStart', before: 'monday', after: 'sunday' };
+    const updated = [
+      ...events,
+      {
+        ...metadata(events.length + 1),
+        version: 6,
+        type: 'preference',
+        change,
+      },
+    ];
+    const decoded = await decodeArchive(
+      await encodeArchive(updated, '2026-10-04T08:00:00.000Z', digest),
+      digest,
+    );
+    assert.deepEqual(decoded.events.slice(0, -1), events);
+    assert.deepEqual(decoded.replay.state, {
+      ...replay.state,
+      weekStart: 'sunday',
+    });
+    assert.deepEqual(decoded.replay.undo, replay.undo);
+    assert.deepEqual(decoded.replay.redo, replay.redo);
+  }
+});
+
+test('documented v6 backup restores display choices and a habit redo across preferences', async () => {
+  const { readFileSync } = await import('node:fs');
+  const text = readFileSync(
+    new URL('../docs/examples/storage-v6.json', import.meta.url),
+    'utf8',
+  );
+  const { replay } = await decodeArchive(text, digest);
+  assert.equal(replay.state.columnSpacing, 'roomy');
+  assert.equal(replay.state.weekStart, 'sunday');
+  assert.equal(replay.state.dateFading, false);
+  assert.equal(replay.state.values['walk:2026-10-04'], 1);
+  assert.equal(replay.undo.length, 1);
+  assert.equal(replay.undo[0].id, 'v6-check');
 });

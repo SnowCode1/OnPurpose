@@ -1,3 +1,4 @@
+import { displayDefaults } from './src/displayPreferences';
 import type { RowSpacing } from './src/rowSpacing';
 import { habitTrackingStart } from './src/statistics';
 import { StatusBar } from 'expo-status-bar';
@@ -140,6 +141,9 @@ function PersistentApp({
     values,
     hapticsEnabled,
     rowSpacing = 'standard',
+    columnSpacing = displayDefaults.columnSpacing,
+    weekStart = displayDefaults.weekStart,
+    dateFading = displayDefaults.dateFading,
   } = snapshot.replay.state;
   const activeHabits = useMemo(
     () => habits.filter((habit) => !habit.archived),
@@ -491,6 +495,8 @@ function PersistentApp({
           >
             <PerformanceBoundary name="grid">
               <HabitGrid
+                columnSpacing={columnSpacing}
+                dateFading={dateFading}
                 rowSpacing={rowSpacing}
                 sampleData={sampleData}
                 HeadingComponent={PreviewHeading}
@@ -513,6 +519,7 @@ function PersistentApp({
           {statsHabit && (
             <PerformanceBoundary name="statistics">
               <HabitStatsScreen
+                weekStart={weekStart}
                 key={statsHabit.id}
                 habit={statsHabit}
                 values={values}
@@ -641,6 +648,33 @@ function PersistentApp({
           }}
           onRetry={() => {
             void store.retry();
+          }}
+          columnSpacing={columnSpacing}
+          weekStart={weekStart}
+          dateFading={dateFading}
+          onColumnSpacingChange={(after) => {
+            if (!editable) return;
+            const before =
+              store.getSnapshot().replay.state.columnSpacing ??
+              displayDefaults.columnSpacing;
+            if (store.change({ kind: 'columnSpacing', before, after }))
+              feedback('selection');
+          }}
+          onWeekStartChange={(after) => {
+            if (!editable) return;
+            const before =
+              store.getSnapshot().replay.state.weekStart ??
+              displayDefaults.weekStart;
+            if (store.change({ kind: 'weekStart', before, after }))
+              feedback('selection');
+          }}
+          onDateFadingChange={(after) => {
+            if (!editable) return;
+            const before =
+              store.getSnapshot().replay.state.dateFading ??
+              displayDefaults.dateFading;
+            if (store.change({ kind: 'dateFading', before, after }))
+              feedback('selection');
           }}
           rowSpacing={rowSpacing}
           onRowSpacingChange={(after: RowSpacing) => {

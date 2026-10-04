@@ -811,3 +811,10 @@ Automated coverage includes v1–v4 fixture upgrades without mutation, v5 fixtur
 replay, native SQL repository reload, date/preference validation, date editing
 with Undo/Redo, archive-aware statistics, font-scaled minimum heights and pull
 threshold/reversal rules. These do not establish native gesture or picker quality.
+
+## Display preferences
+
+Follow [SETTINGS.md](SETTINGS.md) for column-density, fading, week-order, large-text
+and native scrolling checks. Confirm both orientations retain header/body/loading
+alignment after changing density, including away from Today. Real-store reload and
+v6 export/restore should retain all preferences without changing History/Redo.

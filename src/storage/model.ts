@@ -1,3 +1,10 @@
+import {
+  displayDefaults,
+  isColumnSpacing,
+  isWeekStart,
+  type ColumnSpacing,
+  type WeekStart,
+} from '../displayPreferences.ts';
 import { isRowSpacing, type RowSpacing } from '../rowSpacing.ts';
 import { isHabitIcon } from '../habitIcons.ts';
 import { isNumericHabit, type Habit } from '../habits.ts';
@@ -7,6 +14,9 @@ export type StoredState = {
   values: Record<string, number>;
   hapticsEnabled: boolean;
   rowSpacing?: RowSpacing;
+  columnSpacing?: ColumnSpacing;
+  weekStart?: WeekStart;
+  dateFading?: boolean;
 };
 export type Change =
   | {
@@ -26,17 +36,29 @@ export type Change =
     }
   | { kind: 'order'; before: string[]; after: string[] }
   | { kind: 'haptics'; before: boolean; after: boolean }
-  | { kind: 'rowSpacing'; before: RowSpacing; after: RowSpacing };
+  | { kind: 'rowSpacing'; before: RowSpacing; after: RowSpacing }
+  | { kind: 'columnSpacing'; before: ColumnSpacing; after: ColumnSpacing }
+  | { kind: 'weekStart'; before: WeekStart; after: WeekStart }
+  | { kind: 'dateFading'; before: boolean; after: boolean };
 export type PreferenceChange = Extract<
   Change,
-  { kind: 'haptics' | 'rowSpacing' }
+  {
+    kind:
+      'haptics' | 'rowSpacing' | 'columnSpacing' | 'weekStart' | 'dateFading';
+  }
 >;
 export function isPreference(change: Change): change is PreferenceChange {
-  return change.kind === 'haptics' || change.kind === 'rowSpacing';
+  return (
+    change.kind === 'haptics' ||
+    change.kind === 'rowSpacing' ||
+    change.kind === 'columnSpacing' ||
+    change.kind === 'weekStart' ||
+    change.kind === 'dateFading'
+  );
 }
 export type HabitChange = Exclude<Change, PreferenceChange>;
 export type EventMeta = {
-  version: 1 | 2 | 3 | 4 | 5;
+  version: 1 | 2 | 3 | 4 | 5 | 6;
   id: string;
   sequence: number;
   recordedAt: string;
@@ -47,7 +69,7 @@ export type LegacyChangeEvent = EventMeta & { version: 1 } & (
     | { type: 'change'; change: Change }
     | { type: 'undo' | 'redo'; targetId: string; change: Change }
   );
-export type CurrentChangeEvent = EventMeta & { version: 2 | 3 | 4 | 5 } & (
+export type CurrentChangeEvent = EventMeta & { version: 2 | 3 | 4 | 5 | 6 } & (
     | { type: 'change'; groupId: string; change: HabitChange }
     | { type: 'undo' | 'redo'; targetId: string; change: HabitChange }
     | { type: 'preference'; change: PreferenceChange }
@@ -75,6 +97,7 @@ export type Replay = {
   hasV3: boolean;
   hasV4: boolean;
   hasV5: boolean;
+  hasV6: boolean;
 };
 export const emptyReplay = (): Replay => ({
   state: { habits: [], values: {}, hapticsEnabled: true },
@@ -87,6 +110,7 @@ export const emptyReplay = (): Replay => ({
   hasV3: false,
   hasV4: false,
   hasV5: false,
+  hasV6: false,
 });
 export const GROUP_INACTIVITY_MS = 2 * 60 * 1000;
 
@@ -196,7 +220,7 @@ function validateHabit(
 }
 export function validateChange(
   value: unknown,
-  version = 5,
+  version = 6,
 ): asserts value is Change {
   object(value);
   if (value.kind === 'entry') {
@@ -236,6 +260,23 @@ export function validateChange(
       order.forEach(id);
       insist(new Set(order).size === order.length, 'Repeated habit in order.');
     }
+  } else if (
+    value.kind === 'columnSpacing' ||
+    value.kind === 'weekStart' ||
+    value.kind === 'dateFading'
+  ) {
+    keys(value, ['kind', 'before', 'after']);
+    insist(version >= 6, 'Display preferences require version 6.');
+    const valid =
+      value.kind === 'columnSpacing'
+        ? isColumnSpacing
+        : value.kind === 'weekStart'
+          ? isWeekStart
+          : (item: unknown) => typeof item === 'boolean';
+    insist(
+      valid(value.before) && valid(value.after),
+      'Invalid display preference.',
+    );
   } else if (value.kind === 'rowSpacing') {
     keys(value, ['kind', 'before', 'after']);
     insist(version >= 5, 'Row spacing requires version 5.');
@@ -271,7 +312,8 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
       value.version === 2 ||
       value.version === 3 ||
       value.version === 4 ||
-      value.version === 5,
+      value.version === 5 ||
+      value.version === 6,
     'Unsupported event version.',
   );
   id(value.id);
@@ -447,6 +489,7 @@ function reduceEvent(
       hasV3: event.version >= 3,
       hasV4: event.version >= 4,
       hasV5: event.version >= 5,
+      hasV6: event.version >= 6,
     };
   }
   insist(
@@ -468,6 +511,10 @@ function reduceEvent(
   insist(
     !previous.hasV5 || event.version >= 5,
     'Older events cannot follow version-5 events.',
+  );
+  insist(
+    !previous.hasV6 || event.version >= 6,
+    'Older events cannot follow version-6 events.',
   );
   const undo = mutable ? previous.undo : [...previous.undo];
   const redo = mutable ? previous.redo : [...previous.redo];
@@ -605,6 +652,7 @@ function reduceEvent(
     hasV3: previous.hasV3 || event.version >= 3,
     hasV4: previous.hasV4 || event.version >= 4,
     hasV5: previous.hasV5 || event.version >= 5,
+    hasV6: previous.hasV6 || event.version >= 6,
   };
 }
 export function applyChange(state: StoredState, change: Change): StoredState {
@@ -617,7 +665,17 @@ function reduceChange(
 ): StoredState {
   validateChange(change);
   let next: StoredState;
-  if (change.kind === 'rowSpacing') {
+  if (
+    change.kind === 'columnSpacing' ||
+    change.kind === 'weekStart' ||
+    change.kind === 'dateFading'
+  ) {
+    insist(
+      (state[change.kind] ?? displayDefaults[change.kind]) === change.before,
+      'Preference precondition failed.',
+    );
+    next = { ...state, [change.kind]: change.after };
+  } else if (change.kind === 'rowSpacing') {
     insist(
       (state.rowSpacing ?? 'standard') === change.before,
       'Preference precondition failed.',
@@ -741,6 +799,11 @@ export function replayEvents(input: unknown): {
   return { events, replay };
 }
 export function describeChange(change: Change, state: StoredState): string {
+  if (change.kind === 'columnSpacing')
+    return `Column spacing · ${change.after}`;
+  if (change.kind === 'weekStart') return `Week starts on ${change.after}`;
+  if (change.kind === 'dateFading')
+    return `Date fading ${change.after ? 'on' : 'off'}`;
   if (change.kind === 'rowSpacing') return `Row spacing · ${change.after}`;
   if (change.kind === 'order') return 'Habit order changed';
   if (change.kind === 'habit')

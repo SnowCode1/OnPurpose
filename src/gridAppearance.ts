@@ -5,13 +5,13 @@ import { checkmarkColor, colorOnBlack, dimmedColor } from './colors.ts';
 export function dayTone(daysAgo: number): number {
   return daysAgo < 0 ? 4 : Math.max(0, Math.min(4, daysAgo - 4));
 }
-export function createGridPalette(colour: string) {
+export function createGridPalette(colour: string, fadeDates = true) {
   const checkbox = colorOnBlack(colour, 170 / 255);
   const number = colorOnBlack(colour, 0.65);
   return {
     checkmark: checkmarkColor(colour),
     tones: Array.from({ length: 5 }, (_, index) => {
-      const progress = index / 4;
+      const progress = fadeDates ? index / 4 : 0;
       const amount = progress * progress * (3 - 2 * progress);
       return {
         checkbox: dimmedColor(checkbox, amount),

@@ -73,7 +73,7 @@ and uncertainty about whether something was saved.
   show the next Undo target. Start with two minutes of inactivity between groups.
 - Give each habit an editable start date, initially Today, to support old records.
 - Allow pulling down from the top of statistics to return to the grid.
-- Offer a saved row-spacing setting.
+- Offer saved row- and column-spacing settings.
 - Develop without owning a Mac; use the physical iPhone for actual testing.
 - Maintain project goals, agent guidance including CLAUDE.md, and a docs folder.
 
@@ -181,7 +181,7 @@ and incremental history are desired scope, not excluded candidates.
 | Midnight cutoff, late-night logging, backdating, and travel?           | Local midnight implemented; later cutoff/travel policy pending     |
 | Comments on a habit, a day, a particular entry, or multiple kinds?     | Comments desired; attachment semantics open                        |
 | Which app changes enter the history; how do deletion and undo work?    | Active habit actions; preferences excluded; deletion/erasure open  |
-| Export/import format, backup location, and cross-device sync?          | Version-5 JSON backup; v1/v2/v3/v4 import retained; sync deferred  |
+| Export/import format, backup location, and cross-device sync?          | Version-6 JSON backup; v1–v5 import retained; sync deferred        |
 | Any reminders or widgets required for version one?                     | Open                                                               |
 | Free, paid, donations, or another model?                               | Open                                                               |
 | Licence and copyright holder?                                          | Open; choose before public release                                 |

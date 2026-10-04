@@ -1,3 +1,4 @@
+import type { WeekStart } from './displayPreferences.ts';
 import { isNumericHabit, type Habit } from './habits.ts';
 import type { StoredEvent } from './storage/model.ts';
 
@@ -238,13 +239,15 @@ export function habitStatistics(
     lastRecorded: records.length ? dateKey(records.at(-1)!.day) : null,
   };
 }
-export function monthDays(month: string) {
+export function monthDays(month: string, weekStart: WeekStart = 'monday') {
   const first = dayNumber(`${month}-01`),
     date = new Date(first * DAY);
   date.setUTCMonth(date.getUTCMonth() + 1);
   const count = Math.round(date.getTime() / DAY) - first;
   return {
-    padding: (new Date(first * DAY).getUTCDay() + 6) % 7,
+    padding:
+      (new Date(first * DAY).getUTCDay() + (weekStart === 'monday' ? 6 : 0)) %
+      7,
     days: Array.from({ length: count }, (_, index) => dateKey(first + index)),
   };
 }

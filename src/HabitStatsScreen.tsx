@@ -1,3 +1,4 @@
+import { weekDayOrder, type WeekStart } from './displayPreferences';
 import { useStatsDismissal } from './useStatsDismissal';
 import { memo, useEffect, useMemo, useState, type ComponentType } from 'react';
 import {
@@ -234,6 +235,7 @@ function Metric({
 }
 export const HabitStatsScreen = memo(function HabitStatsScreen({
   habit,
+  weekStart,
   values,
   events,
   today,
@@ -244,6 +246,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   editable,
 }: {
   habit: Habit;
+  weekStart: WeekStart;
   values: Record<string, number>;
   events: StoredEvent[];
   today: string;
@@ -260,7 +263,8 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
     () => habitStatistics(habit, values, events, today, range),
     [habit, values, events, today, range],
   );
-  const calendar = monthDays(month);
+  const calendar = monthDays(month, weekStart);
+  const weekDays = weekDayOrder(weekStart);
   const monthMax = Math.max(
     1,
     ...calendar.days.map((day) => values[`${habit.id}:${day}`] ?? 0),
@@ -462,12 +466,13 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
               {stats.numeric ? 'Average on recorded days' : 'Completion rate'}
               {stats.numeric && unit ? ` · ${unit}` : ''} · selected period
             </Text>
-            {stats.weekday.map((day, index) => {
+            {weekDays.map((weekday) => {
+              const day = stats.weekday.find((item) => item.day === weekday)!;
               const maximum = stats.numeric
                 ? Math.max(1, ...stats.weekday.map((item) => item.value ?? 0))
                 : 100;
-              const label = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][
-                index
+              const label = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][
+                day.day
               ];
               return (
                 <View
@@ -544,13 +549,11 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
               </Pressable>
             </View>
             <View style={styles.calendar}>
-              {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(
-                (label, index) => (
-                  <Text key={index} style={styles.calendarHeading}>
-                    {label}
-                  </Text>
-                ),
-              )}
+              {weekDays.map((day) => (
+                <Text key={day} style={styles.calendarHeading}>
+                  {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][day]}
+                </Text>
+              ))}
               {Array.from({ length: calendar.padding }, (_, index) => (
                 <View key={`blank-${index}`} style={styles.day} />
               ))}

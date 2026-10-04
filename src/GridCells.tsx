@@ -145,11 +145,13 @@ export const GridDateColumn = memo(function GridDateColumn({
   );
 });
 export const GridDateHeading = memo(function GridDateHeading({
+  dateFading,
   store,
   habits,
   day,
   width,
 }: {
+  dateFading: boolean;
   store: ChangeStore;
   habits: Habit[];
   day: GridDay;
@@ -164,18 +166,27 @@ export const GridDateHeading = memo(function GridDateHeading({
     selection.getSnapshot,
   );
   recordPerformance('grid.heading.render');
-  return <GridDateLabel day={day} width={width} recorded={recorded} />;
+  return (
+    <GridDateLabel
+      day={day}
+      width={width}
+      recorded={recorded}
+      dateFading={dateFading}
+    />
+  );
 });
 export const GridDateLabel = memo(function GridDateLabel({
   day,
   width,
   recorded,
+  dateFading,
 }: {
   day: GridDay;
   width: number;
   recorded: boolean;
+  dateFading: boolean;
 }) {
-  const tone = dateTones[recorded ? 0 : dayTone(day.daysAgo)];
+  const tone = dateTones[recorded || !dateFading ? 0 : dayTone(day.daysAgo)];
   return (
     <View
       style={[

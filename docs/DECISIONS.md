@@ -1,5 +1,28 @@
 # Decision log
 
+## 032 — Focused display settings
+
+Date: 4 October 2026. Status: founder requested column spacing and authorised
+choosing two useful additional settings; implemented, native review pending.
+
+Offer Compact/Standard/Roomy columns at 48/64/80 target points, scaled for text,
+fitting whole days while preserving the name area. Compact is the old geometry.
+Keep shared heading/body/loading dimensions and the existing position-preserving
+remount used for rotation. Retain responsive behaviour when only one column fits.
+
+Choose week start (Monday/Sunday) for familiar calendar reading, and date fading
+(on/off) for users who need clearer contrast. These are assistant-selected defaults
+within the requested scope. Week ordering affects the calendar and weekday chart;
+fading affects grid empty cells/headings without changing recorded colours.
+Keep original Monday/fading-on behaviour until the user changes it.
+
+Reuse a small choice-control component for spacing/week preferences. Persist new
+preferences as v6 events, outside History/Undo, preserving Redo and grouping. Keep
+unchanged v1–v5 imports/fixtures and absent-field defaults; no SQL migration or
+reseeding. See SETTINGS.md and STORAGE.md. Tests cover layout/font scaling, exact
+calendar-day alignment, brightness preservation, SQLite reopen, backup/replay,
+strict old-version rejection, and settings across Undo/Redo/correction groups.
+
 ## 031 — Habit start dates, grid spacing and statistics dismissal
 
 Date: 4 October 2026. Status: requested by the founder; implemented, native review pending.

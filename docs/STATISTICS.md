@@ -89,7 +89,9 @@ to VoiceOver; numeric days announce the full date and recorded value.
 - Current/best streaks use the entire history. Period totals, averages, rates,
   chart buckets, and weekday breakdowns use the selected range.
 - Date arithmetic uses calendar-day ordinals rather than elapsed local hours,
-  avoiding daylight-saving discontinuities. Weekday groups start on Monday.
+  avoiding daylight-saving discontinuities. Weekday groups and calendar headings follow Settings → Week starts on
+  (Monday by default, optionally Sunday). This changes presentation order only;
+  recording dates, statistics totals and chart buckets remain the same.
 
 ## Ownership and verification
 
