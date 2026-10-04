@@ -48,10 +48,12 @@ and uncertainty about whether something was saved.
 - Design for muscle memory; the aspiration is opening the app and recording five
   checkbox habits in about three seconds.
 - Plan for approximately 10–20 habits. The primary test phone is an iPhone 16 Pro.
-- Tapping a habit should open its statistics, including information such as streaks.
+- Tapping a habit opens full-screen statistics, including streaks, completion-rate
+  charts for checkboxes and numerical charts for daily totals.
 - Hold the habit name for a compact Colour/Edit/Reorder/Archive overlay. Continue
   holding and drag to reorder; include an explicit mode and accessible move actions.
-  Keep date-cell recording gestures separate. Habit management is in Settings.
+  Keep date-cell recording gestures separate. Add habits at the end of the grid;
+  Settings contains an archived-habit restore list, not duplicate active management.
 
 - Store app changes incrementally. This is the underlying storage approach and
   export format, separate from the habit/day model; it also enables a separate
@@ -142,8 +144,10 @@ with larger text). It supports scrolling into the
 past, returning to Today, editing dated checkbox/numeric values, automatic local
 date rollover, deliberate future browsing/entries, and choosing preset or custom
 row colours in habit details. Habit creation, name/unit editing, manual ordering,
-and reversible archival are implemented. Tapping names opens recent recorded-day
-statistics; holding opens actions and supports dragging. Streaks and targets remain
+and reversible archival are implemented. Tapping names opens full-screen trends,
+weekday breakdowns, a calendar, and daily checkbox/logging streaks; holding opens
+actions and supports dragging. Current daily statistics rules are implementation
+choices documented in [STATISTICS.md](docs/STATISTICS.md); targets and schedules remain
 undecided. History lists active habit actions with grouped undo/redo. Entries, colours, and the haptic preference
 persist locally in SQLite; Settings supports full change-based backup/restore.
 The 12 sample habits are seeded once and can be edited or archived. Persistence is confirmed on phone; an older-undo report and

@@ -39,7 +39,7 @@ Use the lockfile for the exact installed dependencies.
 5. Scan the QR code with the iPhone Camera and open the link in Expo Go. Allow
    local-network access if iOS asks.
 6. Tap checkbox cells in the sample grid; a second tap unchecks them. Tap a
-   numeric cell to enter a daily total. Names open recent statistics; hold a name for actions or drag-to-reorder.
+   numeric cell to enter a daily total. Names open full-screen statistics; hold a name for actions or drag-to-reorder.
    Entries, colours, and haptic preferences now save locally; reload to verify. The founder
    requested removal of the bottom demo notice to give the grid more space.
 7. Edit `App.tsx` and save. The phone should refresh with the change.
@@ -231,7 +231,9 @@ Run `node --test scripts/storage.test.mjs` for focused storage/recovery tests, a
 `npm test` for the full suite. These tests use Node 24's SQLite binding against the
 production SQL/replay logic. Native bridge and Files UI still need phone testing.
 
-Habit setup is in Settings → Manage habits. Add a checkbox or numeric habit, edit
-its name/unit/colour, arrange the rows, or restore an archived habit. Archiving
-retains entries; History can undo these changes. See [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md)
-for gestures and current statistics limits.
+Add a checkbox or numeric habit from the row at the bottom of the grid. Hold a
+name to edit its name/unit/colour, reorder, or archive. Settings → Archived habits
+restores rows with their entries and retained slots; History can undo these changes.
+Tap a name for a full-screen statistics view. See [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md)
+for gestures and [STATISTICS.md](STATISTICS.md) for calculation rules. Run
+`node --test scripts/statistics.test.mjs` for focused statistics coverage.

@@ -516,3 +516,40 @@ Phone checks:
 6. Inspect larger text and VoiceOver. Name actions include Move up/down and direct
    editing. Background controls should be hidden from VoiceOver while the menu is
    open. Confirm closing panels preserves the horizontal date position.
+
+## Full-screen statistics, motion, and archive-only management — 4 October 2026
+
+Supersedes the basic-statistics and Settings → Manage habits steps above.
+Implementation complete; all 83 tests, TypeScript, lint, formatting, and iOS
+production bundle export pass. Founder confirmed the context-menu transition is
+smoother and Add/archive/restore retain entries and position on the phone. The
+first drag animation felt harsh, and the selected name was not reachable after
+leaving the menu open. A damped spring, a backdrop cutout over the selected name,
+and a hold-state reset restricted to new touches address this feedback; these
+follow-up gesture changes and statistics acceptance remain pending.
+
+Automated coverage adds nine statistics tests to the previous 74, including daily
+rate boundaries, zero versus missing, future exclusion, archive/restore and
+Undo/Redo lifecycle, timezone/leap-day arithmetic, aggregation, clock rollback,
+and all three unchanged storage fixtures. Existing SQLite reload, archive and
+restore, reorder/Undo, and recovery tests remain in the full suite.
+
+Phone checks:
+
+1. Tap a checkbox name: full-screen statistics slides in. Try 30D/90D/1Y/All,
+   inspect chart periods, browse months, and return Back. The grid should retain
+   its date and vertical position. Edit a name/colour from statistics; closing
+   the editor returns to updated statistics.
+2. Compare a numeric habit with a recorded zero, a blank day, and a future value.
+   Zero is included in averages, blanks are omitted, and the future value does
+   not inflate totals or streaks. Checkbox rates exclude unfinished today.
+3. Hold a name and release: menu appears without activating anything. Wait with the menu open before
+   dragging; also release, then hold the selected name again and drag. Neighbours and their date cells should move together. Drop should settle
+   smoothly and save one Undo step. Recheck edge scrolling, interrupted drags,
+   quick successive drops, and rotation. Try system Reduce Motion too.
+4. Add habit at the end of the list. Archive a recorded habit; Settings → Archived
+   habits should list it with Restore. Restore, return to the grid, and check its
+   entries and retained slot. Reload and verify persistence and History Undo.
+5. Try the statistics screen and archive list in landscape, larger text, and
+   VoiceOver. Check chart increment/decrement actions and calendar announcements.
+   Holding Statistics, the habit title, or Archived habits sends a dev preview.

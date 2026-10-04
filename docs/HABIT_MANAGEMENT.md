@@ -5,15 +5,17 @@ acceptance remains pending on the iPhone 16 Pro.
 
 ## Main grid
 
-Tap a habit name to open its statistics panel. It currently shows the past fourteen
-local calendar days and recorded-day counts, excluding future dates. Numeric zero
-is a recorded day. Streaks, targets, schedules, and completion rates await separate
-product rules; no scoring formula is inferred from the Loop reference.
+Tap a habit name to open a full-screen statistics view. Back returns to the same
+mounted grid and date position. Checkbox rates and streaks, numerical totals and
+averages, time-range charts, weekday patterns, and a calendar are described in
+[STATISTICS.md](STATISTICS.md). Editors remain compact dialogs.
 
 Hold a name for 380 ms to select its row with a haptic tick and show an anchored
 menu: Colour, Edit habit, Reorder, Archive. Releasing leaves the menu open. Each
 option requires a separate tap; the initial hold cannot choose a menu item.
-A tap outside dismisses it. The menu stays within the grid viewport and scrolls
+A tap outside dismisses it. The selected name stays reachable while the menu is
+open: keep holding before dragging, or release and hold that name again. Press
+re-entry does not reset a recognized hold. The menu stays within the viewport and scrolls
 when larger text or landscape needs room.
 
 Keep holding and move vertically more than ten points to drag that row. The menu
@@ -30,10 +32,13 @@ No essential operation depends on discovering a hold gesture.
 
 ## Management and editing
 
-Settings → Manage habits offers Add, Arrange, the active list, and archived habits
-with Restore. Arrange closes the sheet and enters grid reorder mode. Editors and
-colour pickers use Done to apply and Close to discard drafts; picking a colour
-inside the editor updates its draft until the outer Done saves the habit.
+An Add habit row scrolls with the end of the grid, including when the list is empty.
+Active habit actions live on the grid. Settings → Archived habits lists only
+archived definitions, recorded-day counts, and Restore. Save status and retry
+remain visible. There is no duplicate active-management screen.
+
+Editors and colour pickers use Done to apply and Close to discard drafts; picking
+a colour inside the editor updates its draft until the outer Done saves the habit.
 
 New habits specify a name, checkbox or numeric daily-total type, colour, and an
 optional numeric unit. Numeric habits without a unit remain numeric. Names are
@@ -67,3 +72,15 @@ row. Only a completed drop reaches the store. The existing UI-thread horizontal
 scroll synchronization is retained. See the official React Native
 [Pressable](https://reactnative.dev/docs/0.86/pressable) and
 [PanResponder](https://reactnative.dev/docs/0.86/panresponder) references.
+
+## Motion
+
+Menu entry uses a small six-point lift and fade; dismissal fades. Names and cells
+share a damped native spring while neighbours move, replacing the abrupt timed
+settle after founder feedback. The same spring moves the floating row on drop. After release,
+the floating row settles to its committed position before disappearing. New
+drags wait for that short settling phase to complete. Cancellation before a
+drop still saves nothing; a completed drop saves immediately, independent of its
+animation. Navigation into statistics slides, and Settings page changes fade.
+All new Reanimated transitions respect the system Reduce Motion preference. These
+are implemented timings, still subject to founder device acceptance.

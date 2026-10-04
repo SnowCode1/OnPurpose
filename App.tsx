@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { type GridDay } from './src/calendar';
+import { HabitStatsScreen } from './src/HabitStatsScreen';
 import { HabitGrid } from './src/HabitGrid';
 import { isNumericHabit, type Habit } from './src/habits';
 import { randomUUID } from 'expo-crypto';
@@ -102,7 +103,7 @@ function PersistentApp({ store }: { store: ChangeStore }) {
   }, [hapticsEnabled]);
   const today = useLocalToday();
   const [panel, setPanel] = useState<{
-    page: 'history' | 'settings' | 'habits';
+    page: 'history' | 'settings' | 'archive';
     visible: boolean;
   }>({ page: 'history', visible: false });
   const [editing, setEditing] = useState<{
@@ -112,9 +113,12 @@ function PersistentApp({ store }: { store: ChangeStore }) {
   } | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const detail = habits.find((habit) => habit.id === detailId);
-  const [habitMode, setHabitMode] = useState<HabitDialogMode>('stats');
+  const [habitMode, setHabitMode] = useState<HabitDialogMode>('edit');
   const [newHabit, setNewHabit] = useState<Habit | null>(null);
-  const [reorderRequested, setReorderRequested] = useState(0);
+  const [statsId, setStatsId] = useState<string | null>(null);
+  const statsHabit = habits.find(
+    (habit) => habit.id === statsId && !habit.archived,
+  );
   const editable = store.canEdit() && !backupBusy;
   const [input, setInput] = useState('');
   const trimmed = input.trim().replace(',', '.');
@@ -153,8 +157,8 @@ function PersistentApp({ store }: { store: ChangeStore }) {
   );
 
   const openDetails = useCallback((habit: Habit) => {
-    setHabitMode('stats');
-    setDetailId(habit.id);
+    setStatsId(habit.id);
+    feedback('selection');
   }, []);
 
   const openHistory = useCallback(() => {
@@ -266,11 +270,7 @@ function PersistentApp({ store }: { store: ChangeStore }) {
         feedback('selection');
       return;
     }
-    if (action === 'reorder') {
-      setPanel((previous) => ({ ...previous, visible: false }));
-      setReorderRequested((value) => value + 1);
-      return;
-    }
+    if (action === 'reorder') return; // Grid owns reorder mode.
     setNewHabit(null);
     setDetailId(habit.id);
     setHabitMode(action === 'colour' ? 'colour' : 'edit');
@@ -375,13 +375,10 @@ function PersistentApp({ store }: { store: ChangeStore }) {
         key={detail?.id ?? newHabit?.id}
         habit={(detail ?? newHabit)!}
         mode={habitMode}
-        values={values}
-        today={today}
         Heading={PreviewHeading}
         onClose={closeDialog}
         onSave={saveHabit}
         onColour={applyColour}
-        onEdit={() => setHabitMode('edit')}
         editable={editable}
       />
     ) : null;
@@ -411,24 +408,45 @@ function PersistentApp({ store }: { store: ChangeStore }) {
             </Pressable>
           </View>
         )}
-        <View style={styles.content}>
-          <HabitGrid
-            HeadingComponent={PreviewHeading}
-            DateButtonComponent={PreviewDateButton}
-            key={today}
-            today={today}
-            habits={habits.filter((habit) => !habit.archived)}
-            editable={editable}
-            onHabitAction={habitAction}
-            onReorder={reorderHabits}
-            reorderRequested={reorderRequested}
-            values={values}
-            onHabitPress={openDetails}
-            onCellPress={pressCell}
-            onHistoryPress={openHistory}
-            onSettingsPress={openSettings}
-            onAddHabit={addHabit}
-          />
+        <View style={{ flex: 1 }}>
+          <View
+            style={styles.content}
+            pointerEvents={statsHabit ? 'none' : 'auto'}
+            accessibilityElementsHidden={!!statsHabit}
+            importantForAccessibility={
+              statsHabit ? 'no-hide-descendants' : 'auto'
+            }
+          >
+            <HabitGrid
+              HeadingComponent={PreviewHeading}
+              DateButtonComponent={PreviewDateButton}
+              key={today}
+              today={today}
+              habits={habits.filter((habit) => !habit.archived)}
+              editable={editable}
+              onHabitAction={habitAction}
+              onReorder={reorderHabits}
+              values={values}
+              onHabitPress={openDetails}
+              onCellPress={pressCell}
+              onHistoryPress={openHistory}
+              onSettingsPress={openSettings}
+              onAddHabit={addHabit}
+            />
+          </View>
+          {statsHabit && (
+            <HabitStatsScreen
+              key={statsHabit.id}
+              habit={statsHabit}
+              values={values}
+              events={snapshot.events}
+              today={today}
+              Heading={PreviewHeading}
+              editable={editable}
+              onBack={() => setStatsId(null)}
+              onEdit={() => habitAction(statsHabit, 'edit')}
+            />
+          )}
         </View>
         <Modal
           visible={editing !== null}
@@ -519,19 +537,12 @@ function PersistentApp({ store }: { store: ChangeStore }) {
             </View>
           </KeyboardAvoidingView>
         </Modal>
-        {!panel.visible && habitDialog}
+        {habitDialog}
         <AppPanel
           page={panel.page}
-          onManage={() => setPanel({ page: 'habits', visible: true })}
+          onArchive={() => setPanel({ page: 'archive', visible: true })}
           onBack={() => setPanel({ page: 'settings', visible: true })}
-          onAddHabit={addHabit}
-          onEditHabit={(habit) => habitAction(habit, 'edit')}
           onRestoreHabit={(habit) => saveHabit({ ...habit, archived: false })}
-          onReorderHabits={() => {
-            setPanel((previous) => ({ ...previous, visible: false }));
-            setReorderRequested((value) => value + 1);
-          }}
-          habitDialog={panel.visible ? habitDialog : null}
           visible={panel.visible}
           HeadingComponent={PreviewHeading}
           snapshot={snapshot}

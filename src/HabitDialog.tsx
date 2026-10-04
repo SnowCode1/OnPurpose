@@ -14,30 +14,23 @@ import {
 import { ColourPicker } from './ColourPicker';
 import { isNumericHabit, type Habit } from './habits';
 import { Icon } from './Icon';
-import { calendarDay, localDateKey } from './calendar';
 
-export type HabitDialogMode = 'stats' | 'colour' | 'edit' | 'create';
+export type HabitDialogMode = 'colour' | 'edit' | 'create';
 export function HabitDialog({
   habit,
   mode,
-  values,
-  today,
   Heading,
   onClose,
   onSave,
   onColour,
-  onEdit,
   editable,
 }: {
   habit: Habit;
   mode: HabitDialogMode;
-  values: Record<string, number>;
-  today: string;
   Heading: ComponentType<TextProps>;
   onClose: () => void;
   onSave: (habit: Habit) => boolean;
   onColour: (colour: string) => boolean;
-  onEdit: () => void;
   editable: boolean;
 }) {
   const [name, setName] = useState(habit.name),
@@ -49,16 +42,6 @@ export function HabitDialog({
   const valid =
     !!name.trim() && name.trim().length <= 200 && unit.trim().length <= 80;
   const editing = mode === 'edit' || mode === 'create';
-  const days = Array.from({ length: 14 }, (_, index) =>
-    calendarDay(today, 13 - index),
-  );
-  const recorded = Object.keys(values).filter(
-    (key) =>
-      key.startsWith(`${habit.id}:`) && key.slice(habit.id.length + 1) <= today,
-  ).length;
-  const recent = days.filter(
-    (day) => values[`${habit.id}:${localDateKey(day)}`] !== undefined,
-  ).length;
   function save() {
     const { unit: _unit, ...base } = habit;
     const after: Habit = {
@@ -98,13 +81,11 @@ export function HabitDialog({
             <Text style={styles.eyebrow}>
               {picker
                 ? 'COLOUR'
-                : mode === 'stats'
-                  ? 'STATISTICS'
-                  : mode === 'colour'
-                    ? 'COLOUR'
-                    : mode === 'create'
-                      ? 'NEW HABIT'
-                      : 'EDIT HABIT'}
+                : mode === 'colour'
+                  ? 'COLOUR'
+                  : mode === 'create'
+                    ? 'NEW HABIT'
+                    : 'EDIT HABIT'}
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -234,70 +215,7 @@ export function HabitDialog({
                   <Text style={styles.description}>{colour}</Text>
                 </Pressable>
               </View>
-            ) : (
-              <View style={{ gap: 20 }}>
-                <View style={styles.stats}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.statValue}>
-                      {recent}
-                      <Text style={styles.description}> / 14</Text>
-                    </Text>
-                    <Text style={styles.description}>Recent days recorded</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.statValue}>{recorded}</Text>
-                    <Text style={styles.description}>Days recorded</Text>
-                  </View>
-                </View>
-                <Text style={styles.label}>LAST TWO WEEKS</Text>
-                <View style={styles.calendar}>
-                  {days.map((day) => {
-                    const key = localDateKey(day),
-                      value = values[`${habit.id}:${key}`];
-                    return (
-                      <View
-                        key={key}
-                        accessible
-                        accessibilityLabel={`${day.toLocaleDateString()}, ${value === undefined ? 'not recorded' : isNumericHabit(habit) ? `${value} ${habit.unit ?? ''}` : 'checked'}`}
-                        style={styles.day}
-                      >
-                        <Text style={styles.dayLabel}>
-                          {day.toLocaleDateString(undefined, {
-                            weekday: 'narrow',
-                          })}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.dayValue,
-                            {
-                              color:
-                                value === undefined ? '#777777' : habit.color,
-                              backgroundColor:
-                                value === undefined
-                                  ? '#171717'
-                                  : `${habit.color}20`,
-                            },
-                          ]}
-                        >
-                          {isNumericHabit(habit)
-                            ? value === undefined
-                              ? '—'
-                              : String(value)
-                            : value === 1
-                              ? '✓'
-                              : String(day.getDate())}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </View>
-                <Text style={styles.description}>
-                  Future entries are excluded. Streaks and goal-based statistics
-                  are coming next.
-                </Text>
-                {button('Edit habit', onEdit, !editable)}
-              </View>
-            )}
+            ) : null}
           </ScrollView>
           {(editing || mode === 'colour' || picker) && (
             <View style={styles.footer}>
@@ -395,18 +313,5 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#303030',
-  },
-  stats: { flexDirection: 'row', gap: 16 },
-  statValue: { fontSize: 30, color: '#DDDDDD', fontVariant: ['tabular-nums'] },
-  calendar: { flexDirection: 'row', flexWrap: 'wrap' },
-  day: { width: '14.2857%', alignItems: 'center', paddingBottom: 12, gap: 5 },
-  dayLabel: { fontSize: 10, color: '#888888' },
-  dayValue: {
-    fontSize: 13,
-    textAlign: 'center',
-    width: '90%',
-    paddingVertical: 10,
-    borderRadius: 9,
-    fontVariant: ['tabular-nums'],
   },
 });

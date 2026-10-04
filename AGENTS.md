@@ -33,8 +33,12 @@ once; never reset or reseed an existing store during loading or an error.
   reverse sequence order; do not reorder logged actions by their timestamps.
 - `src/HabitName.tsx` and `src/useHabitReorder.ts` own hold/menu/drag interactions.
   Only completed drops persist. Keep cells distinct, support cancellation, and
-  preserve archive entries. `src/HabitDialog.tsx` owns stats/editor/colour drafts;
-  `src/ManageHabits.tsx` owns the Settings habit list. Read HABIT_MANAGEMENT.md.
+  preserve archive entries. `src/HabitDialog.tsx` owns editor/colour drafts;
+  `src/ArchivedHabits.tsx` owns the Settings archive/restore list. Add belongs at the
+  end of the grid. `src/HabitStatsScreen.tsx` owns full-screen statistics, with pure
+  calculations in `src/statistics.ts`. Read HABIT_MANAGEMENT.md and STATISTICS.md.
+  `src/motion.ts` shares reduced-motion-aware row/menu transitions; keep name and
+  date-cell layout timing aligned.
 - `src/gridLayout.ts` calculates adaptive column geometry for both orientations.
 - `src/useGridScroll.ts` synchronizes native scrolling on the UI thread; never
   put per-frame list synchronization back on the JavaScript thread.

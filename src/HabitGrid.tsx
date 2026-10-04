@@ -3,7 +3,6 @@ import {
   type Ref,
   memo,
   useMemo,
-  useEffect,
   useRef,
   useState,
 } from 'react';
@@ -41,6 +40,7 @@ import {
 } from './gridNavigation';
 import { feedback } from './haptics';
 import { Icon } from './Icon';
+import { appear, disappear, rowTransition, menuAppear } from './motion';
 
 type Props = {
   HeadingComponent: ComponentType<TextProps>;
@@ -52,7 +52,6 @@ type Props = {
   onHabitAction: (habit: Habit, action: HabitAction) => void;
   onReorder: (ids: string[]) => boolean;
   editable: boolean;
-  reorderRequested: number;
   onCellPress: (habit: Habit, day: GridDay) => void;
   onHistoryPress: () => void;
   onSettingsPress: () => void;
@@ -76,7 +75,6 @@ export const HabitGrid = memo(function HabitGrid({
   onHabitAction,
   onReorder,
   editable,
-  reorderRequested,
   onCellPress,
   onHistoryPress,
   onSettingsPress,
@@ -121,10 +119,6 @@ export const HabitGrid = memo(function HabitGrid({
   const habits = reorderDraft
     ? reorderDraft.map((id) => byId.get(id)!).filter(Boolean)
     : sourceHabits;
-  useEffect(() => {
-    // This request originates from the Settings Arrange action.
-    if (reorderRequested) setReorderMode(true);
-  }, [reorderRequested]); // eslint-disable-line react-hooks/exhaustive-deps
   const floatingStyle = useAnimatedStyle(() => ({
     top: ghostY.value,
     height: ghostHeight.value,
@@ -522,19 +516,6 @@ export const HabitGrid = memo(function HabitGrid({
                   <Text style={{ color: '#888888', fontSize: 14 }}>
                     A little space for your next intention.
                   </Text>
-                  <Pressable
-                    disabled={!editable}
-                    accessibilityRole="button"
-                    onPress={onAddHabit}
-                    style={{
-                      minHeight: 48,
-                      padding: 14,
-                      borderRadius: 12,
-                      backgroundColor: '#171717',
-                    }}
-                  >
-                    <Text style={{ color: '#DDDDDD' }}>Add habit</Text>
-                  </Pressable>
                 </View>
               )}
               <View style={styles.gridBody}>
@@ -548,7 +529,10 @@ export const HabitGrid = memo(function HabitGrid({
                       dragging={dragId === habit.id}
                       reorder={reorderMode}
                       disabled={!editable}
-                      onPress={() => onHabitPress(habit)}
+                      onPress={() => {
+                        if (habitMenu) setHabitMenu(null);
+                        else onHabitPress(habit);
+                      }}
                       onHold={(anchor) => holdHabit(habit.id, anchor)}
                       onDrag={(pageY, startY) =>
                         moveReorder(habit.id, pageY, startY)
@@ -599,85 +583,117 @@ export const HabitGrid = memo(function HabitGrid({
                         );
                         const ruleColor = dimmedColor(habit.color, amount);
                         return (
-                          <Pressable
-                            key={habit.id}
-                            testID={`cell-${habit.id}-${day.key}`}
-                            disabled={!editable || !!dragId || reorderMode}
-                            accessibilityRole={
-                              isNumericHabit(habit) ? 'button' : 'checkbox'
-                            }
-                            accessibilityState={
-                              isNumericHabit(habit) ? undefined : { checked }
-                            }
-                            accessibilityLabel={`${habit.name}, ${day.fullLabel}${isNumericHabit(habit) ? `, ${value === undefined ? 'not recorded' : `${value}${habit.unit ? ` ${habit.unit}` : ''}`}` : ''}`}
-                            accessibilityHint={
-                              isNumericHabit(habit)
-                                ? 'Edit this day’s total'
-                                : 'Toggle this day’s completion'
-                            }
-                            onPress={() => onCellPress(habit, day)}
-                            style={({ pressed }) => [
-                              styles.cell,
-                              {
-                                height: rowHeights[habit.id] ?? baseRowHeight,
-                                opacity: dragId === habit.id ? 0.18 : 1,
-                                borderBottomColor: `${ruleColor}20`,
-                                backgroundColor: pressed
-                                  ? `${habit.color}20`
-                                  : day.daysAgo === 0
-                                    ? '#090909'
-                                    : '#000000',
-                              },
-                            ]}
-                          >
-                            {isNumericHabit(habit) ? (
-                              <Text
-                                numberOfLines={1}
-                                adjustsFontSizeToFit
-                                minimumFontScale={0.65}
-                                style={[
-                                  styles.numeric,
-                                  {
-                                    color: recorded ? habit.color : emptyNumber,
-                                  },
-                                ]}
-                              >
-                                {value === undefined ? '—' : String(value)}
-                              </Text>
-                            ) : (
-                              <View
-                                style={[
-                                  styles.checkbox,
-                                  {
-                                    borderColor: checked
-                                      ? habit.color
-                                      : emptyCheckbox,
-                                    backgroundColor: checked
-                                      ? habit.color
-                                      : 'transparent',
-                                  },
-                                ]}
-                              >
-                                {checked && (
-                                  <Text
-                                    allowFontScaling={false}
-                                    style={[
-                                      styles.checkmark,
-                                      { color: checkmarkColor(habit.color) },
-                                    ]}
-                                  >
-                                    ✓
-                                  </Text>
-                                )}
-                              </View>
-                            )}
-                          </Pressable>
+                          <Animated.View key={habit.id} layout={rowTransition}>
+                            <Pressable
+                              testID={`cell-${habit.id}-${day.key}`}
+                              disabled={!editable || !!dragId || reorderMode}
+                              accessibilityRole={
+                                isNumericHabit(habit) ? 'button' : 'checkbox'
+                              }
+                              accessibilityState={
+                                isNumericHabit(habit) ? undefined : { checked }
+                              }
+                              accessibilityLabel={`${habit.name}, ${day.fullLabel}${isNumericHabit(habit) ? `, ${value === undefined ? 'not recorded' : `${value}${habit.unit ? ` ${habit.unit}` : ''}`}` : ''}`}
+                              accessibilityHint={
+                                isNumericHabit(habit)
+                                  ? 'Edit this day’s total'
+                                  : 'Toggle this day’s completion'
+                              }
+                              onPress={() => onCellPress(habit, day)}
+                              style={({ pressed }) => [
+                                styles.cell,
+                                {
+                                  height: rowHeights[habit.id] ?? baseRowHeight,
+                                  opacity: dragId === habit.id ? 0.18 : 1,
+                                  borderBottomColor: `${ruleColor}20`,
+                                  backgroundColor: pressed
+                                    ? `${habit.color}20`
+                                    : day.daysAgo === 0
+                                      ? '#090909'
+                                      : '#000000',
+                                },
+                              ]}
+                            >
+                              {isNumericHabit(habit) ? (
+                                <Text
+                                  numberOfLines={1}
+                                  adjustsFontSizeToFit
+                                  minimumFontScale={0.65}
+                                  style={[
+                                    styles.numeric,
+                                    {
+                                      color: recorded
+                                        ? habit.color
+                                        : emptyNumber,
+                                    },
+                                  ]}
+                                >
+                                  {value === undefined ? '—' : String(value)}
+                                </Text>
+                              ) : (
+                                <View
+                                  style={[
+                                    styles.checkbox,
+                                    {
+                                      borderColor: checked
+                                        ? habit.color
+                                        : emptyCheckbox,
+                                      backgroundColor: checked
+                                        ? habit.color
+                                        : 'transparent',
+                                    },
+                                  ]}
+                                >
+                                  {checked && (
+                                    <Text
+                                      allowFontScaling={false}
+                                      style={[
+                                        styles.checkmark,
+                                        { color: checkmarkColor(habit.color) },
+                                      ]}
+                                    >
+                                      ✓
+                                    </Text>
+                                  )}
+                                </View>
+                              )}
+                            </Pressable>
+                          </Animated.View>
                         );
                       })}
                     </View>
                   )}
                 />
               </View>
+              <Animated.View layout={rowTransition}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Add habit"
+                  accessibilityState={{
+                    disabled: !editable || reorderMode || !!dragId,
+                  }}
+                  disabled={!editable || reorderMode || !!dragId}
+                  onPress={onAddHabit}
+                  style={({ pressed }) => ({
+                    minHeight: 52,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 10,
+                    paddingVertical: 12,
+                    opacity:
+                      !editable || reorderMode || dragId
+                        ? 0.3
+                        : pressed
+                          ? 0.5
+                          : 1,
+                  })}
+                >
+                  <Icon name="plus" size={18} color="#777777" />
+                  <Text style={{ color: '#888888', fontSize: 14 }}>
+                    Add habit
+                  </Text>
+                </Pressable>
+              </Animated.View>
             </ScrollView>
           </View>
         </>
@@ -720,14 +736,51 @@ export const HabitGrid = memo(function HabitGrid({
         </Animated.View>
       )}
       {habitMenu && menuHabit && (
-        <View style={StyleSheet.absoluteFill} accessibilityViewIsModal>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Dismiss habit actions"
-            onPress={() => setHabitMenu(null)}
-            style={StyleSheet.absoluteFill}
-          />
-          <View
+        <Animated.View
+          entering={appear}
+          exiting={disappear}
+          pointerEvents="box-none"
+          style={StyleSheet.absoluteFill}
+          accessibilityViewIsModal
+        >
+          {/* Leave the selected name reachable: a second hold can start a drag,
+              and the original held touch is never covered by a new hit target. */}
+          {[
+            {
+              top: 0,
+              left: 0,
+              right: 0,
+              height: Math.max(0, habitMenu.anchor.y - reorderBounds.rootY),
+            },
+            {
+              top: Math.max(
+                0,
+                habitMenu.anchor.y -
+                  reorderBounds.rootY +
+                  habitMenu.anchor.height,
+              ),
+              left: 0,
+              right: 0,
+              bottom: 0,
+            },
+            {
+              top: Math.max(0, habitMenu.anchor.y - reorderBounds.rootY),
+              left: nameWidth,
+              right: 0,
+              height: habitMenu.anchor.height,
+            },
+          ].map((frame, index) => (
+            <Pressable
+              key={index}
+              accessible={index === 0}
+              accessibilityRole="button"
+              accessibilityLabel="Dismiss habit actions"
+              onPress={() => setHabitMenu(null)}
+              style={[{ position: 'absolute' }, frame]}
+            />
+          ))}
+          <Animated.View
+            entering={menuAppear}
             onLayout={(event) => setMenuHeight(event.nativeEvent.layout.height)}
             style={{
               position: 'absolute',
@@ -801,8 +854,8 @@ export const HabitGrid = memo(function HabitGrid({
                 </Pressable>
               ))}
             </ScrollView>
-          </View>
-        </View>
+          </Animated.View>
+        </Animated.View>
       )}
     </View>
   );

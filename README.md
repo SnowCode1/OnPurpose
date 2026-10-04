@@ -12,10 +12,11 @@ Entries, colours, and the haptic setting now persist locally in SQLite. History
 shows active habit actions with grouped undo/redo; rapid corrections to the same
 entry become one action, and global settings stay outside History/Undo. Settings
 supports change-based backup export/restore, retaining the full underlying log.
-Habit creation/editing, manual ordering, and reversible archival are available
-under Settings → Manage habits. Tap a name for recent statistics; hold for an
-action menu or keep holding and drag to reorder. Comments, goals, and streaks
-remain to be implemented. Sample habits are seeded once; they no longer reset on reload.
+Add habits at the bottom of the grid. Hold a name for editing, colours, archival,
+or drag ordering. Settings → Archived habits restores archived rows with their
+entries and positions. Tap a name for full-screen statistics: completion trends
+and streaks for checkboxes, totals and averages for numbers, weekday patterns, and
+a monthly calendar. Comments and goal/scheduling rules remain to be implemented. Sample habits are seeded once; they no longer reset on reload.
 
 ## Run locally
 

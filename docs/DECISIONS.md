@@ -1,5 +1,29 @@
 # Decision log
 
+## 021 — Full-screen statistics and grid-first habit management
+
+Date: 4 October 2026. Status: founder requested and authorized; implemented,
+phone acceptance pending. Supersedes the basic statistics and Manage habits UI
+in decision 020, retaining its context-menu appearance and storage format.
+
+The founder requested smoother transitions and a full-screen statistics experience
+with completion and numeric charts. They identified Settings → Manage habits as
+redundant. Add belongs at the end of the grid; active editing, archival, and ordering
+remain on habit names. Settings → Archived habits is dedicated to restoration.
+Restore uses the existing version-3 definition change; no storage migration.
+
+Use an in-tree full-screen statistics view above the mounted grid, with explicit
+Back and Edit controls. This preserves the date position without adding a router.
+Native Reanimated layout transitions coordinate name and cell movement, animate
+the context menu, and settle the dragged row after a completed drop. Honour Reduce
+Motion. No per-frame changes to horizontal synchronization.
+
+Implementation choices, not new founder decisions: 30-day/90-day/year/all ranges,
+daily checkbox completion denominators, numeric logging streaks, weekday breakdowns,
+and calendar colours. Document these in [STATISTICS.md](STATISTICS.md), including
+archive periods, unfinished today, numeric zero, and future-entry exclusion.
+Numeric targets and non-daily scheduling rules remain open.
+
 ## 020 — Habit-name actions, drag ordering, and management
 
 Date: 4 October 2026. Status: founder authorized implementation; native interaction

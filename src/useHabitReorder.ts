@@ -2,15 +2,20 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   AppState,
-  LayoutAnimation,
   type ScrollView,
   type View,
 } from 'react-native';
-import { useSharedValue } from 'react-native-reanimated';
+import {
+  cancelAnimation,
+  runOnJS,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import type { Habit } from './habits';
 import type { HabitAnchor } from './HabitName';
 import { dragDestination, moveHabit } from './habitOrdering';
 import { feedback } from './haptics';
+import { reorderSpring } from './motion';
 
 export function useHabitReorder(
   habits: Habit[],
@@ -49,6 +54,7 @@ export function useHabitReorder(
     target: number;
   } | null>(null);
   const frame = useRef<number | null>(null);
+  const settling = useRef<string | null>(null);
   const latest = useRef({ habits, heights, fallback, onReorder });
   useLayoutEffect(() => {
     latest.current = { habits, heights, fallback, onReorder };
@@ -73,6 +79,8 @@ export function useHabitReorder(
   }
   function cancel() {
     stop();
+    cancelAnimation(ghostY);
+    settling.current = null;
     drag.current = null;
     setDragId(null);
     setDraft(null);
@@ -82,12 +90,17 @@ export function useHabitReorder(
     const subscription = AppState.addEventListener('change', (state) => {
       if (state !== 'active') cancel();
     });
-    return () => subscription.remove();
+    return () => {
+      subscription.remove();
+      stop();
+      cancelAnimation(ghostY);
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const identity = habits.map((habit) => habit.id).join('|');
   useEffect(() => {
+    // Own committed drop is settling into place; unrelated changes cancel a drag.
+    if (settling.current === identity) return stop;
     // Persisted identity changes must cancel an in-flight native drag.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     cancel();
     return stop;
   }, [identity]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -113,7 +126,6 @@ export function useHabitReorder(
       centre,
     );
     if (target !== d.target) {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       d.target = target;
       d.draft = moveHabit(d.ids, d.id, target);
       setDraft(d.draft);
@@ -148,6 +160,7 @@ export function useHabitReorder(
     frame.current = requestAnimationFrame(autoScroll);
   }
   function beginOrMove(id: string, pageY: number, startY: number) {
+    if (settling.current) return;
     if (!drag.current) {
       const ids = latest.current.habits.map((habit) => habit.id),
         source = ids.indexOf(id);
@@ -181,23 +194,48 @@ export function useHabitReorder(
     drag.current.pageY = pageY;
     update();
   }
+  function finishDrop() {
+    settling.current = null;
+    setDragId(null);
+    setDraft(null);
+    setMenu(null);
+  }
   function drop() {
     const d = drag.current;
+    if (!d) return;
     stop();
     drag.current = null;
-    if (
-      d &&
-      d.ids.join('|') !== d.draft.join('|') &&
-      latest.current.onReorder(d.draft)
-    ) {
+    settling.current = d.draft.join('|');
+    const changed = d.ids.join('|') !== settling.current;
+    if (changed && !latest.current.onReorder(d.draft)) {
+      cancel();
+      return;
+    }
+    if (changed) {
       feedback('confirm');
       AccessibilityInfo.announceForAccessibility(
         `Moved to position ${d.target + 1}`,
       );
     }
-    setDragId(null);
-    setDraft(null);
-    setMenu(null);
+    const top = d.draft
+      .slice(0, d.target)
+      .reduce(
+        (sum, id) =>
+          sum + (latest.current.heights[id] ?? latest.current.fallback),
+        0,
+      );
+    ghostY.set(
+      withSpring(
+        geometry.current.bodyY -
+          geometry.current.rootY +
+          top -
+          geometry.current.offset,
+        reorderSpring,
+        (finished) => {
+          if (finished) runOnJS(finishDrop)();
+        },
+      ),
+    );
   }
   return {
     bounds,
@@ -220,7 +258,7 @@ export function useHabitReorder(
     beginOrMove,
     drop,
     hold: (id: string, anchor: HabitAnchor) => {
-      if (drag.current) return;
+      if (drag.current || settling.current) return;
       measure();
       setMenu({ id, anchor });
       feedback('selection');

@@ -8,6 +8,8 @@ import {
 } from 'react-native';
 import type { Habit } from './habits';
 import { Icon } from './Icon';
+import Animated from 'react-native-reanimated';
+import { rowTransition } from './motion';
 
 export type HabitAction =
   'colour' | 'edit' | 'reorder' | 'archive' | 'moveUp' | 'moveDown';
@@ -98,11 +100,20 @@ export function HabitName({
     }),
   );
   return (
-    <View
+    <Animated.View
+      layout={rowTransition}
       ref={view}
       collapsable={false}
       {...pan.panHandlers}
       onTouchStart={(event) => {
+        if (event.nativeEvent.touches.length !== 1) {
+          held.current = false;
+          start.current = 0;
+          onCancel();
+          return;
+        }
+        // Reset only for a new touch, never when Pressable re-enters its bounds.
+        if (!reorder) held.current = false;
         start.current = event.nativeEvent.pageY;
       }}
       onLayout={onLayout}
@@ -127,9 +138,6 @@ export function HabitName({
             ? onPress()
             : onAction(event.nativeEvent.actionName as HabitAction)
         }
-        onPressIn={() => {
-          held.current = false;
-        }}
         onPress={() => {
           if (!held.current && !reorder) onPress();
         }}
@@ -182,6 +190,6 @@ export function HabitName({
           )}
         </View>
       </Pressable>
-    </View>
+    </Animated.View>
   );
 }

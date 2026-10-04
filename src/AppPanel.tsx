@@ -1,6 +1,8 @@
-import { type ComponentType, type ReactNode } from 'react';
+import { type ComponentType } from 'react';
 import type { Habit } from './habits';
-import { ManageHabits } from './ManageHabits';
+import { ArchivedHabits } from './ArchivedHabits';
+import Animated from 'react-native-reanimated';
+import { appear } from './motion';
 import {
   Modal,
   Pressable,
@@ -55,22 +57,14 @@ export function AppPanel({
   onRestore,
   onRecover,
   onRetry,
-  onManage,
+  onArchive,
   onBack,
-  onAddHabit,
-  onEditHabit,
   onRestoreHabit,
-  onReorderHabits,
-  habitDialog,
 }: {
-  page: 'history' | 'settings' | 'habits';
-  onManage: () => void;
+  page: 'history' | 'settings' | 'archive';
+  onArchive: () => void;
   onBack: () => void;
-  onAddHabit: () => void;
-  onEditHabit: (habit: Habit) => void;
   onRestoreHabit: (habit: Habit) => void;
-  onReorderHabits: () => void;
-  habitDialog: ReactNode;
   visible: boolean;
   HeadingComponent: ComponentType<TextProps>;
   hapticsEnabled: boolean;
@@ -108,11 +102,11 @@ export function AppPanel({
               <HeadingComponent accessibilityRole="header" style={styles.title}>
                 {page === 'history'
                   ? 'History'
-                  : page === 'habits'
-                    ? 'Habits'
+                  : page === 'archive'
+                    ? 'Archived habits'
                     : 'Settings'}
               </HeadingComponent>
-              {page === 'habits' && (
+              {page === 'archive' && (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Back to Settings"
@@ -134,99 +128,103 @@ export function AppPanel({
                 <Icon name="close" size={18} />
               </Pressable>
             </View>
-            {page === 'history' ? (
-              <HistoryView
-                snapshot={snapshot}
-                backupBusy={backupBusy}
-                onUndo={onUndo}
-                onRedo={onRedo}
-                onRetry={onRetry}
-              />
-            ) : page === 'habits' ? (
-              <ManageHabits
-                habits={snapshot.replay.state.habits}
-                editable={editable}
-                onAdd={onAddHabit}
-                onEdit={onEditHabit}
-                onRestore={onRestoreHabit}
-                onReorder={onReorderHabits}
-              />
-            ) : (
-              <ScrollView
-                contentContainerStyle={styles.body}
-                showsVerticalScrollIndicator={false}
-              >
-                <Action
-                  label="Manage habits"
-                  onPress={onManage}
-                  disabled={!editable}
+            <Animated.View key={page} entering={appear} style={{ flex: 1 }}>
+              {page === 'history' ? (
+                <HistoryView
+                  snapshot={snapshot}
+                  backupBusy={backupBusy}
+                  onUndo={onUndo}
+                  onRedo={onRedo}
+                  onRetry={onRetry}
                 />
-                <Text style={[styles.section, { marginTop: 28 }]}>
-                  FEEDBACK
-                </Text>
-                <View style={styles.preference}>
-                  <View style={styles.preferenceText}>
-                    <Text style={styles.label}>Haptic feedback</Text>
+              ) : page === 'archive' ? (
+                <ArchivedHabits
+                  habits={snapshot.replay.state.habits}
+                  editable={editable}
+                  onRestore={onRestoreHabit}
+                  values={snapshot.replay.state.values}
+                  pending={snapshot.pending}
+                  error={snapshot.error}
+                  onRetry={onRetry}
+                />
+              ) : (
+                <ScrollView
+                  contentContainerStyle={styles.body}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <Action
+                    label={`Archived habits · ${snapshot.replay.state.habits.filter((habit) => habit.archived).length}`}
+                    onPress={onArchive}
+                  />
+                  <Text style={[styles.section, { marginTop: 28 }]}>
+                    FEEDBACK
+                  </Text>
+                  <View style={styles.preference}>
+                    <View style={styles.preferenceText}>
+                      <Text style={styles.label}>Haptic feedback</Text>
+                      <Text style={styles.description}>
+                        A short pulse when you record or change something.
+                      </Text>
+                    </View>
+                    <Switch
+                      accessibilityLabel="Haptic feedback"
+                      disabled={!editable}
+                      value={hapticsEnabled}
+                      onValueChange={onHapticsChange}
+                      trackColor={{ false: '#303030', true: '#74BBA5' }}
+                      thumbColor="#FFFFFF"
+                      ios_backgroundColor="#303030"
+                    />
+                  </View>
+                  <Text
+                    style={[
+                      styles.section,
+                      { marginTop: 32, marginBottom: 12 },
+                    ]}
+                  >
+                    LOCAL DATA
+                  </Text>
+                  <Text
+                    accessibilityLiveRegion="polite"
+                    style={styles.description}
+                  >
+                    {status}
+                  </Text>
+                  {snapshot.error && (
+                    <Action label="Retry saving" onPress={onRetry} />
+                  )}
+                  <Action
+                    label={backupBusy ? 'Working…' : 'Export backup'}
+                    onPress={onExport}
+                    disabled={!editable}
+                  />
+                  <Action
+                    label="Restore backup…"
+                    onPress={onRestore}
+                    disabled={!editable}
+                  />
+                  {snapshot.hasRecovery && (
+                    <Action
+                      label="Restore pre-restore copy…"
+                      onPress={onRecover}
+                      disabled={!editable}
+                    />
+                  )}
+                  <Text style={styles.description}>
+                    Backups include all changes and undo history. Save a copy
+                    outside the app to protect against uninstalling it or losing
+                    this device.
+                  </Text>
+                  <View style={styles.about}>
+                    <Text style={styles.aboutName}>OnPurpose · Preview</Text>
                     <Text style={styles.description}>
-                      A short pulse when you record or change something.
+                      Entries, colours, and settings are stored locally. The
+                      habits can be edited, arranged, and archived.
                     </Text>
                   </View>
-                  <Switch
-                    accessibilityLabel="Haptic feedback"
-                    disabled={!editable}
-                    value={hapticsEnabled}
-                    onValueChange={onHapticsChange}
-                    trackColor={{ false: '#303030', true: '#74BBA5' }}
-                    thumbColor="#FFFFFF"
-                    ios_backgroundColor="#303030"
-                  />
-                </View>
-                <Text
-                  style={[styles.section, { marginTop: 32, marginBottom: 12 }]}
-                >
-                  LOCAL DATA
-                </Text>
-                <Text
-                  accessibilityLiveRegion="polite"
-                  style={styles.description}
-                >
-                  {status}
-                </Text>
-                {snapshot.error && (
-                  <Action label="Retry saving" onPress={onRetry} />
-                )}
-                <Action
-                  label={backupBusy ? 'Working…' : 'Export backup'}
-                  onPress={onExport}
-                  disabled={!editable}
-                />
-                <Action
-                  label="Restore backup…"
-                  onPress={onRestore}
-                  disabled={!editable}
-                />
-                {snapshot.hasRecovery && (
-                  <Action
-                    label="Restore pre-restore copy…"
-                    onPress={onRecover}
-                    disabled={!editable}
-                  />
-                )}
-                <Text style={styles.description}>
-                  Backups include all changes and undo history. Save a copy
-                  outside the app to protect against uninstalling it or losing
-                  this device.
-                </Text>
-                <View style={styles.about}>
-                  <Text style={styles.aboutName}>OnPurpose · Preview</Text>
-                  <Text style={styles.description}>
-                    Entries, colours, and settings are stored locally. The
-                    habits can be edited, arranged, and archived.
-                  </Text>
-                </View>
-              </ScrollView>
-            )}
-            {habitDialog}
+                </ScrollView>
+              )}
+            </Animated.View>
           </View>
         </SafeAreaView>
       </SafeAreaProvider>
