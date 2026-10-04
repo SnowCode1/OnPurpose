@@ -1,41 +1,63 @@
-This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
+# OnPurpose contributor and agent guidance
 
-## Expo has changed — do not trust your training data
+## Start here
 
-Expo ships breaking changes every SDK release. APIs you remember are likely renamed, moved, or removed. Before writing any code that touches an Expo, EAS, or React Native API:
+Read `PROJECT_GOALS.md`, `docs/DEVELOPMENT.md`, and `docs/DECISIONS.md`.
+OnPurpose is a provisional name. The founder is new to the stack: explain
+technical choices in plain language and connect them to the product goal.
 
-1. Read the major version of the `expo` package in `package.json`.
-2. Fetch the matching versioned docs: `https://docs.expo.dev/versions/v<major>.0.0/`
-3. For anything else, fetch https://docs.expo.dev/llms.txt — an index of all Expo docs with corrections to common LLM misconceptions. Follow its links to the specific page you need; never answer from memory.
+## Product direction
 
-## Commands
+The core goal is minimising cognitive friction so tracking becomes a seamless
+part of life. The home view is a habit-by-day grid with checkbox and numeric
+cells, distinct name taps for statistics, and user-chosen stable row order.
+Protect stable row positions, direct access to the list, and immediate feedback.
+Do not add navigation, dashboards, celebrations, login, or a backend without a
+requirement. Distinguish founder decisions from assistant proposals in the docs.
+Incremental change storage and export are confirmed requirements; read
+`docs/STORAGE.md` before implementing persistence. Current screen data is explicitly a disposable demo, not real saved habit data.
 
-Use `bunx` instead of `npx` if the project uses bun (`bun.lock` present).
+## Stack and layout
 
-```bash
-npx expo install <package>  # ALWAYS use instead of npm/yarn/pnpm/bun add — resolves SDK-compatible versions
-npx expo start              # start the dev server
-npx expo lint               # lint
-npx tsc --noEmit            # typecheck
-npx expo-doctor             # diagnose dependency and config issues
-npx expo install --fix      # fix incompatible package versions
-```
+- React Native + Expo SDK 57, TypeScript strict mode, npm with package-lock.json.
+- `App.tsx` contains the initial interaction demo. `index.ts` registers it.
+- `app.json` owns Expo configuration. Generated native folders stay ignored.
+- Linux is the development host; a physical iPhone is the primary test device.
+- Use `npx expo install <package>` for Expo/native dependencies to match the SDK.
+- Keep dependencies and architecture small. Add structure when a feature needs it.
+- Use functional state updates when new state depends on previous state.
+- When persistence is added, define schema/versioning, local-day semantics,
+  error handling, and recovery before relying on it for user data.
 
-Run lint and typecheck before declaring any task done.
+## UI and accessibility
 
-## Navigation & Routing
+Keep completed rows in place. Avoid gesture-only essential actions. Expose
+checkbox state and meaningful labels to accessibility services. Permit font
+scaling, respect safe areas, and allow scrolling when content needs it.
+Do not trade reliability or readable controls for the three-second aspiration.
 
-- Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.
-- Import `Link`, `router`, and `useLocalSearchParams` from `expo-router`.
-- Docs: https://docs.expo.dev/router/introduction.md
+## Verification
 
-## Building with EAS
+Run `npm run check` after code changes, and `npm run export:ios` when changing
+native-facing imports or Expo config. Web preview helps layout checks but is not
+evidence that iOS runs correctly. Report actual checks and any unverified device
+behaviour. Follow `docs/TESTING.md` for phone and release testing.
+Add focused tests when persistence, date logic, event replay/export, or other consequential behaviour
+arrives; avoid tests that merely duplicate trivial markup.
 
-Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates (`eas update`) — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `npx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.
-Docs: https://docs.expo.dev/eas/index.md
+For phone screenshots, read `.dev/previews/latest.png` after the founder shares
+a preview by long-pressing the app heading or a dialog title; dated images are
+alongside it. Preview settings are in ignored
+`.env.local`. Use `npm run preview:server` for the local receiver. Do not commit
+captures or pairing tokens. Run `npm run test:preview` after changing the receiver;
+preserve both the env flag and `__DEV__` guard around preview capture.
 
-## Rules
+## Documentation and release
 
-- If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
-- Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
-- Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+Update relevant docs when changing commands, architecture, or confirmed scope.
+Keep credentials, signing files, tokens, local logs, and real user habit data out
+of Git. `EXPO_PUBLIC_*` variables are public in the app, not secret storage.
+Keep deployment and signing manual until release automation is deliberately set
+up. Do not claim App Store readiness from a successful JavaScript bundle export.
+Preserve the Expo template notice in `docs/licenses/EXPO_TEMPLATE_LICENSE.txt`.
+Project licence, pricing, final bundle identifier, and final brand remain open.
