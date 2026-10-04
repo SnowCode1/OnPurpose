@@ -116,9 +116,9 @@ export function HabitName({
         if (!reorder) held.current = false;
         start.current = event.nativeEvent.pageY;
       }}
-      onLayout={onLayout}
     >
       <Pressable
+        onLayout={onLayout}
         disabled={disabled}
         delayLongPress={380}
         accessibilityRole="button"

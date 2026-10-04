@@ -22,6 +22,7 @@ import {
 import { type GridDay, makeGridDays, calendarDay } from './calendar';
 import { isNumericHabit, type Habit } from './habits';
 import { HabitName, type HabitAction } from './HabitName';
+import { habitRowPositions } from './habitOrdering';
 import { ReorderRow, type RowMotion } from './ReorderRow';
 import { useHabitReorder } from './useHabitReorder';
 import { checkmarkColor, colorOnBlack, dimmedColor } from './colors';
@@ -117,10 +118,8 @@ export const HabitGrid = memo(function HabitGrid({
     drop: dropReorder,
     hold: holdHabit,
   } = useHabitReorder(sourceHabits, rowHeights, baseRowHeight, onReorder);
-  const byId = new Map(sourceHabits.map((habit) => [habit.id, habit]));
-  const habits = reorderDraft
-    ? reorderDraft.map((id) => byId.get(id)!).filter(Boolean)
-    : sourceHabits;
+  // Keep sibling order stable during preview swaps; only animated Y targets move.
+  const habits = sourceHabits;
   const menuHabit = sourceHabits.find((habit) => habit.id === habitMenu?.id);
   const [menuHeight, setMenuHeight] = useState(250);
   const days = useMemo(
@@ -159,17 +158,20 @@ export const HabitGrid = memo(function HabitGrid({
     width,
     fontScale,
   );
-  let gridHeight = 0;
+  const { tops, total: gridHeight } = habitRowPositions(
+    reorderDraft ?? habits.map((habit) => habit.id),
+    rowHeights,
+    baseRowHeight,
+  );
   const rowMotion: Record<string, RowMotion> = {};
   for (const habit of habits) {
     rowMotion[habit.id] = {
       active: dragId === habit.id,
-      top: gridHeight,
+      top: tops[habit.id] ?? 0,
       dragY,
       bodyTop,
       scrollOffset,
     };
-    gridHeight += rowHeights[habit.id] ?? baseRowHeight;
   }
   const newest = calendarDay(today, rightmostDay);
   const oldest = calendarDay(today, rightmostDay + visibleDays - 1);
@@ -524,7 +526,7 @@ export const HabitGrid = memo(function HabitGrid({
                 </View>
               )}
               <View style={styles.gridBody}>
-                <View style={{ width: nameWidth }}>
+                <View style={{ width: nameWidth, height: gridHeight }}>
                   {habits.map((habit) => (
                     <HabitName
                       key={habit.id}
@@ -570,7 +572,7 @@ export const HabitGrid = memo(function HabitGrid({
                     revealWhenReady('body', contentWidth)
                   }
                   renderItem={({ item: day }) => (
-                    <View style={{ width: columnWidth }}>
+                    <View style={{ width: columnWidth, height: gridHeight }}>
                       {habits.map((habit) => {
                         const value = values[`${habit.id}:${day.key}`];
                         const checked = value === 1;

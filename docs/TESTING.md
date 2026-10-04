@@ -579,3 +579,22 @@ Phone checks:
    appearance when dropped. Neighbours should settle quicker than the prior build.
 4. Recheck variable-height names, both viewport edges, large text, landscape,
    multi-touch cancellation, backgrounding, Reduce Motion, and VoiceOver move actions.
+
+## Row-swap flicker — 4 October 2026
+
+The founder confirmed the drag/drop appearance change was resolved, but observed
+flashes of wrong positions during swaps. ReorderRow now uses a single absolute
+animated Y position, with stable preview sibling order and shared preview/drop
+geometry. Inner name controls provide height measurements. The context-menu
+appearance and faster spring remain unchanged.
+
+Automated: 91 tests, code checks, and iOS production export pass. New geometry
+coverage exercises wrapped/taller rows, every drag destination, constant content
+height, no gaps, and matching preview/committed positions. Native flicker removal
+still needs phone verification.
+
+Phone: hold a name until its menu is open, then drag slowly across three rows and
+back; repeat with a quick drag, a tall name, and near both scroll edges. Check that
+name and date cells move together without flashing at another Y position. Drop,
+Undo, and reload to confirm only the completed order change persists. Check both
+orientations and larger text, since row containers now use explicit total heights.

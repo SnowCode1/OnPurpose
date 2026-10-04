@@ -13,7 +13,7 @@ import {
 } from 'react-native-reanimated';
 import type { Habit } from './habits';
 import type { HabitAnchor } from './HabitName';
-import { dragDestination, moveHabit } from './habitOrdering';
+import { dragDestination, moveHabit, habitRowPositions } from './habitOrdering';
 import { feedback } from './haptics';
 import { reorderSpring } from './motion';
 
@@ -139,10 +139,10 @@ export function useHabitReorder(
     const d = drag.current;
     if (!d) return;
     const g = geometry.current;
-    const total = d.ids.reduce(
-      (sum, id) =>
-        sum + (latest.current.heights[id] ?? latest.current.fallback),
-      0,
+    const { total } = habitRowPositions(
+      d.ids,
+      latest.current.heights,
+      latest.current.fallback,
     );
     const edge = 44;
     const speed =
@@ -170,13 +170,11 @@ export function useHabitReorder(
         source = ids.indexOf(id);
       if (source < 0) return;
       const height = latest.current.heights[id] ?? latest.current.fallback;
-      const top = ids
-        .slice(0, source)
-        .reduce(
-          (sum, key) =>
-            sum + (latest.current.heights[key] ?? latest.current.fallback),
-          0,
-        );
+      const top = habitRowPositions(
+        ids,
+        latest.current.heights,
+        latest.current.fallback,
+      ).tops[id];
       drag.current = {
         id,
         ids,
@@ -220,13 +218,11 @@ export function useHabitReorder(
         `Moved to position ${d.target + 1}`,
       );
     }
-    const top = d.draft
-      .slice(0, d.target)
-      .reduce(
-        (sum, id) =>
-          sum + (latest.current.heights[id] ?? latest.current.fallback),
-        0,
-      );
+    const top = habitRowPositions(
+      d.draft,
+      latest.current.heights,
+      latest.current.fallback,
+    ).tops[d.id];
     dragY.set(
       withSpring(
         geometry.current.bodyY -

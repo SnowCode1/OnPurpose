@@ -40,7 +40,10 @@ once; never reset or reseed an existing store during loading or an error.
   `src/HabitSymbol.tsx` renders optional emoji/Phosphor icons; the editor owns
   selection drafts through `src/HabitIconPicker.tsx`. Read HABIT_ICONS.md.
   `src/ReorderRow.tsx` moves the actual name/cell views together during drag/drop;
-  do not introduce a visually different floating placeholder.
+  do not introduce a visually different floating placeholder. Keep native sibling
+  order stable during preview swaps and use one absolute animated Y coordinate,
+  not layout reflow plus a compensating transform. Measure height on the inner
+  name control so position animation does not report per-frame layout to JS.
   `src/motion.ts` shares reduced-motion-aware row/menu transitions; keep name and
   date-cell layout timing aligned.
 - `src/gridLayout.ts` calculates adaptive column geometry for both orientations.

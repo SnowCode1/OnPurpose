@@ -52,3 +52,13 @@ See [STORAGE.md](STORAGE.md) and [the synthetic v4 backup](examples/storage-v4.j
 Tests cover valid emoji sequences, malformed inputs, catalogue/glyph completeness,
 History descriptions, SQLite reload, removal, archive restore, Undo/Redo, legacy
 version boundaries, downgrade rejection, and backup round-trips.
+
+## Pack selection recommendation — not yet a founder decision
+
+The founder asked whether a second pack would offer enough choice. The current
+56 icons are a curated subset, not Phosphor's limit: the pinned 2.1.1 package has
+1,512 regular SVGs. Assistant recommendation: expand Phosphor coverage and search
+terms/categories before introducing another family. Keep common habit choices
+quick to browse; offer broader discovery through search. A second pack should
+address demonstrated subject gaps or an explicit style preference. No additional
+pack or catalogue expansion is implemented by this recommendation.

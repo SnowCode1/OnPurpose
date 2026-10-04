@@ -2,9 +2,10 @@ import type { Ref } from 'react';
 import type { View, ViewProps } from 'react-native';
 import Animated, {
   useAnimatedStyle,
+  withSpring,
   type SharedValue,
 } from 'react-native-reanimated';
-import { rowTransition } from './motion';
+import { reorderSpring } from './motion';
 
 export type RowMotion = {
   active: boolean;
@@ -13,8 +14,9 @@ export type RowMotion = {
   bodyTop: SharedValue<number>;
   scrollOffset: SharedValue<number>;
 };
-// Move the actual row contents. At the end of a drop this offset is zero,
-// so there is no separate floating card to swap out or fade away.
+// Every row has a single animated absolute Y position. Reordering siblings must
+// not also reflow their native layout and compensate with a separate transform:
+// those updates can land on different frames and flash the row at the wrong Y.
 export function ReorderRow({
   motion,
   style,
@@ -26,13 +28,9 @@ export function ReorderRow({
 }) {
   const { active, top, dragY, bodyTop, scrollOffset } = motion;
   const position = useAnimatedStyle(() => ({
-    transform: [
-      {
-        translateY: active
-          ? dragY.value - bodyTop.value - top + scrollOffset.value
-          : 0,
-      },
-    ],
+    top: active
+      ? dragY.value - bodyTop.value + scrollOffset.value
+      : withSpring(top, reorderSpring),
     zIndex: active ? 1 : 0,
   }));
   return (
@@ -40,8 +38,7 @@ export function ReorderRow({
       {...props}
       ref={ref}
       collapsable={false}
-      layout={active ? undefined : rowTransition}
-      style={[style, position]}
+      style={[{ position: 'absolute', left: 0, right: 0 }, style, position]}
     />
   );
 }

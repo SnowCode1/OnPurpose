@@ -70,7 +70,7 @@ and [the synthetic v4 export](examples/storage-v4.json).
 
 Implementation: HabitName registers native responder callbacks; useHabitReorder
 owns temporary order, cancellation, shared geometry, and edge scrolling.
-ReorderRow applies the same translation to the actual name and every date cell. Only a completed drop reaches the store. The existing UI-thread horizontal
+ReorderRow applies the same absolute animated Y position to the actual name and every date cell. Only a completed drop reaches the store. The existing UI-thread horizontal
 scroll synchronization is retained. See the official React Native
 [Pressable](https://reactnative.dev/docs/0.86/pressable) and
 [PanResponder](https://reactnative.dev/docs/0.86/panresponder) references.
@@ -79,16 +79,31 @@ scroll synchronization is retained. See the official React Native
 
 Menu entry uses a small six-point lift and fade; dismissal fades. The founder
 accepted the translation smoothness but requested faster settling and identical
-row appearance throughout the drag. ReorderRow now translates the actual name
+row appearance throughout the drag. ReorderRow now moves the actual name
 and date-cell views with their existing fonts, icons, units, checkboxes, backgrounds,
 and dividers. It raises only the dragged row's stacking order. No separately
 styled card, shadow, handle, or faded copy replaces the row.
 
 Neighbours and the dropped row share a faster, overdamped spring (stiffness 650,
 damping 54, mass 1, energy threshold 0.0001). The held row follows the finger
-without a spring delay. On release it settles to zero translation in its new
-layout position; ending drag state causes no appearance swap. New drags wait for
+without a spring delay. On release it settles to the same absolute Y used by the committed order; ending drag state causes no appearance swap. New drags wait for
 that short settling phase to complete. Cancellation before a drop saves nothing;
 a completed drop saves immediately, independent of animation. Navigation into
 statistics slides, and Settings page changes fade. New transitions respect Reduce
 Motion. Phone acceptance of the revised drag remains pending.
+
+## Swap flicker correction
+
+The founder confirmed the actual-row appearance works, but reported flashes of
+incorrect positions as rows exchanged places. Source inspection found that the
+preview reordered native siblings while separately updating a compensating drag
+transform. Layout and animation commits could disagree for a frame; the menu
+only closes once at drag start and does not explain repeated swap flashes.
+
+Keep sibling order unchanged during preview. Each name and date cell instead has
+one absolute Y position, animated on the UI thread. Both column types have an
+explicit total height. The preview and final drop share habitRowPositions, which
+accounts for measured/wrapped row heights. At commit, keyed views may change
+sibling order but their absolute positions stay the same. Measure the inner name
+control's height, not the moving wrapper, to avoid per-frame layout callbacks.
+This targets the identified race; native acceptance is still pending.

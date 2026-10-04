@@ -46,3 +46,18 @@ export function dragDestination(
   });
   return nearest;
 }
+
+// Shared by preview rendering and the final drop, including wrapped/taller names.
+export function habitRowPositions(
+  ids: string[],
+  heights: Record<string, number>,
+  fallback: number,
+): { tops: Record<string, number>; total: number } {
+  const tops: Record<string, number> = {};
+  let total = 0;
+  for (const id of ids) {
+    tops[id] = total;
+    total += heights[id] ?? fallback;
+  }
+  return { tops, total };
+}
