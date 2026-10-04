@@ -149,7 +149,7 @@ export function HabitName({
         }}
         style={({ pressed }) => ({
           minHeight: height,
-          paddingVertical: 8,
+          paddingVertical: height < 52 ? 4 : 8,
           paddingRight: 10,
           borderBottomWidth: 0.5,
           borderBottomColor: `${habit.color}20`,

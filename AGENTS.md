@@ -15,7 +15,7 @@ Protect stable row positions, direct access to the list, and immediate feedback.
 Do not add navigation, dashboards, celebrations, login, or a backend without a
 requirement. Distinguish founder decisions from assistant proposals in the docs.
 Incremental change storage and export are confirmed requirements; read
-`docs/STORAGE.md` before implementing persistence. Entries, colours, and haptic preferences now persist. Sample habits are initialized
+`docs/STORAGE.md` before implementing persistence. Entries, colours, start dates, haptics and row spacing now persist. Sample habits are initialized
 once; never reset or reseed an existing store during loading or an error.
 The requested preset icon update uses normal undoable edits in
 `src/storage/presetIcons.ts`; preserve earlier icon choices/removals and raw history.
@@ -59,6 +59,9 @@ The requested preset icon update uses normal undoable edits in
   name control so position animation does not report per-frame layout to JS.
   `src/motion.ts` shares reduced-motion-aware row/menu transitions; keep name and
   date-cell layout timing aligned.
+- `src/rowSpacing.ts` owns saved Compact/Standard/Roomy geometry; preserve font scaling and measured row heights.
+- `src/StartDateField.tsx` owns the native draft date picker; existing dates remain inferred until edited. Explicit start dates bound statistics without deleting entries. New edits/exports use v5, retaining v1–v4 replay.
+- `src/useStatsDismissal.ts` owns UI-thread pull dismissal; only a drag starting at the top qualifies. Keep an accessible Back button.
 - `src/gridLayout.ts` calculates adaptive column geometry for both orientations.
 - `src/useGridScroll.ts` synchronizes native scrolling on the UI thread; never
   put per-frame list synchronization back on the JavaScript thread.

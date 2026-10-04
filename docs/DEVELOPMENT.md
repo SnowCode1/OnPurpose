@@ -274,3 +274,12 @@ App loads both behind `__DEV__`; the production iOS export excludes their code
 regardless of the env value. Verify this when changing the gate. Tests exercise
 valid replay, DST/leap dates, statistics diversity, numeric zeros versus gaps,
 independent stores, sample Undo/Redo, reset, and blocked sample backup replacement.
+
+## Habit start-date control
+
+The editor uses `@react-native-community/datetimepicker` 9.1.0, installed through
+`npx expo install @react-native-community/datetimepicker` for SDK 57, with its config
+plugin in app.json. Expo documents this component as [included in Expo Go](https://docs.expo.dev/versions/v57.0.0/sdk/date-time-picker/).
+Fully reload after installing it; production/development native builds include it
+on their next build. The web-specific StartDateField keeps browser preview separate
+from the native picker. Native presentation/VoiceOver still require phone checks.

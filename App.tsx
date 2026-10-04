@@ -1,3 +1,5 @@
+import type { RowSpacing } from './src/rowSpacing';
+import { habitTrackingStart } from './src/statistics';
 import { StatusBar } from 'expo-status-bar';
 import {
   type ComponentType,
@@ -133,7 +135,12 @@ function PersistentApp({
   useEffect(() => {
     if (!sampleData && snapshot.status === 'ready') applyPresetIcons(store);
   }, [store, snapshot.status, sampleData]);
-  const { habits, values, hapticsEnabled } = snapshot.replay.state;
+  const {
+    habits,
+    values,
+    hapticsEnabled,
+    rowSpacing = 'standard',
+  } = snapshot.replay.state;
   const activeHabits = useMemo(
     () => habits.filter((habit) => !habit.archived),
     [habits],
@@ -270,7 +277,8 @@ function PersistentApp({
         before.unit === after.unit &&
         isNumericHabit(before) === isNumericHabit(after) &&
         before.archived === after.archived &&
-        before.icon === after.icon
+        before.icon === after.icon &&
+        before.startDate === after.startDate
       )
         return true;
       const accepted = store.change({
@@ -342,9 +350,10 @@ function PersistentApp({
       name: '',
       color: '#82E6BC',
       type: 'checkbox',
+      startDate: today,
     });
     setHabitMode('create');
-  }, [store]);
+  }, [store, today]);
 
   const closeStats = useCallback(() => setStatsId(null), []);
   const editStats = useCallback(() => {
@@ -431,6 +440,12 @@ function PersistentApp({
       <HabitDialog
         key={detail?.id ?? newHabit?.id}
         habit={(detail ?? newHabit)!}
+        initialStartDate={habitTrackingStart(
+          (detail ?? newHabit)!,
+          values,
+          snapshot.events,
+          today,
+        )}
         mode={habitMode}
         Heading={PreviewHeading}
         onClose={closeDialog}
@@ -476,6 +491,7 @@ function PersistentApp({
           >
             <PerformanceBoundary name="grid">
               <HabitGrid
+                rowSpacing={rowSpacing}
                 sampleData={sampleData}
                 HeadingComponent={PreviewHeading}
                 DateButtonComponent={PreviewDateButton}
@@ -625,6 +641,14 @@ function PersistentApp({
           }}
           onRetry={() => {
             void store.retry();
+          }}
+          rowSpacing={rowSpacing}
+          onRowSpacingChange={(after: RowSpacing) => {
+            if (!editable) return;
+            const before =
+              store.getSnapshot().replay.state.rowSpacing ?? 'standard';
+            if (store.change({ kind: 'rowSpacing', before, after }))
+              feedback('selection');
           }}
           hapticsEnabled={hapticsEnabled}
           onHapticsChange={changeHaptics}

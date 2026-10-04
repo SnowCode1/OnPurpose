@@ -53,10 +53,40 @@ function lifecycle(
     }
   }
   if (opened !== null) intervals.push({ start: opened, end: today });
-  const start = Math.min(born ?? today, firstEntry);
-  if (firstEntry < (born ?? today))
-    intervals.unshift({ start: firstEntry, end: (born ?? today) - 1 });
-  return { start, intervals };
+  const start = habit.startDate
+    ? dayNumber(habit.startDate)
+    : Math.min(born ?? today, firstEntry);
+  if (start < (born ?? today))
+    intervals.unshift({ start, end: (born ?? today) - 1 });
+  return {
+    start,
+    intervals: intervals
+      .map((interval) => ({
+        ...interval,
+        start: Math.max(start, interval.start),
+      }))
+      .filter((interval) => interval.start <= interval.end),
+  };
+}
+// Legacy habits acquire a display default without rewriting their event log.
+export function habitTrackingStart(
+  habit: Habit,
+  values: Record<string, number>,
+  events: StoredEvent[],
+  todayKey: string,
+) {
+  if (habit.startDate) return habit.startDate;
+  const today = dayNumber(todayKey),
+    prefix = `${habit.id}:`;
+  let firstEntry = Infinity;
+  for (const key of Object.keys(values)) {
+    if (!key.startsWith(prefix)) continue;
+    const day = dayNumber(key.slice(prefix.length));
+    if (day <= today) firstEntry = Math.min(firstEntry, day);
+  }
+  return dateKey(
+    Math.min(today, lifecycle(habit, events, today, firstEntry).start),
+  );
 }
 function countWeekday(start: number, end: number, weekday?: number) {
   if (end < start) return 0;
@@ -73,14 +103,15 @@ export function habitStatistics(
 ) {
   const today = dayNumber(todayKey),
     numeric = isNumericHabit(habit),
-    prefix = `${habit.id}:`;
+    prefix = `${habit.id}:`,
+    explicitStart = habit.startDate ? dayNumber(habit.startDate) : -Infinity;
   const records = Object.entries(values)
     .filter(([key]) => key.startsWith(prefix))
     .map(([key, value]) => ({
       day: dayNumber(key.slice(prefix.length)),
       value,
     }))
-    .filter((item) => item.day <= today)
+    .filter((item) => item.day <= today && item.day >= explicitStart)
     .sort((a, b) => a.day - b.day);
   const { start: trackingStart, intervals } = lifecycle(
     habit,
@@ -193,7 +224,9 @@ export function habitStatistics(
     numeric,
     start: dateKey(start),
     today: todayKey,
-    trackingStart: dateKey(Math.min(today, trackingStart)),
+    trackingStart: dateKey(
+      habit.startDate ? trackingStart : Math.min(today, trackingStart),
+    ),
     ...summary,
     previous,
     buckets,

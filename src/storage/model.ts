@@ -1,3 +1,4 @@
+import { isRowSpacing, type RowSpacing } from '../rowSpacing.ts';
 import { isHabitIcon } from '../habitIcons.ts';
 import { isNumericHabit, type Habit } from '../habits.ts';
 
@@ -5,6 +6,7 @@ export type StoredState = {
   habits: Habit[];
   values: Record<string, number>;
   hapticsEnabled: boolean;
+  rowSpacing?: RowSpacing;
 };
 export type Change =
   | {
@@ -23,10 +25,18 @@ export type Change =
       after: Habit | null;
     }
   | { kind: 'order'; before: string[]; after: string[] }
-  | { kind: 'haptics'; before: boolean; after: boolean };
-export type HabitChange = Exclude<Change, { kind: 'haptics' }>;
+  | { kind: 'haptics'; before: boolean; after: boolean }
+  | { kind: 'rowSpacing'; before: RowSpacing; after: RowSpacing };
+export type PreferenceChange = Extract<
+  Change,
+  { kind: 'haptics' | 'rowSpacing' }
+>;
+export function isPreference(change: Change): change is PreferenceChange {
+  return change.kind === 'haptics' || change.kind === 'rowSpacing';
+}
+export type HabitChange = Exclude<Change, PreferenceChange>;
 export type EventMeta = {
-  version: 1 | 2 | 3 | 4;
+  version: 1 | 2 | 3 | 4 | 5;
   id: string;
   sequence: number;
   recordedAt: string;
@@ -37,10 +47,10 @@ export type LegacyChangeEvent = EventMeta & { version: 1 } & (
     | { type: 'change'; change: Change }
     | { type: 'undo' | 'redo'; targetId: string; change: Change }
   );
-export type CurrentChangeEvent = EventMeta & { version: 2 | 3 | 4 } & (
+export type CurrentChangeEvent = EventMeta & { version: 2 | 3 | 4 | 5 } & (
     | { type: 'change'; groupId: string; change: HabitChange }
     | { type: 'undo' | 'redo'; targetId: string; change: HabitChange }
-    | { type: 'preference'; change: Extract<Change, { kind: 'haptics' }> }
+    | { type: 'preference'; change: PreferenceChange }
   );
 export type ChangeEvent = LegacyChangeEvent | CurrentChangeEvent;
 export type StoredEvent =
@@ -64,6 +74,7 @@ export type Replay = {
   hasV2: boolean;
   hasV3: boolean;
   hasV4: boolean;
+  hasV5: boolean;
 };
 export const emptyReplay = (): Replay => ({
   state: { habits: [], values: {}, hapticsEnabled: true },
@@ -75,6 +86,7 @@ export const emptyReplay = (): Replay => ({
   hasV2: false,
   hasV3: false,
   hasV4: false,
+  hasV5: false,
 });
 export const GROUP_INACTIVITY_MS = 2 * 60 * 1000;
 
@@ -148,6 +160,7 @@ function validateHabit(
       'unit',
       ...(version >= 3 ? ['type', 'archived'] : []),
       ...(version >= 4 ? ['icon'] : []),
+      ...(version >= 5 ? ['startDate'] : []),
     ].filter((key) => Object.hasOwn(value, key)),
   ]);
   id(value.id);
@@ -170,6 +183,8 @@ function validateHabit(
       value.type === 'checkbox' || value.type === 'number',
       'Invalid habit type.',
     );
+  if (Object.hasOwn(value, 'startDate'))
+    insist(validDate(value.startDate), 'Invalid habit start date.');
   if (Object.hasOwn(value, 'icon'))
     insist(isHabitIcon(value.icon), 'Invalid habit icon.');
   if (Object.hasOwn(value, 'archived'))
@@ -181,7 +196,7 @@ function validateHabit(
 }
 export function validateChange(
   value: unknown,
-  version = 4,
+  version = 5,
 ): asserts value is Change {
   object(value);
   if (value.kind === 'entry') {
@@ -221,6 +236,13 @@ export function validateChange(
       order.forEach(id);
       insist(new Set(order).size === order.length, 'Repeated habit in order.');
     }
+  } else if (value.kind === 'rowSpacing') {
+    keys(value, ['kind', 'before', 'after']);
+    insist(version >= 5, 'Row spacing requires version 5.');
+    insist(
+      isRowSpacing(value.before) && isRowSpacing(value.after),
+      'Invalid row spacing.',
+    );
   } else if (value.kind === 'haptics') {
     keys(value, ['kind', 'before', 'after']);
     insist(
@@ -248,7 +270,8 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
     value.version === 1 ||
       value.version === 2 ||
       value.version === 3 ||
-      value.version === 4,
+      value.version === 4 ||
+      value.version === 5,
     'Unsupported event version.',
   );
   id(value.id);
@@ -311,8 +334,8 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
     if (value.version !== 1)
       insist(
         value.type === 'preference'
-          ? value.change.kind === 'haptics'
-          : value.change.kind !== 'haptics',
+          ? isPreference(value.change)
+          : !isPreference(value.change),
         'Preferences cannot be habit actions.',
       );
   } else throw new Error('Unsupported event type.');
@@ -340,8 +363,8 @@ function sameChange(left: Change, right: Change): boolean {
     left.kind === right.kind &&
     left.before === right.before &&
     left.after === right.after &&
-    (left.kind === 'haptics' ||
-      (right.kind !== 'haptics' && left.habitId === right.habitId)) &&
+    (isPreference(left) ||
+      (!isPreference(right) && left.habitId === right.habitId)) &&
     (left.kind !== 'entry' ||
       (right.kind === 'entry' && left.date === right.date))
   );
@@ -359,8 +382,8 @@ function sameField(left: Change, right: Change) {
     return false;
   return (
     left.kind === right.kind &&
-    (left.kind === 'haptics' ||
-      (right.kind !== 'haptics' && left.habitId === right.habitId)) &&
+    (isPreference(left) ||
+      (!isPreference(right) && left.habitId === right.habitId)) &&
     (left.kind !== 'entry' ||
       (right.kind === 'entry' && left.date === right.date))
   );
@@ -422,7 +445,8 @@ function reduceEvent(
       },
       hasV2: event.version !== 1,
       hasV3: event.version >= 3,
-      hasV4: event.version === 4,
+      hasV4: event.version >= 4,
+      hasV5: event.version >= 5,
     };
   }
   insist(
@@ -438,8 +462,12 @@ function reduceEvent(
     'Older events cannot follow version-3 events.',
   );
   insist(
-    !previous.hasV4 || event.version === 4,
+    !previous.hasV4 || event.version >= 4,
     'Older events cannot follow version-4 events.',
+  );
+  insist(
+    !previous.hasV5 || event.version >= 5,
+    'Older events cannot follow version-5 events.',
   );
   const undo = mutable ? previous.undo : [...previous.undo];
   const redo = mutable ? previous.redo : [...previous.redo];
@@ -458,7 +486,7 @@ function reduceEvent(
       );
       legacyUndo.pop();
       legacyRedo.push(event);
-      if (event.change.kind !== 'haptics') {
+      if (!isPreference(event.change)) {
         const action = undo.at(-1);
         insist(
           action && action.id === event.targetId,
@@ -477,7 +505,7 @@ function reduceEvent(
       );
       legacyRedo.pop();
       legacyUndo.push(event);
-      if (event.change.kind !== 'haptics') {
+      if (!isPreference(event.change)) {
         const targetAction = redo.at(-1);
         insist(
           targetAction && targetAction.undoId === event.targetId,
@@ -497,7 +525,7 @@ function reduceEvent(
       // Old preference edits also abandoned the redo branch. Respect that
       // recorded v1 behaviour; only new v2 preferences preserve habit redo.
       redo.length = 0;
-      if (event.change.kind !== 'haptics') {
+      if (!isPreference(event.change)) {
         undo.push(actionFrom(event, event.change));
       }
     }
@@ -575,7 +603,8 @@ function reduceEvent(
     legacyRedo,
     hasV2: previous.hasV2 || event.version !== 1,
     hasV3: previous.hasV3 || event.version >= 3,
-    hasV4: previous.hasV4 || event.version === 4,
+    hasV4: previous.hasV4 || event.version >= 4,
+    hasV5: previous.hasV5 || event.version >= 5,
   };
 }
 export function applyChange(state: StoredState, change: Change): StoredState {
@@ -588,7 +617,16 @@ function reduceChange(
 ): StoredState {
   validateChange(change);
   let next: StoredState;
-  if (change.kind === 'haptics') {
+  if (change.kind === 'rowSpacing') {
+    insist(
+      (state.rowSpacing ?? 'standard') === change.before,
+      'Preference precondition failed.',
+    );
+    if (mutable) {
+      state.rowSpacing = change.after;
+      next = state;
+    } else next = { ...state, rowSpacing: change.after };
+  } else if (change.kind === 'haptics') {
     insist(
       state.hapticsEnabled === change.before,
       'Preference precondition failed.',
@@ -703,6 +741,7 @@ export function replayEvents(input: unknown): {
   return { events, replay };
 }
 export function describeChange(change: Change, state: StoredState): string {
+  if (change.kind === 'rowSpacing') return `Row spacing · ${change.after}`;
   if (change.kind === 'order') return 'Habit order changed';
   if (change.kind === 'habit')
     return `${change.after?.name ?? change.before?.name} · Habit changed`;

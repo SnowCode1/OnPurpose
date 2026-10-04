@@ -1,3 +1,4 @@
+import { gridRowHeight, type RowSpacing } from './rowSpacing';
 import {
   type ComponentType,
   type Ref,
@@ -51,6 +52,7 @@ import { Icon } from './Icon';
 import { appear, disappear, rowTransition, menuAppear } from './motion';
 
 type Props = {
+  rowSpacing: RowSpacing;
   sampleData?: boolean;
   HeadingComponent: ComponentType<TextProps>;
   DateButtonComponent: ComponentType<PressableProps>;
@@ -68,6 +70,7 @@ type Props = {
 };
 
 export const HabitGrid = memo(function HabitGrid({
+  rowSpacing,
   sampleData = false,
   HeadingComponent,
   DateButtonComponent,
@@ -98,7 +101,7 @@ export const HabitGrid = memo(function HabitGrid({
   const [rightmostDay, setRightmostDay] = useState(0);
   const atTodayBoundary = rightmostDay === 0 && futureCount === 0;
   const [rowHeights, setRowHeights] = useState<Record<string, number>>({});
-  const baseRowHeight = Math.max(52, Math.ceil(48 * fontScale));
+  const baseRowHeight = gridRowHeight(rowSpacing, fontScale);
   const {
     root: reorderRoot,
     scroll: reorderScroll,

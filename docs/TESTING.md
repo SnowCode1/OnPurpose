@@ -786,3 +786,28 @@ Phone:
    those edits. Turn Sample data off to verify your real entries and settings return.
 4. Backup controls should be absent in sample mode. History and archive status
    should identify sample changes as temporary. Test larger text and landscape.
+
+## Start dates, row spacing and statistics pull dismissal
+
+- Create checkbox/numeric habits: no extra heading; date defaults to local Today.
+  Change it to a previous month using the native date control, save, reopen and
+  reload. Check keyboard, landscape and large-text layout. Close discards drafts.
+- Backdate an existing habit, fill days in its statistics calendar, and verify
+  rates/totals. Move the start forward: older entries remain in the grid but no
+  longer count. Move it back, then Undo/Redo and reload; records return to metrics.
+- At the top of statistics pull down and release; a deliberate pull dismisses
+  to the same grid position. Short pulls and reversing before release cancel.
+  Fling back from deep content: reaching the top must not dismiss. Try Reduce
+  Motion, ordinary Back, editing and calendar taps.
+- Settings → Row spacing: compare Compact, Standard and Roomy with numbers,
+  wrapped names, large text, landscape, horizontal scrolling and reordering.
+  Names, dates, checks and loading dashes must stay aligned. Real-store reload
+  preserves the selection; sample-mode changes remain disposable.
+- Undo a habit action, change spacing, then Redo: preferences must not consume
+  the redo branch or appear in History. Export/restore a v5 backup and confirm
+  both spacing and dates; retain a pre-restore copy as usual.
+
+Automated coverage includes v1–v4 fixture upgrades without mutation, v5 fixture
+replay, native SQL repository reload, date/preference validation, date editing
+with Undo/Redo, archive-aware statistics, font-scaled minimum heights and pull
+threshold/reversal rules. These do not establish native gesture or picker quality.

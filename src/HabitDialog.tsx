@@ -1,3 +1,5 @@
+import { StartDateField } from './StartDateField';
+import { validDate } from './storage/model';
 import { useState, type ComponentType } from 'react';
 import {
   KeyboardAvoidingView,
@@ -22,6 +24,7 @@ import { habitIconLabel, type HabitIcon } from './habitIcons';
 export type HabitDialogMode = 'colour' | 'edit' | 'create';
 export function HabitDialog({
   habit,
+  initialStartDate,
   mode,
   Heading,
   onClose,
@@ -30,6 +33,7 @@ export function HabitDialog({
   editable,
 }: {
   habit: Habit;
+  initialStartDate: string;
   mode: HabitDialogMode;
   Heading: ComponentType<TextProps>;
   onClose: () => void;
@@ -38,6 +42,9 @@ export function HabitDialog({
   editable: boolean;
 }) {
   const { fontScale } = useWindowDimensions();
+  const [startDate, setStartDate] = useState(
+    habit.startDate ?? initialStartDate,
+  );
   const [name, setName] = useState(habit.name),
     [unit, setUnit] = useState(habit.unit ?? ''),
     [numeric, setNumeric] = useState(isNumericHabit(habit));
@@ -50,13 +57,19 @@ export function HabitDialog({
     habit.icon,
   );
   const valid =
-    !!name.trim() && name.trim().length <= 200 && unit.trim().length <= 80;
+    validDate(startDate) &&
+    !!name.trim() &&
+    name.trim().length <= 200 &&
+    unit.trim().length <= 80;
   const editing = mode === 'edit' || mode === 'create';
   function save() {
     const { unit: _unit, icon: _icon, ...base } = habit;
     const after: Habit = {
       ...base,
       name: name.trim(),
+      ...(startDate !== initialStartDate || habit.startDate || mode === 'create'
+        ? { startDate }
+        : {}),
       color: colour,
       ...(icon ? { icon } : {}),
       ...(numeric && unit.trim() ? { unit: unit.trim() } : {}),
@@ -89,7 +102,7 @@ export function HabitDialog({
       >
         <View style={styles.dialog} accessibilityViewIsModal>
           <View style={styles.header}>
-            <Text style={styles.eyebrow}>
+            <Heading style={styles.eyebrow}>
               {iconPicker
                 ? 'ICON'
                 : picker
@@ -99,7 +112,7 @@ export function HabitDialog({
                     : mode === 'create'
                       ? 'NEW HABIT'
                       : 'EDIT HABIT'}
-            </Text>
+            </Heading>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Close without applying changes"
@@ -113,9 +126,11 @@ export function HabitDialog({
               <Icon name="close" size={19} />
             </Pressable>
           </View>
-          <Heading style={[styles.title, { color: habit.color }]}>
-            {mode === 'create' ? 'Make it yours' : habit.name}
-          </Heading>
+          {mode !== 'create' && (
+            <Heading style={[styles.title, { color: habit.color }]}>
+              {habit.name}
+            </Heading>
+          )}
           {iconPicker ? (
             <HabitIconPicker
               icon={icon}
@@ -205,6 +220,11 @@ export function HabitDialog({
                       />
                     </View>
                   )}
+                  <StartDateField
+                    value={startDate}
+                    onChange={setStartDate}
+                    colour={colour}
+                  />
                   <View style={styles.appearance}>
                     <Pressable
                       accessibilityRole="button"

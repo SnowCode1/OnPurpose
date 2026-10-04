@@ -1,8 +1,8 @@
+import { useStatsDismissal } from './useStatsDismissal';
 import { memo, useEffect, useMemo, useState, type ComponentType } from 'react';
 import {
   BackHandler,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -253,6 +253,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   onCellPress: (habit: Habit, day: EntryDay) => void;
   editable: boolean;
 }) {
+  const dismissal = useStatsDismissal(onBack);
   const [range, setRange] = useState<StatsRange>(30);
   const [month, setMonth] = useState(today.slice(0, 7));
   const stats = useMemo(
@@ -287,327 +288,346 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
     <Animated.View
       entering={entering}
       exiting={exiting}
-      style={styles.screen}
+      style={[styles.screen, { backgroundColor: 'transparent' }]}
       accessibilityViewIsModal
     >
-      <View style={styles.header}>
-        <Pressable
-          onPress={onBack}
-          accessibilityRole="button"
-          accessibilityLabel="Back to habit grid"
-          style={styles.nav}
-        >
-          <Text style={styles.navText}>‹ Back</Text>
-        </Pressable>
-        <Heading accessibilityRole="header" style={styles.headerTitle}>
-          Statistics
-        </Heading>
-        <Pressable
-          onPress={onEdit}
-          disabled={!editable}
-          accessibilityRole="button"
-          accessibilityLabel={`Edit ${habit.name}`}
-          accessibilityState={{ disabled: !editable }}
-          style={[
-            styles.nav,
-            { alignItems: 'flex-end', opacity: editable ? 1 : 0.35 },
-          ]}
-        >
-          <Icon name="edit" />
-        </Pressable>
-      </View>
-      <ScrollView
-        contentContainerStyle={styles.body}
-        showsVerticalScrollIndicator={false}
+      <Animated.View
+        style={[{ flex: 1, backgroundColor: '#000000' }, dismissal.style]}
       >
-        <View style={{ gap: 8 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <HabitSymbol icon={habit.icon} colour={habit.color} size={30} />
-            <Heading
-              accessibilityRole="header"
-              style={[styles.name, { color: habit.color, flex: 1 }]}
-            >
-              {habit.name}
-            </Heading>
-          </View>
-          <Text style={styles.caption}>
-            {stats.numeric
-              ? `Daily total${unit ? ` · ${unit}` : ''}`
-              : 'Daily checkbox'}{' '}
-            · Since {dateLabel(stats.trackingStart, true)}
-          </Text>
+        <View style={styles.header}>
+          <Pressable
+            onPress={onBack}
+            accessibilityRole="button"
+            accessibilityLabel="Back to habit grid"
+            style={styles.nav}
+          >
+            <Text style={styles.navText}>‹ Back</Text>
+          </Pressable>
+          <Heading accessibilityRole="header" style={styles.headerTitle}>
+            Statistics
+          </Heading>
+          <Pressable
+            onPress={onEdit}
+            disabled={!editable}
+            accessibilityRole="button"
+            accessibilityLabel={`Edit ${habit.name}`}
+            accessibilityState={{ disabled: !editable }}
+            style={[
+              styles.nav,
+              { alignItems: 'flex-end', opacity: editable ? 1 : 0.35 },
+            ]}
+          >
+            <Icon name="edit" />
+          </Pressable>
         </View>
-        <View accessibilityRole="tablist" style={styles.ranges}>
-          {([30, 90, 365, 'all'] as const).map((value) => (
-            <Pressable
-              key={value}
-              accessibilityRole="tab"
-              accessibilityLabel={
-                value === 'all' ? 'All time' : `Last ${value} days`
-              }
-              accessibilityState={{ selected: range === value }}
-              onPress={() => setRange(value)}
-              style={[
-                styles.range,
-                range === value && { backgroundColor: '#303030' },
-              ]}
+        <Animated.ScrollView
+          onScroll={dismissal.scroll}
+          scrollEventThrottle={16}
+          alwaysBounceVertical
+          contentInsetAdjustmentBehavior="never"
+          contentContainerStyle={styles.body}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={{ gap: 8 }}>
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
             >
-              <Text
-                style={{
-                  color: range === value ? '#FFFFFF' : '#969696',
-                  fontSize: 14,
-                  fontWeight: '600',
-                }}
+              <HabitSymbol icon={habit.icon} colour={habit.color} size={30} />
+              <Heading
+                accessibilityRole="header"
+                style={[styles.name, { color: habit.color, flex: 1 }]}
               >
-                {value === 'all' ? 'All' : value === 365 ? '1Y' : `${value}D`}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <View style={{ gap: 6 }}>
-          <Text style={styles.eyebrow}>
-            {stats.numeric ? 'TOTAL RECORDED' : 'COMPLETION RATE'}
-          </Text>
-          <Text style={[styles.hero, { color: habit.color }]}>
-            {stats.numeric
-              ? format(stats.recorded ? stats.total : null)
-              : stats.rate === null
-                ? '—'
-                : `${Math.round(stats.rate * 100)}%`}
-          </Text>
-          <Text style={styles.caption}>
-            {stats.numeric
-              ? `${unit ? `${unit} · ` : ''}${stats.recorded} days recorded`
-              : `${stats.successes} completed of ${stats.eligible} tracking days`}
-          </Text>
-          {!stats.numeric && range !== 'all' && difference !== null && (
-            <Text style={styles.small}>
-              {difference > 0 ? '+' : ''}
-              {format(difference)} percentage points vs previous period
-            </Text>
-          )}
-        </View>
-        <View style={styles.metrics}>
-          <Metric
-            value={format(stats.numeric ? stats.average : stats.streak)}
-            label={
-              stats.numeric
-                ? `Average / recorded day${unit ? ` (${unit})` : ''}`
-                : 'Current streak · days'
-            }
-          />
-          <Metric
-            value={format(stats.numeric ? stats.best : stats.bestStreak)}
-            label={
-              stats.numeric
-                ? `Highest daily total${unit ? ` (${unit})` : ''}`
-                : 'Best streak · all time'
-            }
-          />
-          <Metric
-            value={format(stats.numeric ? stats.streak : stats.successes)}
-            label={
-              stats.numeric
-                ? 'Logging streak · days'
-                : 'Completions · selected period'
-            }
-          />
-          <Metric
-            value={format(stats.numeric ? stats.recorded : stats.eligible)}
-            label={
-              stats.numeric
-                ? 'Days recorded · selected period'
-                : 'Tracking days · selected period'
-            }
-          />
-        </View>
-        <View style={styles.section}>
-          <Text accessibilityRole="header" style={styles.sectionTitle}>
-            {stats.numeric ? 'Recorded totals' : 'Consistency over time'}
-          </Text>
-          <Text style={styles.caption}>
-            {stats.bucketDays === 1
-              ? 'One bar per day'
-              : `Each bar covers up to ${stats.bucketDays} days${stats.numeric ? ' · added together' : ''}`}
-          </Text>
-          <Chart
-            key={`${habit.id}-${range}-${today}`}
-            buckets={stats.buckets}
-            colour={habit.color}
-            numeric={stats.numeric}
-            unit={unit}
-          />
-          {!stats.recorded && (
+                {habit.name}
+              </Heading>
+            </View>
             <Text style={styles.caption}>
-              Your records will bring this chart to life.
+              {stats.numeric
+                ? `Daily total${unit ? ` · ${unit}` : ''}`
+                : 'Daily checkbox'}{' '}
+              · {stats.trackingStart > today ? 'Starts' : 'Since'}{' '}
+              {dateLabel(stats.trackingStart, true)}
             </Text>
-          )}
-        </View>
-        <View style={styles.section}>
-          <Text accessibilityRole="header" style={styles.sectionTitle}>
-            By day of the week
-          </Text>
-          <Text style={styles.caption}>
-            {stats.numeric ? 'Average on recorded days' : 'Completion rate'}
-            {stats.numeric && unit ? ` · ${unit}` : ''} · selected period
-          </Text>
-          {stats.weekday.map((day, index) => {
-            const maximum = stats.numeric
-              ? Math.max(1, ...stats.weekday.map((item) => item.value ?? 0))
-              : 100;
-            const label = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][
-              index
-            ];
-            return (
-              <View
-                key={day.day}
-                accessible
-                accessibilityLabel={`${label}, ${day.value === null ? 'no records' : `${format(day.value)}${stats.numeric ? ` ${unit}` : '%'}`}`}
-                style={styles.weekday}
-              >
-                <Text style={[styles.small, { width: 34 }]}>{label}</Text>
-                <View style={styles.track}>
-                  <View
-                    style={{
-                      width: `${Math.max(0, ((day.value ?? 0) / maximum) * 100)}%`,
-                      height: 5,
-                      borderRadius: 3,
-                      backgroundColor: habit.color,
-                    }}
-                  />
-                </View>
-                <Text
-                  style={[styles.small, { minWidth: 60, textAlign: 'right' }]}
-                >
-                  {format(day.value)}
-                  {day.value !== null && !stats.numeric ? '%' : ''}
-                </Text>
-              </View>
-            );
-          })}
-        </View>
-        <View style={styles.section}>
-          <View style={styles.axis}>
-            <Text
-              accessibilityRole="header"
-              style={[styles.sectionTitle, { flex: 1 }]}
-            >
-              {new Date(`${month}-01T12:00:00`).toLocaleDateString(undefined, {
-                month: 'long',
-                year: 'numeric',
-              })}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Previous month"
-              accessibilityState={{
-                disabled: month <= stats.trackingStart.slice(0, 7),
-              }}
-              disabled={month <= stats.trackingStart.slice(0, 7)}
-              onPress={() => changeMonth(-1)}
-              style={[
-                styles.monthButton,
-                {
-                  opacity: month <= stats.trackingStart.slice(0, 7) ? 0.25 : 1,
-                },
-              ]}
-            >
-              <Text style={styles.navText}>‹</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Next month"
-              accessibilityState={{ disabled: month >= today.slice(0, 7) }}
-              disabled={month >= today.slice(0, 7)}
-              onPress={() => changeMonth(1)}
-              style={[
-                styles.monthButton,
-                { opacity: month >= today.slice(0, 7) ? 0.25 : 1 },
-              ]}
-            >
-              <Text style={styles.navText}>›</Text>
-            </Pressable>
           </View>
-          <View style={styles.calendar}>
-            {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((label, index) => (
-              <Text key={index} style={styles.calendarHeading}>
-                {label}
-              </Text>
-            ))}
-            {Array.from({ length: calendar.padding }, (_, index) => (
-              <View key={`blank-${index}`} style={styles.day} />
-            ))}
-            {calendar.days.map((day) => {
-              const value = values[`${habit.id}:${day}`];
-              const recorded = stats.numeric
-                ? value !== undefined
-                : value === 1;
-              const date = entryDay(day);
-              const background = recorded
-                ? colorOnBlack(
-                    habit.color,
-                    stats.numeric ? 0.35 + (0.65 * value) / monthMax : 1,
-                  )
-                : day > today
-                  ? '#0C0C0C'
-                  : '#161616';
-              return (
-                <Pressable
-                  key={day}
-                  accessibilityRole={stats.numeric ? 'button' : 'checkbox'}
-                  accessibilityState={{
-                    disabled: !editable,
-                    ...(stats.numeric ? {} : { checked: recorded }),
+          <View accessibilityRole="tablist" style={styles.ranges}>
+            {([30, 90, 365, 'all'] as const).map((value) => (
+              <Pressable
+                key={value}
+                accessibilityRole="tab"
+                accessibilityLabel={
+                  value === 'all' ? 'All time' : `Last ${value} days`
+                }
+                accessibilityState={{ selected: range === value }}
+                onPress={() => setRange(value)}
+                style={[
+                  styles.range,
+                  range === value && { backgroundColor: '#303030' },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: range === value ? '#FFFFFF' : '#969696',
+                    fontSize: 14,
+                    fontWeight: '600',
                   }}
-                  accessibilityLabel={`${habit.name}, ${date.fullLabel}${day === today ? ', today' : ''}${day > today ? ', future date' : ''}, ${recorded ? (stats.numeric ? `${format(value)} ${unit}` : 'completed') : 'not recorded'}`}
-                  accessibilityHint={
-                    stats.numeric ? 'Edit daily total' : 'Toggle completion'
-                  }
-                  disabled={!editable}
-                  onPress={() => onCellPress(habit, date)}
-                  style={({ pressed }) => [
-                    styles.day,
-                    { opacity: pressed ? 0.6 : 1 },
-                  ]}
                 >
-                  <View
-                    style={[
-                      styles.dayFace,
-                      {
-                        backgroundColor: background,
-                      },
-                    ]}
-                  >
-                    <Text
+                  {value === 'all' ? 'All' : value === 365 ? '1Y' : `${value}D`}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={{ gap: 6 }}>
+            <Text style={styles.eyebrow}>
+              {stats.numeric ? 'TOTAL RECORDED' : 'COMPLETION RATE'}
+            </Text>
+            <Text style={[styles.hero, { color: habit.color }]}>
+              {stats.numeric
+                ? format(stats.recorded ? stats.total : null)
+                : stats.rate === null
+                  ? '—'
+                  : `${Math.round(stats.rate * 100)}%`}
+            </Text>
+            <Text style={styles.caption}>
+              {stats.numeric
+                ? `${unit ? `${unit} · ` : ''}${stats.recorded} days recorded`
+                : `${stats.successes} completed of ${stats.eligible} tracking days`}
+            </Text>
+            {!stats.numeric && range !== 'all' && difference !== null && (
+              <Text style={styles.small}>
+                {difference > 0 ? '+' : ''}
+                {format(difference)} percentage points vs previous period
+              </Text>
+            )}
+          </View>
+          <View style={styles.metrics}>
+            <Metric
+              value={format(stats.numeric ? stats.average : stats.streak)}
+              label={
+                stats.numeric
+                  ? `Average / recorded day${unit ? ` (${unit})` : ''}`
+                  : 'Current streak · days'
+              }
+            />
+            <Metric
+              value={format(stats.numeric ? stats.best : stats.bestStreak)}
+              label={
+                stats.numeric
+                  ? `Highest daily total${unit ? ` (${unit})` : ''}`
+                  : 'Best streak · all time'
+              }
+            />
+            <Metric
+              value={format(stats.numeric ? stats.streak : stats.successes)}
+              label={
+                stats.numeric
+                  ? 'Logging streak · days'
+                  : 'Completions · selected period'
+              }
+            />
+            <Metric
+              value={format(stats.numeric ? stats.recorded : stats.eligible)}
+              label={
+                stats.numeric
+                  ? 'Days recorded · selected period'
+                  : 'Tracking days · selected period'
+              }
+            />
+          </View>
+          <View style={styles.section}>
+            <Text accessibilityRole="header" style={styles.sectionTitle}>
+              {stats.numeric ? 'Recorded totals' : 'Consistency over time'}
+            </Text>
+            <Text style={styles.caption}>
+              {stats.bucketDays === 1
+                ? 'One bar per day'
+                : `Each bar covers up to ${stats.bucketDays} days${stats.numeric ? ' · added together' : ''}`}
+            </Text>
+            <Chart
+              key={`${habit.id}-${range}-${today}`}
+              buckets={stats.buckets}
+              colour={habit.color}
+              numeric={stats.numeric}
+              unit={unit}
+            />
+            {!stats.recorded && (
+              <Text style={styles.caption}>
+                Your records will bring this chart to life.
+              </Text>
+            )}
+          </View>
+          <View style={styles.section}>
+            <Text accessibilityRole="header" style={styles.sectionTitle}>
+              By day of the week
+            </Text>
+            <Text style={styles.caption}>
+              {stats.numeric ? 'Average on recorded days' : 'Completion rate'}
+              {stats.numeric && unit ? ` · ${unit}` : ''} · selected period
+            </Text>
+            {stats.weekday.map((day, index) => {
+              const maximum = stats.numeric
+                ? Math.max(1, ...stats.weekday.map((item) => item.value ?? 0))
+                : 100;
+              const label = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][
+                index
+              ];
+              return (
+                <View
+                  key={day.day}
+                  accessible
+                  accessibilityLabel={`${label}, ${day.value === null ? 'no records' : `${format(day.value)}${stats.numeric ? ` ${unit}` : '%'}`}`}
+                  style={styles.weekday}
+                >
+                  <Text style={[styles.small, { width: 34 }]}>{label}</Text>
+                  <View style={styles.track}>
+                    <View
                       style={{
-                        color: recorded
-                          ? checkmarkColor(background)
-                          : day > today
-                            ? '#606060'
-                            : '#A0A0A0',
-                        fontSize: 13,
+                        width: `${Math.max(0, ((day.value ?? 0) / maximum) * 100)}%`,
+                        height: 5,
+                        borderRadius: 3,
+                        backgroundColor: habit.color,
                       }}
-                    >
-                      {Number(day.slice(-2))}
-                    </Text>
+                    />
                   </View>
-                </Pressable>
+                  <Text
+                    style={[styles.small, { minWidth: 60, textAlign: 'right' }]}
+                  >
+                    {format(day.value)}
+                    {day.value !== null && !stats.numeric ? '%' : ''}
+                  </Text>
+                </View>
               );
             })}
           </View>
-          <Text style={styles.caption}>
+          <View style={styles.section}>
+            <View style={styles.axis}>
+              <Text
+                accessibilityRole="header"
+                style={[styles.sectionTitle, { flex: 1 }]}
+              >
+                {new Date(`${month}-01T12:00:00`).toLocaleDateString(
+                  undefined,
+                  {
+                    month: 'long',
+                    year: 'numeric',
+                  },
+                )}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Previous month"
+                accessibilityState={{
+                  disabled: month <= stats.trackingStart.slice(0, 7),
+                }}
+                disabled={month <= stats.trackingStart.slice(0, 7)}
+                onPress={() => changeMonth(-1)}
+                style={[
+                  styles.monthButton,
+                  {
+                    opacity:
+                      month <= stats.trackingStart.slice(0, 7) ? 0.25 : 1,
+                  },
+                ]}
+              >
+                <Text style={styles.navText}>‹</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Next month"
+                accessibilityState={{ disabled: month >= today.slice(0, 7) }}
+                disabled={month >= today.slice(0, 7)}
+                onPress={() => changeMonth(1)}
+                style={[
+                  styles.monthButton,
+                  { opacity: month >= today.slice(0, 7) ? 0.25 : 1 },
+                ]}
+              >
+                <Text style={styles.navText}>›</Text>
+              </Pressable>
+            </View>
+            <View style={styles.calendar}>
+              {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map(
+                (label, index) => (
+                  <Text key={index} style={styles.calendarHeading}>
+                    {label}
+                  </Text>
+                ),
+              )}
+              {Array.from({ length: calendar.padding }, (_, index) => (
+                <View key={`blank-${index}`} style={styles.day} />
+              ))}
+              {calendar.days.map((day) => {
+                const value = values[`${habit.id}:${day}`];
+                const recorded = stats.numeric
+                  ? value !== undefined
+                  : value === 1;
+                const date = entryDay(day);
+                const background = recorded
+                  ? colorOnBlack(
+                      habit.color,
+                      stats.numeric ? 0.35 + (0.65 * value) / monthMax : 1,
+                    )
+                  : day > today
+                    ? '#0C0C0C'
+                    : '#161616';
+                return (
+                  <Pressable
+                    key={day}
+                    accessibilityRole={stats.numeric ? 'button' : 'checkbox'}
+                    accessibilityState={{
+                      disabled: !editable,
+                      ...(stats.numeric ? {} : { checked: recorded }),
+                    }}
+                    accessibilityLabel={`${habit.name}, ${date.fullLabel}${day === today ? ', today' : ''}${day > today ? ', future date' : ''}, ${recorded ? (stats.numeric ? `${format(value)} ${unit}` : 'completed') : 'not recorded'}`}
+                    accessibilityHint={
+                      stats.numeric ? 'Edit daily total' : 'Toggle completion'
+                    }
+                    disabled={!editable}
+                    onPress={() => onCellPress(habit, date)}
+                    style={({ pressed }) => [
+                      styles.day,
+                      { opacity: pressed ? 0.6 : 1 },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.dayFace,
+                        {
+                          backgroundColor: background,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={{
+                          color: recorded
+                            ? checkmarkColor(background)
+                            : day > today
+                              ? '#606060'
+                              : '#A0A0A0',
+                          fontSize: 13,
+                        }}
+                      >
+                        {Number(day.slice(-2))}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text style={styles.caption}>
+              {stats.numeric
+                ? 'Tap a day to edit its total. Brighter days have higher totals; zero still has colour.'
+                : 'Tap a day to check or uncheck it. Coloured days are completed.'}
+            </Text>
+          </View>
+          <Text style={styles.note}>
             {stats.numeric
-              ? 'Tap a day to edit its total. Brighter days have higher totals; zero still has colour.'
-              : 'Tap a day to check or uncheck it. Coloured days are completed.'}
+              ? 'Averages use recorded days, including zero. Blank days are not treated as zero. A logging streak counts consecutive days with an entry.'
+              : 'Rates assume a daily habit. Days before tracking began and unrecorded days while archived are excluded. Today counts once completed. Streaks count consecutive calendar days; an unfinished today does not break the current streak.'}{' '}
+            Future entries and records before the start date are excluded from
+            charts and statistics. Earlier records stay saved; edit the start
+            date to include them.
           </Text>
-        </View>
-        <Text style={styles.note}>
-          {stats.numeric
-            ? 'Averages use recorded days, including zero. Blank days are not treated as zero. A logging streak counts consecutive days with an entry.'
-            : 'Rates assume a daily habit. Days before tracking began and unrecorded days while archived are excluded. Today counts once completed. Streaks count consecutive calendar days; an unfinished today does not break the current streak.'}{' '}
-          Future entries are excluded from charts and statistics.
-        </Text>
-      </ScrollView>
+        </Animated.ScrollView>
+      </Animated.View>
     </Animated.View>
   );
 });

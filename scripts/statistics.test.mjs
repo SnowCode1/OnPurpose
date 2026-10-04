@@ -227,3 +227,101 @@ test('statistics can derive from unchanged v1/v2/v3/v4 backup fixtures', () => {
     }
   }
 });
+
+test('explicit start dates backfill the eligible period without requiring an entry', () => {
+  const definition = { ...habit, startDate: '2026-09-28' };
+  const result = stats({}, [seed()], '2026-10-04', 'all', definition);
+  assert.equal(result.trackingStart, '2026-09-28');
+  assert.equal(result.eligible, 6);
+  assert.equal(result.recorded, 0);
+  assert.equal(result.rate, 0);
+});
+test('moving the start date excludes older records without removing them and respects archive pauses', () => {
+  const archived = { ...habit, archived: true };
+  const events = [
+    seed(),
+    definitionEvent(2, '2026-10-03', habit, archived),
+    definitionEvent(3, '2026-10-06', archived, habit),
+  ];
+  const values = {
+    'walk:2026-10-01': 1,
+    'walk:2026-10-02': 1,
+    'walk:2026-10-04': 1,
+    'walk:2026-10-06': 1,
+  };
+  const result = stats(values, events, '2026-10-08', 'all', {
+    ...habit,
+    startDate: '2026-10-02',
+  });
+  assert.equal(result.eligible, 4); // Oct 2, 6, 7 + recorded Oct 4 during archive
+  assert.equal(result.successes, 3);
+  assert.equal(result.bestStreak, 1);
+  assert.equal(Object.keys(values).length, 4);
+  const backdated = stats(values, events, '2026-10-08', 'all', {
+    ...habit,
+    startDate: '2026-09-30',
+  });
+  assert.equal(backdated.eligible, 6);
+  assert.equal(backdated.successes, 4);
+  assert.equal(backdated.bestStreak, 2);
+});
+test('numeric totals, prior-period comparisons and future-start habits respect the explicit date', () => {
+  const values = {
+    'walk:2026-09-01': 100,
+    'walk:2026-10-01': 10,
+    'walk:2026-10-03': 0,
+    'walk:2026-10-04': 20,
+  };
+  const result = stats(values, [seed()], '2026-10-04', 30, {
+    ...number,
+    startDate: '2026-10-03',
+  });
+  assert.equal(result.total, 20);
+  assert.equal(result.average, 10);
+  assert.equal(result.recorded, 2);
+  assert.equal(result.previous.total, 0);
+  assert.equal(result.previous.eligible, 0);
+  const future = stats(values, [seed()], '2026-10-04', 'all', {
+    ...number,
+    startDate: '2026-10-10',
+  });
+  assert.equal(future.trackingStart, '2026-10-10');
+  assert.equal(future.eligible, 0);
+  assert.equal(future.recorded, 0);
+  assert.equal(future.streak, 0);
+  assert.equal(future.buckets.length, 1);
+});
+
+test('legacy start-date defaults reflect captured local creation or older entries without mutation', async () => {
+  const { habitTrackingStart } = await import('../src/statistics.ts');
+  const events = [
+    {
+      ...seed('2026-10-03'),
+      recordedAt: '2026-10-03T14:00:00.000Z',
+      utcOffsetMinutes: 660,
+    },
+  ];
+  const original = structuredClone(events);
+  assert.equal(
+    habitTrackingStart(habit, {}, events, '2026-10-05'),
+    '2026-10-04',
+  );
+  assert.equal(
+    habitTrackingStart(habit, { 'walk:2024-02-29': 1 }, events, '2026-10-05'),
+    '2024-02-29',
+  );
+  assert.equal(
+    habitTrackingStart(habit, { 'walk:2026-11-01': 1 }, events, '2026-10-05'),
+    '2026-10-04',
+  );
+  assert.equal(
+    habitTrackingStart(
+      { ...habit, startDate: '2026-10-06' },
+      {},
+      events,
+      '2026-10-05',
+    ),
+    '2026-10-06',
+  );
+  assert.deepEqual(events, original);
+});

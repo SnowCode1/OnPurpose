@@ -10,12 +10,12 @@ backup/share-sheet acceptance remain under evaluation.
 
 Checkbox entries, numeric daily totals, applied habit colours, and the haptic
 preference now survive a reload. The existing 12 sample habits are initialized
-once, not on every launch. Habit creation, renaming, units, icons, ordering, and archival now persist as well.
+once, not on every launch. Habit creation, renaming, units, icons, start dates, ordering, and archival now persist as well. Row spacing is a saved global preference.
 Full-screen statistics are derived from saved values; comments and targets remain
 later work. See [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md).
 
-`src/storage/model.ts` defines version-4 events and deterministic replay, with
-backward-compatible interpretation of existing version-1/2/3 records.
+`src/storage/model.ts` defines version-5 events and deterministic replay, with
+backward-compatible interpretation of existing version-1/2/3/4 records.
 `repository.ts` implements the native database operations against a small SQL
 interface; `native.ts` connects it to Expo SQLite and native UUID/SHA-256 support.
 `store.ts` owns loading, immediate UI state, the serialized write queue, undo,
@@ -78,28 +78,28 @@ migration from an earlier persisted OnPurpose version.
 
 Every event carries:
 
-| Field              | Meaning                                                                            |
-| ------------------ | ---------------------------------------------------------------------------------- |
-| `version`          | Event schema version, currently `4`; existing `1`/`2`/`3` records remain supported |
-| `id`               | Stable UUID generated once, retained on save retry                                 |
-| `sequence`         | Contiguous order starting at `1`; authoritative even if the clock changes          |
-| `recordedAt`       | UTC edit instant in ISO form with milliseconds                                     |
-| `timeZone`         | Device time-zone name at edit time, or `unknown` if unavailable                    |
-| `utcOffsetMinutes` | Local offset east of UTC at edit time                                              |
-| `type`             | `initialize`, `change`, `undo`, `redo`, or `preference`                            |
+| Field              | Meaning                                                                                |
+| ------------------ | -------------------------------------------------------------------------------------- |
+| `version`          | Event schema version, currently `5`; existing `1`/`2`/`3`/`4` records remain supported |
+| `id`               | Stable UUID generated once, retained on save retry                                     |
+| `sequence`         | Contiguous order starting at `1`; authoritative even if the clock changes              |
+| `recordedAt`       | UTC edit instant in ISO form with milliseconds                                         |
+| `timeZone`         | Device time-zone name at edit time, or `unknown` if unavailable                        |
+| `utcOffsetMinutes` | Local offset east of UTC at edit time                                                  |
+| `type`             | `initialize`, `change`, `undo`, `redo`, or `preference`                                |
 
 `initialize` records the ordered habit definitions and starts with no entries and
 haptics enabled. Each subsequent edit includes `before` and `after` values.
 Version-2 `change` events target an entry or habit colour and include a `groupId`.
 A new group's ID is its first event's ID; corrections retain that ID. Version-2
-`preference` events persist global settings (currently haptics) in the same log
+`preference` events persist global settings (haptics, and row spacing since v5) in the same log
 and export, outside habit History and Undo/Redo. Undo targets an active group ID;
 Redo targets its latest undo event ID and restores the original action.
 
 Existing version-1 logs retain their original interpretation, including historical
 preference undo/redo and abandoned redo branches. Their habit edits remain
 individual undo steps, with settings and undo/redo rows filtered from the view.
-New events use version 4. A log can progress from versions 1 → 2 → 3 → 4, skipping
+New events use version 5. A log can progress from versions 1 → 2 → 3 → 4 → 5, skipping
 versions if needed, but never downgrade. New habit-definition changes record
 `habitId`, `index`, and `before`/`after` definitions (null for creation/removal).
 Order changes record exact before/after ID arrays. Definitions may include an
@@ -119,6 +119,23 @@ archive restore. Emoji validation dependency versions affect replay compatibilit
 retain accepted sequences and catalogue IDs when updating them. Tabler extends
 the v4 catalogue without changing event shape or SQL schema. Earlier builds
 reject unrecognized Tabler IDs rather than silently dropping them.
+
+Version 5 adds an optional `startDate` (`YYYY-MM-DD`) to definitions and a
+`rowSpacing` preference with `compact`, `standard`, or `roomy` before/after values.
+Newly created habits and fresh preset seeds explicitly store the local current date.
+Existing definitions remain unchanged: the editor/statistics infer a default from
+creation or the earliest past record. Applying a different date writes one ordinary,
+undoable definition change. Unchanged legacy date drafts add no field/event.
+Statistics use an explicit start as their lower bound, preserving all older values;
+see STATISTICS.md. These calculation semantics are an implementation choice for
+founder review, not a deletion/migration rule.
+
+Absent row spacing means Standard, preserving legacy projection JSON. New spacing
+preferences validate their before-value against that effective default, persist in
+the same atomic queue, and leave History, Undo/Redo and correction groups intact.
+Versions 1–4 reject these new fields/change types. A v5 log cannot downgrade. Old
+fixtures remain unchanged; the v5 fixture extends the original v4 prefix with a
+date edit, Undo, spacing preference, and Redo. No SQL schema change or reset occurs.
 
 Habit-definition and ordering edits are distinct actions and close correction
 groups. Reordering validates exact current order and a unique complete permutation;
@@ -210,23 +227,24 @@ Undo is not permanent erasure. There is no deletion or erasure UI. Decide
 privacy/erasure rules before implementing comments; do not assume append-only
 history makes erasure impossible or unwanted.
 
-## Portable backup version 4
+## Portable backup version 5
 
 Settings → Export backup opens the iOS share sheet; save the JSON to Files or
 another destination. The app first waits for pending saves and captures a stable
 log. The export is a readable JSON container of **changes**, not a replacement
-snapshot of habit/day values. See [the version-4 synthetic example](examples/storage-v4.json),
+snapshot of habit/day values. See [the version-5 synthetic example](examples/storage-v5.json),
+[the version-4 synthetic example](examples/storage-v4.json),
 [the version-3 example](examples/storage-v3.json),
 [version-2 fixture](examples/storage-v2.json), and
 [the unchanged version-1 fixture](examples/storage-v1.json).
 
-The container has `format: "onpurpose.changes"`, `version: 4`, `exportedAt`,
+The container has `format: "onpurpose.changes"`, `version: 5`, `exportedAt`,
 `eventCount`, `sha256`, and `events`. The digest is SHA-256 of UTF-8
 `JSON.stringify(events)` with its existing property order. It detects accidental
 modification/incompleteness; it is not an authenticated signature. Exports are not
 encrypted and may reveal habit names, dated values, colours, and preference/edit
 metadata. Pre-restore copies are not bundled into the active export. The exporter
-always writes container version 4. The importer accepts versions 1, 2, 3, and 4;
+always writes container version 5. The importer accepts versions 1, 2, 3, 4, and 5;
 a container cannot contain events newer than its own version. New containers can
 retain legacy prefixes, including full raw edits and undo/redo operations that
 are omitted from the active History view.

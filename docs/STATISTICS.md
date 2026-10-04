@@ -8,7 +8,13 @@ They do not establish frequency targets, scheduled weekdays, or numeric goals.
 ## Screen
 
 Tap a habit name to open a full-screen view. The mounted grid keeps its date and
-scroll position under it. Back returns to the grid; Edit opens the existing draft
+scroll position under it. Back returns to the grid; an intentional downward pull
+released at least 76 points beyond the top also dismisses. Only a drag beginning
+at the top qualifies; returning from deeper content or momentum cannot dismiss.
+The screen follows the pull slightly and slides down in 180 ms, or settles back
+for a short/cancelled pull. Reverse motion cancels. Animation stays on the UI
+thread and honours Reduce Motion. The Back button remains available.
+Edit opens the existing draft
 editor above statistics. Changes update the statistics without recording new
 statistics events. The header and habit title retain the guarded development
 preview gesture.
@@ -54,9 +60,17 @@ to VoiceOver; numeric days announce the full date and recorded value.
 - Read current values from the replayed projection, not a count of raw edit events.
   Corrections and Undo therefore affect a day only through its final current value.
 - Future-dated values contribute to neither charts nor streaks until their day arrives.
-- Creation comes from initialization or the first saved definition. Use the event's
+- For legacy habits without an explicit start date, creation comes from initialization or the first saved definition. Use the event's
   captured UTC offset to identify its local edit day. Earlier dated entries extend
   the tracking start to their earliest date, including intervening days.
+- Explicit start dates replace that inferred lower bound. Backdating includes empty
+  elapsed days before app creation without needing a fabricated first entry.
+  Moving the start forward excludes older records from all metrics, charts,
+  comparisons and streaks, but never deletes values or events. Moving it back
+  includes them again. Archive pauses still apply. Future start dates show “Starts”
+  and no eligible records until that date. Calendar/grid entries remain editable;
+  entries before the start date stay saved, outside statistics. This is an
+  implementation default awaiting founder review.
 - Checkbox denominator: elapsed tracking days through yesterday, plus today only
   once completed. The numerator is the number of checked days in the range.
   A just-created, unfinished habit has no rate, shown as a dash, rather than 0%.

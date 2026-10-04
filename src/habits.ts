@@ -1,6 +1,7 @@
 import type { HabitIcon } from './habitIcons.ts';
 export type Habit = {
   id: string;
+  startDate?: string;
   name: string;
   color: string;
   unit?: string;

@@ -1,3 +1,4 @@
+import { localDateKey } from '../calendar';
 import {
   randomUUID,
   digestStringAsync,
@@ -10,7 +11,7 @@ import type { EventMeta } from './model';
 function metadata(sequence: number): EventMeta {
   const now = new Date();
   return {
-    version: 4,
+    version: 5,
     id: randomUUID(),
     sequence,
     recordedAt: now.toISOString(),
@@ -28,7 +29,10 @@ export function openStore() {
         browserRepository(localStorage, () => ({
           ...metadata(1),
           type: 'initialize',
-          habits: demoHabits,
+          habits: demoHabits.map((habit) => ({
+            ...habit,
+            startDate: localDateKey(new Date()),
+          })),
         })),
         metadata,
       );

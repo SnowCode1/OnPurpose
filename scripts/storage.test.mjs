@@ -593,3 +593,193 @@ test('browser preview persists independently and quota failure leaves its prior 
   await reopened.load();
   assert.deepEqual(reopened.getSnapshot().replay, store.getSnapshot().replay);
 });
+
+test('v5 start dates and spacing survive SQLite reload, undo/redo and backup round trips', async (t) => {
+  const { store, repository } = await fixture(t);
+  store.change(entry(null, 1, 'walk', '2024-02-29'));
+  const before = store.getSnapshot().replay.state.habits[0];
+  const after = { ...before, startDate: '2024-02-29' };
+  assert.ok(
+    store.change({
+      kind: 'habit',
+      habitId: before.id,
+      index: 0,
+      before,
+      after,
+    }),
+  );
+  store.undo();
+  const beforePreference = store.getSnapshot().replay;
+  assert.ok(
+    store.change({ kind: 'rowSpacing', before: 'standard', after: 'compact' }),
+  );
+  assert.deepEqual(store.getSnapshot().replay.undo, beforePreference.undo);
+  assert.deepEqual(store.getSnapshot().replay.redo, beforePreference.redo);
+  await store.flush();
+  const reopened = new ChangeStore(repository, metadata);
+  await reopened.load();
+  assert.equal(reopened.getSnapshot().replay.state.rowSpacing, 'compact');
+  assert.equal(
+    reopened.getSnapshot().replay.state.habits[0].startDate,
+    undefined,
+  );
+  assert.ok(reopened.redo());
+  await reopened.flush();
+  assert.equal(
+    reopened.getSnapshot().replay.state.habits[0].startDate,
+    '2024-02-29',
+  );
+  assert.equal(
+    reopened.getSnapshot().replay.state.values['walk:2024-02-29'],
+    1,
+  );
+  const text = await encodeArchive(
+    reopened.getSnapshot().events,
+    '2026-10-04T06:00:00.000Z',
+    digest,
+  );
+  assert.equal(JSON.parse(text).version, 5);
+  const decoded = await decodeArchive(text, digest);
+  assert.deepEqual(decoded.replay, reopened.getSnapshot().replay);
+  const archive = JSON.parse(text);
+  archive.version = 4;
+  await assert.rejects(
+    decodeArchive(JSON.stringify(archive), digest),
+    /version/,
+  );
+  assert.throws(
+    () =>
+      applyEvent(decoded.replay, {
+        ...metadata(decoded.events.length + 1),
+        version: 4,
+        type: 'preference',
+        change: { kind: 'haptics', before: true, after: false },
+      }),
+    /version-5/,
+  );
+});
+test('v5 strictly validates dates, preference values, preconditions and version boundaries', async (t) => {
+  const { store } = await fixture(t);
+  const before = store.getSnapshot().replay.state.habits[0];
+  const initial = initialize();
+  for (const startDate of [
+    '2025-02-29',
+    '2026-04-31',
+    '04/10/2026',
+    null,
+    '',
+    '2026-10-04T00:00:00Z',
+  ]) {
+    assert.throws(() =>
+      store.change({
+        kind: 'habit',
+        habitId: before.id,
+        index: 0,
+        before,
+        after: { ...before, startDate },
+      }),
+    );
+  }
+  for (const version of [1, 2, 3, 4]) {
+    assert.throws(() =>
+      replayEvents([
+        {
+          ...initial,
+          version,
+          habits: [{ ...before, startDate: '2026-10-04' }],
+        },
+      ]),
+    );
+    assert.throws(() =>
+      replayEvents([
+        initial,
+        {
+          ...metadata(2),
+          version,
+          type: 'preference',
+          change: { kind: 'rowSpacing', before: 'standard', after: 'roomy' },
+        },
+      ]),
+    );
+  }
+  assert.throws(() =>
+    store.change({ kind: 'rowSpacing', before: 'standard', after: 'tiny' }),
+  );
+  assert.throws(
+    () =>
+      store.change({ kind: 'rowSpacing', before: 'roomy', after: 'compact' }),
+    /precondition/,
+  );
+  const disguised = {
+    ...metadata(2),
+    version: 5,
+    type: 'change',
+    groupId: 'disguised',
+    change: { kind: 'rowSpacing', before: 'standard', after: 'roomy' },
+  };
+  assert.throws(() => replayEvents([initial, disguised]), /Preferences/);
+  assert.equal(store.getSnapshot().events.length, 1);
+  assert.ok(
+    store.change({ kind: 'rowSpacing', before: 'standard', after: 'roomy' }),
+  );
+  assert.ok(
+    store.change({ kind: 'rowSpacing', before: 'roomy', after: 'standard' }),
+  );
+  await store.flush();
+  assert.equal(store.getSnapshot().replay.undo.length, 0);
+});
+
+test('v1–v4 fixtures upgrade to v5 without rewriting events or losing projected records', async () => {
+  const { readFileSync } = await import('node:fs');
+  for (const version of [1, 2, 3, 4]) {
+    const original = JSON.parse(
+      readFileSync(
+        new URL(`../docs/examples/storage-v${version}.json`, import.meta.url),
+        'utf8',
+      ),
+    );
+    const { replay, events } = await decodeArchive(
+      JSON.stringify(original),
+      digest,
+    );
+    const preference = {
+      ...metadata(events.length + 1),
+      version: 5,
+      type: 'preference',
+      change: { kind: 'rowSpacing', before: 'standard', after: 'roomy' },
+    };
+    const updated = applyEvent(replay, preference);
+    assert.deepEqual(updated.state, { ...replay.state, rowSpacing: 'roomy' });
+    assert.deepEqual(updated.undo, replay.undo);
+    assert.deepEqual(updated.redo, replay.redo);
+    const decoded = await decodeArchive(
+      await encodeArchive(
+        [...events, preference],
+        '2026-10-04T07:00:00.000Z',
+        digest,
+      ),
+      digest,
+    );
+    assert.deepEqual(decoded.events.slice(0, -1), original.events);
+    assert.deepEqual(decoded.replay.state, updated.state);
+  }
+});
+test('documented v5 backup keeps the v4 prefix and date Undo/Redo across a preference change', async () => {
+  const { readFileSync } = await import('node:fs');
+  const text = readFileSync(
+    new URL('../docs/examples/storage-v5.json', import.meta.url),
+    'utf8',
+  );
+  const legacy = JSON.parse(
+    readFileSync(
+      new URL('../docs/examples/storage-v4.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const { events, replay } = await decodeArchive(text, digest);
+  assert.deepEqual(events.slice(0, legacy.events.length), legacy.events);
+  assert.equal(replay.state.rowSpacing, 'compact');
+  assert.equal(replay.state.habits[0].startDate, '2026-09-01');
+  assert.equal(replay.undo.at(-1).id, 'v5-start');
+  assert.equal(replay.redo.length, 0);
+});

@@ -74,6 +74,7 @@ export function historyPresentation(event: HistoryAction, state: StoredState) {
               change.before.name === change.after.name &&
               change.before.color === change.after.color &&
               change.before.unit === change.after.unit &&
+              change.before.startDate === change.after.startDate &&
               isNumericHabit(change.before) === isNumericHabit(change.after)
             ? change.after.icon
               ? 'Icon changed'

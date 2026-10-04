@@ -1,3 +1,4 @@
+import { rowSpacingOptions, type RowSpacing } from './rowSpacing';
 import { type ComponentType, type ReactNode } from 'react';
 import type { Habit } from './habits';
 import { ArchivedHabits } from './ArchivedHabits';
@@ -48,6 +49,8 @@ export function AppPanel({
   page,
   visible,
   HeadingComponent,
+  rowSpacing,
+  onRowSpacingChange,
   hapticsEnabled,
   onHapticsChange,
   onClose,
@@ -71,6 +74,8 @@ export function AppPanel({
   onRestoreHabit: (habit: Habit) => void;
   visible: boolean;
   HeadingComponent: ComponentType<TextProps>;
+  rowSpacing: RowSpacing;
+  onRowSpacingChange: (value: RowSpacing) => void;
   hapticsEnabled: boolean;
   onHapticsChange: (enabled: boolean) => void;
   onClose: () => void;
@@ -174,6 +179,61 @@ export function AppPanel({
                     label={`Archived habits · ${snapshot.replay.state.habits.filter((habit) => habit.archived).length}`}
                     onPress={onArchive}
                   />
+                  <Text style={[styles.section, { marginTop: 28 }]}>GRID</Text>
+                  <Text style={styles.label}>Row spacing</Text>
+                  <Text style={styles.description}>
+                    Fit more habits, or give each one more room. Larger text
+                    still has space to grow.
+                  </Text>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      gap: 8,
+                      marginTop: 12,
+                    }}
+                  >
+                    {rowSpacingOptions.map((option) => (
+                      <Pressable
+                        key={option.value}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${option.label} row spacing`}
+                        accessibilityState={{
+                          selected: rowSpacing === option.value,
+                          disabled: !editable,
+                        }}
+                        disabled={!editable}
+                        onPress={() => onRowSpacingChange(option.value)}
+                        style={({ pressed }) => ({
+                          flexGrow: 1,
+                          flexBasis: 90,
+                          minHeight: 48,
+                          padding: 12,
+                          borderRadius: 12,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor:
+                            rowSpacing === option.value
+                              ? '#74BBA525'
+                              : '#181818',
+                          opacity: !editable ? 0.35 : pressed ? 0.6 : 1,
+                        })}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: '500',
+                            color:
+                              rowSpacing === option.value
+                                ? '#9BDBBE'
+                                : '#AAAAAA',
+                          }}
+                        >
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
                   <Text style={[styles.section, { marginTop: 28 }]}>
                     FEEDBACK
                   </Text>

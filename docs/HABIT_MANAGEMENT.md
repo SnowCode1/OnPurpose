@@ -42,7 +42,12 @@ a colour inside the editor updates its draft until the outer Done saves the habi
 
 New habits specify a name, checkbox or numeric daily-total type, colour, optional
 emoji/pack icon, and an
-optional numeric unit. Numeric habits without a unit remain numeric. Names are
+optional numeric unit. The creation dialog has no extra “Make it yours” heading.
+Start date defaults to local Today and is editable in creation and existing-habit
+editors. iOS uses a compact native date picker; web preview uses a validated ISO
+date input. Earlier dates support backfilling. Done applies the draft and Close
+discards it. Legacy habits display their inferred tracking date without rewriting
+old events. Numeric habits without a unit remain numeric. Names are
 limited to 200 characters and units to 80. Existing habit type is read-only in
 this editor, preventing accidental reinterpretation of recorded values. A unit
 edit changes the label, not historical amounts or their scale.
@@ -56,14 +61,14 @@ outside Undo.
 
 ## Storage compatibility
 
-New events and backup containers use version 4; version 3 introduced definitions
+New events and backup containers use version 5 (editable start dates and row spacing); version 3 introduced definitions
 and ordering, and version 4 adds optional icons. A habit change captures its stable
 ID, position, and before/after definition; creation uses a null before-definition.
 Undoing creation can remove it only after its entries have been undone. This is
 not a permanent deletion feature. An order change carries exact before/after ID
 lists, validated as a permutation of every stored habit.
 
-Old v1/v2/v3 logs and backups remain readable, unchanged. Legacy numeric habits are
+Old v1/v2/v3/v4 logs and backups remain readable, unchanged. Legacy numeric habits are
 inferred from their unit field; new definitions may use an explicit type and an
 archived flag. No SQL schema change or reseeding occurs. See [STORAGE.md](STORAGE.md)
 and [the synthetic v4 export](examples/storage-v4.json).
@@ -131,3 +136,13 @@ The founder confirmed preset icons and fast swaps work. The selected name behind
 its open context menu now uses the habit colour at 12.5% opacity over black, in
 place of neutral grey. Press feedback remains a lighter tint; dragging keeps the
 normal row appearance. This colour change does not touch the gesture/animation path.
+
+## Grid spacing
+
+Settings offers Compact (44-point minimum), Standard (52, the previous default),
+and Roomy (64). Name measurements remain authoritative for taller wrapped text
+and numeric units; names, cells, loading dashes and reorder positions share them.
+Font scaling can increase all three choices. Compact uses less vertical name
+padding. Changing spacing keeps habit order, entries and horizontal position.
+The preference persists outside habit History/Undo and is included in backups.
+Sample-mode settings stay in its separate disposable store.

@@ -1,5 +1,36 @@
 # Decision log
 
+## 031 — Habit start dates, grid spacing and statistics dismissal
+
+Date: 4 October 2026. Status: requested by the founder; implemented, native review pending.
+
+Remove the new-habit motivational heading. Add an editable start date defaulting
+to local Today, a downward statistics dismissal at the top, and useful Settings
+controls beginning with row spacing. These are confirmed requirements.
+
+Implementation choices: use the Expo-compatible native compact date picker on iOS;
+keep drafts under the existing Done/Close contract. Existing habits retain their
+inferred creation/earliest-record default until a different date is applied. An
+explicit date bounds statistics but never erases earlier values; moving it earlier
+restores those values to calculations. This forward-date policy was proposed to
+the founder and remains open to adjustment. Preserve archived intervals.
+
+Offer Compact/Standard/Roomy minimum row heights of 44/52/64, growing with text and
+measured names/units. Store the selection as a global preference outside Undo;
+keep one shared geometry for names, cells, placeholders and reorder interactions.
+Do not add unrelated switches speculatively.
+
+Use a native scroll handler on the UI thread for pull feedback. Dismiss only when
+an eligible drag starts at the top and ends past 76 points of overscroll without
+reversing direction. Keep Back and Reduce Motion support. The threshold and motion
+are tuning choices requiring phone testing.
+
+Version 5 events/exports carry optional start dates and the spacing preference.
+Read unchanged v1–v4 logs and fixtures; never reseed or rewrite existing records.
+The SQL schema remains version 1. Tests cover SQLite reload, Undo/Redo, strict
+validation, legacy upgrades, backup round trips, statistical boundaries and pull
+eligibility. See STORAGE.md, STATISTICS.md and HABIT_MANAGEMENT.md.
+
 ## 030 — Visible loading structure during fast date scrolling
 
 Date: 4 October 2026. Status: founder confirmed quicker checkbox feedback but
