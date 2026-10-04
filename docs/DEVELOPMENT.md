@@ -239,6 +239,6 @@ for gestures and [STATISTICS.md](STATISTICS.md) for calculation rules. Run
 `node --test scripts/statistics.test.mjs` for focused statistics coverage.
 
 Habit icons are optional editor drafts (None, Icons, Emoji). See
-[HABIT_ICONS.md](HABIT_ICONS.md) for the bundled Phosphor catalogue, licence, and
+[HABIT_ICONS.md](HABIT_ICONS.md) for the bundled Phosphor/Tabler catalogues, licences, and
 version-4 representation. ReorderRow moves the actual name and cell views with
 shared geometry; there is no separately styled floating row.

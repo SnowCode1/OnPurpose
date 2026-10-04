@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { isSingleEmoji, isHabitIcon } from '../src/habitIcons.ts';
+import {
+  isSingleEmoji,
+  isHabitIcon,
+  habitIconLabel,
+} from '../src/habitIcons.ts';
 import { habitIconCatalog } from '../src/habitIconCatalog.ts';
 import { phosphorPaths } from '../src/phosphorPaths.ts';
 import { historyPresentation } from '../src/history.ts';
@@ -79,10 +83,10 @@ test('full regular catalogue preserves common choices and searches all icons by 
   const { commonHabitIcons } = await import('../src/commonHabitIcons.ts');
   assert.equal(habitIconCatalog.length, 1512);
   assert.deepEqual(
-    searchHabitIcons('').map((item) => item.id),
+    searchHabitIcons('', false, 'phosphor').map((item) => item.id),
     commonHabitIcons.map((item) => item.id),
   );
-  assert.equal(searchHabitIcons('', true).length, 1512);
+  assert.equal(searchHabitIcons('', true, 'phosphor').length, 1512);
   for (const old of commonHabitIcons) {
     const current = habitIconCatalog.find((item) => item.id === old.id);
     assert.equal(current?.label, old.label);
@@ -114,4 +118,62 @@ test('full regular catalogue preserves common choices and searches all icons by 
     searchHabitIcons('acorn', true),
     searchHabitIcons('acorn', false),
   );
+});
+
+test('Tabler outline IDs and rendering attributes are complete and reject unknown values', async () => {
+  const { tablerIconCatalog } = await import('../src/tablerIconCatalog.ts');
+  const { tablerPaths } = await import('../src/tablerPaths.ts');
+  assert.equal(tablerIconCatalog.length, 5166);
+  assert.equal(new Set(tablerIconCatalog.map((icon) => icon.id)).size, 5166);
+  assert.deepEqual(
+    Object.keys(tablerPaths).sort(),
+    tablerIconCatalog.map((icon) => icon.id).sort(),
+  );
+  for (const icon of tablerIconCatalog) {
+    assert.equal(isHabitIcon(`tabler:${icon.id}`), true);
+    assert.equal(habitIconLabel(`tabler:${icon.id}`), icon.label);
+    assert.ok(tablerPaths[icon.id].length > 0);
+    for (const path of tablerPaths[icon.id]) {
+      assert.ok(path.d.length > 0);
+      assert.ok(path.fill === undefined || path.fill === 'currentColor');
+      assert.ok(path.stroke === undefined || path.stroke === 'none');
+      assert.ok(
+        path.opacity === undefined || (path.opacity >= 0 && path.opacity <= 1),
+      );
+    }
+  }
+  assert.equal(tablerPaths['percentage-10'][0].fill, 'currentColor');
+  assert.equal(tablerPaths['percentage-10'][0].stroke, 'none');
+  assert.ok(tablerPaths['brand-parsinta'].some((path) => path.opacity === 0.5));
+  for (const invalid of [
+    'tabler:',
+    'tabler:does-not-exist',
+    'tabler:filled/yoga',
+    'Tabler:yoga',
+  ])
+    assert.equal(isHabitIcon(invalid), false);
+});
+
+test('shared search overrides browsing filters, preserves pack identity and finds habit vocabulary', async () => {
+  const { searchHabitIcons, packIconCount } =
+    await import('../src/searchHabitIcons.ts');
+  assert.equal(packIconCount, 6678);
+  assert.equal(searchHabitIcons('', true).length, 6678);
+  assert.equal(searchHabitIcons('', true, 'tabler').length, 5166);
+  assert.ok(
+    searchHabitIcons('', false).some((icon) => icon.value === 'tabler:yoga'),
+  );
+  for (const term of ['meditation', 'meditate', 'mindfulness', 'yoga']) {
+    const matches = searchHabitIcons(term, false, 'phosphor');
+    assert.ok(
+      matches.some((icon) => icon.value === 'tabler:yoga'),
+      term,
+    );
+    assert.deepEqual(matches, searchHabitIcons(term, true, 'tabler'));
+  }
+  assert.ok(searchHabitIcons('water').some((icon) => icon.pack === 'phosphor'));
+  assert.ok(searchHabitIcons('water').some((icon) => icon.pack === 'tabler'));
+  const all = searchHabitIcons('', true);
+  assert.equal(new Set(all.map((icon) => icon.value)).size, all.length);
+  assert.equal(searchHabitIcons('yoga')[0].value, 'tabler:yoga');
 });

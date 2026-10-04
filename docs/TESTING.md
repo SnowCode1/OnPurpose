@@ -623,3 +623,30 @@ Automated: 92 tests, code checks, and iOS production export pass. Coverage adds
 full catalogue/alias/category/multiword-search checks and
 uses an expanded icon in the SQLite reopen/Undo/Redo/backup test. UI automation
 was unavailable (no connected browser); layout and native FPS remain phone checks.
+
+## Tabler and picker layout — 4 October 2026
+
+Implemented: 5,166 Tabler Outline choices with attributed, generated local paths;
+shared full-catalogue search; Common/All/Phosphor/Tabler browsing; Icons always opens
+first; searching replaces browse filters with explicit all-icons/both-packs status.
+Editor Icon/Colour controls share a compact row and wrap for larger text.
+
+Automated: 95 tests cover both packs, complete Tabler glyph/attribute coverage,
+namespace validation, habit search aliases, search overriding browse filters,
+unique cross-pack identities, and Phosphor/Tabler SQLite reload, Undo/Redo,
+archive restore and backup round-trips. Existing fixtures remain unchanged.
+TypeScript, lint, formatting and iOS bundle export are required for this change.
+
+Phone acceptance pending:
+
+1. Open Edit for habits with no icon, emoji, and a pack icon. Icon/Colour should sit
+   side by side; opening Icon always shows Icons without changing the current value.
+   Check large text and landscape: controls should wrap and remain scrollable.
+2. Common should include Yoga and other Tabler activities. Search “meditation” or
+   “mindfulness” from Common and from Phosphor browsing. Both-pack results and the
+   full search scope must be clear. Clear search to restore the previous filter.
+3. Save Tabler Yoga, reload, Undo/Redo, then archive/restore and export/restore.
+   Confirm the same choice and colour in grid, statistics and archive. Compare
+   line weight against Phosphor. Exercise Done, Close, None and invalid emoji input.
+4. Browse deep into All, select an icon, use the keyboard, and rotate. Check
+   responsive scrolling, selected borders, fixed Done, and VoiceOver pack labels.

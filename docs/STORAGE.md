@@ -90,13 +90,16 @@ cannot remove a habit while it still has entries, and type conversion is rejecte
 while values exist. Definition equality ignores JSON field ordering.
 
 Version 4 adds an optional flat `icon` string to habit definitions:
-`phosphor:<stable-catalogue-id>` or `emoji:<single-emoji-sequence>`. No icon means
+`phosphor:<stable-catalogue-id>`, `tabler:<stable-catalogue-id>`, or
+`emoji:<single-emoji-sequence>`. No icon means
 an absent field, not null. Icons are validated against the bundled stable catalogue
 or the pinned emoji validator. Unknown packs/IDs, URLs, objects, plain text, and
 multiple emoji are rejected. Version-1/2/3 definitions still reject this field.
 Icons use the existing atomic before/after habit edit, including Undo/Redo and
 archive restore. Emoji validation dependency versions affect replay compatibility;
-retain accepted sequences and catalogue IDs when updating them.
+retain accepted sequences and catalogue IDs when updating them. Tabler extends
+the v4 catalogue without changing event shape or SQL schema. Earlier builds
+reject unrecognized Tabler IDs rather than silently dropping them.
 
 Habit-definition and ordering edits are distinct actions and close correction
 groups. Reordering validates exact current order and a unique complete permutation;

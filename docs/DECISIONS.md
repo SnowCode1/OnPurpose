@@ -1,5 +1,27 @@
 # Decision log
 
+## 024 — Tabler and a clearer, compact habit icon picker
+
+Date: 4 October 2026. Status: founder requested; implemented, device acceptance pending.
+
+The founder approved Tabler alongside Phosphor, asked for compact Icon/Colour
+controls in the editor, an Icons default tab even when nothing is selected, and
+clear full-catalogue search scope. Use two side-by-side appearance buttons with
+symbol/swatch previews, wrapping for larger text. Remove the redundant full-width
+icon-name and hex-value rows; detailed values remain in their respective pickers.
+
+Bundle all 5,166 Tabler Outline designs from pinned @tabler/icons 3.48.0, with
+MIT attribution and generated local paths/metadata. Use a 1.5/24 stroke to match
+Phosphor Regular's approximate relative line weight. These are implementation
+choices. Common includes activity choices from both packs. Browse Common, All,
+Phosphor, or Tabler; typing replaces those filters with “Searching all icons” and
+“Both packs” plus a result count. Clearing restores the previous browse scope.
+Searching always includes both packs and preserves their distinct stable IDs.
+
+Keep v4 event representation, draft Done/Close behaviour, emoji, no-icon removal,
+and all saved Phosphor choices. Tabler IDs participate in validation, replay,
+Undo/Redo, archive restore, and backup. No native dependency or store reset.
+
 ## 023 — Full Phosphor catalogue and cheaper drag movement
 
 Date: 4 October 2026. Status: founder requested; implemented, phone acceptance pending.

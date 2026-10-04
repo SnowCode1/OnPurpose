@@ -10,15 +10,27 @@ replace names or shrink date-cell touch targets.
 
 Hold a habit name → Edit habit → Icon, or use Icon while adding a habit.
 
-- **None** removes the icon without reserving an empty icon slot in the row.
-- **Icons** provides all 1,512 Regular designs from Phosphor core 2.1.1. Common
-  starts with the original 56 habit choices; All icons browses the complete set.
-  Search always covers the full catalogue, matching multiple words across names,
-  aliases, categories, and tags. The selection
-  uses the habit's current draft colour. Applied icons track subsequent colour edits.
-- **Emoji** offers 32 presets and a text field for the system emoji keyboard or
-  paste. Emoji keep their platform appearance. Skin tones, joined sequences,
-  flags, and keycaps count as one emoji; plain text and multiple emoji do not.
+The editor presents compact Icon and Colour buttons side by side, with symbol
+and swatch previews. They wrap at larger font sizes. Detailed icon names and hex
+values stay in their pickers rather than occupying separate editor rows.
+
+- **Icons** is always the initial tab, including for no-icon and emoji habits.
+  Opening/browsing alone does not change the saved choice. The combined catalogue
+  has 6,678 icons: 1,512 Phosphor Regular and 5,166 Tabler Outline.
+- Browse **Common**, **All**, **Phosphor**, or **Tabler**. Common combines the
+  original 56 Phosphor habits with 12 activity choices from Tabler.
+- Search always covers both complete packs, matching multiple words across names,
+  aliases, categories, and tags. Typing replaces the browse filters with
+  **Searching all icons / Both packs** and a result count. Clearing restores the
+  previous browse filter. Habit vocabulary maps meditation/meditate/mindfulness
+  to yoga. Exact names rank first, then common habit choices.
+- **Emoji** offers 32 presets and a field for the system emoji keyboard or paste.
+  Emoji keep their platform appearance. Skin tones, joined sequences, flags, and
+  keycaps count as one emoji; plain text and multiple emoji do not.
+- **None** explicitly removes the icon without reserving empty row space.
+
+Pack icons use the habit's draft colour and follow subsequent colour edits.
+Selected names include their pack; accessible choice labels distinguish packs.
 
 The picker's Done applies to the editor draft; the editor's Done saves the habit.
 Close discards the current picker/editor draft. The picker replaces the form's
@@ -32,11 +44,18 @@ the picker can shrink in landscape or above the keyboard.
 [Phosphor core](https://github.com/phosphor-icons/core) supplies the regular SVG
 paths, pinned to npm `@phosphor-icons/core@2.1.1`. `src/phosphorPaths.ts` contains
 the complete regular glyph set. Its [MIT notice](licenses/PHOSPHOR_LICENSE.txt) is retained.
-The package is not a runtime dependency; existing react-native-svg draws the paths.
+[Tabler](https://github.com/tabler/tabler-icons) supplies all outline paths and
+metadata from npm `@tabler/icons@3.48.0`; generated `src/tablerPaths.ts` preserves
+path fill, stroke, and opacity overrides. Its [MIT notice](licenses/TABLER_LICENSE.txt)
+is retained. Render on a 24-unit viewBox with 1.5-unit round strokes to sit near
+Phosphor Regular’s weight. Neither asset package is a runtime dependency; existing
+react-native-svg draws the paths.
 There is no remote image fetch and no new native module.
 
-`src/habitIconCatalog.ts` owns generated stable IDs, labels, and search terms.
-`src/commonHabitIcons.ts` preserves the curated order, labels, and habit aliases.
+`src/habitIconCatalog.ts` and `src/tablerIconCatalog.ts` own generated stable IDs,
+labels, and search terms.
+`src/commonHabitIcons.ts` and `src/commonTablerIcons.ts` preserve curated order,
+labels, and habit aliases.
 `src/searchHabitIcons.ts` indexes the full catalogue for multiword search. Keep saved IDs
 and their glyphs when extending the catalogue. `src/HabitSymbol.tsx` draws icons;
 `src/HabitIconPicker.tsx` owns selection UI. `src/habitIcons.ts` owns namespaced
@@ -46,7 +65,7 @@ validation on dependency updates without testing previously accepted sequences.
 ## Persistence
 
 Version 4 adds `icon?: string` to a habit definition, represented as e.g.
-`phosphor:book-open` or `emoji:📚`. None omits the field. Null, unknown packs/IDs,
+`phosphor:book-open`, `tabler:yoga`, or `emoji:📚`. None omits the field. Null, unknown packs/IDs,
 URLs, malformed emoji, and extra object fields are rejected before saving/import.
 Old v1/v2/v3 events retain their original validation and interpretation. A log may
 upgrade but cannot downgrade after a v4 event. The SQL schema stays at version 1.
@@ -66,19 +85,21 @@ version boundaries, downgrade rejection, and backup round-trips.
 The founder approved expanding Phosphor on 4 October 2026. All 1,512 distinct
 regular designs are now available. The upstream 9k+ total counts six styles:
 1,512 × thin/light/regular/bold/fill/duotone = 9,072 assets in core 2.1.1. Regular
-covers every design once. A second pack remains a proposal for demonstrated gaps.
+covers every design once. The founder subsequently approved Tabler Outline.
 
-To regenerate, download the official npm tarball for `@phosphor-icons/core@2.1.1`,
+To regenerate, download the official npm tarballs for `@phosphor-icons/core@2.1.1`
+and `@tabler/icons@3.48.0`,
 extract it into an ignored local folder, then run:
 
 ```sh
-node scripts/generate-phosphor.mjs /absolute/path/to/extracted/package
+node scripts/generate-phosphor.mjs /absolute/path/to/phosphor/package
+node scripts/generate-tabler.mjs /absolute/path/to/tabler/package
 ```
 
-The generator verifies package/version, all 1,512 SVG structures, and retained
-common IDs; it writes deterministic, formatted catalogue/path modules. These
+The generators verify package/version, icon counts, supported SVG/path attributes,
+and common IDs; it writes deterministic, formatted catalogue/path modules. These
 are committed, so normal development/builds need no asset download. Preserve
 the upstream MIT notice and all previously accepted IDs on future upgrades.
 Expanded choices use the same v4 representation; older builds with the 56-icon
-registry will reject backups containing unfamiliar IDs. Update the receiving
+registry, or builds without Tabler, will reject backups containing unfamiliar IDs. Update the receiving
 build before importing those backups.

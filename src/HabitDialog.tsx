@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
   type TextProps,
+  useWindowDimensions,
 } from 'react-native';
 import { ColourPicker } from './ColourPicker';
 import { isNumericHabit, type Habit } from './habits';
@@ -36,6 +37,7 @@ export function HabitDialog({
   onColour: (colour: string) => boolean;
   editable: boolean;
 }) {
+  const { fontScale } = useWindowDimensions();
   const [name, setName] = useState(habit.name),
     [unit, setUnit] = useState(habit.unit ?? ''),
     [numeric, setNumeric] = useState(isNumericHabit(habit));
@@ -203,67 +205,57 @@ export function HabitDialog({
                       />
                     </View>
                   )}
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Habit icon, ${habitIconLabel(icon)}`}
-                    onPress={() => {
-                      setIconDraft(icon);
-                      setIconPicker(true);
-                    }}
-                    style={[
-                      styles.button,
-                      {
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        gap: 12,
-                      },
-                    ]}
-                  >
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        gap: 10,
-                        alignItems: 'center',
+                  <View style={styles.appearance}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Habit icon, ${habitIconLabel(icon)}`}
+                      accessibilityHint="Choose an icon or emoji"
+                      onPress={() => {
+                        setIconDraft(icon);
+                        setIconPicker(true);
                       }}
+                      style={({ pressed }) => [
+                        styles.appearanceButton,
+                        { flexBasis: 120 * fontScale },
+                        pressed && styles.appearancePressed,
+                      ]}
                     >
-                      <HabitSymbol icon={icon} colour={colour} />
+                      <View style={styles.appearancePreview}>
+                        {icon ? (
+                          <HabitSymbol icon={icon} colour={colour} size={23} />
+                        ) : (
+                          <Text style={[styles.noIcon, { color: colour }]}>
+                            +
+                          </Text>
+                        )}
+                      </View>
                       <Text style={styles.buttonText}>Icon</Text>
-                    </View>
-                    <Text style={styles.description}>
-                      {habitIconLabel(icon)}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Choose habit colour"
-                    onPress={() => {
-                      setPickerDraft(colour);
-                      setPicker(true);
-                    }}
-                    style={[
-                      styles.button,
-                      { flexDirection: 'row', justifyContent: 'space-between' },
-                    ]}
-                  >
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 10,
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Habit colour, ${colour}`}
+                      accessibilityHint="Choose a colour"
+                      onPress={() => {
+                        setPickerDraft(colour);
+                        setPicker(true);
                       }}
+                      style={({ pressed }) => [
+                        styles.appearanceButton,
+                        { flexBasis: 120 * fontScale },
+                        pressed && styles.appearancePressed,
+                      ]}
                     >
-                      <View
-                        style={{
-                          width: 18,
-                          height: 18,
-                          borderRadius: 9,
-                          backgroundColor: colour,
-                        }}
-                      />
+                      <View style={styles.appearancePreview}>
+                        <View
+                          style={[
+                            styles.colourSwatch,
+                            { backgroundColor: colour },
+                          ]}
+                        />
+                      </View>
                       <Text style={styles.buttonText}>Colour</Text>
-                    </View>
-                    <Text style={styles.description}>{colour}</Text>
-                  </Pressable>
+                    </Pressable>
+                  </View>
                 </View>
               ) : null}
             </ScrollView>
@@ -354,6 +346,34 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   buttonText: { color: '#DDDDDD', fontSize: 15, fontWeight: '500' },
+  appearance: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  appearanceButton: {
+    flexGrow: 1,
+    flexBasis: 120,
+    minHeight: 56,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#1C1C1C',
+    borderRadius: 12,
+  },
+  appearancePressed: { backgroundColor: '#303030' },
+  appearancePreview: {
+    width: 26,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  colourSwatch: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: '#FFFFFF30',
+  },
+  noIcon: { fontSize: 24, lineHeight: 28 },
   types: { flexDirection: 'row', gap: 8 },
   type: {
     flex: 1,

@@ -29,7 +29,8 @@ and uncertainty about whether something was saved.
   labels rather than colour-space jargon.
 - Optionally give a habit an emoji or a pack icon. Pack icons use the habit colour;
   icons are not required and existing habits stay without one until selected.
-  Expand the Phosphor selection; a second icon family is not currently required.
+  Offer Phosphor and Tabler Outline with shared search and common habit choices.
+  Open the picker on Icons and make its full search scope explicit.
 - Mute unused future dates and entries while keeping recorded values prominent.
   Preserve habit hue and colourfulness; reduce only OKLCH lightness with a floor
   so empty cells remain visible. The history fade starts at day 5 and reaches its

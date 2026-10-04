@@ -37,7 +37,7 @@ once; never reset or reseed an existing store during loading or an error.
   `src/ArchivedHabits.tsx` owns the Settings archive/restore list. Add belongs at the
   end of the grid. `src/HabitStatsScreen.tsx` owns full-screen statistics, with pure
   calculations in `src/statistics.ts`. Read HABIT_MANAGEMENT.md and STATISTICS.md.
-  `src/HabitSymbol.tsx` renders optional emoji/Phosphor icons; the editor owns
+  `src/HabitSymbol.tsx` renders optional emoji/Phosphor/Tabler icons; the editor owns
   selection drafts through `src/HabitIconPicker.tsx`. Read HABIT_ICONS.md.
   `src/ReorderRow.tsx` moves the actual name/cell views together during drag/drop;
   do not introduce a visually different floating placeholder. Keep native sibling

@@ -2,6 +2,7 @@ import { Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import type { HabitIcon } from './habitIcons';
 import { phosphorPaths } from './phosphorPaths';
+import { tablerPaths } from './tablerPaths';
 
 // Decorative beside the habit name, whose accessible label remains authoritative.
 export function HabitSymbol({
@@ -33,6 +34,27 @@ export function HabitSymbol({
         >
           {icon.slice(6)}
         </Text>
+      ) : icon.startsWith('tabler:') ? (
+        <Svg
+          width={size}
+          height={size}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={colour}
+          color={colour}
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          accessible={false}
+        >
+          {tablerPaths[icon.slice(7)]?.map((path, index) => (
+            <Path
+              key={index}
+              {...path}
+              fill={path.fill === 'currentColor' ? colour : 'none'}
+            />
+          ))}
+        </Svg>
       ) : (
         <Svg
           width={size}

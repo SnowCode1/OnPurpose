@@ -8,8 +8,13 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { habitIconLabel, isSingleEmoji, type HabitIcon } from './habitIcons';
-import { searchHabitIcons } from './searchHabitIcons';
+import {
+  habitIconLabel,
+  habitIconPackLabel,
+  isSingleEmoji,
+  type HabitIcon,
+} from './habitIcons';
+import { searchHabitIcons, packIconCount } from './searchHabitIcons';
 import { HabitSymbol } from './HabitSymbol';
 
 const emojiChoices = [
@@ -58,23 +63,28 @@ export function HabitIconPicker({
 }) {
   const { height } = useWindowDimensions();
   const [width, setWidth] = useState(280);
-  const [tab, setTab] = useState<'none' | 'phosphor' | 'emoji'>(
-    icon?.startsWith('emoji:') ? 'emoji' : icon ? 'phosphor' : 'none',
-  );
+  const [tab, setTab] = useState<'icons' | 'emoji' | 'none'>('icons');
   const [selected, setSelected] = useState(icon);
   const [emoji, setEmoji] = useState(
     icon?.startsWith('emoji:') ? icon.slice(6) : '',
   );
   const [search, setSearch] = useState('');
-  const [showAll, setShowAll] = useState(false);
+  const [scope, setScope] = useState<'common' | 'all' | 'phosphor' | 'tabler'>(
+    'common',
+  );
+  const searching = search.trim().length > 0;
   const validEmoji = isSingleEmoji(emoji.trim());
   const columns = Math.max(1, Math.floor((width + 8) / 56));
   const choices = useMemo<Choice[]>(
     () =>
-      tab === 'phosphor'
-        ? searchHabitIcons(search, showAll).map((item) => ({
-            value: `phosphor:${item.id}`,
-            label: item.label,
+      tab === 'icons'
+        ? searchHabitIcons(
+            search,
+            scope !== 'common',
+            scope === 'phosphor' || scope === 'tabler' ? scope : 'all',
+          ).map((item) => ({
+            value: item.value,
+            label: `${item.label}, ${item.pack === 'phosphor' ? 'Phosphor' : 'Tabler'}`,
           }))
         : tab === 'emoji'
           ? emojiChoices.map((value) => ({
@@ -82,7 +92,7 @@ export function HabitIconPicker({
               label: `Use ${value}`,
             }))
           : [],
-    [tab, search, showAll],
+    [tab, search, scope],
   );
   const rows = useMemo(() => {
     const result: Choice[][] = [];
@@ -114,7 +124,7 @@ export function HabitIconPicker({
         ListHeaderComponent={
           <View style={{ gap: 12, paddingBottom: 16 }}>
             <View style={styles.tabs}>
-              {(['none', 'phosphor', 'emoji'] as const).map((value) => (
+              {(['icons', 'emoji', 'none'] as const).map((value) => (
                 <Pressable
                   key={value}
                   accessibilityRole="tab"
@@ -122,19 +132,16 @@ export function HabitIconPicker({
                   onPress={() => {
                     setTab(value);
                     if (value === 'none') choose(undefined);
-                    else if (value === 'emoji')
-                      onChange(validEmoji ? `emoji:${emoji.trim()}` : null);
-                    else
-                      onChange(
-                        selected?.startsWith('phosphor:') ? selected : null,
-                      );
+                    else if (value === 'emoji' && validEmoji)
+                      choose(`emoji:${emoji.trim()}`);
+                    else onChange(selected);
                   }}
                   style={[styles.tab, tab === value && styles.active]}
                 >
                   <Text style={styles.text}>
                     {value === 'none'
                       ? 'None'
-                      : value === 'phosphor'
+                      : value === 'icons'
                         ? 'Icons'
                         : 'Emoji'}
                   </Text>
@@ -149,11 +156,11 @@ export function HabitIconPicker({
                   a habit.
                 </Text>
               </View>
-            ) : tab === 'phosphor' ? (
+            ) : tab === 'icons' ? (
               <>
                 <TextInput
-                  accessibilityLabel="Search all Phosphor icons"
-                  placeholder="Search all 1,512 icons"
+                  accessibilityLabel="Search all icons in both Phosphor and Tabler"
+                  placeholder={`Search all ${packIconCount.toLocaleString()} icons`}
                   placeholderTextColor="#777777"
                   value={search}
                   onChangeText={setSearch}
@@ -162,30 +169,55 @@ export function HabitIconPicker({
                   clearButtonMode="while-editing"
                   style={styles.input}
                 />
-                <View style={styles.scopeRow}>
-                  {([false, true] as const).map((all) => (
-                    <Pressable
-                      key={String(all)}
-                      accessibilityRole="tab"
-                      accessibilityState={{ selected: showAll === all }}
-                      onPress={() => {
-                        setShowAll(all);
-                        setSearch('');
-                      }}
-                      style={[styles.scope, showAll === all && styles.active]}
-                    >
-                      <Text style={styles.text}>
-                        {all ? 'All icons' : 'Common'}
-                      </Text>
-                    </Pressable>
-                  ))}
-                  <Text style={styles.count}>{choices.length}</Text>
-                </View>
+                {searching ? (
+                  <View
+                    style={styles.searchScope}
+                    accessibilityLiveRegion="polite"
+                  >
+                    <Text style={styles.text}>Searching all icons</Text>
+                    <Text style={styles.description}>
+                      Both packs · {choices.length} results
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.scopeRow}>
+                    {(['common', 'all', 'phosphor', 'tabler'] as const).map(
+                      (value) => (
+                        <Pressable
+                          key={value}
+                          accessibilityRole="tab"
+                          accessibilityState={{ selected: scope === value }}
+                          accessibilityLabel={
+                            value === 'common'
+                              ? 'Common icons from both packs'
+                              : value === 'all'
+                                ? 'All icons from both packs'
+                                : `Browse ${value} icons`
+                          }
+                          onPress={() => setScope(value)}
+                          style={[
+                            styles.scope,
+                            scope === value && styles.active,
+                          ]}
+                        >
+                          <Text style={styles.scopeText}>
+                            {value === 'common'
+                              ? 'Common'
+                              : value === 'all'
+                                ? 'All'
+                                : value === 'phosphor'
+                                  ? 'Phosphor'
+                                  : 'Tabler'}
+                          </Text>
+                        </Pressable>
+                      ),
+                    )}
+                  </View>
+                )}
                 <Text style={styles.description}>
-                  {selected?.startsWith('phosphor:')
-                    ? habitIconLabel(selected)
-                    : 'Choose an icon'}
-                  {search.trim() ? ' · All icons searched' : ' · Phosphor'}
+                  {selected
+                    ? `${habitIconLabel(selected)} · ${habitIconPackLabel(selected)}`
+                    : 'No icon selected'}
                 </Text>
                 {choices.length === 0 && (
                   <Text style={styles.description}>
@@ -204,9 +236,7 @@ export function HabitIconPicker({
                   onChangeText={(text) => {
                     setEmoji(text);
                     const value = text.trim();
-                    setSelected(
-                      isSingleEmoji(value) ? `emoji:${value}` : undefined,
-                    );
+                    if (isSingleEmoji(value)) setSelected(`emoji:${value}`);
                     onChange(isSingleEmoji(value) ? `emoji:${value}` : null);
                   }}
                   autoCorrect={false}
@@ -273,18 +303,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     minHeight: 48,
   },
-  scopeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  scopeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 6,
+  },
+  searchScope: { minHeight: 44, justifyContent: 'center', gap: 3 },
+  scopeText: { color: '#DDDDDD', fontSize: 12, fontWeight: '500' },
   scope: {
     minHeight: 44,
-    paddingHorizontal: 14,
+    paddingHorizontal: 9,
     justifyContent: 'center',
     borderRadius: 10,
-  },
-  count: {
-    color: '#888888',
-    fontSize: 12,
-    marginLeft: 'auto',
-    fontVariant: ['tabular-nums'],
   },
   gridRow: { flexDirection: 'row', gap: 8, paddingBottom: 8 },
   choice: {

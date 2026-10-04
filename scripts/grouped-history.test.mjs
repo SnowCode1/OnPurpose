@@ -714,83 +714,95 @@ test('the documented v3 fixture preserves archived definitions, zero and reorder
   assert.equal(replay.state.hapticsEnabled, false);
 });
 
-test('v4 icon edits survive SQLite reopen, removal, archive restore, Undo/Redo and backup', async (t) => {
-  const { store, repository, metadata } = await fixture(t);
-  store.change(entry(null, 1));
-  const original = store.getSnapshot().replay.state.habits[0];
-  function edit(after) {
-    const before = store.getSnapshot().replay.state.habits[0];
+for (const packedIcon of ['phosphor:acorn', 'tabler:yoga'])
+  test(`v4 ${packedIcon} edits survive SQLite reopen, removal, archive restore, Undo/Redo and backup`, async (t) => {
+    const { store, repository, metadata } = await fixture(t);
+    store.change(entry(null, 1));
+    const original = store.getSnapshot().replay.state.habits[0];
+    function edit(after) {
+      const before = store.getSnapshot().replay.state.habits[0];
+      assert.equal(
+        store.change({
+          kind: 'habit',
+          habitId: before.id,
+          index: 0,
+          before,
+          after,
+        }),
+        true,
+      );
+    }
+    // Exercise an expanded-catalogue icon; the v4 fixture retains legacy choices.
+    const packed = { ...original, icon: packedIcon };
+    edit(packed);
+    edit({ ...packed, icon: 'emoji:🚶🏽‍♀️' });
+    edit(original); // None is absence, not a null/string sentinel.
+    assert.equal(store.getSnapshot().replay.undo.length, 4);
+    assert.equal(store.undo(), true);
+    assert.equal(store.getSnapshot().replay.state.habits[0].icon, 'emoji:🚶🏽‍♀️');
+    assert.equal(store.undo(), true);
+    assert.equal(store.getSnapshot().replay.state.habits[0].icon, packed.icon);
+    await store.flush();
+    const reopened = new ChangeStore(repository, metadata);
+    await reopened.load();
     assert.equal(
-      store.change({
-        kind: 'habit',
-        habitId: before.id,
-        index: 0,
-        before,
-        after,
-      }),
-      true,
+      reopened.getSnapshot().replay.state.habits[0].icon,
+      packed.icon,
     );
-  }
-  // Exercise an expanded-catalogue icon; the v4 fixture retains legacy choices.
-  const packed = { ...original, icon: 'phosphor:acorn' };
-  edit(packed);
-  edit({ ...packed, icon: 'emoji:🚶🏽‍♀️' });
-  edit(original); // None is absence, not a null/string sentinel.
-  assert.equal(store.getSnapshot().replay.undo.length, 4);
-  assert.equal(store.undo(), true);
-  assert.equal(store.getSnapshot().replay.state.habits[0].icon, 'emoji:🚶🏽‍♀️');
-  assert.equal(store.undo(), true);
-  assert.equal(store.getSnapshot().replay.state.habits[0].icon, packed.icon);
-  await store.flush();
-  const reopened = new ChangeStore(repository, metadata);
-  await reopened.load();
-  assert.equal(reopened.getSnapshot().replay.state.habits[0].icon, packed.icon);
-  assert.equal(reopened.redo(), true);
-  assert.equal(reopened.getSnapshot().replay.state.habits[0].icon, 'emoji:🚶🏽‍♀️');
-  const before = reopened.getSnapshot().replay.state.habits[0];
-  const archived = { ...before, archived: true };
-  reopened.change({
-    kind: 'habit',
-    habitId: before.id,
-    index: 0,
-    before,
-    after: archived,
+    assert.equal(reopened.redo(), true);
+    assert.equal(
+      reopened.getSnapshot().replay.state.habits[0].icon,
+      'emoji:🚶🏽‍♀️',
+    );
+    assert.equal(reopened.undo(), true);
+    assert.equal(
+      reopened.getSnapshot().replay.state.habits[0].icon,
+      packedIcon,
+    );
+    const before = reopened.getSnapshot().replay.state.habits[0];
+    const archived = { ...before, archived: true };
+    reopened.change({
+      kind: 'habit',
+      habitId: before.id,
+      index: 0,
+      before,
+      after: archived,
+    });
+    reopened.change({
+      kind: 'habit',
+      habitId: before.id,
+      index: 0,
+      before: archived,
+      after: before,
+    });
+    await reopened.flush();
+    assert.equal(
+      reopened.getSnapshot().replay.state.values['walk:2026-10-04'],
+      1,
+    );
+    const backup = await encodeArchive(
+      reopened.getSnapshot().events,
+      '2026-10-04T06:00:00.000Z',
+      digest,
+    );
+    assert.equal(JSON.parse(backup).version, 4);
+    const decoded = await decodeArchive(backup, digest);
+    assert.deepEqual(decoded.replay, reopened.getSnapshot().replay);
+    assert.equal(decoded.events.at(-1).version, 4);
+    const disguised = JSON.parse(backup);
+    disguised.version = 3;
+    await assert.rejects(decodeArchive(JSON.stringify(disguised), digest));
+    const backToOld = {
+      ...decoded.events.at(-1),
+      id: 'downgrade',
+      sequence: decoded.events.length + 1,
+      version: 3,
+      type: 'preference',
+      change: { kind: 'haptics', before: true, after: false },
+    };
+    delete backToOld.groupId;
+    assert.throws(() => applyEvent(decoded.replay, backToOld), /version-4/);
   });
-  reopened.change({
-    kind: 'habit',
-    habitId: before.id,
-    index: 0,
-    before: archived,
-    after: before,
-  });
-  await reopened.flush();
-  assert.equal(
-    reopened.getSnapshot().replay.state.values['walk:2026-10-04'],
-    1,
-  );
-  const backup = await encodeArchive(
-    reopened.getSnapshot().events,
-    '2026-10-04T06:00:00.000Z',
-    digest,
-  );
-  assert.equal(JSON.parse(backup).version, 4);
-  const decoded = await decodeArchive(backup, digest);
-  assert.deepEqual(decoded.replay, reopened.getSnapshot().replay);
-  assert.equal(decoded.events.at(-1).version, 4);
-  const disguised = JSON.parse(backup);
-  disguised.version = 3;
-  await assert.rejects(decodeArchive(JSON.stringify(disguised), digest));
-  const backToOld = {
-    ...decoded.events.at(-1),
-    id: 'downgrade',
-    sequence: decoded.events.length + 1,
-    version: 3,
-    type: 'preference',
-    change: { kind: 'haptics', before: true, after: false },
-  };
-  delete backToOld.groupId;
-  assert.throws(() => applyEvent(decoded.replay, backToOld), /version-4/);
-});
 
 test('icons are validated before persistence and cannot be smuggled into v1/v2/v3 definitions', async (t) => {
   const { store } = await fixture(t);
