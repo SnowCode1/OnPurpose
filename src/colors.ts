@@ -117,7 +117,7 @@ export function colorOnBlack(hex: string, opacity: number): string {
 export function dimmedColor(
   hex: string,
   amount: number,
-  minimumLightness = 0.5,
+  minimumLightness = 0.38,
 ): string {
   if (amount <= 0) return hex;
   const color = hexToOklch(hex);

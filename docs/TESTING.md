@@ -245,3 +245,16 @@ Correction verification: TypeScript, lint, formatting, five existing colour test
 and the iOS export passed. A direct check across presets and saturated/dark custom
 samples confirmed lower nonzero lightness with chroma preserved within 0.0013
 of the original after hex rounding. Updated phone appearance remains to be judged.
+
+## Stronger empty-cell dimming
+
+4 October 2026: inspected the founder's 1206 × 2622 phone capture showing today
+beside tomorrow. Future date text is visibly subdued; differences in empty cells
+are much less consistent. Numeric checks identified the 0.5 lightness floor as
+the limiting factor for the current palette (12–24% reduction rather than 30%).
+The empty-cell floor is now 0.38; date text keeps its separate 0.56 floor.
+
+A direct check confirmed all eight demo colours reach about 30% lower OKLCH
+lightness while retaining chroma/hue. Judge the revised result on the phone,
+particularly Read, Drink water, and the today/tomorrow boundary. Checked values
+and recorded totals should continue to stand out. History still fades on days 5–8.

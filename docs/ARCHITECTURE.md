@@ -76,7 +76,7 @@ zero. A date with any recorded value keeps its heading bright. Clear/undo restor
 the empty treatment immediately.
 
 Empty-cell alpha is first resolved against black; only OKLCH lightness is then
-reduced, by up to 30%. Hue and chroma stay fixed. Lightness has a floor of 0.5 for
+reduced, by up to 30%. Hue and chroma stay fixed. Lightness has a floor of 0.38 for
 empty cells and 0.56 for date text unless the original was already darker. If the
 requested lightness cannot represent the same chroma/hue in sRGB, use the darkest
 available lightness along that path. Dimming is computed during rendering; no

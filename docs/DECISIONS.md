@@ -1,5 +1,20 @@
 # Decision log
 
+## 013 — Stronger and more consistent cell dimming
+
+Date: 4 October 2026. Status: implemented after inspecting a founder phone preview.
+
+The founder reported that the transition was still not obvious. Their screenshot
+shows today beside tomorrow, where date text is dimmer but empty cells remain
+similar in strength. The 0.5 lightness floor limited some presets much earlier:
+Read's empty mark lost about 12% lightness, while Cook a meal lost about 24%.
+
+Lower the empty-cell floor to 0.38 so all current presets reach the intended 30%
+lightness reduction. Keep the separate 0.56 floor for date text. Preserve hue/chroma,
+recorded-value emphasis, and the day 5–8 history interval. Arbitrary saturated
+custom colours still stop at the sRGB boundary when necessary. This is an
+adjustment to decision 012 based on actual phone appearance.
+
 ## 012 — Dim by lightness without desaturating
 
 Date: 4 October 2026. Status: founder requested correction; implemented.
