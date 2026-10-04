@@ -479,3 +479,40 @@ Phone checks:
    separate steps; their settings and undo/redo rows are hidden.
 5. Export/restore through Files, verify both a v1 backup and a v2 backup. Inspect
    target labels and save/error status with large text, landscape, and VoiceOver.
+
+## Habit actions and management — 4 October 2026
+
+Implemented: tap-name statistics, held-name anchored menu, continuation into drag,
+explicit Reorder mode, edge scrolling, cancellation, VoiceOver move actions,
+creation/editing/archival/restoration, and version-3 persistent definition/order
+changes. Statistics show recorded-day counts and a recent fourteen-day view;
+future entries are excluded. Targets and streak rules remain undecided.
+
+Automated: all 74 tests, TypeScript, lint, formatting, and iOS bundle export pass.
+Coverage includes SQLite management reload/Undo/Redo and archive round-trips, exact
+identity/position/order validation, unitless numeric zero, independent structural
+Undo steps, empty v3 initialization, older format boundaries, unchanged v1/v2
+fixtures, archived reorder slots, and variable-height drag destinations. Native
+responder recognition, overlay placement, auto-scroll feel, and nested iOS sheets
+remain phone checks; bundle success alone does not establish their behaviour.
+
+Phone checks:
+
+1. Tap a name: statistics opens. Tap cells: recording remains immediate. Hold
+   without moving: haptic and menu; release leaves it open without selecting an
+   option or opening statistics. Tap outside to dismiss. Try top/bottom rows.
+2. Hold then drag without lifting: menu disappears, row follows, neighbours move,
+   and cells do not toggle. Release saves one order action. Undo restores the
+   original order without changing values; Redo restores the move. Reload.
+3. Drag near both viewport edges with 20+ rows. Normal swipes before a hold should
+   scroll. Add a second finger, rotate, or background the app during a drag:
+   cancel without saving a partial order. Try explicit Reorder → Done too.
+4. Settings → Manage habits → Add: create checkbox and unitless numeric habits,
+   choose colours, and enter zero. Edit names/units/colours. Done applies; Close
+   discards, including nested picker changes. Check keyboard and landscape.
+5. Archive a recorded habit; it leaves the grid while History/data remain. Restore
+   it at its retained position. Archive all rows; Add remains available. Export,
+   edit, restore, reopen, and undo management actions without reseeding.
+6. Inspect larger text and VoiceOver. Name actions include Move up/down and direct
+   editing. Background controls should be hidden from VoiceOver while the menu is
+   open. Confirm closing panels preserves the horizontal date position.

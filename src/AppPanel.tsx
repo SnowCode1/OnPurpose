@@ -1,4 +1,6 @@
-import { type ComponentType } from 'react';
+import { type ComponentType, type ReactNode } from 'react';
+import type { Habit } from './habits';
+import { ManageHabits } from './ManageHabits';
 import {
   Modal,
   Pressable,
@@ -53,8 +55,22 @@ export function AppPanel({
   onRestore,
   onRecover,
   onRetry,
+  onManage,
+  onBack,
+  onAddHabit,
+  onEditHabit,
+  onRestoreHabit,
+  onReorderHabits,
+  habitDialog,
 }: {
-  page: 'history' | 'settings';
+  page: 'history' | 'settings' | 'habits';
+  onManage: () => void;
+  onBack: () => void;
+  onAddHabit: () => void;
+  onEditHabit: (habit: Habit) => void;
+  onRestoreHabit: (habit: Habit) => void;
+  onReorderHabits: () => void;
+  habitDialog: ReactNode;
   visible: boolean;
   HeadingComponent: ComponentType<TextProps>;
   hapticsEnabled: boolean;
@@ -90,8 +106,22 @@ export function AppPanel({
           <View accessibilityViewIsModal style={styles.content}>
             <View style={styles.header}>
               <HeadingComponent accessibilityRole="header" style={styles.title}>
-                {page === 'history' ? 'History' : 'Settings'}
+                {page === 'history'
+                  ? 'History'
+                  : page === 'habits'
+                    ? 'Habits'
+                    : 'Settings'}
               </HeadingComponent>
+              {page === 'habits' && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Back to Settings"
+                  onPress={onBack}
+                  style={styles.close}
+                >
+                  <Text style={{ color: '#CCCCCC' }}>‹</Text>
+                </Pressable>
+              )}
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Close ${page}`}
@@ -112,12 +142,28 @@ export function AppPanel({
                 onRedo={onRedo}
                 onRetry={onRetry}
               />
+            ) : page === 'habits' ? (
+              <ManageHabits
+                habits={snapshot.replay.state.habits}
+                editable={editable}
+                onAdd={onAddHabit}
+                onEdit={onEditHabit}
+                onRestore={onRestoreHabit}
+                onReorder={onReorderHabits}
+              />
             ) : (
               <ScrollView
                 contentContainerStyle={styles.body}
                 showsVerticalScrollIndicator={false}
               >
-                <Text style={styles.section}>FEEDBACK</Text>
+                <Action
+                  label="Manage habits"
+                  onPress={onManage}
+                  disabled={!editable}
+                />
+                <Text style={[styles.section, { marginTop: 28 }]}>
+                  FEEDBACK
+                </Text>
                 <View style={styles.preference}>
                   <View style={styles.preferenceText}>
                     <Text style={styles.label}>Haptic feedback</Text>
@@ -175,11 +221,12 @@ export function AppPanel({
                   <Text style={styles.aboutName}>OnPurpose · Preview</Text>
                   <Text style={styles.description}>
                     Entries, colours, and settings are stored locally. The
-                    sample habits remain until habit editing is added.
+                    habits can be edited, arranged, and archived.
                   </Text>
                 </View>
               </ScrollView>
             )}
+            {habitDialog}
           </View>
         </SafeAreaView>
       </SafeAreaProvider>

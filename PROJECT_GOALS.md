@@ -49,6 +49,10 @@ and uncertainty about whether something was saved.
   checkbox habits in about three seconds.
 - Plan for approximately 10–20 habits. The primary test phone is an iPhone 16 Pro.
 - Tapping a habit should open its statistics, including information such as streaks.
+- Hold the habit name for a compact Colour/Edit/Reorder/Archive overlay. Continue
+  holding and drag to reorder; include an explicit mode and accessible move actions.
+  Keep date-cell recording gestures separate. Habit management is in Settings.
+
 - Store app changes incrementally. This is the underlying storage approach and
   export format, separate from the habit/day model; it also enables a separate
   history feature for browsing prior activity, checked boxes, and comments.
@@ -94,9 +98,9 @@ separate history-browsing feature. A correction made today to Tuesday's value
 has two different dates: the date being recorded and the time of the edit.
 Comments belong in this history design too. See [STORAGE.md](docs/STORAGE.md).
 
-The architectural direction is confirmed. Version-2 events, grouped compensating
+The architectural direction is confirmed. Version-3 events, grouped compensating
 undo/redo, and JSON change-based backup/replay are implemented, retaining support
-for existing version-1 records and backups. The visible History is an active-action
+for existing version-1/2 records and backups. The visible History is an active-action
 projection; the exported log retains every accepted edit. Comments, permanent erasure,
 and richer historical browsing still need design. See docs/STORAGE.md.
 
@@ -137,11 +141,12 @@ The current starter uses 12 sample habits in a grid with an adaptive day viewpor
 with larger text). It supports scrolling into the
 past, returning to Today, editing dated checkbox/numeric values, automatic local
 date rollover, deliberate future browsing/entries, and choosing preset or custom
-row colours in habit details. Statistics remain a
-placeholder. History lists active habit actions with grouped undo/redo. Entries, colours, and the haptic preference
+row colours in habit details. Habit creation, name/unit editing, manual ordering,
+and reversible archival are implemented. Tapping names opens recent recorded-day
+statistics; holding opens actions and supports dragging. Streaks and targets remain
+undecided. History lists active habit actions with grouped undo/redo. Entries, colours, and the haptic preference
 persist locally in SQLite; Settings supports full change-based backup/restore.
-The 12 sample habits are seeded once. Habit management and statistics remain
-unimplemented. Persistence is confirmed on phone; an older-undo report and
+The 12 sample habits are seeded once and can be edited or archived. Persistence is confirmed on phone; an older-undo report and
 backup acceptance testing remain pending.
 
 ## Deferred candidates, not permanent exclusions
@@ -162,7 +167,7 @@ and incremental history are desired scope, not excluded candidates.
 | Midnight cutoff, late-night logging, backdating, and travel?           | Local midnight implemented; later cutoff/travel policy pending     |
 | Comments on a habit, a day, a particular entry, or multiple kinds?     | Comments desired; attachment semantics open                        |
 | Which app changes enter the history; how do deletion and undo work?    | Active habit actions; preferences excluded; deletion/erasure open  |
-| Export/import format, backup location, and cross-device sync?          | Version-2 JSON backup; v1 import retained; sync deferred           |
+| Export/import format, backup location, and cross-device sync?          | Version-3 JSON backup; v1/v2 import retained; sync deferred        |
 | Any reminders or widgets required for version one?                     | Open                                                               |
 | Free, paid, donations, or another model?                               | Open                                                               |
 | Licence and copyright holder?                                          | Open; choose before public release                                 |
@@ -182,7 +187,7 @@ and incremental history are desired scope, not excluded candidates.
 ## Next suggested work
 
 1. Validate local saving, undo, and backup/restore on the iPhone before daily use.
-2. Add a real habit editor for names, types, units, colour, and manual ordering.
+2. Validate the implemented editor, action menu, archival, and reordering on phone.
 3. Consider a date picker for jumping to a distant date without repeated swipes.
 4. Discuss an explicit “skipped/not applicable” value before calculating streaks,
    so intentionally skipping a habit need not look like a missed day.

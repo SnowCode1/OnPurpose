@@ -1,0 +1,187 @@
+{
+  "format": "onpurpose.changes",
+  "version": 3,
+  "exportedAt": "2026-10-04T05:31:00.000Z",
+  "eventCount": 9,
+  "sha256": "f096428617f1cf0ac1be071a1282b5db1a9bd0cd36d9035acd087db6051be5cc",
+  "events": [
+    {
+      "version": 2,
+      "id": "example-v3-1",
+      "sequence": 1,
+      "recordedAt": "2026-10-04T05:30:01.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "initialize",
+      "habits": [
+        {
+          "id": "walk",
+          "name": "Walk",
+          "color": "#82E6BC"
+        },
+        {
+          "id": "read",
+          "name": "Read",
+          "unit": "minutes",
+          "color": "#BDA5FF"
+        }
+      ]
+    },
+    {
+      "version": 3,
+      "id": "example-v3-2",
+      "sequence": 2,
+      "recordedAt": "2026-10-04T05:30:02.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "change",
+      "groupId": "example-v3-2",
+      "change": {
+        "kind": "habit",
+        "habitId": "practice",
+        "index": 2,
+        "before": null,
+        "after": {
+          "id": "practice",
+          "name": "Practice",
+          "color": "#84C9FF",
+          "type": "number"
+        }
+      }
+    },
+    {
+      "version": 3,
+      "id": "example-v3-3",
+      "sequence": 3,
+      "recordedAt": "2026-10-04T05:30:03.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "change",
+      "groupId": "example-v3-3",
+      "change": {
+        "kind": "entry",
+        "habitId": "practice",
+        "date": "2026-10-04",
+        "before": null,
+        "after": 0
+      }
+    },
+    {
+      "version": 3,
+      "id": "example-v3-4",
+      "sequence": 4,
+      "recordedAt": "2026-10-04T05:30:04.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "change",
+      "groupId": "example-v3-4",
+      "change": {
+        "kind": "habit",
+        "habitId": "practice",
+        "index": 2,
+        "before": {
+          "id": "practice",
+          "name": "Practice",
+          "color": "#84C9FF",
+          "type": "number"
+        },
+        "after": {
+          "id": "practice",
+          "name": "Practise piano",
+          "color": "#84C9FF",
+          "type": "number",
+          "unit": "minutes"
+        }
+      }
+    },
+    {
+      "version": 3,
+      "id": "example-v3-5",
+      "sequence": 5,
+      "recordedAt": "2026-10-04T05:30:05.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "change",
+      "groupId": "example-v3-5",
+      "change": {
+        "kind": "habit",
+        "habitId": "practice",
+        "index": 2,
+        "before": {
+          "id": "practice",
+          "name": "Practise piano",
+          "color": "#84C9FF",
+          "type": "number",
+          "unit": "minutes"
+        },
+        "after": {
+          "id": "practice",
+          "name": "Practise piano",
+          "color": "#84C9FF",
+          "type": "number",
+          "unit": "minutes",
+          "archived": true
+        }
+      }
+    },
+    {
+      "version": 3,
+      "id": "example-v3-6",
+      "sequence": 6,
+      "recordedAt": "2026-10-04T05:30:06.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "change",
+      "groupId": "example-v3-6",
+      "change": {
+        "kind": "order",
+        "before": ["walk", "read", "practice"],
+        "after": ["read", "walk", "practice"]
+      }
+    },
+    {
+      "version": 3,
+      "id": "example-v3-7",
+      "sequence": 7,
+      "recordedAt": "2026-10-04T05:30:07.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "undo",
+      "targetId": "example-v3-6",
+      "change": {
+        "kind": "order",
+        "before": ["read", "walk", "practice"],
+        "after": ["walk", "read", "practice"]
+      }
+    },
+    {
+      "version": 3,
+      "id": "example-v3-8",
+      "sequence": 8,
+      "recordedAt": "2026-10-04T05:30:08.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "redo",
+      "targetId": "example-v3-7",
+      "change": {
+        "kind": "order",
+        "before": ["walk", "read", "practice"],
+        "after": ["read", "walk", "practice"]
+      }
+    },
+    {
+      "version": 3,
+      "id": "example-v3-9",
+      "sequence": 9,
+      "recordedAt": "2026-10-04T05:30:09.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "preference",
+      "change": {
+        "kind": "haptics",
+        "before": true,
+        "after": false
+      }
+    }
+  ]
+}

@@ -12,8 +12,10 @@ Entries, colours, and the haptic setting now persist locally in SQLite. History
 shows active habit actions with grouped undo/redo; rapid corrections to the same
 entry become one action, and global settings stay outside History/Undo. Settings
 supports change-based backup export/restore, retaining the full underlying log.
-Habit management, comments, and statistics remain to be
-implemented. Sample habits are seeded once; they no longer reset on reload.
+Habit creation/editing, manual ordering, and reversible archival are available
+under Settings → Manage habits. Tap a name for recent statistics; hold for an
+action menu or keep holding and drag to reorder. Comments, goals, and streaks
+remain to be implemented. Sample habits are seeded once; they no longer reset on reload.
 
 ## Run locally
 

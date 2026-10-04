@@ -10,11 +10,12 @@ backup/share-sheet acceptance remain under evaluation.
 
 Checkbox entries, numeric daily totals, applied habit colours, and the haptic
 preference now survive a reload. The existing 12 sample habits are initialized
-once, not on every launch. Habit creation, renaming, ordering, archival, comments,
-and statistics are not implemented by this milestone.
+once, not on every launch. Habit creation, renaming, units, ordering, and archival now persist as well.
+Basic recent-record statistics are available; comments, targets, and streaks remain
+later work. See [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md).
 
-`src/storage/model.ts` defines version-2 events and deterministic replay, with
-backward-compatible interpretation of existing version-1 records.
+`src/storage/model.ts` defines version-3 events and deterministic replay, with
+backward-compatible interpretation of existing version-1/2 records.
 `repository.ts` implements the native database operations against a small SQL
 interface; `native.ts` connects it to Expo SQLite and native UUID/SHA-256 support.
 `store.ts` owns loading, immediate UI state, the serialized write queue, undo,
@@ -49,7 +50,7 @@ Replay owns fresh mutable state to avoid copying the entire history on each even
 live UI updates remain immutable. Native launch performance still needs measurement.
 
 Future database migrations must be explicit transactional steps; reject newer
-versions. Future event reducers must continue to interpret existing v1/v2 events.
+versions. Future event reducers must continue to interpret existing v1/v2/v3 events.
 Do not rewrite old events just to match a newer domain model. Keep tests for old
 exports and migration fixtures. Version 1 is the first schema, so there is no
 migration from an earlier persisted OnPurpose version.
@@ -58,15 +59,15 @@ migration from an earlier persisted OnPurpose version.
 
 Every event carries:
 
-| Field              | Meaning                                                                    |
-| ------------------ | -------------------------------------------------------------------------- |
-| `version`          | Event schema version, currently `2`; existing `1` records remain supported |
-| `id`               | Stable UUID generated once, retained on save retry                         |
-| `sequence`         | Contiguous order starting at `1`; authoritative even if the clock changes  |
-| `recordedAt`       | UTC edit instant in ISO form with milliseconds                             |
-| `timeZone`         | Device time-zone name at edit time, or `unknown` if unavailable            |
-| `utcOffsetMinutes` | Local offset east of UTC at edit time                                      |
-| `type`             | `initialize`, `change`, `undo`, `redo`, or `preference`                    |
+| Field              | Meaning                                                                        |
+| ------------------ | ------------------------------------------------------------------------------ |
+| `version`          | Event schema version, currently `3`; existing `1`/`2` records remain supported |
+| `id`               | Stable UUID generated once, retained on save retry                             |
+| `sequence`         | Contiguous order starting at `1`; authoritative even if the clock changes      |
+| `recordedAt`       | UTC edit instant in ISO form with milliseconds                                 |
+| `timeZone`         | Device time-zone name at edit time, or `unknown` if unavailable                |
+| `utcOffsetMinutes` | Local offset east of UTC at edit time                                          |
+| `type`             | `initialize`, `change`, `undo`, `redo`, or `preference`                        |
 
 `initialize` records the ordered habit definitions and starts with no entries and
 haptics enabled. Each subsequent edit includes `before` and `after` values.
@@ -79,10 +80,20 @@ Redo targets its latest undo event ID and restores the original action.
 Existing version-1 logs retain their original interpretation, including historical
 preference undo/redo and abandoned redo branches. Their habit edits remain
 individual undo steps, with settings and undo/redo rows filtered from the view.
-New events are version 2; a log may have a version-1 prefix followed by version 2,
-but cannot switch back. No old records are rewritten and no database reset or SQL
-schema change is required. Older builds cannot read newly exported version-2
-backups and must reject them rather than discard unfamiliar events.
+New events use version 3. A log can progress from versions 1 → 2 → 3, skipping
+versions if needed, but never downgrade. New habit-definition changes record
+`habitId`, `index`, and `before`/`after` definitions (null for creation/removal).
+Order changes record exact before/after ID arrays. Definitions may include an
+explicit checkbox/number `type` and an `archived` boolean; legacy numeric habits
+remain inferred from their units. Archive preserves entries. Undoing creation
+cannot remove a habit while it still has entries, and type conversion is rejected
+while values exist. Definition equality ignores JSON field ordering.
+
+Habit-definition and ordering edits are distinct actions and close correction
+groups. Reordering validates exact current order and a unique complete permutation;
+archived positions remain present. No old events are rewritten, and no database
+reset or SQL schema change is required. Older builds must reject v3 data rather
+than discard unfamiliar events.
 
 Daily entries use stable habit IDs and explicit calendar dates. Numeric zero is a
 recorded value; `null` is absent/cleared. Checkbox values are `1` or `null`, so
@@ -168,22 +179,23 @@ Undo is not permanent erasure. There is no deletion or erasure UI. Decide
 privacy/erasure rules before implementing comments; do not assume append-only
 history makes erasure impossible or unwanted.
 
-## Portable backup version 2
+## Portable backup version 3
 
 Settings → Export backup opens the iOS share sheet; save the JSON to Files or
 another destination. The app first waits for pending saves and captures a stable
 log. The export is a readable JSON container of **changes**, not a replacement
-snapshot of habit/day values. See [the version-2 synthetic example](examples/storage-v2.json)
-and [the unchanged legacy version-1 fixture](examples/storage-v1.json).
+snapshot of habit/day values. See [the version-3 synthetic example](examples/storage-v3.json),
+[version-2 fixture](examples/storage-v2.json), and
+[the unchanged version-1 fixture](examples/storage-v1.json).
 
-The container has `format: "onpurpose.changes"`, `version: 2`, `exportedAt`,
+The container has `format: "onpurpose.changes"`, `version: 3`, `exportedAt`,
 `eventCount`, `sha256`, and `events`. The digest is SHA-256 of UTF-8
 `JSON.stringify(events)` with its existing property order. It detects accidental
 modification/incompleteness; it is not an authenticated signature. Exports are not
 encrypted and may reveal habit names, dated values, colours, and preference/edit
 metadata. Pre-restore copies are not bundled into the active export. The exporter
-always writes container version 2. The importer accepts versions 1 and 2; a
-version-1 container must contain only version-1 events. Version-2 containers can
+always writes container version 3. The importer accepts versions 1, 2, and 3;
+a container cannot contain events newer than its own version. New containers can
 retain legacy prefixes, including full raw edits and undo/redo operations that
 are omitted from the active History view.
 
@@ -223,7 +235,7 @@ during initialization, and during restore. These exercise the production SQL and
 domain modules; they do not substitute for Expo's native bridge or iOS force-quit
 and Files/share-sheet testing. Follow [TESTING.md](TESTING.md) for that phone pass.
 
-Habit management, comments, permanent erasure, scheduled-day semantics, statistics,
+Comments, permanent erasure, scheduled-day semantics, richer statistics,
 snapshots for launch optimization, encryption, and sync remain later work. An
 incremental log alone is not a sync protocol.
 

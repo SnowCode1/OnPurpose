@@ -81,7 +81,7 @@ export class ChangeStore {
     if (!this.canEdit() || change.before === change.after) return false;
     const meta = {
       ...this.metadata(this.snapshot.events.length + 1),
-      version: 2 as const,
+      version: 3 as const,
     };
     if (change.kind === 'haptics')
       return this.enqueue({ ...meta, type: 'preference', change });
@@ -96,7 +96,7 @@ export class ChangeStore {
     if (!target) return false;
     return this.enqueue({
       ...this.metadata(this.snapshot.events.length + 1),
-      version: 2,
+      version: 3,
       type: 'undo',
       targetId: target.id,
       change: inverse(target.change) as typeof target.change,
@@ -108,7 +108,7 @@ export class ChangeStore {
     if (!target) return false;
     return this.enqueue({
       ...this.metadata(this.snapshot.events.length + 1),
-      version: 2,
+      version: 3,
       type: 'redo',
       targetId: target.undoId,
       change: target.action.change,

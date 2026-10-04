@@ -5,7 +5,7 @@
 One React Native screen written in strict TypeScript, running under Expo SDK 57.
 It uses a subscribed change store for persistent dated entries, habit colours,
 and haptic preferences, with safe areas for phone notches/home indicators. The app uses pure black with bright
-per-habit colours. Habit names open a colour picker and statistics placeholder.
+per-habit colours. Habit names open recent statistics; hold for anchored actions and drag-to-reorder.
 A local-midnight timer and foreground check update the current day.
 
 ```text
@@ -207,12 +207,12 @@ causality and reconstructs undo/redo stacks. Undo appends the inverse of the lat
 active grouped action rather than deleting source events. History projects active
 habit actions; Undo removes the row and Redo restores it. Global preferences stay
 in storage without appearing in History or affecting habit Undo/Redo. Settings
-exports/restores a checksum-validated version-2 JSON
+exports/restores a checksum-validated version-3 JSON
 change archive; confirmed restore atomically retains a pre-restore copy.
 
 The local-midnight boundary remains the current default; recorded date keys do
-not change during travel. No comments, habit management, permanent erasure, or
-statistics semantics have been added. See [STORAGE.md](STORAGE.md) for the exact
+not change during travel. Habit management is implemented; comments, permanent erasure, targets, schedules,
+and streak semantics remain separate work. See [STORAGE.md](STORAGE.md) for the exact
 schema, file contract, limits, failure policy, and recovery limitations. Browser
 preview uses a separate localStorage adapter; SQLite is the native iOS store.
 
@@ -248,3 +248,17 @@ a pair of swatches. Different effective dates get a small For-date caption;
 regular same-day entry rows avoid repeating the date.
 
 [React Native SectionList reference](https://reactnative.dev/docs/0.86/sectionlist).
+
+## Habit actions and ordering
+
+HabitName combines Pressable taps/holds with native PanResponder drag recognition.
+The overlay stays in the grid tree, so opening it does not transfer a held touch
+to another native modal. useHabitReorder owns measured row/viewport geometry, an
+unsaved order preview, edge scrolling, interruption cancellation, and a Reanimated
+floating row. Neighbour layout changes animate; horizontal scroll remains on its
+existing UI-thread path. One accepted drop persists one complete order event.
+
+HabitDialog presents statistics, editor, and colour drafts. ManageHabits runs
+inside the existing Settings sheet; nested editors are hosted by that same sheet
+when needed. See [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md) for interaction rules
+and version-3 definition/order events, with unchanged v1/v2 replay.

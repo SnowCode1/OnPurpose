@@ -12,7 +12,11 @@ export type IconName =
   | 'palette'
   | 'haptics'
   | 'undo'
-  | 'redo';
+  | 'redo'
+  | 'edit'
+  | 'reorder'
+  | 'archive'
+  | 'plus';
 
 // Small, consistent outline icons; no icon font or loading state.
 const gear = Array.from({ length: 40 }, (_, index) => {
@@ -81,6 +85,15 @@ export function Icon({
       )}
       {name === 'undo' && <Path d="m8 4-5 5 5 5M3 9h10a6 6 0 0 1 0 12" />}
       {name === 'redo' && <Path d="m16 4 5 5-5 5M21 9H11a6 6 0 0 0 0 12" />}
+      {name === 'edit' && <Path d="m15 4 5 5M4 20l5-1L21 7l-5-5L4 14v6Z" />}
+      {name === 'reorder' && <Path d="M5 7h14M5 12h14M5 17h14" />}
+      {name === 'archive' && (
+        <>
+          <Rect x={3} y={4} width={18} height={4} rx={1} />
+          <Path d="M5 8v12h14V8M9 12h6" />
+        </>
+      )}
+      {name === 'plus' && <Path d="M12 5v14M5 12h14" />}
     </Svg>
   );
 }

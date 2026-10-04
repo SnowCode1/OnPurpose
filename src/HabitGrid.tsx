@@ -3,6 +3,7 @@ import {
   type Ref,
   memo,
   useMemo,
+  useEffect,
   useRef,
   useState,
 } from 'react';
@@ -20,7 +21,9 @@ import {
   View,
 } from 'react-native';
 import { type GridDay, makeGridDays, calendarDay } from './calendar';
-import { type Habit } from './habits';
+import { isNumericHabit, type Habit } from './habits';
+import { HabitName, type HabitAction } from './HabitName';
+import { useHabitReorder } from './useHabitReorder';
 import { checkmarkColor, colorOnBlack, dimmedColor } from './colors';
 import { gridLayout } from './gridLayout';
 import Animated, {
@@ -46,9 +49,14 @@ type Props = {
   habits: Habit[];
   values: Record<string, number>;
   onHabitPress: (habit: Habit) => void;
+  onHabitAction: (habit: Habit, action: HabitAction) => void;
+  onReorder: (ids: string[]) => boolean;
+  editable: boolean;
+  reorderRequested: number;
   onCellPress: (habit: Habit, day: GridDay) => void;
   onHistoryPress: () => void;
   onSettingsPress: () => void;
+  onAddHabit: () => void;
 };
 
 function dayMuting(daysAgo: number): number {
@@ -62,12 +70,17 @@ export const HabitGrid = memo(function HabitGrid({
   HeadingComponent,
   DateButtonComponent,
   today,
-  habits,
+  habits: sourceHabits,
   values,
   onHabitPress,
+  onHabitAction,
+  onReorder,
+  editable,
+  reorderRequested,
   onCellPress,
   onHistoryPress,
   onSettingsPress,
+  onAddHabit,
 }: Props) {
   const { fontScale } = useWindowDimensions();
   const [width, setWidth] = useState(0);
@@ -83,6 +96,42 @@ export const HabitGrid = memo(function HabitGrid({
   const [rightmostDay, setRightmostDay] = useState(0);
   const atTodayBoundary = rightmostDay === 0 && futureCount === 0;
   const [rowHeights, setRowHeights] = useState<Record<string, number>>({});
+  const baseRowHeight = Math.max(52, Math.ceil(48 * fontScale));
+  const {
+    root: reorderRoot,
+    scroll: reorderScroll,
+    viewport: reorderViewport,
+    bounds: reorderBounds,
+    updateOffset: updateVerticalOffset,
+    measure: measureReorder,
+    menu: habitMenu,
+    setMenu: setHabitMenu,
+    mode: reorderMode,
+    setMode: setReorderMode,
+    draft: reorderDraft,
+    dragId,
+    ghostY,
+    ghostHeight,
+    cancel: cancelReorder,
+    beginOrMove: moveReorder,
+    drop: dropReorder,
+    hold: holdHabit,
+  } = useHabitReorder(sourceHabits, rowHeights, baseRowHeight, onReorder);
+  const byId = new Map(sourceHabits.map((habit) => [habit.id, habit]));
+  const habits = reorderDraft
+    ? reorderDraft.map((id) => byId.get(id)!).filter(Boolean)
+    : sourceHabits;
+  useEffect(() => {
+    // This request originates from the Settings Arrange action.
+    if (reorderRequested) setReorderMode(true);
+  }, [reorderRequested]); // eslint-disable-line react-hooks/exhaustive-deps
+  const floatingStyle = useAnimatedStyle(() => ({
+    top: ghostY.value,
+    height: ghostHeight.value,
+  }));
+  const floatingHabit = sourceHabits.find((habit) => habit.id === dragId);
+  const menuHabit = sourceHabits.find((habit) => habit.id === habitMenu?.id);
+  const [menuHeight, setMenuHeight] = useState(250);
   const days = useMemo(
     () => makeGridDays(today, dayCount, futureCount),
     [today, dayCount, futureCount],
@@ -102,11 +151,13 @@ export const HabitGrid = memo(function HabitGrid({
   );
   const recordedDays = useMemo(() => {
     const numericIds = new Set(
-      habits.filter((habit) => habit.unit).map((habit) => habit.id),
+      habits.filter(isNumericHabit).map((habit) => habit.id),
     );
+    const activeIds = new Set(habits.map((habit) => habit.id));
     const recorded = new Set<string>();
     for (const [key, value] of Object.entries(values)) {
       const separator = key.lastIndexOf(':');
+      if (!activeIds.has(key.slice(0, separator))) continue;
       if (value === 1 || numericIds.has(key.slice(0, separator))) {
         recorded.add(key.slice(separator + 1));
       }
@@ -117,7 +168,6 @@ export const HabitGrid = memo(function HabitGrid({
     width,
     fontScale,
   );
-  const baseRowHeight = Math.max(52, Math.ceil(48 * fontScale));
   const gridHeight = habits.reduce(
     (total, habit) => total + (rowHeights[habit.id] ?? baseRowHeight),
     0,
@@ -259,10 +309,14 @@ export const HabitGrid = memo(function HabitGrid({
 
   return (
     <View
+      collapsable={false}
+      ref={reorderRoot}
       style={styles.container}
       onLayout={(event) => {
+        measureReorder();
         const nextWidth = event.nativeEvent.layout.width;
         if (nextWidth !== width) {
+          cancelReorder();
           stopSync();
           if (pendingReveal.current) {
             setRightmostDay(pendingReveal.current.day);
@@ -273,7 +327,11 @@ export const HabitGrid = memo(function HabitGrid({
         }
       }}
     >
-      <View style={styles.toolbar}>
+      <View
+        accessibilityElementsHidden={!!habitMenu}
+        importantForAccessibility={habitMenu ? 'no-hide-descendants' : 'auto'}
+        style={styles.toolbar}
+      >
         <View style={styles.toolbarBrand}>
           <HeadingComponent accessibilityRole="header" style={styles.brand}>
             ONPURPOSE
@@ -325,9 +383,39 @@ export const HabitGrid = memo(function HabitGrid({
           </Pressable>
         </View>
       </View>
+      {reorderMode && (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingVertical: 6,
+          }}
+        >
+          <Text style={{ color: '#999999', fontSize: 12, flex: 1 }}>
+            Drag a habit to arrange your list
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              cancelReorder();
+              setReorderMode(false);
+            }}
+            style={{ minHeight: 44, padding: 12 }}
+          >
+            <Text style={{ color: '#DDDDDD' }}>Done</Text>
+          </Pressable>
+        </View>
+      )}
       {width > 0 && (
         <>
-          <View style={styles.header}>
+          <View
+            accessibilityElementsHidden={!!habitMenu}
+            importantForAccessibility={
+              habitMenu ? 'no-hide-descendants' : 'auto'
+            }
+            style={styles.header}
+          >
             <Animated.View
               pointerEvents="none"
               accessibilityElementsHidden
@@ -403,157 +491,318 @@ export const HabitGrid = memo(function HabitGrid({
               }}
             />
           </View>
-          <ScrollView
-            style={styles.rows}
-            directionalLockEnabled
-            nestedScrollEnabled
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.rowsContent}
+          <View
+            accessibilityElementsHidden={!!habitMenu}
+            importantForAccessibility={
+              habitMenu ? 'no-hide-descendants' : 'auto'
+            }
+            collapsable={false}
+            ref={reorderViewport}
+            onLayout={measureReorder}
+            style={{ flex: 1 }}
           >
-            <View style={styles.gridBody}>
-              <View style={{ width: nameWidth }}>
-                {habits.map((habit) => (
+            <ScrollView
+              ref={reorderScroll}
+              onLayout={measureReorder}
+              onScroll={(event) => {
+                updateVerticalOffset(event.nativeEvent.contentOffset.y);
+              }}
+              scrollEventThrottle={16}
+              scrollEnabled={!habitMenu && !dragId}
+              style={styles.rows}
+              directionalLockEnabled
+              nestedScrollEnabled
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.rowsContent}
+            >
+              {!habits.length && (
+                <View
+                  style={{ paddingVertical: 60, alignItems: 'center', gap: 16 }}
+                >
+                  <Text style={{ color: '#888888', fontSize: 14 }}>
+                    A little space for your next intention.
+                  </Text>
                   <Pressable
-                    key={habit.id}
+                    disabled={!editable}
                     accessibilityRole="button"
-                    accessibilityLabel={`${habit.name}, details and colour`}
-                    onPress={() => onHabitPress(habit)}
-                    onLayout={(event) => {
-                      const height = event.nativeEvent.layout.height;
-                      setRowHeights((previous) =>
-                        previous[habit.id] === height
-                          ? previous
-                          : { ...previous, [habit.id]: height },
-                      );
+                    onPress={onAddHabit}
+                    style={{
+                      minHeight: 48,
+                      padding: 14,
+                      borderRadius: 12,
+                      backgroundColor: '#171717',
                     }}
-                    style={({ pressed }) => [
-                      styles.habit,
-                      {
-                        minHeight: baseRowHeight,
-                        borderBottomColor: `${habit.color}20`,
-                        backgroundColor: pressed
-                          ? `${habit.color}15`
-                          : '#000000',
-                      },
-                    ]}
                   >
-                    <Text style={[styles.habitName, { color: habit.color }]}>
-                      {habit.name}
-                    </Text>
-                    {habit.unit && (
-                      <Text style={[styles.unit, { color: habit.color }]}>
-                        {habit.unit}
-                      </Text>
-                    )}
+                    <Text style={{ color: '#DDDDDD' }}>Add habit</Text>
                   </Pressable>
-                ))}
+                </View>
+              )}
+              <View style={styles.gridBody}>
+                <View style={{ width: nameWidth }}>
+                  {habits.map((habit) => (
+                    <HabitName
+                      key={habit.id}
+                      habit={habit}
+                      height={baseRowHeight}
+                      selected={habitMenu?.id === habit.id}
+                      dragging={dragId === habit.id}
+                      reorder={reorderMode}
+                      disabled={!editable}
+                      onPress={() => onHabitPress(habit)}
+                      onHold={(anchor) => holdHabit(habit.id, anchor)}
+                      onDrag={(pageY, startY) =>
+                        moveReorder(habit.id, pageY, startY)
+                      }
+                      onDrop={dropReorder}
+                      onCancel={cancelReorder}
+                      onAction={(action) => {
+                        if (action === 'reorder') setReorderMode(true);
+                        else onHabitAction(habit, action);
+                      }}
+                      onLayout={(event) => {
+                        const height = event.nativeEvent.layout.height;
+                        setRowHeights((previous) =>
+                          previous[habit.id] === height
+                            ? previous
+                            : { ...previous, [habit.id]: height },
+                        );
+                      }}
+                    />
+                  ))}
+                </View>
+                <DateColumns
+                  {...shared}
+                  ref={body}
+                  key={`body-${columnWidth}-${rangeReset}`}
+                  initialScrollIndex={rightmostDay + futureCount}
+                  style={{ width: dateWidth, height: gridHeight, flexGrow: 0 }}
+                  onScroll={bodyScroll}
+                  onContentSizeChange={(contentWidth) =>
+                    revealWhenReady('body', contentWidth)
+                  }
+                  renderItem={({ item: day }) => (
+                    <View style={{ width: columnWidth }}>
+                      {habits.map((habit) => {
+                        const value = values[`${habit.id}:${day.key}`];
+                        const checked = value === 1;
+                        const recorded = isNumericHabit(habit)
+                          ? value !== undefined
+                          : checked;
+                        const amount = dayMuting(day.daysAgo);
+                        const emptyNumber = dimmedColor(
+                          rowTones[habit.id].number,
+                          amount,
+                        );
+                        const emptyCheckbox = dimmedColor(
+                          rowTones[habit.id].checkbox,
+                          amount,
+                        );
+                        const ruleColor = dimmedColor(habit.color, amount);
+                        return (
+                          <Pressable
+                            key={habit.id}
+                            testID={`cell-${habit.id}-${day.key}`}
+                            disabled={!editable || !!dragId || reorderMode}
+                            accessibilityRole={
+                              isNumericHabit(habit) ? 'button' : 'checkbox'
+                            }
+                            accessibilityState={
+                              isNumericHabit(habit) ? undefined : { checked }
+                            }
+                            accessibilityLabel={`${habit.name}, ${day.fullLabel}${isNumericHabit(habit) ? `, ${value === undefined ? 'not recorded' : `${value}${habit.unit ? ` ${habit.unit}` : ''}`}` : ''}`}
+                            accessibilityHint={
+                              isNumericHabit(habit)
+                                ? 'Edit this day’s total'
+                                : 'Toggle this day’s completion'
+                            }
+                            onPress={() => onCellPress(habit, day)}
+                            style={({ pressed }) => [
+                              styles.cell,
+                              {
+                                height: rowHeights[habit.id] ?? baseRowHeight,
+                                opacity: dragId === habit.id ? 0.18 : 1,
+                                borderBottomColor: `${ruleColor}20`,
+                                backgroundColor: pressed
+                                  ? `${habit.color}20`
+                                  : day.daysAgo === 0
+                                    ? '#090909'
+                                    : '#000000',
+                              },
+                            ]}
+                          >
+                            {isNumericHabit(habit) ? (
+                              <Text
+                                numberOfLines={1}
+                                adjustsFontSizeToFit
+                                minimumFontScale={0.65}
+                                style={[
+                                  styles.numeric,
+                                  {
+                                    color: recorded ? habit.color : emptyNumber,
+                                  },
+                                ]}
+                              >
+                                {value === undefined ? '—' : String(value)}
+                              </Text>
+                            ) : (
+                              <View
+                                style={[
+                                  styles.checkbox,
+                                  {
+                                    borderColor: checked
+                                      ? habit.color
+                                      : emptyCheckbox,
+                                    backgroundColor: checked
+                                      ? habit.color
+                                      : 'transparent',
+                                  },
+                                ]}
+                              >
+                                {checked && (
+                                  <Text
+                                    allowFontScaling={false}
+                                    style={[
+                                      styles.checkmark,
+                                      { color: checkmarkColor(habit.color) },
+                                    ]}
+                                  >
+                                    ✓
+                                  </Text>
+                                )}
+                              </View>
+                            )}
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  )}
+                />
               </View>
-              <DateColumns
-                {...shared}
-                ref={body}
-                key={`body-${columnWidth}-${rangeReset}`}
-                initialScrollIndex={rightmostDay + futureCount}
-                style={{ width: dateWidth, height: gridHeight, flexGrow: 0 }}
-                onScroll={bodyScroll}
-                onContentSizeChange={(contentWidth) =>
-                  revealWhenReady('body', contentWidth)
-                }
-                renderItem={({ item: day }) => (
-                  <View style={{ width: columnWidth }}>
-                    {habits.map((habit) => {
-                      const value = values[`${habit.id}:${day.key}`];
-                      const checked = value === 1;
-                      const recorded = habit.unit
-                        ? value !== undefined
-                        : checked;
-                      const amount = dayMuting(day.daysAgo);
-                      const emptyNumber = dimmedColor(
-                        rowTones[habit.id].number,
-                        amount,
-                      );
-                      const emptyCheckbox = dimmedColor(
-                        rowTones[habit.id].checkbox,
-                        amount,
-                      );
-                      const ruleColor = dimmedColor(habit.color, amount);
-                      return (
-                        <Pressable
-                          key={habit.id}
-                          testID={`cell-${habit.id}-${day.key}`}
-                          accessibilityRole={habit.unit ? 'button' : 'checkbox'}
-                          accessibilityState={
-                            habit.unit ? undefined : { checked }
-                          }
-                          accessibilityLabel={`${habit.name}, ${day.fullLabel}${habit.unit ? `, ${value === undefined ? 'not recorded' : `${value} ${habit.unit}`}` : ''}`}
-                          accessibilityHint={
-                            habit.unit
-                              ? 'Edit this day’s total'
-                              : 'Toggle this day’s completion'
-                          }
-                          onPress={() => onCellPress(habit, day)}
-                          style={({ pressed }) => [
-                            styles.cell,
-                            {
-                              height: rowHeights[habit.id] ?? baseRowHeight,
-                              borderBottomColor: `${ruleColor}20`,
-                              backgroundColor: pressed
-                                ? `${habit.color}20`
-                                : day.daysAgo === 0
-                                  ? '#090909'
-                                  : '#000000',
-                            },
-                          ]}
-                        >
-                          {habit.unit ? (
-                            <Text
-                              numberOfLines={1}
-                              adjustsFontSizeToFit
-                              minimumFontScale={0.65}
-                              style={[
-                                styles.numeric,
-                                {
-                                  color: recorded ? habit.color : emptyNumber,
-                                },
-                              ]}
-                            >
-                              {value === undefined ? '—' : String(value)}
-                            </Text>
-                          ) : (
-                            <View
-                              style={[
-                                styles.checkbox,
-                                {
-                                  borderColor: checked
-                                    ? habit.color
-                                    : emptyCheckbox,
-                                  backgroundColor: checked
-                                    ? habit.color
-                                    : 'transparent',
-                                },
-                              ]}
-                            >
-                              {checked && (
-                                <Text
-                                  allowFontScaling={false}
-                                  style={[
-                                    styles.checkmark,
-                                    { color: checkmarkColor(habit.color) },
-                                  ]}
-                                >
-                                  ✓
-                                </Text>
-                              )}
-                            </View>
-                          )}
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                )}
-              />
-            </View>
-          </ScrollView>
+            </ScrollView>
+          </View>
         </>
+      )}
+      {dragId && floatingHabit && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            {
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              backgroundColor: '#191919',
+              borderWidth: 1,
+              borderColor: `${floatingHabit.color}66`,
+              borderRadius: 12,
+              paddingHorizontal: 14,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              shadowColor: '#000000',
+              shadowOpacity: 0.5,
+              shadowRadius: 10,
+              elevation: 8,
+            },
+            floatingStyle,
+          ]}
+        >
+          <Text
+            style={{
+              color: floatingHabit.color,
+              fontSize: 15,
+              fontWeight: '600',
+              flex: 1,
+            }}
+          >
+            {floatingHabit.name}
+          </Text>
+          <Icon name="reorder" color={floatingHabit.color} />
+        </Animated.View>
+      )}
+      {habitMenu && menuHabit && (
+        <View style={StyleSheet.absoluteFill} accessibilityViewIsModal>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss habit actions"
+            onPress={() => setHabitMenu(null)}
+            style={StyleSheet.absoluteFill}
+          />
+          <View
+            onLayout={(event) => setMenuHeight(event.nativeEvent.layout.height)}
+            style={{
+              position: 'absolute',
+              left: Math.max(0, Math.min(nameWidth - 12, width - 224)),
+              top: Math.max(
+                52,
+                Math.min(
+                  habitMenu.anchor.y -
+                    reorderBounds.rootY +
+                    habitMenu.anchor.height +
+                    4,
+                  reorderBounds.rootHeight - menuHeight - 8,
+                ),
+              ),
+              width: 224,
+              maxHeight: '85%',
+              borderRadius: 17,
+              backgroundColor: '#191919',
+              borderWidth: 1,
+              borderColor: '#333333',
+              shadowColor: '#000000',
+              shadowOpacity: 0.5,
+              shadowRadius: 16,
+              elevation: 10,
+              overflow: 'hidden',
+            }}
+          >
+            <ScrollView>
+              <Text
+                style={{
+                  paddingHorizontal: 16,
+                  paddingTop: 14,
+                  paddingBottom: 8,
+                  color: menuHabit.color,
+                  fontSize: 13,
+                  fontWeight: '600',
+                }}
+              >
+                {menuHabit.name}
+              </Text>
+              {(
+                [
+                  ['colour', 'Colour', 'palette'],
+                  ['edit', 'Edit habit', 'edit'],
+                  ['reorder', 'Reorder', 'reorder'],
+                  ['archive', 'Archive', 'archive'],
+                ] as const
+              ).map(([action, label, icon]) => (
+                <Pressable
+                  key={action}
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setHabitMenu(null);
+                    if (action === 'reorder') setReorderMode(true);
+                    else onHabitAction(menuHabit, action);
+                  }}
+                  style={({ pressed }) => ({
+                    minHeight: 46,
+                    paddingHorizontal: 16,
+                    paddingVertical: 11,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    backgroundColor: pressed ? '#292929' : 'transparent',
+                  })}
+                >
+                  <Icon name={icon} size={18} />
+                  <Text style={{ color: '#DDDDDD', fontSize: 15, flex: 1 }}>
+                    {label}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
       )}
     </View>
   );

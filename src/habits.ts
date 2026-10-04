@@ -1,4 +1,13 @@
-export type Habit = { id: string; name: string; color: string; unit?: string };
+export type Habit = {
+  id: string;
+  name: string;
+  color: string;
+  unit?: string;
+  type?: 'checkbox' | 'number';
+  archived?: boolean;
+};
+export const isNumericHabit = (habit: Habit) =>
+  habit.type ? habit.type === 'number' : !!habit.unit;
 
 export const habitColors = [
   { name: 'Mint', value: '#82E6BC' },

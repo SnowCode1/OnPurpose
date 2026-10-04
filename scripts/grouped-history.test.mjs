@@ -292,7 +292,7 @@ test('failure during a grouped undo rolls back atomically and retry retains its 
   );
 });
 
-test('v2 backup round-trip preserves raw edits, cancelled groups, active history and redo', async (t) => {
+test('current backup round-trip preserves raw edits, cancelled groups, active history and redo', async (t) => {
   const { store, metadata, repository } = await fixture(t);
   store.change(entry(null, 1));
   store.change(entry(1, null));
@@ -306,7 +306,7 @@ test('v2 backup round-trip preserves raw edits, cancelled groups, active history
     '2026-10-04T06:00:00.000Z',
     digest,
   );
-  assert.equal(JSON.parse(text).version, 2);
+  assert.equal(JSON.parse(text).version, 3);
   const decoded = await decodeArchive(text, digest);
   assert.deepEqual(decoded.replay, store.getSnapshot().replay);
   await store.exclusive(() => store.replace(decoded.events));
@@ -473,7 +473,9 @@ test('a v1 manifest cannot disguise v2 events and future versions stay protected
   );
   archive.version = 1;
   await assert.rejects(decodeArchive(JSON.stringify(archive), digest));
-  archive.version = 3;
+  archive.version = 2;
+  await assert.rejects(decodeArchive(JSON.stringify(archive), digest));
+  archive.version = 4;
   await assert.rejects(decodeArchive(JSON.stringify(archive), digest));
   assert.throws(() =>
     replayEvents([
@@ -490,4 +492,224 @@ test('a v1 manifest cannot disguise v2 events and future versions stay protected
       },
     ]),
   );
+});
+
+test('habit creation, edit, archive and order survive SQLite reload and undo in sequence', async (t) => {
+  const { store, repository, metadata } = await fixture(t);
+  const added = {
+    id: 'new-number',
+    name: 'Practice',
+    color: '#84C9FF',
+    type: 'number',
+  };
+  store.change({
+    kind: 'habit',
+    habitId: added.id,
+    index: 2,
+    before: null,
+    after: added,
+  });
+  store.change(entry(null, 0, added.id));
+  const edited = { ...added, name: 'Practise piano', unit: 'minutes' };
+  store.change({
+    kind: 'habit',
+    habitId: added.id,
+    index: 2,
+    before: added,
+    after: edited,
+  });
+  store.change({
+    kind: 'habit',
+    habitId: added.id,
+    index: 2,
+    before: edited,
+    after: { ...edited, archived: true },
+  });
+  store.change({
+    kind: 'order',
+    before: ['walk', 'read', added.id],
+    after: ['read', 'walk', added.id],
+  });
+  await store.flush();
+  const reopened = new ChangeStore(repository, metadata);
+  await reopened.load();
+  assert.deepEqual(
+    reopened.getSnapshot().replay.state,
+    store.getSnapshot().replay.state,
+  );
+  assert.equal(
+    reopened.getSnapshot().replay.state.values[`${added.id}:2026-10-04`],
+    0,
+  );
+  assert.equal(reopened.getSnapshot().replay.undo.length, 5);
+  reopened.undo();
+  reopened.undo();
+  assert.equal(
+    reopened.getSnapshot().replay.state.habits[2].archived,
+    undefined,
+  );
+  assert.equal(reopened.getSnapshot().replay.state.habits[2].name, edited.name);
+  reopened.undo();
+  reopened.undo();
+  reopened.undo();
+  await reopened.flush();
+  assert.deepEqual(reopened.getSnapshot().replay.state.habits, habits);
+  assert.deepEqual(reopened.getSnapshot().replay.state.values, {});
+  for (let i = 0; i < 5; i++) assert.equal(reopened.redo(), true);
+  await reopened.flush();
+  assert.deepEqual(
+    reopened.getSnapshot().replay.state,
+    store.getSnapshot().replay.state,
+  );
+  const backup = await encodeArchive(
+    reopened.getSnapshot().events,
+    '2026-10-04T06:00:00.000Z',
+    digest,
+  );
+  assert.deepEqual(
+    (await decodeArchive(backup, digest)).replay,
+    reopened.getSnapshot().replay,
+  );
+});
+
+test('management actions stay distinct and close an entry correction group', async (t) => {
+  const { store } = await fixture(t);
+  store.change(entry(null, 20, 'read'));
+  const before = store.getSnapshot().replay.state.habits[1];
+  const after = { ...before, name: 'Reading' };
+  store.change({ kind: 'habit', habitId: 'read', index: 1, before, after });
+  store.change({
+    kind: 'habit',
+    habitId: 'read',
+    index: 1,
+    before: after,
+    after: before,
+  });
+  store.change(entry(20, 30, 'read'));
+  assert.equal(store.getSnapshot().replay.undo.length, 4);
+  store.undo();
+  assert.equal(store.getSnapshot().replay.state.values['read:2026-10-04'], 20);
+  await store.flush();
+});
+
+test('management validates identities, positions, orders, type conversions and legacy version boundaries', async (t) => {
+  const { store } = await fixture(t);
+  const state = store.getSnapshot().replay.state;
+  const change = {
+    kind: 'habit',
+    habitId: 'read',
+    index: 1,
+    before: state.habits[1],
+    after: { ...state.habits[1], name: 'Reading' },
+  };
+  const event = {
+    ...initial(),
+    version: 3,
+    id: 'management-bad',
+    sequence: 2,
+    type: 'change',
+    groupId: 'management-bad',
+    change,
+  };
+  delete event.habits;
+  const apply = (change) =>
+    applyEvent(store.getSnapshot().replay, { ...event, change });
+  assert.throws(() => apply({ ...change, index: 0 }));
+  assert.throws(() =>
+    apply({ ...change, after: { ...change.after, id: 'walk' } }),
+  );
+  assert.throws(() =>
+    apply({ kind: 'order', before: ['walk', 'read'], after: ['walk', 'walk'] }),
+  );
+  assert.throws(() =>
+    apply({ kind: 'order', before: ['walk', 'read'], after: ['walk'] }),
+  );
+  assert.throws(() =>
+    apply({
+      kind: 'order',
+      before: ['walk', 'read'],
+      after: ['walk', 'missing'],
+    }),
+  );
+  assert.throws(() =>
+    applyEvent(store.getSnapshot().replay, { ...event, version: 2 }),
+  );
+  store.change(entry(null, 30, 'read'));
+  assert.throws(() =>
+    apply({
+      ...change,
+      after: { id: 'read', name: 'Read', color: '#BDA5FF', type: 'checkbox' },
+    }),
+  );
+  assert.throws(() => apply({ ...change, after: null }));
+  assert.deepEqual(state.habits, habits);
+  await store.flush();
+});
+
+test('v3 empty initialization supports creation, undo and later preferences without reseeding', () => {
+  const seed = { ...initial(), version: 3, habits: [] };
+  const habit = {
+    id: 'first',
+    name: 'Walk',
+    color: '#82E6BC',
+    type: 'checkbox',
+  };
+  const meta = (sequence) => ({ ...seed, id: `empty-${sequence}`, sequence });
+  const make = (sequence, fields) => {
+    const { habits: _h, type: _t, ...base } = meta(sequence);
+    return { ...base, ...fields };
+  };
+  const { replay } = replayEvents([
+    seed,
+    make(2, {
+      type: 'change',
+      groupId: 'empty-2',
+      change: {
+        kind: 'habit',
+        habitId: 'first',
+        index: 0,
+        before: null,
+        after: habit,
+      },
+    }),
+    make(3, {
+      type: 'undo',
+      targetId: 'empty-2',
+      change: {
+        kind: 'habit',
+        habitId: 'first',
+        index: 0,
+        before: habit,
+        after: null,
+      },
+    }),
+    make(4, {
+      type: 'preference',
+      change: { kind: 'haptics', before: true, after: false },
+    }),
+  ]);
+  assert.equal(replay.state.habits.length, 0);
+  assert.equal(replay.state.hapticsEnabled, false);
+  assert.equal(replay.redo.length, 1);
+});
+
+test('the documented v3 fixture preserves archived definitions, zero and reordered IDs', async () => {
+  const { events, replay } = await decodeArchive(
+    readFileSync(
+      new URL('../docs/examples/storage-v3.json', import.meta.url),
+      'utf8',
+    ),
+    digest,
+  );
+  assert.equal(events[0].version, 2);
+  assert.equal(events[1].version, 3);
+  assert.deepEqual(
+    replay.state.habits.map((habit) => habit.id),
+    ['read', 'walk', 'practice'],
+  );
+  assert.equal(replay.state.habits[2].archived, true);
+  assert.equal(replay.state.habits[2].unit, 'minutes');
+  assert.equal(replay.state.values['practice:2026-10-04'], 0);
+  assert.equal(replay.undo.length, 5);
+  assert.equal(replay.state.hapticsEnabled, false);
 });

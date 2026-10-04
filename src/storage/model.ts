@@ -1,4 +1,4 @@
-import type { Habit } from '../habits.ts';
+import { isNumericHabit, type Habit } from '../habits.ts';
 
 export type StoredState = {
   habits: Habit[];
@@ -14,10 +14,18 @@ export type Change =
       after: number | null;
     }
   | { kind: 'colour'; habitId: string; before: string; after: string }
+  | {
+      kind: 'habit';
+      habitId: string;
+      index: number;
+      before: Habit | null;
+      after: Habit | null;
+    }
+  | { kind: 'order'; before: string[]; after: string[] }
   | { kind: 'haptics'; before: boolean; after: boolean };
 export type HabitChange = Exclude<Change, { kind: 'haptics' }>;
 export type EventMeta = {
-  version: 1 | 2;
+  version: 1 | 2 | 3;
   id: string;
   sequence: number;
   recordedAt: string;
@@ -28,7 +36,7 @@ export type LegacyChangeEvent = EventMeta & { version: 1 } & (
     | { type: 'change'; change: Change }
     | { type: 'undo' | 'redo'; targetId: string; change: Change }
   );
-export type CurrentChangeEvent = EventMeta & { version: 2 } & (
+export type CurrentChangeEvent = EventMeta & { version: 2 | 3 } & (
     | { type: 'change'; groupId: string; change: HabitChange }
     | { type: 'undo' | 'redo'; targetId: string; change: HabitChange }
     | { type: 'preference'; change: Extract<Change, { kind: 'haptics' }> }
@@ -53,6 +61,7 @@ export type Replay = {
   legacyUndo: LegacyChangeEvent[];
   legacyRedo: LegacyChangeEvent[];
   hasV2: boolean;
+  hasV3: boolean;
 };
 export const emptyReplay = (): Replay => ({
   state: { habits: [], values: {}, hapticsEnabled: true },
@@ -62,6 +71,7 @@ export const emptyReplay = (): Replay => ({
   legacyUndo: [],
   legacyRedo: [],
   hasV2: false,
+  hasV3: false,
 });
 export const GROUP_INACTIVITY_MS = 2 * 60 * 1000;
 
@@ -111,6 +121,57 @@ function amount(value: unknown): asserts value is number | null {
     'Invalid daily value.',
   );
 }
+function sameValue(left: unknown, right: unknown): boolean {
+  if (left === right) return true;
+  if (!left || !right || typeof left !== 'object' || typeof right !== 'object')
+    return false;
+  const a = left as Record<string, unknown>,
+    b = right as Record<string, unknown>;
+  return (
+    Object.keys(a).length === Object.keys(b).length &&
+    Object.keys(a).every((key) => Object.hasOwn(b, key) && a[key] === b[key])
+  );
+}
+function validateHabit(
+  value: unknown,
+  extended: boolean,
+): asserts value is Habit {
+  object(value);
+  keys(value, [
+    'id',
+    'name',
+    'color',
+    ...['unit', ...(extended ? ['type', 'archived'] : [])].filter((key) =>
+      Object.hasOwn(value, key),
+    ),
+  ]);
+  id(value.id);
+  colour(value.color);
+  insist(
+    typeof value.name === 'string' &&
+      value.name.trim().length > 0 &&
+      value.name.length <= 200,
+    'Invalid habit name.',
+  );
+  if (Object.hasOwn(value, 'unit'))
+    insist(
+      typeof value.unit === 'string' &&
+        value.unit.trim().length > 0 &&
+        value.unit.length <= 80,
+      'Invalid unit.',
+    );
+  if (Object.hasOwn(value, 'type'))
+    insist(
+      value.type === 'checkbox' || value.type === 'number',
+      'Invalid habit type.',
+    );
+  if (Object.hasOwn(value, 'archived'))
+    insist(typeof value.archived === 'boolean', 'Invalid archived state.');
+  insist(
+    value.type !== 'checkbox' || !value.unit,
+    'Checkbox habits cannot have a unit.',
+  );
+}
 export function validateChange(value: unknown): asserts value is Change {
   object(value);
   if (value.kind === 'entry') {
@@ -124,6 +185,32 @@ export function validateChange(value: unknown): asserts value is Change {
     id(value.habitId);
     colour(value.before);
     colour(value.after);
+  } else if (value.kind === 'habit') {
+    keys(value, ['kind', 'habitId', 'index', 'before', 'after']);
+    id(value.habitId);
+    insist(
+      Number.isSafeInteger(value.index) && Number(value.index) >= 0,
+      'Invalid habit position.',
+    );
+    insist(
+      value.before !== null || value.after !== null,
+      'Missing habit definition.',
+    );
+    for (const habit of [value.before, value.after])
+      if (habit !== null) {
+        validateHabit(habit, true);
+        insist(habit.id === value.habitId, 'Habit identity cannot change.');
+      }
+  } else if (value.kind === 'order') {
+    keys(value, ['kind', 'before', 'after']);
+    for (const order of [value.before, value.after]) {
+      insist(
+        Array.isArray(order) && order.length <= 1000,
+        'Invalid habit order.',
+      );
+      order.forEach(id);
+      insist(new Set(order).size === order.length, 'Repeated habit in order.');
+    }
   } else if (value.kind === 'haptics') {
     keys(value, ['kind', 'before', 'after']);
     insist(
@@ -131,7 +218,10 @@ export function validateChange(value: unknown): asserts value is Change {
       'Invalid preference.',
     );
   } else throw new Error('Unsupported change type.');
-  insist(value.before !== value.after, 'A change must change a value.');
+  insist(
+    !sameValue(value.before, value.after),
+    'A change must change a value.',
+  );
 }
 export function validateEvent(value: unknown): asserts value is StoredEvent {
   object(value);
@@ -145,7 +235,7 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
     'type',
   ];
   insist(
-    value.version === 1 || value.version === 2,
+    value.version === 1 || value.version === 2 || value.version === 3,
     'Unsupported event version.',
   );
   id(value.id);
@@ -174,44 +264,23 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
     keys(value, [...common, 'habits']);
     insist(
       Array.isArray(value.habits) &&
-        value.habits.length > 0 &&
+        (value.habits.length > 0 || value.version === 3) &&
         value.habits.length <= 1000,
       'Invalid initial habits.',
     );
     const ids = new Set<string>();
     for (const habit of value.habits) {
-      object(habit);
-      keys(habit, [
-        'id',
-        'name',
-        'color',
-        ...(Object.hasOwn(habit, 'unit') ? ['unit'] : []),
-      ]);
-      id(habit.id);
-      colour(habit.color);
+      validateHabit(habit, value.version === 3);
       insist(!ids.has(habit.id), 'Duplicate habit identifier.');
       ids.add(habit.id);
-      insist(
-        typeof habit.name === 'string' &&
-          habit.name.trim().length > 0 &&
-          habit.name.length <= 200,
-        'Invalid habit name.',
-      );
-      if (Object.hasOwn(habit, 'unit'))
-        insist(
-          typeof habit.unit === 'string' &&
-            habit.unit.trim().length > 0 &&
-            habit.unit.length <= 80,
-          'Invalid unit.',
-        );
     }
   } else if (
     value.type === 'change' ||
     value.type === 'undo' ||
     value.type === 'redo' ||
-    (value.version === 2 && value.type === 'preference')
+    (value.version !== 1 && value.type === 'preference')
   ) {
-    const grouped = value.version === 2 && value.type === 'change';
+    const grouped = value.version !== 1 && value.type === 'change';
     keys(value, [
       ...common,
       'change',
@@ -219,9 +288,14 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
       ...(grouped ? ['groupId'] : []),
     ]);
     validateChange(value.change);
+    insist(
+      value.version === 3 ||
+        (value.change.kind !== 'habit' && value.change.kind !== 'order'),
+      'Habit management requires version 3.',
+    );
     if (value.type === 'undo' || value.type === 'redo') id(value.targetId);
     if (grouped) id(value.groupId);
-    if (value.version === 2)
+    if (value.version !== 1)
       insist(
         value.type === 'preference'
           ? value.change.kind === 'haptics'
@@ -235,6 +309,20 @@ export function inverse(change: Change): Change {
   return { ...change, before: change.after, after: change.before } as Change;
 }
 function sameChange(left: Change, right: Change): boolean {
+  if (left.kind === 'order')
+    return (
+      right.kind === 'order' &&
+      sameValue(left.before, right.before) &&
+      sameValue(left.after, right.after)
+    );
+  if (left.kind === 'habit')
+    return (
+      right.kind === 'habit' &&
+      left.habitId === right.habitId &&
+      left.index === right.index &&
+      sameValue(left.before, right.before) &&
+      sameValue(left.after, right.after)
+    );
   return (
     left.kind === right.kind &&
     left.before === right.before &&
@@ -249,6 +337,13 @@ export function applyEvent(previous: Replay, event: StoredEvent): Replay {
   return reduceEvent(previous, event, false);
 }
 function sameField(left: Change, right: Change) {
+  if (
+    left.kind === 'habit' ||
+    left.kind === 'order' ||
+    right.kind === 'habit' ||
+    right.kind === 'order'
+  )
+    return false;
   return (
     left.kind === right.kind &&
     (left.kind === 'haptics' ||
@@ -267,7 +362,8 @@ export function canCoalesce(
   meta: EventMeta,
   change: HabitChange,
 ): boolean {
-  if (!group) return false;
+  if (!group || change.kind === 'habit' || change.kind === 'order')
+    return false;
   const elapsed = Date.parse(meta.recordedAt) - Date.parse(group.recordedAt);
   return (
     sameField(group.change, change) &&
@@ -299,7 +395,9 @@ function reduceEvent(
   validateEvent(event);
   if (event.type === 'initialize') {
     insist(
-      event.sequence === 1 && previous.state.habits.length === 0,
+      event.sequence === 1 &&
+        !previous.hasV2 &&
+        previous.state.habits.length === 0,
       'Initialization must be first and unique.',
     );
     return {
@@ -309,13 +407,21 @@ function reduceEvent(
         values: {},
         hapticsEnabled: true,
       },
-      hasV2: event.version === 2,
+      hasV2: event.version !== 1,
+      hasV3: event.version === 3,
     };
   }
-  insist(previous.state.habits.length > 0, 'Missing initialization.');
   insist(
-    !previous.hasV2 || event.version === 2,
+    previous.hasV2 || previous.state.habits.length > 0,
+    'Missing initialization.',
+  );
+  insist(
+    !previous.hasV2 || event.version !== 1,
     'Legacy events cannot follow version-2 events.',
+  );
+  insist(
+    !previous.hasV3 || event.version === 3,
+    'Older events cannot follow version-3 events.',
   );
   const undo = mutable ? previous.undo : [...previous.undo];
   const redo = mutable ? previous.redo : [...previous.redo];
@@ -410,9 +516,13 @@ function reduceEvent(
           lastChangedSequence: event.sequence,
         };
       }
-      if (action.change.before !== action.change.after) undo.push(action);
+      if (!sameValue(action.change.before, action.change.after))
+        undo.push(action);
       redo.length = 0;
-      lastGroup = action;
+      lastGroup =
+        action.change.kind === 'habit' || action.change.kind === 'order'
+          ? null
+          : action;
     } else if (event.type === 'undo') {
       const target = undo.at(-1);
       insist(
@@ -445,7 +555,8 @@ function reduceEvent(
     lastGroup,
     legacyUndo,
     legacyRedo,
-    hasV2: previous.hasV2 || event.version === 2,
+    hasV2: previous.hasV2 || event.version !== 1,
+    hasV3: previous.hasV3 || event.version === 3,
   };
 }
 export function applyChange(state: StoredState, change: Change): StoredState {
@@ -467,6 +578,52 @@ function reduceChange(
       state.hapticsEnabled = change.after;
       next = state;
     } else next = { ...state, hapticsEnabled: change.after };
+  } else if (change.kind === 'order') {
+    const current = state.habits.map((habit) => habit.id);
+    insist(
+      sameValue(current, change.before) &&
+        change.after.length === current.length &&
+        change.after.every((id) => current.includes(id)),
+      'Order precondition failed.',
+    );
+    const byId = new Map(state.habits.map((habit) => [habit.id, habit]));
+    next = { ...state, habits: change.after.map((id) => byId.get(id)!) };
+  } else if (change.kind === 'habit') {
+    const current = state.habits[change.index] ?? null;
+    if (change.before === null) {
+      insist(
+        change.index <= state.habits.length &&
+          !state.habits.some((habit) => habit.id === change.habitId) &&
+          state.habits.length < 1000,
+        'Habit already exists or position is invalid.',
+      );
+    } else
+      insist(sameValue(current, change.before), 'Habit precondition failed.');
+    if (change.after === null)
+      insist(
+        !Object.keys(state.values).some((key) =>
+          key.startsWith(`${change.habitId}:`),
+        ),
+        'Cannot remove a habit with entries.',
+      );
+    if (
+      change.before &&
+      change.after &&
+      isNumericHabit(change.before) !== isNumericHabit(change.after)
+    )
+      insist(
+        !Object.keys(state.values).some((key) =>
+          key.startsWith(`${change.habitId}:`),
+        ),
+        'Cannot change type while entries exist.',
+      );
+    const habits = [...state.habits];
+    habits.splice(
+      change.index,
+      change.before === null ? 0 : 1,
+      ...(change.after ? [{ ...change.after }] : []),
+    );
+    next = { ...state, habits };
   } else {
     const habit = state.habits.find((habit) => habit.id === change.habitId);
     insist(habit, 'Unknown habit.');
@@ -490,7 +647,7 @@ function reduceChange(
         (state.values[key] ?? null) === change.before,
         'Daily value precondition failed.',
       );
-      if (!habit.unit)
+      if (!isNumericHabit(habit))
         insist(
           [change.before, change.after].every(
             (value) => value === null || value === 1,
@@ -527,6 +684,9 @@ export function replayEvents(input: unknown): {
   return { events, replay };
 }
 export function describeChange(change: Change, state: StoredState): string {
+  if (change.kind === 'order') return 'Habit order changed';
+  if (change.kind === 'habit')
+    return `${change.after?.name ?? change.before?.name} · Habit changed`;
   if (change.kind === 'haptics')
     return `Haptics ${change.after ? 'on' : 'off'}`;
   const habit = state.habits.find((habit) => habit.id === change.habitId);
@@ -535,8 +695,8 @@ export function describeChange(change: Change, state: StoredState): string {
   const value =
     change.after === null
       ? 'Cleared'
-      : habit?.unit
-        ? `${change.after} ${habit.unit}`
+      : habit && isNumericHabit(habit)
+        ? `${change.after}${habit.unit ? ` ${habit.unit}` : ''}`
         : 'Checked';
   return `${name} · ${value}`;
 }

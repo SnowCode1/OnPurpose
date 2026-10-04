@@ -1,0 +1,229 @@
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  AccessibilityInfo,
+  AppState,
+  LayoutAnimation,
+  type ScrollView,
+  type View,
+} from 'react-native';
+import { useSharedValue } from 'react-native-reanimated';
+import type { Habit } from './habits';
+import type { HabitAnchor } from './HabitName';
+import { dragDestination, moveHabit } from './habitOrdering';
+import { feedback } from './haptics';
+
+export function useHabitReorder(
+  habits: Habit[],
+  heights: Record<string, number>,
+  fallback: number,
+  onReorder: (ids: string[]) => boolean,
+) {
+  const root = useRef<View>(null);
+  const scroll = useRef<ScrollView>(null);
+  const viewport = useRef<View>(null);
+  const geometry = useRef({
+    rootY: 0,
+    rootX: 0,
+    bodyY: 0,
+    bodyHeight: 0,
+    rootHeight: 0,
+    offset: 0,
+  });
+  const [menu, setMenu] = useState<{ id: string; anchor: HabitAnchor } | null>(
+    null,
+  );
+  const [mode, setMode] = useState(false);
+  const [draft, setDraft] = useState<string[] | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const ghostY = useSharedValue(0);
+  const ghostHeight = useSharedValue(fallback);
+  const drag = useRef<{
+    id: string;
+    ids: string[];
+    draft: string[];
+    startY: number;
+    pageY: number;
+    offset: number;
+    top: number;
+    height: number;
+    target: number;
+  } | null>(null);
+  const frame = useRef<number | null>(null);
+  const latest = useRef({ habits, heights, fallback, onReorder });
+  useLayoutEffect(() => {
+    latest.current = { habits, heights, fallback, onReorder };
+  });
+  const [bounds, setBounds] = useState({ rootY: 0, rootHeight: 0 });
+  function measure() {
+    root.current?.measureInWindow((x, y, _, height) => {
+      setBounds({ rootY: y, rootHeight: height });
+      Object.assign(geometry.current, {
+        rootX: x,
+        rootY: y,
+        rootHeight: height,
+      });
+    });
+    viewport.current?.measureInWindow((_, y, __, height) => {
+      Object.assign(geometry.current, { bodyY: y, bodyHeight: height });
+    });
+  }
+  function stop() {
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+    frame.current = null;
+  }
+  function cancel() {
+    stop();
+    drag.current = null;
+    setDragId(null);
+    setDraft(null);
+    setMenu(null);
+  }
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') cancel();
+    });
+    return () => subscription.remove();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const identity = habits.map((habit) => habit.id).join('|');
+  useEffect(() => {
+    // Persisted identity changes must cancel an in-flight native drag.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    cancel();
+    return stop;
+  }, [identity]); // eslint-disable-line react-hooks/exhaustive-deps
+  function update() {
+    const d = drag.current;
+    if (!d) return;
+    const g = geometry.current;
+    const delta = d.pageY - d.startY;
+    ghostY.set(
+      Math.max(
+        g.bodyY - g.rootY,
+        Math.min(
+          g.bodyY - g.rootY + g.bodyHeight - d.height,
+          g.bodyY - g.rootY + d.top - d.offset + delta,
+        ),
+      ),
+    );
+    const centre = d.top + delta + (g.offset - d.offset) + d.height / 2;
+    const target = dragDestination(
+      d.ids,
+      latest.current.heights,
+      latest.current.fallback,
+      centre,
+    );
+    if (target !== d.target) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      d.target = target;
+      d.draft = moveHabit(d.ids, d.id, target);
+      setDraft(d.draft);
+      feedback('selection');
+    }
+  }
+  function autoScroll() {
+    const d = drag.current;
+    if (!d) return;
+    const g = geometry.current;
+    const total = d.ids.reduce(
+      (sum, id) =>
+        sum + (latest.current.heights[id] ?? latest.current.fallback),
+      0,
+    );
+    const edge = 44;
+    const speed =
+      d.pageY < g.bodyY + edge
+        ? -Math.min(7, (g.bodyY + edge - d.pageY) / 7)
+        : d.pageY > g.bodyY + g.bodyHeight - edge
+          ? Math.min(7, (d.pageY - (g.bodyY + g.bodyHeight - edge)) / 7)
+          : 0;
+    const next = Math.max(
+      0,
+      Math.min(Math.max(0, total - g.bodyHeight), g.offset + speed),
+    );
+    if (next !== g.offset) {
+      g.offset = next;
+      scroll.current?.scrollTo({ y: next, animated: false });
+      update();
+    }
+    frame.current = requestAnimationFrame(autoScroll);
+  }
+  function beginOrMove(id: string, pageY: number, startY: number) {
+    if (!drag.current) {
+      const ids = latest.current.habits.map((habit) => habit.id),
+        source = ids.indexOf(id);
+      if (source < 0) return;
+      const height = latest.current.heights[id] ?? latest.current.fallback;
+      const top = ids
+        .slice(0, source)
+        .reduce(
+          (sum, key) =>
+            sum + (latest.current.heights[key] ?? latest.current.fallback),
+          0,
+        );
+      drag.current = {
+        id,
+        ids,
+        draft: ids,
+        startY,
+        pageY,
+        offset: geometry.current.offset,
+        top,
+        height,
+        target: source,
+      };
+      ghostHeight.set(height);
+      setDragId(id);
+      setMenu(null);
+      setDraft(ids);
+      if (!menu) feedback('selection');
+      frame.current = requestAnimationFrame(autoScroll);
+    }
+    drag.current.pageY = pageY;
+    update();
+  }
+  function drop() {
+    const d = drag.current;
+    stop();
+    drag.current = null;
+    if (
+      d &&
+      d.ids.join('|') !== d.draft.join('|') &&
+      latest.current.onReorder(d.draft)
+    ) {
+      feedback('confirm');
+      AccessibilityInfo.announceForAccessibility(
+        `Moved to position ${d.target + 1}`,
+      );
+    }
+    setDragId(null);
+    setDraft(null);
+    setMenu(null);
+  }
+  return {
+    bounds,
+    root,
+    scroll,
+    viewport,
+    updateOffset: (offset: number) => {
+      geometry.current.offset = offset;
+    },
+    measure,
+    menu,
+    setMenu,
+    mode,
+    setMode,
+    draft,
+    dragId,
+    ghostY,
+    ghostHeight,
+    cancel,
+    beginOrMove,
+    drop,
+    hold: (id: string, anchor: HabitAnchor) => {
+      if (drag.current) return;
+      measure();
+      setMenu({ id, anchor });
+      feedback('selection');
+    },
+  };
+}

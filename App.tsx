@@ -18,8 +18,11 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { type GridDay } from './src/calendar';
 import { HabitGrid } from './src/HabitGrid';
-import { type Habit } from './src/habits';
-import { ColourPicker } from './src/ColourPicker';
+import { isNumericHabit, type Habit } from './src/habits';
+import { randomUUID } from 'expo-crypto';
+import { HabitDialog, type HabitDialogMode } from './src/HabitDialog';
+import { fullHabitOrder, moveHabit } from './src/habitOrdering';
+import type { HabitAction } from './src/HabitName';
 import { checkmarkColor } from './src/colors';
 import { useLocalToday } from './src/useLocalToday';
 import { feedback, setHapticsEnabled } from './src/haptics';
@@ -99,7 +102,7 @@ function PersistentApp({ store }: { store: ChangeStore }) {
   }, [hapticsEnabled]);
   const today = useLocalToday();
   const [panel, setPanel] = useState<{
-    page: 'history' | 'settings';
+    page: 'history' | 'settings' | 'habits';
     visible: boolean;
   }>({ page: 'history', visible: false });
   const [editing, setEditing] = useState<{
@@ -107,9 +110,12 @@ function PersistentApp({ store }: { store: ChangeStore }) {
     habit: Habit;
     day: GridDay;
   } | null>(null);
-  const [draftColor, setDraftColor] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const detail = habits.find((habit) => habit.id === detailId);
+  const [habitMode, setHabitMode] = useState<HabitDialogMode>('stats');
+  const [newHabit, setNewHabit] = useState<Habit | null>(null);
+  const [reorderRequested, setReorderRequested] = useState(0);
+  const editable = store.canEdit() && !backupBusy;
   const [input, setInput] = useState('');
   const trimmed = input.trim().replace(',', '.');
   const numeric = Number(trimmed);
@@ -125,7 +131,7 @@ function PersistentApp({ store }: { store: ChangeStore }) {
       if (!store.canEdit()) return;
       const key = `${habit.id}:${day.key}`;
       const before = store.getSnapshot().replay.state.values[key] ?? null;
-      if (habit.unit) {
+      if (isNumericHabit(habit)) {
         setInput(before === null ? '' : String(before));
         setEditing({ key, habit, day });
         feedback('selection');
@@ -147,7 +153,7 @@ function PersistentApp({ store }: { store: ChangeStore }) {
   );
 
   const openDetails = useCallback((habit: Habit) => {
-    setDraftColor(habit.color);
+    setHabitMode('stats');
     setDetailId(habit.id);
   }, []);
 
@@ -190,23 +196,103 @@ function PersistentApp({ store }: { store: ChangeStore }) {
   function closeDialog() {
     setEditing(null);
     setDetailId(null);
-    setDraftColor(null);
+    setNewHabit(null);
   }
 
-  function applyColour() {
-    if (!detail || !draftColor || !store.canEdit()) return;
+  function applyColour(colour: string): boolean {
+    const habit = store
+      .getSnapshot()
+      .replay.state.habits.find((habit) => habit.id === detailId);
+    if (!habit || !store.canEdit()) return false;
+    if (colour === habit.color) return true;
+    const accepted = store.change({
+      kind: 'colour',
+      habitId: habit.id,
+      before: habit.color,
+      after: colour,
+    });
+    if (accepted) feedback('confirm');
+    return accepted;
+  }
+  function saveHabit(after: Habit): boolean {
+    const current = store.getSnapshot().replay.state.habits;
+    const before = current.find((habit) => habit.id === after.id) ?? null;
     if (
-      draftColor !== detail.color &&
-      !store.change({
-        kind: 'colour',
-        habitId: detail.id,
-        before: detail.color,
-        after: draftColor,
-      })
+      before &&
+      before.name === after.name &&
+      before.color === after.color &&
+      before.unit === after.unit &&
+      isNumericHabit(before) === isNumericHabit(after) &&
+      before.archived === after.archived
     )
+      return true;
+    const accepted = store.change({
+      kind: 'habit',
+      habitId: after.id,
+      index: before ? current.indexOf(before) : current.length,
+      before,
+      after,
+    });
+    if (accepted) feedback('confirm');
+    return accepted;
+  }
+  function reorderHabits(ids: string[]): boolean {
+    const current = store.getSnapshot().replay.state.habits;
+    const before = current.map((habit) => habit.id),
+      after = fullHabitOrder(current, ids);
+    if (before.join('|') === after.join('|')) return false;
+    return store.change({ kind: 'order', before, after });
+  }
+  function habitAction(habit: Habit, action: HabitAction) {
+    if (!store.canEdit()) return;
+    if (action === 'archive') {
+      saveHabit({ ...habit, archived: true });
       return;
-    if (draftColor !== detail.color) feedback('confirm');
-    closeDialog();
+    }
+    if (action === 'moveUp' || action === 'moveDown') {
+      const ids = store
+        .getSnapshot()
+        .replay.state.habits.filter((habit) => !habit.archived)
+        .map((habit) => habit.id);
+      if (
+        reorderHabits(
+          moveHabit(
+            ids,
+            habit.id,
+            ids.indexOf(habit.id) + (action === 'moveUp' ? -1 : 1),
+          ),
+        )
+      )
+        feedback('selection');
+      return;
+    }
+    if (action === 'reorder') {
+      setPanel((previous) => ({ ...previous, visible: false }));
+      setReorderRequested((value) => value + 1);
+      return;
+    }
+    setNewHabit(null);
+    setDetailId(habit.id);
+    setHabitMode(action === 'colour' ? 'colour' : 'edit');
+    feedback('selection');
+  }
+  function addHabit() {
+    if (!store.canEdit()) return;
+    if (store.getSnapshot().replay.state.habits.length >= 1000) {
+      Alert.alert(
+        'Habit limit reached',
+        'This preview supports up to 1,000 habits, including archived habits.',
+      );
+      return;
+    }
+    setDetailId(null);
+    setNewHabit({
+      id: randomUUID(),
+      name: '',
+      color: '#82E6BC',
+      type: 'checkbox',
+    });
+    setHabitMode('create');
   }
 
   function undo() {
@@ -283,6 +369,23 @@ function PersistentApp({ store }: { store: ChangeStore }) {
       />
     );
 
+  const habitDialog =
+    detail || newHabit ? (
+      <HabitDialog
+        key={detail?.id ?? newHabit?.id}
+        habit={(detail ?? newHabit)!}
+        mode={habitMode}
+        values={values}
+        today={today}
+        Heading={PreviewHeading}
+        onClose={closeDialog}
+        onSave={saveHabit}
+        onColour={applyColour}
+        onEdit={() => setHabitMode('edit')}
+        editable={editable}
+      />
+    ) : null;
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.screen}>
@@ -314,16 +417,21 @@ function PersistentApp({ store }: { store: ChangeStore }) {
             DateButtonComponent={PreviewDateButton}
             key={today}
             today={today}
-            habits={habits}
+            habits={habits.filter((habit) => !habit.archived)}
+            editable={editable}
+            onHabitAction={habitAction}
+            onReorder={reorderHabits}
+            reorderRequested={reorderRequested}
             values={values}
             onHabitPress={openDetails}
             onCellPress={pressCell}
             onHistoryPress={openHistory}
             onSettingsPress={openSettings}
+            onAddHabit={addHabit}
           />
         </View>
         <Modal
-          visible={editing !== null || detail !== undefined}
+          visible={editing !== null}
           animationType="fade"
           supportedOrientations={[
             'portrait',
@@ -338,23 +446,6 @@ function PersistentApp({ store }: { store: ChangeStore }) {
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           >
             <View accessibilityViewIsModal style={styles.dialog}>
-              {detail && !editing && (
-                <View style={styles.dialogHeader}>
-                  <Text style={[styles.eyebrow, { marginBottom: 0 }]}>
-                    HABIT DETAILS
-                  </Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Close without applying colour"
-                    onPress={closeDialog}
-                    style={styles.closeButton}
-                  >
-                    <Text allowFontScaling={false} style={styles.closeText}>
-                      ×
-                    </Text>
-                  </Pressable>
-                </View>
-              )}
               <ScrollView
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
@@ -372,7 +463,7 @@ function PersistentApp({ store }: { store: ChangeStore }) {
                       <TextInput
                         autoFocus
                         keyboardType="decimal-pad"
-                        accessibilityLabel={`Daily total in ${editing.habit.unit}`}
+                        accessibilityLabel={`Daily total${editing.habit.unit ? ` in ${editing.habit.unit}` : ''}`}
                         value={input}
                         onChangeText={setInput}
                         onSubmitEditing={saveNumber}
@@ -423,39 +514,24 @@ function PersistentApp({ store }: { store: ChangeStore }) {
                       </Pressable>
                     </View>
                   </>
-                ) : detail ? (
-                  <>
-                    <Text style={styles.secondary}>
-                      Statistics and streaks are coming next.
-                    </Text>
-                    <ColourPicker
-                      key={detail.id}
-                      color={detail.color}
-                      onChange={setDraftColor}
-                    />
-                  </>
                 ) : null}
               </ScrollView>
-              {detail && !editing && (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ disabled: !draftColor }}
-                  disabled={!draftColor}
-                  onPress={applyColour}
-                  style={[
-                    styles.action,
-                    styles.doneAction,
-                    { opacity: draftColor ? 1 : 0.4 },
-                  ]}
-                >
-                  <Text style={styles.actionText}>Done</Text>
-                </Pressable>
-              )}
             </View>
           </KeyboardAvoidingView>
         </Modal>
+        {!panel.visible && habitDialog}
         <AppPanel
           page={panel.page}
+          onManage={() => setPanel({ page: 'habits', visible: true })}
+          onBack={() => setPanel({ page: 'settings', visible: true })}
+          onAddHabit={addHabit}
+          onEditHabit={(habit) => habitAction(habit, 'edit')}
+          onRestoreHabit={(habit) => saveHabit({ ...habit, archived: false })}
+          onReorderHabits={() => {
+            setPanel((previous) => ({ ...previous, visible: false }));
+            setReorderRequested((value) => value + 1);
+          }}
+          habitDialog={panel.visible ? habitDialog : null}
           visible={panel.visible}
           HeadingComponent={PreviewHeading}
           snapshot={snapshot}
@@ -486,21 +562,6 @@ function PersistentApp({ store }: { store: ChangeStore }) {
 }
 
 const styles = StyleSheet.create({
-  dialogHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: -10,
-    marginBottom: 4,
-  },
-  closeButton: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: -10,
-  },
-  closeText: { color: '#BBBBBB', fontSize: 27, lineHeight: 30 },
   screen: { flex: 1, backgroundColor: '#000000' },
   content: {
     flex: 1,
@@ -554,9 +615,4 @@ const styles = StyleSheet.create({
   actionText: { color: '#D0D0D0' },
   primaryAction: { borderRadius: 14 },
   primaryActionText: { color: '#000000', fontWeight: '600' },
-  doneAction: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#333333',
-    marginTop: 12,
-  },
 });

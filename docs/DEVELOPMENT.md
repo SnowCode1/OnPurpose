@@ -39,7 +39,7 @@ Use the lockfile for the exact installed dependencies.
 5. Scan the QR code with the iPhone Camera and open the link in Expo Go. Allow
    local-network access if iOS asks.
 6. Tap checkbox cells in the sample grid; a second tap unchecks them. Tap a
-   numeric cell to enter a daily total. Names open a statistics placeholder.
+   numeric cell to enter a daily total. Names open recent statistics; hold a name for actions or drag-to-reorder.
    Entries, colours, and haptic preferences now save locally; reload to verify. The founder
    requested removal of the bottom demo notice to give the grid more space.
 7. Edit `App.tsx` and save. The phone should refresh with the change.
@@ -220,13 +220,18 @@ Metro with `npm run start:clear` if it cannot resolve an installed module).
 Settings → Export backup opens the share sheet; choose Save to Files. Restore
 backup validates first and asks before replacing data, retaining a local copy.
 
-New habit edits use version-2 events with grouped actions; global preferences save
-outside visible History/Undo. Exports use container version 2; existing version-1
+New habit edits use version-3 events with grouped actions; global preferences save
+outside visible History/Undo. Exports use container version 3; existing version-1/2
 backups remain importable and old log records stay unchanged. Fully reload Expo Go
-to test storage updates. Do not downgrade to an older build after writing v2 data;
+to test storage updates. Do not downgrade to an older build after writing v3 data;
 older builds cannot interpret it and will refuse to load rather than reset.
 The web preview uses separate browser localStorage, not the iPhone SQLite file.
 
 Run `node --test scripts/storage.test.mjs` for focused storage/recovery tests, and
 `npm test` for the full suite. These tests use Node 24's SQLite binding against the
 production SQL/replay logic. Native bridge and Files UI still need phone testing.
+
+Habit setup is in Settings → Manage habits. Add a checkbox or numeric habit, edit
+its name/unit/colour, arrange the rows, or restore an archived habit. Archiving
+retains entries; History can undo these changes. See [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md)
+for gestures and current statistics limits.

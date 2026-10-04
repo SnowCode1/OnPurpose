@@ -1,5 +1,35 @@
 # Decision log
 
+## 020 — Habit-name actions, drag ordering, and management
+
+Date: 4 October 2026. Status: founder authorized implementation; native interaction
+acceptance pending. The prior active-History update was accepted by the founder.
+
+Tap a habit name for statistics. Hold for an anchored Colour/Edit/Reorder/Archive
+menu, then continue the same touch vertically to drag. Releasing the original
+hold leaves the menu open; selecting an option requires a separate tap. Restrict
+these gestures to names, keeping date cells direct. Offer explicit reorder mode,
+VoiceOver move actions, and Settings → Manage habits for discoverability.
+
+Use native Pressable/PanResponder callbacks with a 380 ms hold and ten-point
+vertical threshold, pending phone tuning. The in-tree overlay retains the held
+responder; a separate modal menu would interrupt it. Preview ordering without
+saving, animate neighbour layouts, and scroll at viewport edges. Completed drops
+save one action; cancellation, multiple touches, rotation, backgrounding, and
+changed habit identities discard the draft. Preserve horizontal scroll syncing.
+
+Implement creation, name/unit/colour editing, and archival/restoration. Type is
+explicit for new habits and read-only after creation in this editor. Numeric
+units are optional. Archiving retains values and position; ordering visible rows
+retains archived slots. Editors apply drafts with Done and discard with Close.
+Basic statistics show recent recorded days, without inventing streak/target rules.
+
+Version-3 events add full habit-definition and order changes, both undoable and
+outside correction coalescing. Definition equality ignores field ordering; exact
+before-values and complete unique order permutations are required. New exports
+use version 3; unchanged v1/v2 fixtures remain supported. No SQL schema change,
+destructive reset, or permanent-delete UI. See [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md).
+
 ## 019 — Active habit History and grouped Undo
 
 Date: 4 October 2026. Status: founder authorized the recommendation; implemented,

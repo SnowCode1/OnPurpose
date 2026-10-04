@@ -31,6 +31,10 @@ once; never reset or reseed an existing store during loading or an error.
 - `src/HistoryView.tsx` renders compact action rows and sticky edit-day groups;
   `src/history.ts` keeps grouping separate from effective habit dates. Preserve
   reverse sequence order; do not reorder logged actions by their timestamps.
+- `src/HabitName.tsx` and `src/useHabitReorder.ts` own hold/menu/drag interactions.
+  Only completed drops persist. Keep cells distinct, support cancellation, and
+  preserve archive entries. `src/HabitDialog.tsx` owns stats/editor/colour drafts;
+  `src/ManageHabits.tsx` owns the Settings habit list. Read HABIT_MANAGEMENT.md.
 - `src/gridLayout.ts` calculates adaptive column geometry for both orientations.
 - `src/useGridScroll.ts` synchronizes native scrolling on the UI thread; never
   put per-frame list synchronization back on the JavaScript thread.

@@ -1,4 +1,5 @@
 import { localDateKey } from './calendar.ts';
+import { isNumericHabit } from './habits.ts';
 import type { HistoryAction, StoredState } from './storage/model.ts';
 import type { IconName } from './Icon.tsx';
 
@@ -51,6 +52,33 @@ export function historyDayLabel(date: string, today: string): string {
 
 export function historyPresentation(event: HistoryAction, state: StoredState) {
   const change = event.change;
+  if (change.kind === 'order')
+    return {
+      title: 'Habit order',
+      summary: 'Rearranged habits',
+      icon: 'reorder' as const,
+      color: '#ACB8C5',
+      effectiveDate: null,
+    };
+  if (change.kind === 'habit') {
+    const habit = change.after ?? change.before!;
+    const summary = !change.before
+      ? 'Habit added'
+      : !change.after
+        ? 'Habit removed'
+        : change.before.archived !== change.after.archived
+          ? change.after.archived
+            ? 'Archived'
+            : 'Restored'
+          : 'Habit edited';
+    return {
+      title: habit.name,
+      summary,
+      icon: (summary === 'Archived' ? 'archive' : 'edit') as IconName,
+      color: habit.color,
+      effectiveDate: null,
+    };
+  }
   const habit = state.habits.find((habit) => habit.id === change.habitId);
   const title = habit?.name ?? 'Habit';
   let icon: IconName;
@@ -58,14 +86,16 @@ export function historyPresentation(event: HistoryAction, state: StoredState) {
   if (change.kind === 'colour') {
     icon = 'palette';
     summary = 'Colour changed';
-  } else if (habit?.unit) {
+  } else if (habit && isNumericHabit(habit)) {
     icon = change.after === null ? 'erase' : 'number';
     const before =
       change.before === null
         ? '—'
-        : `${change.before}${change.after === null ? ` ${habit.unit}` : ''}`;
+        : `${change.before}${change.after === null && habit.unit ? ` ${habit.unit}` : ''}`;
     const after =
-      change.after === null ? 'Cleared' : `${change.after} ${habit.unit}`;
+      change.after === null
+        ? 'Cleared'
+        : `${change.after}${habit.unit ? ` ${habit.unit}` : ''}`;
     summary = `${before} → ${after}`;
   } else {
     icon = change.after === null ? 'unchecked' : 'checked';
