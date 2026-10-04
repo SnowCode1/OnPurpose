@@ -8,8 +8,64 @@ import {
 import { replayEvents } from '../src/storage/model.ts';
 import { habitStatistics, dayNumber } from '../src/statistics.ts';
 import { demoHabits, isNumericHabit } from '../src/habits.ts';
+import { entryDay } from '../src/calendar.ts';
 
 const today = '2026-10-04';
+test('calendar corrections update the same dated values and statistics and can be undone', async () => {
+  const store = await createSampleStore(today);
+  function stats(id) {
+    const { replay, events } = store.getSnapshot();
+    return habitStatistics(
+      replay.state.habits.find((habit) => habit.id === id),
+      replay.state.values,
+      events,
+      today,
+      30,
+    );
+  }
+  for (const [habitId, date, after] of [
+    ['walk', '2026-10-03', null],
+    ['meditate', '2026-10-02', 1],
+    ['read', '2026-09-30', 12.5],
+    ['water', '2026-10-01', 0],
+    ['water', '2026-10-02', null],
+    ['read', '2026-10-05', 42],
+  ]) {
+    const target = entryDay(date);
+    const key = `${habitId}:${target.key}`;
+    const before = store.getSnapshot().replay.state.values[key] ?? null;
+    const originalStats = stats(habitId);
+    assert.notEqual(before, after);
+    assert.equal(
+      store.change({ kind: 'entry', habitId, date: target.key, before, after }),
+      true,
+    );
+    assert.equal(store.getSnapshot().replay.state.values[key] ?? null, after);
+    const updatedStats = stats(habitId);
+    if (date > today) assert.deepEqual(updatedStats, originalStats);
+    else {
+      const numeric = isNumericHabit(
+        demoHabits.find((habit) => habit.id === habitId),
+      );
+      if (numeric)
+        assert.equal(
+          updatedStats.total,
+          originalStats.total - (before ?? 0) + (after ?? 0),
+        );
+      else
+        assert.equal(
+          updatedStats.recorded,
+          originalStats.recorded + (after === 1 ? 1 : -1),
+        );
+    }
+    assert.equal(store.undo(), true);
+    assert.deepEqual(stats(habitId), originalStats);
+    assert.equal(store.getSnapshot().replay.state.values[key] ?? null, before);
+    assert.equal(store.redo(), true);
+    assert.deepEqual(stats(habitId), updatedStats);
+  }
+  await store.flush();
+});
 test('sample history is deterministic, valid and bounded to 180 local dates across DST and leap days', () => {
   for (const date of [today, '2024-03-05', '2026-04-05']) {
     const events = createSampleEvents(date);

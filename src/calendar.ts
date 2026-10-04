@@ -26,6 +26,20 @@ export type GridDay = {
   fullLabel: string;
 };
 
+export type EntryDay = Pick<GridDay, 'key' | 'fullLabel'>;
+
+export function entryDay(key: string): EntryDay {
+  return {
+    key,
+    fullLabel: calendarDay(key, 0).toLocaleDateString(undefined, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }),
+  };
+}
+
 export function makeGridDays(
   today: string,
   count: number,
@@ -35,19 +49,13 @@ export function makeGridDays(
     const daysAgo = index - futureCount;
     const date = calendarDay(today, daysAgo);
     return {
-      key: localDateKey(date),
+      ...entryDay(localDateKey(date)),
       daysAgo,
       label:
         daysAgo === 0
           ? 'Today'
           : date.toLocaleDateString(undefined, { weekday: 'short' }),
       number: date.getDate(),
-      fullLabel: date.toLocaleDateString(undefined, {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      }),
     };
   });
 }

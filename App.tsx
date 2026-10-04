@@ -22,7 +22,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { type GridDay } from './src/calendar';
+import { type EntryDay } from './src/calendar';
 import { HabitStatsScreen } from './src/HabitStatsScreen';
 import { HabitGrid } from './src/HabitGrid';
 import { isNumericHabit, type Habit } from './src/habits';
@@ -144,7 +144,7 @@ function PersistentApp({
   const [editing, setEditing] = useState<{
     key: string;
     habit: Habit;
-    day: GridDay;
+    day: EntryDay;
   } | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const detail = habits.find((habit) => habit.id === detailId);
@@ -166,7 +166,7 @@ function PersistentApp({
   const accent = editing?.habit.color ?? detail?.color ?? '#FFFFFF';
 
   const pressCell = useCallback(
-    (habit: Habit, day: GridDay) => {
+    (habit: Habit, day: EntryDay) => {
       if (!store.canEdit()) return;
       const key = `${habit.id}:${day.key}`;
       const before = store.getSnapshot().replay.state.values[key] ?? null;
@@ -482,6 +482,7 @@ function PersistentApp({
               Heading={PreviewHeading}
               editable={editable}
               onBack={() => setStatsId(null)}
+              onCellPress={pressCell}
               onEdit={() => habitAction(statsHabit, 'edit')}
             />
           )}

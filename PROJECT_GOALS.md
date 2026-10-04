@@ -55,6 +55,8 @@ and uncertainty about whether something was saved.
 - Plan for approximately 10–20 habits. The primary test phone is an iPhone 16 Pro.
 - Tapping a habit opens full-screen statistics, including streaks, completion-rate
   charts for checkboxes and numerical charts for daily totals.
+- Tap days in the statistics calendar to toggle checkboxes or edit numeric totals
+  using the same entry behaviour as the grid. Today navigation scrolls back quickly.
 - Hold the habit name for a compact Colour/Edit/Reorder/Archive overlay. Continue
   holding and drag to reorder; include an explicit mode and accessible move actions.
   Keep date-cell recording gestures separate. Add habits at the end of the grid;

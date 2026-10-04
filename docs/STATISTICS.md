@@ -31,6 +31,15 @@ are completed; numeric colour intensity scales against that month's highest
 recorded total. Zero remains coloured, blanks remain empty, future dates are dim.
 Today has an outline. Each day has a spoken date and value.
 
+Tap any calendar day to toggle a checkbox or open the grid's daily-total editor.
+The exact selected date is passed to the same entry handler, including future days
+visible in the current month. Future records are shown in the calendar but remain
+excluded from statistical calculations. Edits immediately update charts and grid
+values and use normal saving, haptics, grouped History, and Undo/Redo. Numeric zero,
+blank-to-clear, and Cancel retain their grid meanings. Save failures disable edits
+and expose the existing retry banner. Calendar checkboxes expose their checked state
+to VoiceOver; numeric days announce the full date and recorded value.
+
 ## Calculation rules
 
 - Read current values from the replayed projection, not a count of raw edit events.

@@ -5,9 +5,38 @@ import {
   makeGridDays,
   millisecondsUntilTomorrow,
   calendarDay,
+  entryDay,
 } from '../src/calendar.ts';
 
 process.env.TZ = 'Australia/Melbourne';
+
+test('calendar entry targets match grid dates and labels across time zones, DST and leap days', () => {
+  for (const zone of [
+    'Australia/Melbourne',
+    'America/Los_Angeles',
+    'Pacific/Auckland',
+  ]) {
+    process.env.TZ = zone;
+    for (const today of [
+      '2026-10-04',
+      '2026-04-05',
+      '2024-03-01',
+      '2026-01-01',
+    ]) {
+      for (const day of makeGridDays(today, 35, 7)) {
+        assert.deepEqual(entryDay(day.key), {
+          key: day.key,
+          fullLabel: day.fullLabel,
+        });
+        assert.equal(
+          localDateKey(calendarDay(entryDay(day.key).key, 0)),
+          day.key,
+        );
+      }
+    }
+  }
+  process.env.TZ = 'Australia/Melbourne';
+});
 
 test('history starts at today and proceeds backwards, never to a future date', () => {
   const days = makeGridDays('2026-10-04', 90);

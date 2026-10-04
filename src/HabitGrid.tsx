@@ -209,6 +209,7 @@ export const HabitGrid = memo(function HabitGrid({
     body,
     stopSync,
     continueReveal,
+    scrollToToday,
     pull,
     headerScroll,
     bodyScroll,
@@ -261,14 +262,13 @@ export const HabitGrid = memo(function HabitGrid({
     if (!atTodayBoundary) feedback('selection');
     stopSync();
     pendingReveal.current = null;
-    setRightmostDay(0);
-    if (futureCount) {
-      setFutureCount(0);
-      setRangeReset((reset) => reset + 1);
-    } else {
-      body.current?.scrollToOffset({ offset: 0, animated: false });
-      header.current?.scrollToOffset({ offset: 0, animated: false });
-    }
+    scrollToToday(() => {
+      setRightmostDay(0);
+      if (futureCount) {
+        setFutureCount(0);
+        setRangeReset((reset) => reset + 1);
+      }
+    });
   }
 
   function openDateActions() {

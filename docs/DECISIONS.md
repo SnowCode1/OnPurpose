@@ -1,5 +1,23 @@
 # Decision log
 
+## 027 — Animated Today return and editable statistics calendar
+
+Date: 4 October 2026. Status: founder requested; implemented, phone acceptance pending.
+
+Today scrolls both date lists together on the UI thread, using a proposed 280 ms
+ease-out. Keep the current range during the animation, then collapse future dates
+at the same visible Today position. This supersedes decision 015's immediate
+Today reset. A new horizontal drag cancels the animation; geometry changes and
+unmount also cancel it. Respect system Reduce Motion and keep normal scrolling quiet.
+
+Calendar days in statistics use the main grid's entry handler and daily-total
+dialog. Checkbox taps immediately toggle; numeric taps edit the selected date,
+including zero/clear/Cancel. Preserve normal persistence, grouping, haptics, retry,
+and Undo/Redo without a new event type. Future days in the displayed month remain
+editable, consistent with the founder's future-entry requirement; show their values
+in the calendar while excluding them from statistics. Add a short tap hint and
+full-date accessibility labels/checkbox states.
+
 ## 026 — Isolated sample history for statistics review
 
 Date: 4 October 2026. Status: founder confirmed sample data and populated statistics

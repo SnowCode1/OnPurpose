@@ -13,6 +13,22 @@ result or browser test alone is not proof that an iPhone habit was saved.
 
 ## First iPhone smoke test
 
+Latest Today/calendar checks (4 October 2026; device acceptance pending):
+
+- Scroll several weeks into history and tap Today: a quick continuous return,
+  with date headings and entries aligned. Repeat from future dates, then pull
+  again to confirm the future boundary has returned without losing any entries.
+- Interrupt Today with a horizontal drag; the gesture takes over. Rotate during
+  a return and test with Reduce Motion enabled. No stale completion should reset
+  a newer gesture or navigation.
+- Open a checkbox habit's stats and tap past/current/future days in its calendar.
+  Check/uncheck should update immediately; future records remain outside totals.
+- In numeric stats, tap a day and save a decimal, zero, then clear it. Cancel an
+  edit too. Verify the dialog date, main-grid value, charts, and History/Undo/Redo.
+- Repeat in landscape and with VoiceOver/larger text. Calendar padding is inert;
+  only actual day cells record. Real-mode edits should survive a reload; sample
+  mode edits remain temporary by design.
+
 - Connect via the steps in DEVELOPMENT.md; record phone model and iOS version.
 - Confirm content clears the notch and home indicator.
 - Tap sample checkbox cells quickly; every intended change must appear.
@@ -61,6 +77,15 @@ habit counts, one-handed use, and accessibility settings; document limitations.
 - History preserves effective habit dates separately from edit timestamps.
 
 ## Evidence log
+
+4 October 2026 animated Today and editable statistics calendar:
+
+- All 105 tests pass, including matching calendar/grid entry targets across time
+  zones, daylight-saving transitions and leap days; dated corrections, zero/clear,
+  future exclusion from statistics, and Undo/Redo are covered.
+- TypeScript, ESLint, formatting, and the iOS JavaScript/Hermes export pass.
+- UI-thread animation, interruption/rotation, Reduce Motion, calendar touch and
+  VoiceOver behaviour await the founder's physical-iPhone check.
 
 4 October 2026 foundation verification:
 

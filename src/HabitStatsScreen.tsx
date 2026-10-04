@@ -25,6 +25,7 @@ import {
 import { Icon } from './Icon';
 import { HabitSymbol } from './HabitSymbol';
 import { checkmarkColor } from './colors';
+import { entryDay, type EntryDay } from './calendar';
 
 const format = (value: number | null) =>
   value === null
@@ -170,6 +171,7 @@ export function HabitStatsScreen({
   Heading,
   onBack,
   onEdit,
+  onCellPress,
   editable,
 }: {
   habit: Habit;
@@ -179,6 +181,7 @@ export function HabitStatsScreen({
   Heading: ComponentType<TextProps>;
   onBack: () => void;
   onEdit: () => void;
+  onCellPress: (habit: Habit, day: EntryDay) => void;
   editable: boolean;
 }) {
   const [range, setRange] = useState<StatsRange>(30);
@@ -190,9 +193,7 @@ export function HabitStatsScreen({
   const calendar = monthDays(month);
   const monthMax = Math.max(
     1,
-    ...calendar.days.map((day) =>
-      day <= today ? (values[`${habit.id}:${day}`] ?? 0) : 0,
-    ),
+    ...calendar.days.map((day) => values[`${habit.id}:${day}`] ?? 0),
   );
   const unit = habit.unit ?? '';
   useEffect(() => {
@@ -465,15 +466,29 @@ export function HabitStatsScreen({
               <View key={`blank-${index}`} style={styles.day} />
             ))}
             {calendar.days.map((day) => {
-              const value =
-                day <= today ? values[`${habit.id}:${day}`] : undefined;
-              const recorded = value !== undefined;
+              const value = values[`${habit.id}:${day}`];
+              const recorded = stats.numeric
+                ? value !== undefined
+                : value === 1;
+              const date = entryDay(day);
               return (
-                <View
+                <Pressable
                   key={day}
-                  accessible
-                  accessibilityLabel={`${dateLabel(day)}, ${day > today ? 'future date' : recorded ? (stats.numeric ? `${format(value)} ${unit}` : 'completed') : 'not recorded'}`}
-                  style={styles.day}
+                  accessibilityRole={stats.numeric ? 'button' : 'checkbox'}
+                  accessibilityState={{
+                    disabled: !editable,
+                    ...(stats.numeric ? {} : { checked: recorded }),
+                  }}
+                  accessibilityLabel={`${habit.name}, ${date.fullLabel}${day > today ? ', future date' : ''}, ${recorded ? (stats.numeric ? `${format(value)} ${unit}` : 'completed') : 'not recorded'}`}
+                  accessibilityHint={
+                    stats.numeric ? 'Edit daily total' : 'Toggle completion'
+                  }
+                  disabled={!editable}
+                  onPress={() => onCellPress(habit, date)}
+                  style={({ pressed }) => [
+                    styles.day,
+                    { opacity: pressed ? 0.6 : 1 },
+                  ]}
                 >
                   <View
                     style={[
@@ -481,7 +496,7 @@ export function HabitStatsScreen({
                       {
                         backgroundColor: recorded ? habit.color : '#161616',
                         opacity:
-                          day > today
+                          day > today && !recorded
                             ? 0.3
                             : stats.numeric && recorded
                               ? 0.35 + (0.65 * value) / monthMax
@@ -502,21 +517,21 @@ export function HabitStatsScreen({
                       {Number(day.slice(-2))}
                     </Text>
                   </View>
-                </View>
+                </Pressable>
               );
             })}
           </View>
           <Text style={styles.caption}>
             {stats.numeric
-              ? 'Brighter days have higher totals. A recorded zero still has colour.'
-              : 'Coloured days are completed. Today has an outline.'}
+              ? 'Tap a day to edit its total. Brighter days have higher totals; zero still has colour.'
+              : 'Tap a day to check or uncheck it. Coloured days are completed. Today has an outline.'}
           </Text>
         </View>
         <Text style={styles.note}>
           {stats.numeric
             ? 'Averages use recorded days, including zero. Blank days are not treated as zero. A logging streak counts consecutive days with an entry.'
             : 'Rates assume a daily habit. Days before tracking began and unrecorded days while archived are excluded. Today counts once completed. Streaks count consecutive calendar days; an unfinished today does not break the current streak.'}{' '}
-          Future entries are excluded.
+          Future entries are excluded from charts and statistics.
         </Text>
       </ScrollView>
     </Animated.View>
@@ -625,9 +640,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
     paddingBottom: 10,
   },
-  day: { width: '14.2857%', padding: 3, minHeight: 42 },
+  day: { width: '14.2857%', padding: 3, minHeight: 44 },
   dayFace: {
-    minHeight: 36,
+    minHeight: 38,
     borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
