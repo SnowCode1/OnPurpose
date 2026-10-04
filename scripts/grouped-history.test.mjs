@@ -4,6 +4,8 @@ import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { ChangeStore } from '../src/storage/store.ts';
+import { applyPresetIcons } from '../src/storage/presetIcons.ts';
+import { demoHabits } from '../src/habits.ts';
 import { replayEvents, applyEvent } from '../src/storage/model.ts';
 import { sqliteRepository } from '../src/storage/repository.ts';
 import { encodeArchive, decodeArchive } from '../src/storage/archive.ts';
@@ -60,7 +62,7 @@ function sqlite(raw, fault = () => {}) {
   };
   return port;
 }
-async function fixture(t, fault) {
+async function fixture(t, fault, seed = initial) {
   const raw = new DatabaseSync(':memory:');
   t.after(() => raw.close());
   let clock = Date.parse('2026-10-04T05:30:00.000Z');
@@ -74,7 +76,7 @@ async function fixture(t, fault) {
     timeZone: zone,
     utcOffsetMinutes: offset,
   });
-  const repository = sqliteRepository(sqlite(raw, fault), initial);
+  const repository = sqliteRepository(sqlite(raw, fault), seed);
   const store = new ChangeStore(repository, metadata);
   await store.load();
   return {
@@ -868,4 +870,123 @@ test('the v4 synthetic backup preserves icons and their Undo/Redo alongside unch
     ),
   ).events;
   assert.deepEqual(decoded.events.slice(0, old.length), old);
+});
+
+const legacyPresetSeed = () => ({
+  ...initial(),
+  habits: demoHabits.map(({ icon: _icon, ...habit }) => habit),
+});
+test('preset icon update appends undoable edits once, preserves the seed/entries, and survives SQLite reopen and backup', async (t) => {
+  const { store, repository, metadata } = await fixture(
+    t,
+    undefined,
+    legacyPresetSeed,
+  );
+  store.change(entry(null, 1));
+  const prefix = structuredClone(store.getSnapshot().events);
+  assert.equal(applyPresetIcons(store), 12);
+  assert.equal(applyPresetIcons(store), 0);
+  assert.deepEqual(store.getSnapshot().events.slice(0, prefix.length), prefix);
+  assert.equal(store.getSnapshot().replay.state.values['walk:2026-10-04'], 1);
+  assert.deepEqual(store.getSnapshot().replay.state.habits, demoHabits);
+  await store.flush();
+  const reopened = new ChangeStore(repository, metadata);
+  await reopened.load();
+  assert.equal(applyPresetIcons(reopened), 0);
+  assert.equal(reopened.undo(), true);
+  assert.equal(
+    reopened.getSnapshot().replay.state.habits.at(-1).icon,
+    undefined,
+  );
+  assert.equal(applyPresetIcons(reopened), 0); // Raw history preserves the removal decision.
+  await reopened.flush();
+  const again = new ChangeStore(repository, metadata);
+  await again.load();
+  assert.equal(applyPresetIcons(again), 0);
+  assert.equal(again.redo(), true);
+  const archive = await encodeArchive(
+    again.getSnapshot().events,
+    '2026-10-04T06:00:00.000Z',
+    digest,
+  );
+  assert.deepEqual(
+    (await decodeArchive(archive, digest)).replay.state.habits,
+    demoHabits,
+  );
+  await again.flush();
+});
+test('preset icon update respects custom icons, previous removals, renamed habits and archive slots', async (t) => {
+  const { store } = await fixture(t, undefined, legacyPresetSeed);
+  function edit(id, fields) {
+    const index = store
+      .getSnapshot()
+      .replay.state.habits.findIndex((habit) => habit.id === id);
+    const before = store.getSnapshot().replay.state.habits[index];
+    const after = { ...before, ...fields };
+    if (fields.icon === null) delete after.icon;
+    assert.equal(
+      store.change({ kind: 'habit', habitId: id, index, before, after }),
+      true,
+    );
+  }
+  edit('walk', { icon: 'emoji:🚶' });
+  edit('read', { icon: 'tabler:book' });
+  edit('read', { icon: null });
+  edit('water', { name: 'A different habit' });
+  edit('tidy', { archived: true });
+  const order = store
+    .getSnapshot()
+    .replay.state.habits.map((habit) => habit.id);
+  assert.equal(applyPresetIcons(store), 9);
+  const habits = store.getSnapshot().replay.state.habits;
+  assert.equal(habits.find((habit) => habit.id === 'walk').icon, 'emoji:🚶');
+  assert.equal(habits.find((habit) => habit.id === 'read').icon, undefined);
+  assert.equal(habits.find((habit) => habit.id === 'water').icon, undefined);
+  assert.equal(
+    habits.find((habit) => habit.id === 'tidy').icon,
+    'phosphor:broom',
+  );
+  assert.equal(habits.find((habit) => habit.id === 'tidy').archived, true);
+  assert.deepEqual(
+    habits.map((habit) => habit.id),
+    order,
+  );
+  await store.flush();
+});
+test('preset icon update skips unrelated seeds and newly initialized icon presets', async (t) => {
+  const unrelated = await fixture(t);
+  assert.equal(applyPresetIcons(unrelated.store), 0);
+  assert.equal(unrelated.store.getSnapshot().events.length, 1);
+  const fresh = await fixture(t, undefined, () => ({
+    ...initial(),
+    version: 4,
+    habits: demoHabits,
+  }));
+  assert.equal(applyPresetIcons(fresh.store), 0);
+  assert.equal(fresh.store.getSnapshot().events.length, 1);
+});
+test('preset icon save failure retains the serialized queue for retry without duplication', async (t) => {
+  let fail = false;
+  const { store, repository, metadata } = await fixture(
+    t,
+    (sql) => {
+      if (fail && sql.startsWith('INSERT INTO changes'))
+        throw new Error('Disk full');
+    },
+    legacyPresetSeed,
+  );
+  fail = true;
+  assert.equal(applyPresetIcons(store), 12);
+  await assert.rejects(store.flush());
+  assert.ok(store.getSnapshot().error);
+  assert.equal(store.getSnapshot().pending, 12);
+  assert.equal(applyPresetIcons(store), 0);
+  fail = false;
+  await store.retry();
+  await store.flush();
+  const reopened = new ChangeStore(repository, metadata);
+  await reopened.load();
+  assert.equal(reopened.getSnapshot().events.length, 13);
+  assert.deepEqual(reopened.getSnapshot().replay.state.habits, demoHabits);
+  assert.equal(applyPresetIcons(reopened), 0);
 });

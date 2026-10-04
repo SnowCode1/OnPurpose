@@ -111,3 +111,18 @@ while dragging. Keep the fixed sibling order, but express the absolute Y as a
 translateY from a constant top: 0 anchor. Animated top had triggered native layout
 work each frame; the transform avoids that cost without reintroducing a moving
 layout anchor. Native smoothness of this follow-up remains to be verified.
+
+## Fast-swap frame cost
+
+After the fixed-origin transform change, the founder reported stutter specifically
+when quickly crossing other rows. Preview swaps still called setDraft in React,
+rerendering HabitGrid and recreating its date cells/colour calculations. Remove
+that state update: keep draft order in the drag ref and publish absolute Y targets
+through a shared value. ReorderRow reacts to its own target on the UI thread;
+unchanged targets do not restart springs. The held row's resting position is kept
+ready for the final hand-off, including quick releases and Reduce Motion.
+
+Committed geometry still sizes the grid because permutations preserve total height.
+The native sibling order stays stable until commit. Begin/end/menu state still use
+React, but crossings do not. Cancellation restores committed targets; completed
+drops alone enter persistence. Native fast-swipe acceptance remains pending.

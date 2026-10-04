@@ -38,9 +38,9 @@ export function useHabitReorder(
     null,
   );
   const [mode, setMode] = useState(false);
-  const [draft, setDraft] = useState<string[] | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const dragY = useSharedValue(0);
+  const rowTops = useSharedValue<Record<string, number>>({});
   const bodyTop = useSharedValue(0);
   const scrollOffset = useSharedValue(0);
   const drag = useRef<{
@@ -60,6 +60,21 @@ export function useHabitReorder(
   useLayoutEffect(() => {
     latest.current = { habits, heights, fallback, onReorder };
   });
+  // Preview swaps write shared targets, never React state. A grid render here
+  // rebuilds date cells and colour calculations on the same JS thread as touch input.
+  function resetTargets() {
+    const current = latest.current;
+    rowTops.set(
+      habitRowPositions(
+        current.habits.map((habit) => habit.id),
+        current.heights,
+        current.fallback,
+      ).tops,
+    );
+  }
+  useLayoutEffect(() => {
+    if (!drag.current && !settling.current) resetTargets();
+  }, [habits, heights, fallback]); // eslint-disable-line react-hooks/exhaustive-deps
   const [bounds, setBounds] = useState({ rootY: 0, rootHeight: 0 });
   function measure() {
     root.current?.measureInWindow((x, y, _, height) => {
@@ -86,7 +101,7 @@ export function useHabitReorder(
     settling.current = null;
     drag.current = null;
     setDragId(null);
-    setDraft(null);
+    resetTargets();
     setMenu(null);
   }
   useEffect(() => {
@@ -131,7 +146,13 @@ export function useHabitReorder(
     if (target !== d.target) {
       d.target = target;
       d.draft = moveHabit(d.ids, d.id, target);
-      setDraft(d.draft);
+      rowTops.set(
+        habitRowPositions(
+          d.draft,
+          latest.current.heights,
+          latest.current.fallback,
+        ).tops,
+      );
       feedback('selection');
     }
   }
@@ -188,7 +209,7 @@ export function useHabitReorder(
       };
       setDragId(id);
       setMenu(null);
-      setDraft(ids);
+      resetTargets();
       if (!menu) feedback('selection');
       frame.current = requestAnimationFrame(autoScroll);
     }
@@ -198,7 +219,6 @@ export function useHabitReorder(
   function finishDrop() {
     settling.current = null;
     setDragId(null);
-    setDraft(null);
     setMenu(null);
   }
   function drop() {
@@ -250,7 +270,7 @@ export function useHabitReorder(
     setMenu,
     mode,
     setMode,
-    draft,
+    rowTops,
     dragId,
     dragY,
     bodyTop,

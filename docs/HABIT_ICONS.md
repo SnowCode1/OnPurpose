@@ -1,7 +1,8 @@
 # Optional habit icons
 
 Requested by the founder on 4 October 2026. A habit may have no icon, an emoji, or
-a monochrome pack icon. Existing habits remain name-only until edited. An icon
+a monochrome pack icon. Custom habits start name-only; the founder subsequently
+requested icons on all 12 presets. An icon
 appears beside the name in the grid, statistics, and archive list. It is decorative
 for accessibility: the habit's name remains its spoken identity. Icons never
 replace names or shrink date-cell touch targets.
@@ -103,3 +104,31 @@ the upstream MIT notice and all previously accepted IDs on future upgrades.
 Expanded choices use the same v4 representation; older builds with the 56-icon
 registry, or builds without Tabler, will reject backups containing unfamiliar IDs. Update the receiving
 build before importing those backups.
+
+## Preset assignments
+
+The founder requested these defaults after accepting the icon picker:
+
+| Preset          | Icon                        |
+| --------------- | --------------------------- |
+| Go for a walk   | Phosphor person-simple-walk |
+| Read            | Phosphor book-open          |
+| Drink water     | Phosphor drop               |
+| Stretch         | Tabler stretching           |
+| Write a little  | Phosphor pencil-simple      |
+| Get outside     | Phosphor tree               |
+| Meditate        | Tabler yoga                 |
+| Cook a meal     | Phosphor fork-knife         |
+| Tidy up         | Phosphor broom              |
+| Call someone    | Phosphor phone              |
+| Learn something | Phosphor graduation-cap     |
+| Wind down       | Phosphor moon               |
+
+Fresh stores include these in their one initialization event. For existing stores,
+`App.tsx` calls `applyPresetIcons` after a successful opening. It recognizes the
+complete original preset seed, then appends normal undoable icon edits to unchanged
+preset names that have never had an icon. Earlier chosen/removed icons and renamed
+or unrelated habits are left alone. Archive status, entries, colour, units, and
+order remain intact. The original initialization record is never rewritten.
+Raw icon edits remain after Undo, so reload does not reapply an undone assignment.
+These edits appear in History and, like other habit edits, begin a new redo branch.

@@ -17,6 +17,8 @@ requirement. Distinguish founder decisions from assistant proposals in the docs.
 Incremental change storage and export are confirmed requirements; read
 `docs/STORAGE.md` before implementing persistence. Entries, colours, and haptic preferences now persist. Sample habits are initialized
 once; never reset or reseed an existing store during loading or an error.
+The requested preset icon update uses normal undoable edits in
+`src/storage/presetIcons.ts`; preserve earlier icon choices/removals and raw history.
 
 ## Stack and layout
 
@@ -41,7 +43,8 @@ once; never reset or reseed an existing store during loading or an error.
   selection drafts through `src/HabitIconPicker.tsx`. Read HABIT_ICONS.md.
   `src/ReorderRow.tsx` moves the actual name/cell views together during drag/drop;
   do not introduce a visually different floating placeholder. Keep native sibling
-  order stable during preview swaps and use one absolute animated Y coordinate
+  order stable during preview swaps. Send swap targets through shared values, not
+  React state that rerenders the grid during touch input. Use one absolute animated Y coordinate
   via translateY from a fixed top: 0 anchor. Do not animate layout top each frame
   or combine changing layout anchors with a compensating transform. Measure height on the inner
   name control so position animation does not report per-frame layout to JS.

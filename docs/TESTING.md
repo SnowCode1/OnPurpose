@@ -650,3 +650,28 @@ Phone acceptance pending:
    line weight against Phosphor. Exercise Done, Close, None and invalid emoji input.
 4. Browse deep into All, select an icon, use the keyboard, and rotate. Check
    responsive scrolling, selected borders, fixed Done, and VoiceOver pack labels.
+
+## Preset icons and fast drag swaps — 4 October 2026
+
+The founder accepted the icons, requested preset assignments, and identified a
+remaining fast-swap stutter. All 12 seed presets now have icons. Recognized existing
+presets receive missing icons through normal v4 writes; user choices/removals and
+renamed/custom habits are preserved. Drag swaps now publish shared Y targets and
+keep preview order outside React state, avoiding a full grid render per crossing.
+
+Automated: 99 tests pass. New SQLite cases cover fresh/legacy/unrelated seeds,
+unchanged seed/entries/order/archive state, preserving custom/removed icons,
+reload, Undo without reapplication, Redo, backup, and failed-write retry without
+duplication. Existing variable-height reorder geometry tests remain in place.
+Native frame rate and appearance still require phone acceptance.
+
+Phone checks:
+
+1. Fully reload. Check icons on unchanged presets without custom choices. Existing
+   choices and deliberate removals should survive. Undo a preset assignment, reload,
+   and ensure it remains removed; Redo should restore it.
+2. Hold a row until the context menu opens, then sweep quickly across several rows
+   and reverse direction. Check finger tracking and neighbour transitions, plus
+   slow movement and release immediately after a crossing.
+3. Repeat with wrapped names, landscape, edge scrolling, Reduce Motion, multitouch
+   cancellation, and backgrounding. Only completed drops should appear in History.

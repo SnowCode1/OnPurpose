@@ -30,6 +30,7 @@ import { feedback, setHapticsEnabled } from './src/haptics';
 import { AppPanel } from './src/AppPanel';
 import { usePersistentStore, useStoreOpening } from './src/usePersistentStore';
 import type { ChangeStore } from './src/storage/store';
+import { applyPresetIcons } from './src/storage/presetIcons';
 import { shareBackup, chooseBackup } from './src/storage/backups';
 
 // Metro removes this branch (and its module) from release JavaScript.
@@ -96,6 +97,9 @@ function StorageGate({
 
 function PersistentApp({ store }: { store: ChangeStore }) {
   const snapshot = usePersistentStore(store);
+  useEffect(() => {
+    if (snapshot.status === 'ready') applyPresetIcons(store);
+  }, [store, snapshot.status]);
   const { habits, values, hapticsEnabled } = snapshot.replay.state;
   const [backupBusy, setBackupBusy] = useState(false);
   useEffect(() => {

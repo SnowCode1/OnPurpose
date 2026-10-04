@@ -108,7 +108,7 @@ export const HabitGrid = memo(function HabitGrid({
     setMenu: setHabitMenu,
     mode: reorderMode,
     setMode: setReorderMode,
-    draft: reorderDraft,
+    rowTops,
     dragId,
     dragY,
     bodyTop,
@@ -159,13 +159,15 @@ export const HabitGrid = memo(function HabitGrid({
     fontScale,
   );
   const { tops, total: gridHeight } = habitRowPositions(
-    reorderDraft ?? habits.map((habit) => habit.id),
+    habits.map((habit) => habit.id),
     rowHeights,
     baseRowHeight,
   );
   const rowMotion: Record<string, RowMotion> = {};
   for (const habit of habits) {
     rowMotion[habit.id] = {
+      id: habit.id,
+      rowTops,
       active: dragId === habit.id,
       top: tops[habit.id] ?? 0,
       dragY,

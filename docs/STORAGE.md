@@ -25,6 +25,18 @@ Habit/day records answer “What did I record for Tuesday?” Change records ans
 “What changed, and in what order?” Correcting Tuesday on Wednesday uses Tuesday's
 explicit `YYYY-MM-DD` key and Wednesday's edit timestamp. They are never conflated.
 
+## Requested preset icon update
+
+After a successful app opening, `presetIcons.ts` recognizes the original complete
+12-habit preset seed and adds missing preset icons via `ChangeStore.change`.
+These are normal v4 habit edits in the existing serialized queue, with History,
+Undo/Redo, visible failure/retry, and backup support. They do not alter initialization
+or reset/reseed the store. Current choices, names changed from the preset, unrelated
+seeds, and any habit with a past icon assignment/removal are skipped. Raw history
+prevents reapplication after Undo and reload. Fresh initialization already includes
+icons; no follow-up edits are necessary. Restore remains exact at the time it runs;
+an older preset archive without icon history can receive this update on next launch.
+
 ## Database version 1
 
 Native data lives in `onpurpose.db` in Expo SQLite's application database directory.

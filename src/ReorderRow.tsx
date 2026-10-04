@@ -2,12 +2,16 @@ import type { Ref } from 'react';
 import type { View, ViewProps } from 'react-native';
 import Animated, {
   useAnimatedStyle,
+  useAnimatedReaction,
+  useSharedValue,
   withSpring,
   type SharedValue,
 } from 'react-native-reanimated';
 import { reorderSpring } from './motion';
 
 export type RowMotion = {
+  id: string;
+  rowTops: SharedValue<Record<string, number>>;
   active: boolean;
   top: number;
   dragY: SharedValue<number>;
@@ -26,13 +30,30 @@ export function ReorderRow({
   motion: RowMotion;
   ref?: Ref<View>;
 }) {
-  const { active, top, dragY, bodyTop, scrollOffset } = motion;
+  const { id, rowTops, active, top, dragY, bodyTop, scrollOffset } = motion;
+  const restingY = useSharedValue(top);
+  useAnimatedReaction(
+    () => ({ target: rowTops.value[id] ?? top, active }),
+    (current, previous) => {
+      if (current.active) {
+        // The held row follows dragY. Keep its resting coordinate ready for the
+        // final hand-off, even when a short drop finishes before neighbours settle.
+        restingY.value = current.target;
+      } else if (
+        !previous ||
+        previous.active ||
+        current.target !== previous.target
+      ) {
+        restingY.value = withSpring(current.target, reorderSpring);
+      }
+    },
+  );
   const position = useAnimatedStyle(() => ({
     transform: [
       {
         translateY: active
           ? dragY.value - bodyTop.value + scrollOffset.value
-          : withSpring(top, reorderSpring),
+          : restingY.value,
       },
     ],
     zIndex: active ? 1 : 0,

@@ -28,7 +28,8 @@ and uncertainty about whether something was saved.
   and a visual custom picker with optional hex input; use familiar user-facing
   labels rather than colour-space jargon.
 - Optionally give a habit an emoji or a pack icon. Pack icons use the habit colour;
-  icons are not required and existing habits stay without one until selected.
+  icons remain optional. Give all 12 presets suitable icons; preserve user choices
+  when adding them to an existing preset list. New custom habits start without one.
   Offer Phosphor and Tabler Outline with shared search and common habit choices.
   Open the picker on Icons and make its full search scope explicit.
 - Mute unused future dates and entries while keeping recorded values prominent.

@@ -1,5 +1,26 @@
 # Decision log
 
+## 025 — Preset icons and removing grid renders from drag swaps
+
+Date: 4 October 2026. Status: founder requested; implemented, phone acceptance pending.
+
+The founder accepted the icons and asked to assign them to all current presets.
+Give the 12 seed habits appropriate Phosphor/Tabler icons. After successful opening,
+apply missing icons in existing recognized preset lists as ordinary v4 habit edits.
+Preserve chosen/previously removed icons, renamed/custom habits, entries, order,
+archive state, and the original seed. Raw icon history prevents reapplication after
+Undo or removal. These safety rules are implementation choices; custom habit icons
+remain optional. No projection rewrite, reseeding, or database migration.
+
+The founder reports stutter only during fast row crossings. Source tracing found
+setDraft triggered a full HabitGrid render at each swap, rebuilding cell controls
+and their colours on the JavaScript thread that also handles touch movement.
+Keep the temporary order in a ref and publish Y targets through shared values.
+Each row reacts on the UI thread and retargets its spring only when needed; React
+updates at drag start/end, not on each crossing. Preserve fixed layout anchors,
+actual-row appearance, cancellation, haptics, edge scrolling, and drop-only writes.
+This removes an identified source of swap work; native smoothness remains unmeasured.
+
 ## 024 — Tabler and a clearer, compact habit icon picker
 
 Date: 4 October 2026. Status: founder requested; implemented, device acceptance pending.
