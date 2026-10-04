@@ -5,6 +5,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  type PressableProps,
   ScrollView,
   StyleSheet,
   Text,
@@ -19,7 +20,8 @@ import { demoHabits, type Habit } from './src/habits';
 import { ColourPicker } from './src/ColourPicker';
 import { checkmarkColor } from './src/colors';
 import { useLocalToday } from './src/useLocalToday';
-import { feedback } from './src/haptics';
+import { feedback, setHapticsEnabled } from './src/haptics';
+import { AppPanel } from './src/AppPanel';
 
 // Metro removes this branch (and its module) from release JavaScript.
 const PreviewHeading: ComponentType<TextProps> =
@@ -28,10 +30,21 @@ const PreviewHeading: ComponentType<TextProps> =
       require('./src/dev/DevPreviewText').DevPreviewText
     : Text;
 
+const PreviewDateButton: ComponentType<PressableProps> =
+  __DEV__ && process.env.EXPO_PUBLIC_DEV_PREVIEW === 'true'
+    ? // eslint-disable-next-line @typescript-eslint/no-require-imports -- Keep native capture out of release JS.
+      require('./src/dev/DevPreviewText').DevPreviewButton
+    : Pressable;
+
 export default function App() {
   const today = useLocalToday();
   const [habits, setHabits] = useState(demoHabits);
   const [values, setValues] = useState<Record<string, number>>({});
+  const [panel, setPanel] = useState<{
+    page: 'history' | 'settings';
+    visible: boolean;
+  }>({ page: 'history', visible: false });
+  const [hapticsEnabled, setHapticsPreference] = useState(true);
   const [editing, setEditing] = useState<{
     key: string;
     habit: Habit;
@@ -70,6 +83,21 @@ export default function App() {
     setDraftColor(habit.color);
     setDetailId(habit.id);
   }, []);
+
+  const openHistory = useCallback(() => {
+    feedback('selection');
+    setPanel({ page: 'history', visible: true });
+  }, []);
+  const openSettings = useCallback(() => {
+    feedback('selection');
+    setPanel({ page: 'settings', visible: true });
+  }, []);
+
+  function changeHaptics(value: boolean) {
+    setHapticsEnabled(value);
+    setHapticsPreference(value);
+    if (value) feedback('selection');
+  }
 
   function saveNumber() {
     if (!editing || !valid) return;
@@ -110,12 +138,15 @@ export default function App() {
         <View style={styles.content}>
           <HabitGrid
             HeadingComponent={PreviewHeading}
+            DateButtonComponent={PreviewDateButton}
             key={today}
             today={today}
             habits={habits}
             values={values}
             onHabitPress={openDetails}
             onCellPress={pressCell}
+            onHistoryPress={openHistory}
+            onSettingsPress={openSettings}
           />
         </View>
         <Modal
@@ -250,6 +281,16 @@ export default function App() {
             </View>
           </KeyboardAvoidingView>
         </Modal>
+        <AppPanel
+          page={panel.page}
+          visible={panel.visible}
+          HeadingComponent={PreviewHeading}
+          hapticsEnabled={hapticsEnabled}
+          onHapticsChange={changeHaptics}
+          onClose={() =>
+            setPanel((previous) => ({ ...previous, visible: false }))
+          }
+        />
       </SafeAreaView>
     </SafeAreaProvider>
   );

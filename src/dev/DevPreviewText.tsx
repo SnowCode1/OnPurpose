@@ -4,12 +4,16 @@ import {
   AccessibilityInfo,
   Alert,
   Platform,
+  Pressable,
+  type PressableProps,
   Text,
   type TextProps,
 } from 'react-native';
 import { captureScreen } from 'react-native-view-shot';
 
-export function DevPreviewText(props: TextProps) {
+function usePreviewGesture(
+  props: Pick<TextProps, 'accessibilityActions' | 'onAccessibilityAction'>,
+) {
   const busy = useRef(false);
   const mounted = useRef(true);
   const request = useRef<AbortController | null>(null);
@@ -99,22 +103,31 @@ export function DevPreviewText(props: TextProps) {
     }
   }
 
+  return {
+    onLongPress: sharePreview,
+    accessibilityHint:
+      'Touch and hold to share an app preview with your development computer',
+    accessibilityActions: [
+      ...(props.accessibilityActions ?? []),
+      { name: 'sharePreview', label: 'Share preview' },
+    ],
+    onAccessibilityAction: (
+      event: Parameters<NonNullable<TextProps['onAccessibilityAction']>>[0],
+    ) => {
+      if (event.nativeEvent.actionName === 'sharePreview') void sharePreview();
+      else props.onAccessibilityAction?.(event);
+    },
+  };
+}
+
+export function DevPreviewText(props: TextProps) {
+  const gesture = usePreviewGesture(props);
   if (Platform.OS === 'web') return <Text {...props} />;
-  return (
-    <Text
-      {...props}
-      suppressHighlighting
-      onLongPress={sharePreview}
-      accessibilityHint="Touch and hold to share an app preview with your development computer"
-      accessibilityActions={[
-        ...(props.accessibilityActions ?? []),
-        { name: 'sharePreview', label: 'Share preview' },
-      ]}
-      onAccessibilityAction={(event) => {
-        if (event.nativeEvent.actionName === 'sharePreview')
-          void sharePreview();
-        else props.onAccessibilityAction?.(event);
-      }}
-    />
-  );
+  return <Text {...props} {...gesture} suppressHighlighting />;
+}
+
+export function DevPreviewButton(props: PressableProps) {
+  const gesture = usePreviewGesture(props);
+  if (Platform.OS === 'web') return <Pressable {...props} />;
+  return <Pressable {...props} {...gesture} />;
 }

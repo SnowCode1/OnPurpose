@@ -79,13 +79,13 @@ export function ColourPicker({
       </View>
       {tab === 'presets' && (
         <View style={styles.swatches}>
-          {habitColors.map((option) => (
+          {habitColors.map(({ name, value: presetHex }) => (
             <Pressable
-              key={option.value}
+              key={presetHex}
               accessibilityRole="radio"
-              accessibilityLabel={option.name}
-              accessibilityState={{ selected: validHex === option.value }}
-              onPress={() => selectPreset(option.value)}
+              accessibilityLabel={name}
+              accessibilityState={{ selected: validHex === presetHex }}
+              onPress={() => selectPreset(presetHex)}
               style={({ pressed }) => [
                 styles.swatchTarget,
                 { opacity: pressed ? 0.6 : 1 },
@@ -96,19 +96,17 @@ export function ColourPicker({
                   styles.swatchRing,
                   {
                     borderColor:
-                      validHex === option.value ? '#FFFFFF' : 'transparent',
+                      validHex === presetHex ? '#FFFFFF' : 'transparent',
                   },
                 ]}
               >
-                <View
-                  style={[styles.swatch, { backgroundColor: option.value }]}
-                >
-                  {validHex === option.value && (
+                <View style={[styles.swatch, { backgroundColor: presetHex }]}>
+                  {validHex === presetHex && (
                     <Text
                       allowFontScaling={false}
                       style={[
                         styles.check,
-                        { color: checkmarkColor(option.value) },
+                        { color: checkmarkColor(presetHex) },
                       ]}
                     >
                       ✓

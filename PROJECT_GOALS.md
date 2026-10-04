@@ -40,6 +40,11 @@ and uncertainty about whether something was saved.
   daily total, rather than repeated increments throughout the day.
 - Add restrained haptic feedback to recording and deliberate selections. Keep
   rapid checkoff immediate and routine scrolling quiet.
+- Keep a compact top bar always visible, with Today in the centre and change
+  history/settings at right. Keep the month/year date control beside the day
+  headings. Future-pull feedback should grow leftwards from a fixed right edge
+  on the existing divider beneath the day headings, without text or a new border. Settle this UI before durable incremental
+  storage with undo.
 - Let users arrange their own habit order. Completed habits stay in place.
 - Design for muscle memory; the aspiration is opening the app and recording five
   checkbox habits in about three seconds.
@@ -125,7 +130,8 @@ with larger text). It supports scrolling into the
 past, returning to Today, editing dated checkbox/numeric values, automatic local
 date rollover, deliberate future browsing/entries, and choosing preset or custom
 row colours in habit details. Statistics remain a
-placeholder. Entries and colours are in memory and reset on reload; durable
+placeholder. History has a clearly marked placeholder sheet; Settings offers a
+session-only haptic toggle. Entries and colours are in memory and reset on reload; durable
 storage and the change log are subsequent milestones.
 
 ## Deferred candidates, not permanent exclusions
@@ -145,7 +151,7 @@ and incremental history are desired scope, not excluded candidates.
 | What exactly counts toward a numeric or scheduled habit's streak?      | Open                                                               |
 | Midnight cutoff, late-night logging, backdating, and travel?           | Open; decide before persistence                                    |
 | Comments on a habit, a day, a particular entry, or multiple kinds?     | Comments desired; attachment semantics open                        |
-| Which app changes enter the history; how do deletion and undo work?    | Incremental storage confirmed; policy open                         |
+| Which app changes enter the history; how do deletion and undo work?    | Incremental storage and undo confirmed; detailed policy open       |
 | Export/import format, backup location, and cross-device sync?          | Change-based export confirmed; details open                        |
 | Any reminders or widgets required for version one?                     | Open                                                               |
 | Free, paid, donations, or another model?                               | Open                                                               |

@@ -317,3 +317,51 @@ different viewport/column sizes, plus larger pulls and successive future batches
 The founder evaluated the revised reveal on the iPhone and reported “Smooth and
 intuitive”. The broader second-batch, interruption, menu, and rotation checks
 above remain a regression checklist, not individually confirmed test results.
+
+## Compact top bar and native panels
+
+4 October 2026: the founder chose an always-visible compact bar and then refined
+the first phone preview. History/Settings icons and placement were approved;
+the initial date/Today placement was rejected. The revised layout puts Today
+top-centre and month/year back beside the day headings.
+
+- Check portrait, landscape, and larger system text: the brand, centred Today,
+  and right-hand icons must not overlap. Month/year remains beside date columns.
+- Tap month/year: the existing date actions open. Long-press ONPURPOSE or
+  month/year: save a preview without opening a date menu afterwards. Test the
+  VoiceOver Share preview action too.
+- Scroll back, reveal the future, and return via Today. Its appearance must not
+  move controls, date columns, or habit rows.
+- During a future pull, a gradient streak grows leftwards from a fixed right endpoint
+  on the existing divider beneath the dates. No instruction text or new border
+  appears. Brightness ramps smoothly from transparent left to muted grey right,
+  without a white hotspot or a dimming right cap. On release/cancellation it
+  fades at its last width. The single
+  readiness haptic and smooth continuation into tomorrow must still work.
+- Try with iOS Reduce Motion enabled: the release fade follows system policy;
+  direct pull feedback remains visible. There should be no animation while idle.
+- Open History/Settings from a scrolled position; close using Close and iOS swipe
+  dismissal. The same dates and vertical position remain visible. Closing History
+  must not flash Settings during dismissal.
+- Turn haptics off: checkoffs, numeric saves, presets and future readiness are
+  silent. Turn it on: the switch confirms and feedback resumes. Reload restores
+  this temporary preference to its default.
+- History clearly says it is coming next, without fabricated events or a
+  nonfunctional undo control. Capture works by holding either panel title.
+
+TypeScript, ESLint, Prettier, all 24 tests, iOS export, and all 21 Expo Doctor
+checks passed for the panel/icon foundation. Static checks and iOS export also
+passed after the revised placement and border animation. Revised native feel
+remains under refinement. The founder confirmed the revised placement is right,
+but requested tuning of the streak and normal date formatting. The final
+correction anchors the streak on the existing divider and restores separate
+month/year text within a single date button. The founder then identified a
+bright hotspot and uneven gradient; the latest version replaces that with one
+muted-grey alpha ramp. Final acceptance of this brightness adjustment is pending.
+The initial screenshot proved
+month-label capture works, but does not establish acceptance of the revised UI.
+
+The colour picker destructures preset hex before JSX style use, avoiding
+Worklets’ false-positive warning for plain objects named `.value` without
+disabling actual animation diagnostics. A development Babel transform confirmed
+no `getUseOfValueInStyleWarning` call is injected for these preset styles.

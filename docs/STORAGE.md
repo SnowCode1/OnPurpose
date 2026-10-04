@@ -5,6 +5,9 @@
 The founder wants the app's storage and export format to represent incremental
 updates. A separate history feature should use that same information. This is
 not simply saving a separate daily checklist, and is not a cloud-sync requirement.
+The founder explicitly wants this change-based store to support undo; implement
+it after the main-page date/history/settings UI is settled. The exact undo
+coverage, grouping, and retention rules still need design.
 
 Habit/day records describe what happened on a calendar day. Change records describe
 how the stored app state evolved. They must remain distinct: editing Monday's

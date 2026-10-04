@@ -35,7 +35,7 @@ npm run export:ios   # verify the iOS JS bundle; not a signed iOS build
 
 For gesture-based screenshot sharing from the iPhone, enable the settings from
 `.env.example` in `.env.local`, run `npm run preview:server`, and reload the app.
-Long-press **ONPURPOSE** (or a dialog title) to save the
+Long-press the **month/year label** (or a dialog/panel title) to save the
 visible app to `.dev/previews/latest.png`. A success haptic confirms receipt.
 The initial workspace is already configured. See the
 [preview-sharing guide](docs/DEVELOPMENT.md#share-an-app-preview-from-the-phone).

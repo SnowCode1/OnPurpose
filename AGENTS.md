@@ -21,6 +21,10 @@ Incremental change storage and export are confirmed requirements; read
 
 - React Native + Expo SDK 57, TypeScript strict mode, npm with package-lock.json.
 - `App.tsx` owns screen state and dialogs; `src/HabitGrid.tsx` renders the grid.
+- Keep the compact top bar visible, with Today centred and History/Settings at right.
+  Month/year stays beside the day headings; future pull streak grows left from the
+  fixed right edge of the existing divider beneath the headings. Do not add a border.
+- `src/AppPanel.tsx` owns the History placeholder and Settings sheet; `src/Icon.tsx` owns outline icons.
 - `src/gridLayout.ts` calculates adaptive column geometry for both orientations.
 - `src/useGridScroll.ts` synchronizes native scrolling on the UI thread; never
   put per-frame list synchronization back on the JavaScript thread.
@@ -55,7 +59,7 @@ Add focused tests when persistence, date logic, event replay/export, or other co
 arrives; avoid tests that merely duplicate trivial markup.
 
 For phone screenshots, read `.dev/previews/latest.png` after the founder shares
-a preview by long-pressing the app heading or a dialog title; dated images are
+a preview by long-pressing the month/year label or a dialog/panel title; dated images are
 alongside it. Preview settings are in ignored
 `.env.local`. Use `npm run preview:server` for the local receiver. Do not commit
 captures or pairing tokens. Run `npm run test:preview` after changing the receiver;

@@ -12,6 +12,7 @@ import {
   type TextProps,
   Alert,
   Pressable,
+  type PressableProps,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,7 +23,13 @@ import { type GridDay, makeGridDays, calendarDay } from './calendar';
 import { type Habit } from './habits';
 import { checkmarkColor, colorOnBlack, dimmedColor } from './colors';
 import { gridLayout } from './gridLayout';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedReaction,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useGridScroll } from './useGridScroll';
 import {
   FUTURE_BATCH,
@@ -30,14 +37,18 @@ import {
   futureRevealDay,
 } from './gridNavigation';
 import { feedback } from './haptics';
+import { Icon } from './Icon';
 
 type Props = {
   HeadingComponent: ComponentType<TextProps>;
+  DateButtonComponent: ComponentType<PressableProps>;
   today: string;
   habits: Habit[];
   values: Record<string, number>;
   onHabitPress: (habit: Habit) => void;
   onCellPress: (habit: Habit, day: GridDay) => void;
+  onHistoryPress: () => void;
+  onSettingsPress: () => void;
 };
 
 function dayMuting(daysAgo: number): number {
@@ -49,11 +60,14 @@ function dayMuting(daysAgo: number): number {
 
 export const HabitGrid = memo(function HabitGrid({
   HeadingComponent,
+  DateButtonComponent,
   today,
   habits,
   values,
   onHabitPress,
   onCellPress,
+  onHistoryPress,
+  onSettingsPress,
 }: Props) {
   const { fontScale } = useWindowDimensions();
   const [width, setWidth] = useState(0);
@@ -166,18 +180,27 @@ export const HabitGrid = memo(function HabitGrid({
     // Only after both lists have that content do we smoothly settle the pull.
     continueReveal((pending.futureCount + pending.day) * columnWidth);
   }
-  const pullHintStyle = useAnimatedStyle(() => ({
-    opacity: Math.min(1, pull.value / 20),
-  }));
-  const pullLabelStyle = useAnimatedStyle(() => ({
-    opacity: pull.value < FUTURE_PULL_DISTANCE ? 1 : 0,
-  }));
-  const releaseLabelStyle = useAnimatedStyle(() => ({
-    opacity: pull.value >= FUTURE_PULL_DISTANCE ? 1 : 0,
-  }));
-  const pullProgressStyle = useAnimatedStyle(() => ({
-    width: 80 * Math.min(1, pull.value / FUTURE_PULL_DISTANCE),
-  }));
+  const streakDistance = useSharedValue(0);
+  const streakOpacity = useSharedValue(0);
+  useAnimatedReaction(
+    () => pull.value,
+    (distance) => {
+      if (distance > 0) {
+        streakDistance.set(distance);
+        streakOpacity.set(1);
+      } else {
+        // Keep the last geometry during the fade, avoiding a jump on release.
+        streakOpacity.set(withTiming(0, { duration: 180 }));
+      }
+    },
+  );
+  const pullStreakStyle = useAnimatedStyle(() => {
+    const progress = Math.min(1, streakDistance.value / FUTURE_PULL_DISTANCE);
+    return {
+      width: dateWidth * progress,
+      opacity: streakOpacity.value * Math.min(1, streakDistance.value / 16),
+    };
+  });
 
   function returnToToday() {
     if (!atTodayBoundary) feedback('selection');
@@ -194,6 +217,7 @@ export const HabitGrid = memo(function HabitGrid({
   }
 
   function openDateActions() {
+    feedback('selection');
     Alert.alert(
       'Browse dates',
       'Pull past the newest day and release to reveal future dates.',
@@ -250,56 +274,85 @@ export const HabitGrid = memo(function HabitGrid({
       }}
     >
       <View style={styles.toolbar}>
-        <HeadingComponent style={styles.brand}>ONPURPOSE</HeadingComponent>
-        <Animated.View
-          pointerEvents="none"
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-          style={[styles.pullHint, pullHintStyle]}
-        >
-          <Animated.Text
-            style={[styles.pullText, styles.overlaidPullText, pullLabelStyle]}
+        <View style={styles.toolbarBrand}>
+          <HeadingComponent accessibilityRole="header" style={styles.brand}>
+            ONPURPOSE
+          </HeadingComponent>
+        </View>
+        <View style={styles.toolbarCentre}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Return to today"
+            accessibilityElementsHidden={atTodayBoundary}
+            importantForAccessibility={
+              atTodayBoundary ? 'no-hide-descendants' : 'auto'
+            }
+            disabled={atTodayBoundary}
+            onPress={returnToToday}
+            style={({ pressed }) => [
+              styles.todayButton,
+              { opacity: atTodayBoundary ? 0 : pressed ? 0.6 : 1 },
+            ]}
           >
-            Pull for future dates
-          </Animated.Text>
-          <Animated.Text style={[styles.pullText, releaseLabelStyle]}>
-            Release for future dates
-          </Animated.Text>
-          <View style={styles.pullTrack}>
-            <Animated.View style={[styles.pullProgress, pullProgressStyle]} />
-          </View>
-        </Animated.View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Return to today"
-          accessibilityElementsHidden={atTodayBoundary}
-          importantForAccessibility={
-            atTodayBoundary ? 'no-hide-descendants' : 'auto'
-          }
-          disabled={atTodayBoundary}
-          onPress={returnToToday}
-          style={({ pressed }) => [
-            styles.todayButton,
-            { opacity: atTodayBoundary ? 0 : pressed ? 0.65 : 1 },
-          ]}
-        >
-          <Text style={styles.todayText}>
-            {rightmostDay < 0 ? '← Today' : 'Today →'}
-          </Text>
-        </Pressable>
+            <Text style={styles.todayText}>
+              {rightmostDay < 0 ? '← Today' : 'Today →'}
+            </Text>
+          </Pressable>
+        </View>
+        <View style={styles.toolbarActions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="History"
+            accessibilityHint="Opens change history"
+            onPress={onHistoryPress}
+            style={({ pressed }) => [
+              styles.iconButton,
+              { backgroundColor: pressed ? '#171717' : 'transparent' },
+            ]}
+          >
+            <Icon name="history" />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Settings"
+            onPress={onSettingsPress}
+            style={({ pressed }) => [
+              styles.iconButton,
+              { backgroundColor: pressed ? '#171717' : 'transparent' },
+            ]}
+          >
+            <Icon name="settings" />
+          </Pressable>
+        </View>
       </View>
       {width > 0 && (
         <>
           <View style={styles.header}>
-            <Pressable
-              style={[styles.namesHeader, { width: nameWidth }]}
-              accessibilityRole="button"
-              accessibilityLabel={`${month} ${year}, browse dates`}
-              onPress={openDateActions}
+            <Animated.View
+              pointerEvents="none"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              style={[styles.pullStreak, pullStreakStyle]}
             >
-              <Text style={styles.month}>{month} ⌄</Text>
-              <Text style={styles.year}>{year}</Text>
-            </Pressable>
+              <LinearGradient
+                colors={['#8A8A8A00', '#8A8A8A']}
+                locations={[0, 1]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.streakGradient}
+              />
+            </Animated.View>
+            <View style={[styles.namesHeader, { width: nameWidth }]}>
+              <DateButtonComponent
+                style={styles.dateButton}
+                accessibilityRole="button"
+                accessibilityLabel={`${month} ${year}, browse dates`}
+                onPress={openDateActions}
+              >
+                <Text style={styles.dateTitle}>{month} ⌄</Text>
+                <Text style={styles.dateYear}>{year}</Text>
+              </DateButtonComponent>
+            </View>
             <DateColumns
               {...shared}
               ref={header}
@@ -519,60 +572,78 @@ function DateColumns({
 }
 
 const styles = StyleSheet.create({
-  pullHint: {
+  pullStreak: {
     position: 'absolute',
     right: 0,
-    top: 5,
-    alignItems: 'flex-end',
-    backgroundColor: '#000000',
-    zIndex: 1,
-    paddingVertical: 4,
+    bottom: 0,
+    height: 1,
+    zIndex: 2,
   },
-  pullText: { color: '#BBBBBB', fontSize: 11 },
-  overlaidPullText: { position: 'absolute', top: 4, right: 0 },
-  pullTrack: {
-    width: 80,
-    height: 2,
-    marginTop: 7,
-    backgroundColor: '#252525',
-    overflow: 'hidden',
-    borderRadius: 1,
-  },
-  pullProgress: { height: 2, backgroundColor: '#DADADA' },
+  streakGradient: { width: '100%', height: '100%' },
   container: { flex: 1 },
   toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: 44,
-    marginBottom: 8,
+    marginBottom: 4,
   },
+  toolbarBrand: { flex: 1, justifyContent: 'center' },
+  toolbarCentre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   brand: {
-    color: '#A0A0A0',
+    color: '#888888',
     fontSize: 11,
     fontWeight: '600',
-    letterSpacing: 2.5,
+    letterSpacing: 1.5,
     paddingVertical: 12,
   },
-  month: {
-    color: '#E8E8E8',
+  dateButton: {
+    minHeight: 56,
+    width: '100%',
+    justifyContent: 'center',
+    paddingVertical: 8,
+  },
+  dateTitle: {
+    color: '#E2E2E2',
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: -0.3,
   },
-  year: {
-    color: '#929292',
+  dateYear: {
+    color: '#858585',
     fontSize: 11,
+    fontWeight: '400',
     marginTop: 4,
     fontVariant: ['tabular-nums'],
   },
+  toolbarActions: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 2,
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+  },
   todayButton: {
     minHeight: 44,
+    maxWidth: '100%',
     justifyContent: 'center',
-    paddingLeft: 16,
-    paddingRight: 4,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: '#121212',
   },
-  todayText: { color: '#DADADA', fontSize: 13, fontWeight: '500' },
+  todayText: {
+    color: '#C8C8C8',
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
   header: {
     flexDirection: 'row',
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -580,8 +651,9 @@ const styles = StyleSheet.create({
   },
   namesHeader: {
     justifyContent: 'center',
+    alignItems: 'flex-start',
     paddingRight: 10,
-    paddingVertical: 8,
+    minHeight: 56,
   },
   dayHeader: {
     alignItems: 'center',

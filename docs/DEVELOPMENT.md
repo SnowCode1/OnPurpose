@@ -96,7 +96,7 @@ replace iPhone checks. Re-evaluate MCP if its device support changes.
 ## Share an app preview from the phone
 
 Preview sharing is an opt-in development tool. It captures the visible native
-app when you long-press the existing app heading or a dialog title, then uploads
+app when you long-press the month/year label or a dialog/panel title, then uploads
 a PNG to a receiver on your
 computer. The receiver writes `.dev/previews/latest.png` and a dated copy. An
 assistant with workspace access can open those files directly; say “check the
@@ -113,11 +113,11 @@ or manual screenshot transfer is needed. This is not streaming or remote control
 5. Start `npm run preview:server` in a second terminal and leave it running.
 6. Fully reload the app in Expo Go. If a changed setting does not appear, restart
    `npm start` and reload. Environment changes need more than Fast Refresh.
-7. Touch and hold **ONPURPOSE** for about half a second.
-   Inside a dialog, hold its title instead. A success haptic fires only after
+7. Touch and hold the **month/year label** for about half a second.
+   Inside a dialog or History/Settings panel, hold its title instead. A success haptic fires only after
    the receiver confirms the save. Upload errors are shown and can be retried.
    There is no preview button, added layout space, success popup, or pressed style.
-   VoiceOver users can choose the heading’s **Share preview** accessibility action;
+   VoiceOver users can choose the label’s **Share preview** accessibility action;
    successful uploads are announced. If iOS disables haptics (for example in Low
    Power Mode), check the receiver log or latest image to confirm the save.
 
@@ -174,7 +174,7 @@ The app configuration permits rotation; the grid measures usable width after
 safe-area insets. Disable iPhone Portrait Orientation Lock to test landscape.
 After changing `app.json`, exit and reopen the project in Expo Go so the manifest
 is reloaded; Fast Refresh alone may keep the previous orientation setting.
-Share both orientations using the same long press on ONPURPOSE. Test numeric
+Share both orientations using the same long press on the month/year label. Test numeric
 entry with the keyboard open in landscape as well as the main grid.
 
 ## Animation and colour controls
@@ -187,3 +187,23 @@ so cached transforms do not retain the previous configuration.
 
 [Expo Reanimated setup](https://docs.expo.dev/versions/v57.0.0/sdk/reanimated/)
 and [UI-thread scroll synchronization](https://docs.swmansion.com/react-native-reanimated/docs/scroll/scrollTo/).
+
+## Main-page controls
+
+The compact top bar stays visible: ONPURPOSE at left, Today in the centre while
+browsing away, and history/gear buttons at right. Tap month/year beside the day
+headings for the date menu. History and Settings open native sheets; close using
+Close or swipe down on iOS. The grid stays mounted so closing preserves your place.
+
+Today’s space stays reserved to prevent shifts. A text-free moving highlighted
+streak on the existing divider beneath the date headings replaces pull text.
+Its right end stays fixed as it grows leftwards; no border is added.
+The threshold haptic still marks readiness; release continues smoothly into
+future dates. Date headings remain scrollable, without a hidden tap-to-return.
+
+Hold ONPURPOSE, month/year, or a dialog/panel title to share a development preview.
+History is explicitly a placeholder until the incremental store and undo are
+implemented. Settings has a working haptic toggle for this session; it resets
+on reload, like the demo entries. Icons use `react-native-svg` 15.15.4, installed
+with Expo’s SDK-compatible installer and included in Expo Go.
+[Expo SVG reference](https://docs.expo.dev/versions/v57.0.0/sdk/svg/).

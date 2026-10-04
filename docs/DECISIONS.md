@@ -1,5 +1,42 @@
 # Decision log
 
+## 016 — Visible bar, centred Today, and border pull feedback
+
+Date: 4 October 2026. Status: founder chose always visible and compact; revised placement confirmed on phone; streak toned down after specific visual feedback, with final brightness acceptance pending.
+
+The founder requested date, history, and settings controls and chose an
+always-visible bar. After the first phone preview they liked the History/Settings
+icons and their placement, but rejected moving the date into the bar and Today
+into the table corner. They explicitly requested Today top-centre, the date back
+in the first table row, and text-free future-pull feedback on the table divider.
+They clarified this means the existing divider beneath the date headings, not
+a newly added border. The streak should grow left while its right end stays fixed.
+
+The final proposal keeps ONPURPOSE at left, reserves the centre for Today, and
+keeps History/Settings at right. Month/year sits beside the day headings, with
+the existing date menu. Three equal regions centre Today independent of the
+unequal widths of branding and icon controls. Today appears when browsing away;
+its space remains reserved. The founder confirmed this revised placement was right.
+
+Replace pull text/progress with a gradient on that existing divider. Its right
+endpoint stays fixed; width grows leftwards with pull distance, then fades at its
+last width on release. There is no translation, repeating shimmer, or new border.
+The founder reported a bright, sunlight-like hotspot and an uneven brightness
+ramp. Remove the white peak and trailing dim stop; use a transparent-to-#8A8A8A
+alpha ramp so brightness increases continuously toward the fixed right edge.
+Keep the threshold haptic and smooth future reveal. Restore month and year as
+separate, normally spaced text elements inside the date button.
+
+History and Settings use closable native sheets. Keep the grid mounted and retain
+its date position behind them. History is a clear placeholder; Settings supplies
+a real haptic toggle for the current session. No persistent settings or history
+are claimed. Durable incremental storage with undo is the founder’s requested
+next step after the UI is settled, and remains separate work.
+
+Use own SVG outlines via Expo-compatible react-native-svg, avoiding an icon font.
+The development capture gesture works on ONPURPOSE, the month/year label, and
+dialog/panel titles. Preserve its `__DEV__`/env gating.
+
 ## 015 — Continue the future pull without a screen jump
 
 Date: 4 October 2026. Status: founder requested; implemented, founder confirmed the transition is smooth and intuitive on phone.
