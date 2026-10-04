@@ -47,7 +47,8 @@
     "preview:server": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/preview-server.mjs",
     "test:preview": "node --test scripts/preview-receiver.test.mjs",
     "test:calendar": "node --test scripts/calendar.test.mjs",
-    "test": "node --test scripts/*.test.mjs"
+    "test": "node --test scripts/*.test.mjs",
+    "benchmark:grid": "node scripts/benchmark-grid.mjs"
   },
   "private": true,
   "engines": {

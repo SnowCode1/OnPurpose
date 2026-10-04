@@ -21,6 +21,13 @@ interface; `native.ts` connects it to Expo SQLite and native UUID/SHA-256 suppor
 `store.ts` owns loading, immediate UI state, the serialized write queue, undo,
 redo, and exclusive backup work. React subscribes through `usePersistentStore.ts`.
 
+Grid cells use `selection.ts` to subscribe to their individual primitive value;
+date headings select whether their date has any active-habit entry. Unchanged
+selections ignore save acknowledgements and unrelated edits. This is derived
+notification filtering, not another persisted/cache projection. Store timing can
+be enabled in development; event/replay, serialized writes and schema are unchanged.
+See [PERFORMANCE.md](PERFORMANCE.md).
+
 Habit/day records answer “What did I record for Tuesday?” Change records answer
 “What changed, and in what order?” Correcting Tuesday on Wednesday uses Tuesday's
 explicit `YYYY-MM-DD` key and Wednesday's edit timestamp. They are never conflated.

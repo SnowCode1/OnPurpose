@@ -4,6 +4,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 import {
@@ -23,6 +24,7 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { type EntryDay } from './src/calendar';
+import { PerformanceBoundary } from './src/PerformanceBoundary';
 import { HabitStatsScreen } from './src/HabitStatsScreen';
 import { HabitGrid } from './src/HabitGrid';
 import { isNumericHabit, type Habit } from './src/habits';
@@ -132,6 +134,10 @@ function PersistentApp({
     if (!sampleData && snapshot.status === 'ready') applyPresetIcons(store);
   }, [store, snapshot.status, sampleData]);
   const { habits, values, hapticsEnabled } = snapshot.replay.state;
+  const activeHabits = useMemo(
+    () => habits.filter((habit) => !habit.archived),
+    [habits],
+  );
   const [backupBusy, setBackupBusy] = useState(false);
   useEffect(() => {
     setHapticsEnabled(hapticsEnabled);
@@ -253,66 +259,75 @@ function PersistentApp({
     if (accepted) feedback('confirm');
     return accepted;
   }
-  function saveHabit(after: Habit): boolean {
-    const current = store.getSnapshot().replay.state.habits;
-    const before = current.find((habit) => habit.id === after.id) ?? null;
-    if (
-      before &&
-      before.name === after.name &&
-      before.color === after.color &&
-      before.unit === after.unit &&
-      isNumericHabit(before) === isNumericHabit(after) &&
-      before.archived === after.archived &&
-      before.icon === after.icon
-    )
-      return true;
-    const accepted = store.change({
-      kind: 'habit',
-      habitId: after.id,
-      index: before ? current.indexOf(before) : current.length,
-      before,
-      after,
-    });
-    if (accepted) feedback('confirm');
-    return accepted;
-  }
-  function reorderHabits(ids: string[]): boolean {
-    const current = store.getSnapshot().replay.state.habits;
-    const before = current.map((habit) => habit.id),
-      after = fullHabitOrder(current, ids);
-    if (before.join('|') === after.join('|')) return false;
-    return store.change({ kind: 'order', before, after });
-  }
-  function habitAction(habit: Habit, action: HabitAction) {
-    if (!store.canEdit()) return;
-    if (action === 'archive') {
-      saveHabit({ ...habit, archived: true });
-      return;
-    }
-    if (action === 'moveUp' || action === 'moveDown') {
-      const ids = store
-        .getSnapshot()
-        .replay.state.habits.filter((habit) => !habit.archived)
-        .map((habit) => habit.id);
+  const saveHabit = useCallback(
+    (after: Habit): boolean => {
+      const current = store.getSnapshot().replay.state.habits;
+      const before = current.find((habit) => habit.id === after.id) ?? null;
       if (
-        reorderHabits(
-          moveHabit(
-            ids,
-            habit.id,
-            ids.indexOf(habit.id) + (action === 'moveUp' ? -1 : 1),
-          ),
-        )
+        before &&
+        before.name === after.name &&
+        before.color === after.color &&
+        before.unit === after.unit &&
+        isNumericHabit(before) === isNumericHabit(after) &&
+        before.archived === after.archived &&
+        before.icon === after.icon
       )
-        feedback('selection');
-      return;
-    }
-    if (action === 'reorder') return; // Grid owns reorder mode.
-    setNewHabit(null);
-    setDetailId(habit.id);
-    setHabitMode(action === 'colour' ? 'colour' : 'edit');
-    feedback('selection');
-  }
-  function addHabit() {
+        return true;
+      const accepted = store.change({
+        kind: 'habit',
+        habitId: after.id,
+        index: before ? current.indexOf(before) : current.length,
+        before,
+        after,
+      });
+      if (accepted) feedback('confirm');
+      return accepted;
+    },
+    [store],
+  );
+  const reorderHabits = useCallback(
+    (ids: string[]): boolean => {
+      const current = store.getSnapshot().replay.state.habits;
+      const before = current.map((habit) => habit.id),
+        after = fullHabitOrder(current, ids);
+      if (before.join('|') === after.join('|')) return false;
+      return store.change({ kind: 'order', before, after });
+    },
+    [store],
+  );
+  const habitAction = useCallback(
+    (habit: Habit, action: HabitAction) => {
+      if (!store.canEdit()) return;
+      if (action === 'archive') {
+        saveHabit({ ...habit, archived: true });
+        return;
+      }
+      if (action === 'moveUp' || action === 'moveDown') {
+        const ids = store
+          .getSnapshot()
+          .replay.state.habits.filter((habit) => !habit.archived)
+          .map((habit) => habit.id);
+        if (
+          reorderHabits(
+            moveHabit(
+              ids,
+              habit.id,
+              ids.indexOf(habit.id) + (action === 'moveUp' ? -1 : 1),
+            ),
+          )
+        )
+          feedback('selection');
+        return;
+      }
+      if (action === 'reorder') return; // Grid owns reorder mode.
+      setNewHabit(null);
+      setDetailId(habit.id);
+      setHabitMode(action === 'colour' ? 'colour' : 'edit');
+      feedback('selection');
+    },
+    [store, saveHabit, reorderHabits],
+  );
+  const addHabit = useCallback(() => {
     if (!store.canEdit()) return;
     if (store.getSnapshot().replay.state.habits.length >= 1000) {
       Alert.alert(
@@ -329,7 +344,12 @@ function PersistentApp({
       type: 'checkbox',
     });
     setHabitMode('create');
-  }
+  }, [store]);
+
+  const closeStats = useCallback(() => setStatsId(null), []);
+  const editStats = useCallback(() => {
+    if (statsHabit) habitAction(statsHabit, 'edit');
+  }, [statsHabit, habitAction]);
 
   function undo() {
     if (store.undo()) feedback('undo');
@@ -454,37 +474,41 @@ function PersistentApp({
               statsHabit ? 'no-hide-descendants' : 'auto'
             }
           >
-            <HabitGrid
-              sampleData={sampleData}
-              HeadingComponent={PreviewHeading}
-              DateButtonComponent={PreviewDateButton}
-              key={today}
-              today={today}
-              habits={habits.filter((habit) => !habit.archived)}
-              editable={editable}
-              onHabitAction={habitAction}
-              onReorder={reorderHabits}
-              values={values}
-              onHabitPress={openDetails}
-              onCellPress={pressCell}
-              onHistoryPress={openHistory}
-              onSettingsPress={openSettings}
-              onAddHabit={addHabit}
-            />
+            <PerformanceBoundary name="grid">
+              <HabitGrid
+                sampleData={sampleData}
+                HeadingComponent={PreviewHeading}
+                DateButtonComponent={PreviewDateButton}
+                key={today}
+                today={today}
+                habits={activeHabits}
+                editable={editable}
+                onHabitAction={habitAction}
+                onReorder={reorderHabits}
+                store={store}
+                onHabitPress={openDetails}
+                onCellPress={pressCell}
+                onHistoryPress={openHistory}
+                onSettingsPress={openSettings}
+                onAddHabit={addHabit}
+              />
+            </PerformanceBoundary>
           </View>
           {statsHabit && (
-            <HabitStatsScreen
-              key={statsHabit.id}
-              habit={statsHabit}
-              values={values}
-              events={snapshot.events}
-              today={today}
-              Heading={PreviewHeading}
-              editable={editable}
-              onBack={() => setStatsId(null)}
-              onCellPress={pressCell}
-              onEdit={() => habitAction(statsHabit, 'edit')}
-            />
+            <PerformanceBoundary name="statistics">
+              <HabitStatsScreen
+                key={statsHabit.id}
+                habit={statsHabit}
+                values={values}
+                events={snapshot.events}
+                today={today}
+                Heading={PreviewHeading}
+                editable={editable}
+                onBack={closeStats}
+                onCellPress={pressCell}
+                onEdit={editStats}
+              />
+            </PerformanceBoundary>
           )}
         </View>
         <Modal

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ComponentType } from 'react';
+import { memo, useEffect, useMemo, useState, type ComponentType } from 'react';
 import {
   BackHandler,
   Pressable,
@@ -232,7 +232,7 @@ function Metric({
     </View>
   );
 }
-export function HabitStatsScreen({
+export const HabitStatsScreen = memo(function HabitStatsScreen({
   habit,
   values,
   events,
@@ -610,7 +610,7 @@ export function HabitStatsScreen({
       </ScrollView>
     </Animated.View>
   );
-}
+});
 const styles = StyleSheet.create({
   screen: {
     position: 'absolute',

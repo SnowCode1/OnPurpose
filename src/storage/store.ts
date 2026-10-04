@@ -10,6 +10,7 @@ import {
   type StoredEvent,
 } from './model.ts';
 import type { Repository } from './repository.ts';
+import { performanceEnabled, recordPerformance } from '../performance.ts';
 
 export type StoreSnapshot = {
   status: 'loading' | 'ready' | 'load-error';
@@ -79,10 +80,13 @@ export class ChangeStore {
     !this.snapshot.busy;
   change(change: Change): boolean {
     if (!this.canEdit() || change.before === change.after) return false;
+    const started = performanceEnabled ? performance.now() : 0;
     const meta = {
       ...this.metadata(this.snapshot.events.length + 1),
       version: 4 as const,
     };
+    if (performanceEnabled)
+      recordPerformance('store.metadata', performance.now() - started);
     if (change.kind === 'haptics')
       return this.enqueue({ ...meta, type: 'preference', change });
     const group = this.snapshot.replay.lastGroup;
@@ -115,13 +119,19 @@ export class ChangeStore {
     });
   };
   private enqueue(event: StoredEvent): boolean {
+    const started = performanceEnabled ? performance.now() : 0;
     const replay = applyEvent(this.snapshot.replay, event);
+    if (performanceEnabled)
+      recordPerformance('store.apply', performance.now() - started);
     this.queue.push({ event, replay });
+    const publishing = performanceEnabled ? performance.now() : 0;
     this.update({
       replay,
       events: [...this.snapshot.events, event],
       pending: this.queue.length,
     });
+    if (performanceEnabled)
+      recordPerformance('store.publish', performance.now() - publishing);
     void this.drain();
     return true;
   }
@@ -130,6 +140,7 @@ export class ChangeStore {
     this.draining = (async () => {
       while (this.queue.length) {
         const item = this.queue[0];
+        const started = performanceEnabled ? performance.now() : 0;
         try {
           await this.repository.append(item.event, item.replay.state);
           this.queue.shift();
@@ -139,6 +150,9 @@ export class ChangeStore {
             error: 'Changes are not saved. Keep the app open and retry.',
           });
           break;
+        } finally {
+          if (performanceEnabled)
+            recordPerformance('store.append', performance.now() - started);
         }
       }
     })().finally(() => {

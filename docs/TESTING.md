@@ -13,6 +13,18 @@ result or browser test alone is not proof that an iPhone habit was saved.
 
 ## First iPhone smoke test
 
+Performance pass checks (4 October 2026; device acceptance pending):
+
+- In sample mode, rapidly check/uncheck five habits; then edit numeric zero/clear
+  and use Undo/Redo. Only the edited cell and relevant date heading should change.
+- Fling through several months in both orientations, return to Today, and reveal
+  future dates. Check for blank columns, alignment problems and late taps.
+- Repeat from statistics, return to the grid, change a colour, reorder, archive
+  and restore. New memo boundaries must not leave values, colours or order stale.
+- Test real-mode save/reload and failed-save disabling/retry. Capture development
+  timing as described in PERFORMANCE.md; compare without timing enabled and in
+  a release build before claiming native performance acceptance.
+
 Statistics polish checks (4 October 2026; device acceptance pending):
 
 - Select a chart bar, tap it again, and select another then use Clear. All bars
@@ -88,6 +100,15 @@ habit counts, one-handed use, and accessibility settings; document limitations.
 - History preserves effective habit dates separately from edit timestamps.
 
 ## Evidence log
+
+4 October 2026 grid performance pass:
+
+- 110 tests pass, including exact cached-colour parity, date identity preservation,
+  selected entry/heading notifications, numeric zero, Undo/Redo, restore and unsubscribe.
+- TypeScript, ESLint, formatting and iOS JavaScript/Hermes export pass. Metro serves
+  the new selectors/palette code and the locally enabled timing flag.
+- Synthetic CPU benchmarks and their limits are recorded in PERFORMANCE.md.
+  Native frame/interaction measurements remain pending.
 
 4 October 2026 statistics polish:
 

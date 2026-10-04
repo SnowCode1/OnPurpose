@@ -26,6 +26,10 @@ The requested preset icon update uses normal undoable edits in
 - `src/storage/` owns versioned events, replay, native SQLite, the write queue,
   undo/redo, and backup restore. Read STORAGE.md before changing these invariants.
 - `App.tsx` owns screen state and dialogs; `src/HabitGrid.tsx` renders the grid.
+- `src/GridCells.tsx` selects individual entries/date-heading state from the store.
+  Keep grid callbacks/definitions stable across save acknowledgements. Cache colour
+  levels in `gridAppearance.ts` and retain date identities when extending history.
+  See `docs/PERFORMANCE.md`; never infer iPhone frame rates from Node benchmarks.
 - Keep the compact top bar visible, with Today centred and History/Settings at right.
   Month/year stays beside the day headings; future pull streak grows left from the
   fixed right edge of the existing divider beneath the headings. Do not add a border.

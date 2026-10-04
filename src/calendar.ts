@@ -40,22 +40,39 @@ export function entryDay(key: string): EntryDay {
   };
 }
 
+// Each grid owns its cache; discard it on local rollover/unmount. Existing date
+// objects survive range expansion, so memoized visible columns remain untouched.
+export function createGridDayCache(today: string) {
+  const cache = new Map<number, GridDay>();
+  const weekday = new Intl.DateTimeFormat(undefined, { weekday: 'short' });
+  const full = new Intl.DateTimeFormat(undefined, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  return (count: number, futureCount = 0): GridDay[] =>
+    Array.from({ length: count + futureCount }, (_, index) => {
+      const daysAgo = index - futureCount;
+      let day = cache.get(daysAgo);
+      if (!day) {
+        const date = calendarDay(today, daysAgo);
+        day = {
+          key: localDateKey(date),
+          daysAgo,
+          label: daysAgo === 0 ? 'Today' : weekday.format(date),
+          number: date.getDate(),
+          fullLabel: full.format(date),
+        };
+        cache.set(daysAgo, day);
+      }
+      return day;
+    });
+}
 export function makeGridDays(
   today: string,
   count: number,
   futureCount = 0,
 ): GridDay[] {
-  return Array.from({ length: count + futureCount }, (_, index) => {
-    const daysAgo = index - futureCount;
-    const date = calendarDay(today, daysAgo);
-    return {
-      ...entryDay(localDateKey(date)),
-      daysAgo,
-      label:
-        daysAgo === 0
-          ? 'Today'
-          : date.toLocaleDateString(undefined, { weekday: 'short' }),
-      number: date.getDate(),
-    };
-  });
+  return createGridDayCache(today)(count, futureCount);
 }

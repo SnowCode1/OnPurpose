@@ -1,5 +1,23 @@
 # Decision log
 
+## 029 — Reduce grid update work before changing persistence
+
+Date: 4 October 2026. Status: founder authorised the proposed performance pass;
+implemented, phone acceptance pending.
+
+Use selected store subscriptions for individual cells and date-heading state,
+stable root props, memoized date columns/statistics, precomputed colour levels,
+and cached date objects/formatters. Save acknowledgements no longer invalidate
+the full grid. Avoid duplicate extensions when header/body reach the same history
+boundary. Preserve exact colours, interactions, native scroll synchronization,
+and storage semantics. Add opt-in development timing without names/entry data.
+
+Synthetic desktop benchmarks confirm cheaper colour/date preparation and scoped
+notifications. They also show remaining long-history memory/projection work;
+SQLite's JSON projection and the immutable reducer are unchanged. Native profiling
+and a release-device comparison remain necessary before claiming smoothness or
+choosing a database migration. See PERFORMANCE.md for evidence and limits.
+
 ## 028 — Statistics interaction and formatting polish
 
 Date: 4 October 2026. Status: founder requested; implemented, phone review pending.

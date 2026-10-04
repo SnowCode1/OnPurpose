@@ -2,6 +2,7 @@ import {
   type ComponentType,
   type Ref,
   memo,
+  useCallback,
   useMemo,
   useRef,
   useState,
@@ -19,13 +20,16 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { type GridDay, makeGridDays, calendarDay } from './calendar';
-import { isNumericHabit, type Habit } from './habits';
+import { type GridDay, createGridDayCache, calendarDay } from './calendar';
+import type { Habit } from './habits';
 import { HabitName, type HabitAction } from './HabitName';
 import { habitRowPositions } from './habitOrdering';
-import { ReorderRow, type RowMotion } from './ReorderRow';
+import type { RowMotion } from './ReorderRow';
 import { useHabitReorder } from './useHabitReorder';
-import { checkmarkColor, colorOnBlack, dimmedColor } from './colors';
+import { createGridPalette } from './gridAppearance';
+import { GridDateColumn, GridDateHeading } from './GridCells';
+import type { ChangeStore } from './storage/store';
+import { recordPerformance } from './performance';
 import { gridLayout } from './gridLayout';
 import Animated, {
   useAnimatedReaction,
@@ -50,7 +54,7 @@ type Props = {
   DateButtonComponent: ComponentType<PressableProps>;
   today: string;
   habits: Habit[];
-  values: Record<string, number>;
+  store: ChangeStore;
   onHabitPress: (habit: Habit) => void;
   onHabitAction: (habit: Habit, action: HabitAction) => void;
   onReorder: (ids: string[]) => boolean;
@@ -61,20 +65,13 @@ type Props = {
   onAddHabit: () => void;
 };
 
-function dayMuting(daysAgo: number): number {
-  if (daysAgo < 0) return 1;
-  const progress = Math.max(0, Math.min(1, (daysAgo - 4) / 4));
-  // Gentle start/end as the fade starts on day 5 and finishes on day 8.
-  return progress * progress * (3 - 2 * progress);
-}
-
 export const HabitGrid = memo(function HabitGrid({
   sampleData = false,
   HeadingComponent,
   DateButtonComponent,
   today,
   habits: sourceHabits,
-  values,
+  store,
   onHabitPress,
   onHabitAction,
   onReorder,
@@ -84,6 +81,7 @@ export const HabitGrid = memo(function HabitGrid({
   onSettingsPress,
   onAddHabit,
 }: Props) {
+  recordPerformance('grid.container.render');
   const { fontScale } = useWindowDimensions();
   const [width, setWidth] = useState(0);
   const [dayCount, setDayCount] = useState(90);
@@ -124,59 +122,90 @@ export const HabitGrid = memo(function HabitGrid({
   const habits = sourceHabits;
   const menuHabit = sourceHabits.find((habit) => habit.id === habitMenu?.id);
   const [menuHeight, setMenuHeight] = useState(250);
+  const dateCache = useMemo(() => createGridDayCache(today), [today]);
   const days = useMemo(
-    () => makeGridDays(today, dayCount, futureCount),
-    [today, dayCount, futureCount],
+    () => dateCache(dayCount, futureCount),
+    [dateCache, dayCount, futureCount],
   );
-  const rowTones = useMemo(
+  const palettes = useMemo(
+    () =>
+      Object.fromEntries(
+        habits.map((habit) => [habit.id, createGridPalette(habit.color)]),
+      ),
+    [habits],
+  );
+  const { visibleDays, nameWidth, dateWidth, columnWidth } = gridLayout(
+    width,
+    fontScale,
+  );
+  const { tops, total: gridHeight } = useMemo(
+    () =>
+      habitRowPositions(
+        habits.map((habit) => habit.id),
+        rowHeights,
+        baseRowHeight,
+      ),
+    [habits, rowHeights, baseRowHeight],
+  );
+  const rowMotion = useMemo(
     () =>
       Object.fromEntries(
         habits.map((habit) => [
           habit.id,
           {
-            checkbox: colorOnBlack(habit.color, 170 / 255),
-            number: colorOnBlack(habit.color, 0.65),
-          },
+            id: habit.id,
+            rowTops,
+            active: dragId === habit.id,
+            top: tops[habit.id] ?? 0,
+            dragY,
+            bodyTop,
+            scrollOffset,
+          } satisfies RowMotion,
         ]),
       ),
-    [habits],
+    [habits, rowTops, dragId, tops, dragY, bodyTop, scrollOffset],
   );
-  const recordedDays = useMemo(() => {
-    const numericIds = new Set(
-      habits.filter(isNumericHabit).map((habit) => habit.id),
-    );
-    const activeIds = new Set(habits.map((habit) => habit.id));
-    const recorded = new Set<string>();
-    for (const [key, value] of Object.entries(values)) {
-      const separator = key.lastIndexOf(':');
-      if (!activeIds.has(key.slice(0, separator))) continue;
-      if (value === 1 || numericIds.has(key.slice(0, separator))) {
-        recorded.add(key.slice(separator + 1));
-      }
-    }
-    return recorded;
-  }, [habits, values]);
-  const { visibleDays, nameWidth, dateWidth, columnWidth } = gridLayout(
-    width,
-    fontScale,
+  const renderHeading = useCallback(
+    ({ item: day }: { item: GridDay }) => (
+      <GridDateHeading
+        store={store}
+        habits={habits}
+        day={day}
+        width={columnWidth}
+      />
+    ),
+    [store, habits, columnWidth],
   );
-  const { tops, total: gridHeight } = habitRowPositions(
-    habits.map((habit) => habit.id),
-    rowHeights,
-    baseRowHeight,
+  const cellsDisabled = !editable || !!dragId || reorderMode;
+  const renderColumn = useCallback(
+    ({ item: day }: { item: GridDay }) => (
+      <GridDateColumn
+        store={store}
+        habits={habits}
+        day={day}
+        palettes={palettes}
+        motions={rowMotion}
+        heights={rowHeights}
+        baseHeight={baseRowHeight}
+        width={columnWidth}
+        height={gridHeight}
+        disabled={cellsDisabled}
+        onPress={onCellPress}
+      />
+    ),
+    [
+      store,
+      habits,
+      palettes,
+      rowMotion,
+      rowHeights,
+      baseRowHeight,
+      columnWidth,
+      gridHeight,
+      cellsDisabled,
+      onCellPress,
+    ],
   );
-  const rowMotion: Record<string, RowMotion> = {};
-  for (const habit of habits) {
-    rowMotion[habit.id] = {
-      id: habit.id,
-      rowTops,
-      active: dragId === habit.id,
-      top: tops[habit.id] ?? 0,
-      dragY,
-      bodyTop,
-      scrollOffset,
-    };
-  }
   const newest = calendarDay(today, rightmostDay);
   const oldest = calendarDay(today, rightmostDay + visibleDays - 1);
   const sameMonth =
@@ -308,7 +337,8 @@ export const HabitGrid = memo(function HabitGrid({
       offset: columnWidth * index,
       index,
     }),
-    onEndReached: () => setDayCount((count) => count + 90),
+    // Both lists may request the same expansion; use this rendered boundary once.
+    onEndReached: () => setDayCount((count) => Math.max(count, dayCount + 90)),
     onEndReachedThreshold: 2,
   };
 
@@ -456,44 +486,7 @@ export const HabitGrid = memo(function HabitGrid({
               onContentSizeChange={(contentWidth) =>
                 revealWhenReady('header', contentWidth)
               }
-              renderItem={({ item: day }) => {
-                const amount = recordedDays.has(day.key)
-                  ? 0
-                  : dayMuting(day.daysAgo);
-                return (
-                  <View
-                    style={[
-                      styles.dayHeader,
-                      { width: columnWidth },
-                      day.daysAgo === 0 && styles.todayColumn,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.weekday,
-                        day.daysAgo === 0 && styles.todayLabel,
-                        {
-                          color: dimmedColor(
-                            day.daysAgo === 0 ? '#FFFFFF' : '#979797',
-                            amount,
-                            0.56,
-                          ),
-                        },
-                      ]}
-                    >
-                      {day.label}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.dayNumber,
-                        { color: dimmedColor('#E8E8E8', amount, 0.56) },
-                      ]}
-                    >
-                      {day.number}
-                    </Text>
-                  </View>
-                );
-              }}
+              renderItem={renderHeading}
             />
           </View>
           <View
@@ -575,107 +568,7 @@ export const HabitGrid = memo(function HabitGrid({
                   onContentSizeChange={(contentWidth) =>
                     revealWhenReady('body', contentWidth)
                   }
-                  renderItem={({ item: day }) => (
-                    <View style={{ width: columnWidth, height: gridHeight }}>
-                      {habits.map((habit) => {
-                        const value = values[`${habit.id}:${day.key}`];
-                        const checked = value === 1;
-                        const recorded = isNumericHabit(habit)
-                          ? value !== undefined
-                          : checked;
-                        const amount = dayMuting(day.daysAgo);
-                        const emptyNumber = dimmedColor(
-                          rowTones[habit.id].number,
-                          amount,
-                        );
-                        const emptyCheckbox = dimmedColor(
-                          rowTones[habit.id].checkbox,
-                          amount,
-                        );
-                        const ruleColor = dimmedColor(habit.color, amount);
-                        return (
-                          <ReorderRow
-                            key={habit.id}
-                            motion={rowMotion[habit.id]}
-                          >
-                            <Pressable
-                              testID={`cell-${habit.id}-${day.key}`}
-                              disabled={!editable || !!dragId || reorderMode}
-                              accessibilityRole={
-                                isNumericHabit(habit) ? 'button' : 'checkbox'
-                              }
-                              accessibilityState={
-                                isNumericHabit(habit) ? undefined : { checked }
-                              }
-                              accessibilityLabel={`${habit.name}, ${day.fullLabel}${isNumericHabit(habit) ? `, ${value === undefined ? 'not recorded' : `${value}${habit.unit ? ` ${habit.unit}` : ''}`}` : ''}`}
-                              accessibilityHint={
-                                isNumericHabit(habit)
-                                  ? 'Edit this day’s total'
-                                  : 'Toggle this day’s completion'
-                              }
-                              onPress={() => onCellPress(habit, day)}
-                              style={({ pressed }) => [
-                                styles.cell,
-                                {
-                                  height: rowHeights[habit.id] ?? baseRowHeight,
-                                  borderBottomColor: `${ruleColor}20`,
-                                  backgroundColor: pressed
-                                    ? `${habit.color}20`
-                                    : day.daysAgo === 0
-                                      ? '#090909'
-                                      : '#000000',
-                                },
-                              ]}
-                            >
-                              {isNumericHabit(habit) ? (
-                                <Text
-                                  numberOfLines={1}
-                                  adjustsFontSizeToFit
-                                  minimumFontScale={0.65}
-                                  style={[
-                                    styles.numeric,
-                                    {
-                                      color: recorded
-                                        ? habit.color
-                                        : emptyNumber,
-                                    },
-                                  ]}
-                                >
-                                  {value === undefined ? '—' : String(value)}
-                                </Text>
-                              ) : (
-                                <View
-                                  style={[
-                                    styles.checkbox,
-                                    {
-                                      borderColor: checked
-                                        ? habit.color
-                                        : emptyCheckbox,
-                                      backgroundColor: checked
-                                        ? habit.color
-                                        : 'transparent',
-                                    },
-                                  ]}
-                                >
-                                  {checked && (
-                                    <Text
-                                      allowFontScaling={false}
-                                      style={[
-                                        styles.checkmark,
-                                        { color: checkmarkColor(habit.color) },
-                                      ]}
-                                    >
-                                      ✓
-                                    </Text>
-                                  )}
-                                </View>
-                              )}
-                            </Pressable>
-                          </ReorderRow>
-                        );
-                      })}
-                    </View>
-                  )}
+                  renderItem={renderColumn}
                 />
               </View>
               <Animated.View layout={rowTransition}>
@@ -933,56 +826,7 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     minHeight: 56,
   },
-  dayHeader: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    minHeight: 56,
-  },
-  weekday: { color: '#979797', fontSize: 11, fontWeight: '500' },
-  dayNumber: {
-    color: '#E8E8E8',
-    fontSize: 19,
-    fontWeight: '600',
-    marginTop: 3,
-    fontVariant: ['tabular-nums'],
-  },
-  todayColumn: {
-    backgroundColor: '#090909',
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-  },
-  todayLabel: { color: '#FFFFFF' },
   rows: { flex: 1 },
   rowsContent: { paddingBottom: 8 },
   gridBody: { flexDirection: 'row', alignItems: 'flex-start' },
-  habit: {
-    justifyContent: 'center',
-    paddingRight: 12,
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  habitName: { fontSize: 15, lineHeight: 20, fontWeight: '500' },
-  unit: { fontSize: 11, lineHeight: 13, marginTop: 2, opacity: 0.8 },
-  cell: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  numeric: { fontSize: 18, fontWeight: '500', fontVariant: ['tabular-nums'] },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkmark: {
-    color: '#000000',
-    fontSize: 17,
-    lineHeight: 20,
-    fontWeight: '700',
-  },
 });

@@ -49,18 +49,19 @@ and detailed runtime/accessibility checks remain to be recorded.
 
 ## Commands
 
-| Command                | Use                                                 |
-| ---------------------- | --------------------------------------------------- |
-| `npm start`            | Start Expo Go development over the local network    |
-| `npm run start:clear`  | Restart with a cleared Metro cache                  |
-| `npm run start:tunnel` | Try a tunnel if Wi-Fi isolation blocks local access |
-| `npm run web`          | Browser preview for convenient Linux layout work    |
-| `npm run typecheck`    | TypeScript checks                                   |
-| `npm run lint`         | ESLint checks                                       |
-| `npm run format`       | Format source and docs                              |
-| `npm run check`        | All local static checks                             |
-| `npm run doctor`       | Expo's environment/dependency diagnostics           |
-| `npm run export:ios`   | Compile/export iOS JavaScript and assets locally    |
+| Command                  | Use                                                        |
+| ------------------------ | ---------------------------------------------------------- |
+| `npm start`              | Start Expo Go development over the local network           |
+| `npm run start:clear`    | Restart with a cleared Metro cache                         |
+| `npm run start:tunnel`   | Try a tunnel if Wi-Fi isolation blocks local access        |
+| `npm run web`            | Browser preview for convenient Linux layout work           |
+| `npm run typecheck`      | TypeScript checks                                          |
+| `npm run lint`           | ESLint checks                                              |
+| `npm run format`         | Format source and docs                                     |
+| `npm run check`          | All local static checks                                    |
+| `npm run doctor`         | Expo's environment/dependency diagnostics                  |
+| `npm run export:ios`     | Compile/export iOS JavaScript and assets locally           |
+| `npm run benchmark:grid` | Synthetic CPU timings for grid preparation and store edits |
 
 Stop a foreground server with Ctrl+C. Do not use `expo run:ios` or the simulator
 shortcut on Linux: the Apple toolchain and iOS simulator require macOS.
@@ -178,6 +179,12 @@ Share both orientations using the same long press on the month/year label. Test 
 entry with the keyboard open in landscape as well as the main grid.
 
 ## Animation and colour controls
+
+For grid/cell rendering and store timing, enable the development-only
+`EXPO_PUBLIC_DEV_PERFORMANCE` flag and inspect React Native DevTools. It is enabled
+in the founder's ignored local environment for the current performance pass.
+See [PERFORMANCE.md](PERFORMANCE.md) for counters, reproducible benchmarks,
+measurement limits, and the remaining long-history storage work.
 
 Reanimated/Worklets, the community Slider, and Expo LinearGradient are installed
 with SDK-compatible versions for Expo Go. Reanimated's Babel plugin is supplied
