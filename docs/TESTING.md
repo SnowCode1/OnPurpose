@@ -20,7 +20,9 @@ proof that a habit was saved.
 - Change the system theme and increase text size; keep all content reachable.
 - Enable VoiceOver; each checkbox cell should expose its habit, date, role, and state. Numeric cells
   should expose their value, and names should open details.
-- Reload the demo; all changes reset, matching the visible demo notice.
+- Reload the demo; all changes reset. The bottom demo notice was removed at
+  the founder’s request; the grid should use the freed space while respecting
+  the home-indicator safe area.
 
 - Enter, edit, cancel, and clear a numeric daily total; other cells stay unchanged.
 - Tap a habit name; the statistics placeholder opens without changing values.

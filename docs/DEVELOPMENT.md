@@ -40,7 +40,8 @@ Use the lockfile for the exact installed dependencies.
    local-network access if iOS asks.
 6. Tap checkbox cells in the sample grid; a second tap unchecks them. Tap a
    numeric cell to enter a daily total. Names open a statistics placeholder.
-   This demo does not save and explicitly says so on screen.
+   This demo does not save; entries and colours reset on reload. The founder
+   requested removal of the bottom demo notice to give the grid more space.
 7. Edit `App.tsx` and save. The phone should refresh with the change.
 
 The founder confirmed the app opens on the iPhone 16 Pro. Its exact iOS version

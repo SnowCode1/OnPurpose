@@ -109,9 +109,6 @@ export default function App() {
             onHabitPress={openDetails}
             onCellPress={pressCell}
           />
-          <Text style={styles.footer}>
-            Demo · entries and colours reset on reload
-          </Text>
         </View>
         <Modal
           visible={editing !== null || detail !== undefined}
@@ -272,12 +269,6 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
     paddingHorizontal: 18,
-  },
-  footer: {
-    color: '#777777',
-    fontSize: 10,
-    textAlign: 'center',
-    paddingVertical: 10,
   },
   overlay: {
     flex: 1,
