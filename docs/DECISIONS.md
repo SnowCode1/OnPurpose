@@ -1,5 +1,21 @@
 # Decision log
 
+## 023 — Full Phosphor catalogue and cheaper drag movement
+
+Date: 4 October 2026. Status: founder requested; implemented, phone acceptance pending.
+
+The founder approved expanding Phosphor and confirmed the row-swap flicker is
+fixed, but reported reduced frame rate while dragging. Offer the full 1,512
+Regular designs from pinned core 2.1.1. Common-first browsing and a virtualized,
+searchable full catalogue are implementation choices to retain quick discovery.
+Preserve existing choices, IDs, colours, draft semantics, and optional emoji.
+
+Keep row preview sibling order stable and share the existing absolute Y geometry.
+Express that Y through translateY from a constant top: 0 layout anchor, rather than
+animating top and asking native layout to run on every frame. This also avoids the
+old combination of changing layout anchors and compensating transforms. Gesture
+recognition and persistence remain unchanged; actual phone smoothness needs checking.
+
 ## 022 — Optional habit icons and unchanged row appearance during drag
 
 Date: 4 October 2026. Status: founder requested; implemented, device acceptance

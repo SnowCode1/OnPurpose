@@ -106,4 +106,8 @@ explicit total height. The preview and final drop share habitRowPositions, which
 accounts for measured/wrapped row heights. At commit, keyed views may change
 sibling order but their absolute positions stay the same. Measure the inner name
 control's height, not the moving wrapper, to avoid per-frame layout callbacks.
-This targets the identified race; native acceptance is still pending.
+The founder confirmed this removed the flicker. They then reported low frame rate
+while dragging. Keep the fixed sibling order, but express the absolute Y as a
+translateY from a constant top: 0 anchor. Animated top had triggered native layout
+work each frame; the transform avoids that cost without reintroducing a moving
+layout anchor. Native smoothness of this follow-up remains to be verified.

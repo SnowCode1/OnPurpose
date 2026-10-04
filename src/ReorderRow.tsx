@@ -14,9 +14,9 @@ export type RowMotion = {
   bodyTop: SharedValue<number>;
   scrollOffset: SharedValue<number>;
 };
-// Every row has a single animated absolute Y position. Reordering siblings must
-// not also reflow their native layout and compensate with a separate transform:
-// those updates can land on different frames and flash the row at the wrong Y.
+// All rows share a fixed layout origin (top: 0). Their absolute Y is expressed
+// only as a transform: no layout work on each drag frame, and no moving layout
+// anchor that could race with transform compensation during preview swaps.
 export function ReorderRow({
   motion,
   style,
@@ -28,9 +28,13 @@ export function ReorderRow({
 }) {
   const { active, top, dragY, bodyTop, scrollOffset } = motion;
   const position = useAnimatedStyle(() => ({
-    top: active
-      ? dragY.value - bodyTop.value + scrollOffset.value
-      : withSpring(top, reorderSpring),
+    transform: [
+      {
+        translateY: active
+          ? dragY.value - bodyTop.value + scrollOffset.value
+          : withSpring(top, reorderSpring),
+      },
+    ],
     zIndex: active ? 1 : 0,
   }));
   return (
@@ -38,7 +42,11 @@ export function ReorderRow({
       {...props}
       ref={ref}
       collapsable={false}
-      style={[{ position: 'absolute', left: 0, right: 0 }, style, position]}
+      style={[
+        { position: 'absolute', top: 0, left: 0, right: 0 },
+        style,
+        position,
+      ]}
     />
   );
 }

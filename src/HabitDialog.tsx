@@ -114,156 +114,160 @@ export function HabitDialog({
           <Heading style={[styles.title, { color: habit.color }]}>
             {mode === 'create' ? 'Make it yours' : habit.name}
           </Heading>
-          <ScrollView
-            key={iconPicker ? 'icon' : picker ? 'colour' : 'form'}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {iconPicker ? (
-              <HabitIconPicker
-                icon={icon}
-                colour={colour}
-                onChange={setIconDraft}
-              />
-            ) : mode === 'colour' || picker ? (
-              <ColourPicker
-                color={picker ? colour : habit.color}
-                onChange={(value) => {
-                  if (picker) setPickerDraft(value ?? '');
-                  else setColour(value ?? '');
-                }}
-              />
-            ) : editing ? (
-              <View style={{ gap: 18 }}>
-                <View>
-                  <Text style={styles.label}>Name</Text>
-                  <TextInput
-                    autoFocus={mode === 'create'}
-                    accessibilityLabel="Habit name"
-                    maxLength={200}
-                    value={name}
-                    onChangeText={setName}
-                    style={styles.input}
-                    selectionColor={colour}
-                    placeholder="Read a little"
-                    placeholderTextColor="#666666"
-                  />
-                </View>
-                {mode === 'create' ? (
+          {iconPicker ? (
+            <HabitIconPicker
+              icon={icon}
+              colour={colour}
+              onChange={setIconDraft}
+            />
+          ) : (
+            <ScrollView
+              key={picker ? 'colour' : 'form'}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {mode === 'colour' || picker ? (
+                <ColourPicker
+                  color={picker ? colour : habit.color}
+                  onChange={(value) => {
+                    if (picker) setPickerDraft(value ?? '');
+                    else setColour(value ?? '');
+                  }}
+                />
+              ) : editing ? (
+                <View style={{ gap: 18 }}>
                   <View>
-                    <Text style={styles.label}>Record as</Text>
-                    <View style={styles.types}>
-                      {(['checkbox', 'number'] as const).map((type) => (
-                        <Pressable
-                          key={type}
-                          accessibilityRole="button"
-                          accessibilityState={{
-                            selected: numeric === (type === 'number'),
-                          }}
-                          onPress={() => setNumeric(type === 'number')}
-                          style={[
-                            styles.type,
-                            {
-                              backgroundColor:
-                                numeric === (type === 'number')
-                                  ? '#303030'
-                                  : '#181818',
-                            },
-                          ]}
-                        >
-                          <Icon
-                            name={type === 'number' ? 'number' : 'checked'}
-                            size={18}
-                          />
-                          <Text style={styles.buttonText}>
-                            {type === 'number' ? 'Daily total' : 'Checkbox'}
-                          </Text>
-                        </Pressable>
-                      ))}
-                    </View>
-                  </View>
-                ) : (
-                  <Text style={styles.description}>
-                    {numeric ? 'Numeric daily total' : 'Checkbox habit'} · Type
-                    is set when creating a habit.
-                  </Text>
-                )}
-                {numeric && (
-                  <View>
-                    <Text style={styles.label}>Unit · optional</Text>
+                    <Text style={styles.label}>Name</Text>
                     <TextInput
-                      accessibilityLabel="Habit unit"
-                      value={unit}
-                      maxLength={80}
-                      onChangeText={setUnit}
+                      autoFocus={mode === 'create'}
+                      accessibilityLabel="Habit name"
+                      maxLength={200}
+                      value={name}
+                      onChangeText={setName}
                       style={styles.input}
-                      placeholder="minutes, pages, glasses…"
+                      selectionColor={colour}
+                      placeholder="Read a little"
                       placeholderTextColor="#666666"
                     />
                   </View>
-                )}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Habit icon, ${habitIconLabel(icon)}`}
-                  onPress={() => {
-                    setIconDraft(icon);
-                    setIconPicker(true);
-                  }}
-                  style={[
-                    styles.button,
-                    {
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                    },
-                  ]}
-                >
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      gap: 10,
-                      alignItems: 'center',
+                  {mode === 'create' ? (
+                    <View>
+                      <Text style={styles.label}>Record as</Text>
+                      <View style={styles.types}>
+                        {(['checkbox', 'number'] as const).map((type) => (
+                          <Pressable
+                            key={type}
+                            accessibilityRole="button"
+                            accessibilityState={{
+                              selected: numeric === (type === 'number'),
+                            }}
+                            onPress={() => setNumeric(type === 'number')}
+                            style={[
+                              styles.type,
+                              {
+                                backgroundColor:
+                                  numeric === (type === 'number')
+                                    ? '#303030'
+                                    : '#181818',
+                              },
+                            ]}
+                          >
+                            <Icon
+                              name={type === 'number' ? 'number' : 'checked'}
+                              size={18}
+                            />
+                            <Text style={styles.buttonText}>
+                              {type === 'number' ? 'Daily total' : 'Checkbox'}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    </View>
+                  ) : (
+                    <Text style={styles.description}>
+                      {numeric ? 'Numeric daily total' : 'Checkbox habit'} ·
+                      Type is set when creating a habit.
+                    </Text>
+                  )}
+                  {numeric && (
+                    <View>
+                      <Text style={styles.label}>Unit · optional</Text>
+                      <TextInput
+                        accessibilityLabel="Habit unit"
+                        value={unit}
+                        maxLength={80}
+                        onChangeText={setUnit}
+                        style={styles.input}
+                        placeholder="minutes, pages, glasses…"
+                        placeholderTextColor="#666666"
+                      />
+                    </View>
+                  )}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Habit icon, ${habitIconLabel(icon)}`}
+                    onPress={() => {
+                      setIconDraft(icon);
+                      setIconPicker(true);
                     }}
-                  >
-                    <HabitSymbol icon={icon} colour={colour} />
-                    <Text style={styles.buttonText}>Icon</Text>
-                  </View>
-                  <Text style={styles.description}>{habitIconLabel(icon)}</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Choose habit colour"
-                  onPress={() => {
-                    setPickerDraft(colour);
-                    setPicker(true);
-                  }}
-                  style={[
-                    styles.button,
-                    { flexDirection: 'row', justifyContent: 'space-between' },
-                  ]}
-                >
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 10,
-                    }}
+                    style={[
+                      styles.button,
+                      {
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                      },
+                    ]}
                   >
                     <View
                       style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: 9,
-                        backgroundColor: colour,
+                        flexDirection: 'row',
+                        gap: 10,
+                        alignItems: 'center',
                       }}
-                    />
-                    <Text style={styles.buttonText}>Colour</Text>
-                  </View>
-                  <Text style={styles.description}>{colour}</Text>
-                </Pressable>
-              </View>
-            ) : null}
-          </ScrollView>
+                    >
+                      <HabitSymbol icon={icon} colour={colour} />
+                      <Text style={styles.buttonText}>Icon</Text>
+                    </View>
+                    <Text style={styles.description}>
+                      {habitIconLabel(icon)}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Choose habit colour"
+                    onPress={() => {
+                      setPickerDraft(colour);
+                      setPicker(true);
+                    }}
+                    style={[
+                      styles.button,
+                      { flexDirection: 'row', justifyContent: 'space-between' },
+                    ]}
+                  >
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 10,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 18,
+                          height: 18,
+                          borderRadius: 9,
+                          backgroundColor: colour,
+                        }}
+                      />
+                      <Text style={styles.buttonText}>Colour</Text>
+                    </View>
+                    <Text style={styles.description}>{colour}</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+            </ScrollView>
+          )}
           {(editing || mode === 'colour' || picker) && (
             <View style={styles.footer}>
               {button(

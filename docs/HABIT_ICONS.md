@@ -11,7 +11,10 @@ replace names or shrink date-cell touch targets.
 Hold a habit name → Edit habit → Icon, or use Icon while adding a habit.
 
 - **None** removes the icon without reserving an empty icon slot in the row.
-- **Icons** searches 56 Phosphor choices by name and related words. The selection
+- **Icons** provides all 1,512 Regular designs from Phosphor core 2.1.1. Common
+  starts with the original 56 habit choices; All icons browses the complete set.
+  Search always covers the full catalogue, matching multiple words across names,
+  aliases, categories, and tags. The selection
   uses the habit's current draft colour. Applied icons track subsequent colour edits.
 - **Emoji** offers 32 presets and a text field for the system emoji keyboard or
   paste. Emoji keep their platform appearance. Skin tones, joined sequences,
@@ -20,16 +23,21 @@ Hold a habit name → Edit habit → Icon, or use Icon while adding a habit.
 The picker's Done applies to the editor draft; the editor's Done saves the habit.
 Close discards the current picker/editor draft. The picker replaces the form's
 scrolling content and keeps Done visible rather than stacking another long section.
+Its own bounded FlatList renders a window of icon rows, with adaptive column count;
+it is not nested in the editor ScrollView. Tabs/search scroll with the results so
+the picker can shrink in landscape or above the keyboard.
 
 ## Assets and code
 
 [Phosphor core](https://github.com/phosphor-icons/core) supplies the regular SVG
 paths, pinned to npm `@phosphor-icons/core@2.1.1`. `src/phosphorPaths.ts` contains
-only the selected glyphs. Its [MIT notice](licenses/PHOSPHOR_LICENSE.txt) is retained.
+the complete regular glyph set. Its [MIT notice](licenses/PHOSPHOR_LICENSE.txt) is retained.
 The package is not a runtime dependency; existing react-native-svg draws the paths.
 There is no remote image fetch and no new native module.
 
-`src/habitIconCatalog.ts` owns stable IDs, labels, and search terms. Keep saved IDs
+`src/habitIconCatalog.ts` owns generated stable IDs, labels, and search terms.
+`src/commonHabitIcons.ts` preserves the curated order, labels, and habit aliases.
+`src/searchHabitIcons.ts` indexes the full catalogue for multiword search. Keep saved IDs
 and their glyphs when extending the catalogue. `src/HabitSymbol.tsx` draws icons;
 `src/HabitIconPicker.tsx` owns selection UI. `src/habitIcons.ts` owns namespaced
 values, labels, and validation using pinned `emoji-regex@11.0.0`. Do not tighten
@@ -53,12 +61,24 @@ Tests cover valid emoji sequences, malformed inputs, catalogue/glyph completenes
 History descriptions, SQLite reload, removal, archive restore, Undo/Redo, legacy
 version boundaries, downgrade rejection, and backup round-trips.
 
-## Pack selection recommendation — not yet a founder decision
+## Catalogue scope and regeneration
 
-The founder asked whether a second pack would offer enough choice. The current
-56 icons are a curated subset, not Phosphor's limit: the pinned 2.1.1 package has
-1,512 regular SVGs. Assistant recommendation: expand Phosphor coverage and search
-terms/categories before introducing another family. Keep common habit choices
-quick to browse; offer broader discovery through search. A second pack should
-address demonstrated subject gaps or an explicit style preference. No additional
-pack or catalogue expansion is implemented by this recommendation.
+The founder approved expanding Phosphor on 4 October 2026. All 1,512 distinct
+regular designs are now available. The upstream 9k+ total counts six styles:
+1,512 × thin/light/regular/bold/fill/duotone = 9,072 assets in core 2.1.1. Regular
+covers every design once. A second pack remains a proposal for demonstrated gaps.
+
+To regenerate, download the official npm tarball for `@phosphor-icons/core@2.1.1`,
+extract it into an ignored local folder, then run:
+
+```sh
+node scripts/generate-phosphor.mjs /absolute/path/to/extracted/package
+```
+
+The generator verifies package/version, all 1,512 SVG structures, and retained
+common IDs; it writes deterministic, formatted catalogue/path modules. These
+are committed, so normal development/builds need no asset download. Preserve
+the upstream MIT notice and all previously accepted IDs on future upgrades.
+Expanded choices use the same v4 representation; older builds with the 56-icon
+registry will reject backups containing unfamiliar IDs. Update the receiving
+build before importing those backups.

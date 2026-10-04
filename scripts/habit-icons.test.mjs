@@ -73,3 +73,45 @@ test('history distinguishes icon-only changes and removal from combined habit ed
     'Icon removed',
   );
 });
+
+test('full regular catalogue preserves common choices and searches all icons by words, categories and aliases', async () => {
+  const { searchHabitIcons } = await import('../src/searchHabitIcons.ts');
+  const { commonHabitIcons } = await import('../src/commonHabitIcons.ts');
+  assert.equal(habitIconCatalog.length, 1512);
+  assert.deepEqual(
+    searchHabitIcons('').map((item) => item.id),
+    commonHabitIcons.map((item) => item.id),
+  );
+  assert.equal(searchHabitIcons('', true).length, 1512);
+  for (const old of commonHabitIcons) {
+    const current = habitIconCatalog.find((item) => item.id === old.id);
+    assert.equal(current?.label, old.label);
+    assert.ok(current?.tags.includes(old.tags));
+  }
+  assert.ok(
+    searchHabitIcons('  PERSON_simple   RUN ').some(
+      (item) => item.id === 'person-simple-run',
+    ),
+  );
+  assert.ok(searchHabitIcons('hydration').some((item) => item.id === 'drop'));
+  assert.ok(
+    searchHabitIcons('health wellness').some(
+      (item) => item.id === 'stethoscope',
+    ),
+  );
+  assert.ok(searchHabitIcons('acorn').some((item) => item.id === 'acorn'));
+  assert.ok(
+    searchHabitIcons('archive-box').some(
+      (item) => item.id === 'box-arrow-down',
+    ),
+  );
+  assert.ok(
+    habitIconCatalog.every((item) => !item.tags.includes('[object Object]')),
+  );
+  assert.deepEqual(searchHabitIcons('definitelynonexistenticon'), []);
+  assert.deepEqual(searchHabitIcons('  '), searchHabitIcons(''));
+  assert.deepEqual(
+    searchHabitIcons('acorn', true),
+    searchHabitIcons('acorn', false),
+  );
+});

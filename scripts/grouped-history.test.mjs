@@ -731,7 +731,8 @@ test('v4 icon edits survive SQLite reopen, removal, archive restore, Undo/Redo a
       true,
     );
   }
-  const packed = { ...original, icon: 'phosphor:person-simple-walk' };
+  // Exercise an expanded-catalogue icon; the v4 fixture retains legacy choices.
+  const packed = { ...original, icon: 'phosphor:acorn' };
   edit(packed);
   edit({ ...packed, icon: 'emoji:🚶🏽‍♀️' });
   edit(original); // None is absence, not a null/string sentinel.
@@ -743,6 +744,7 @@ test('v4 icon edits survive SQLite reopen, removal, archive restore, Undo/Redo a
   await store.flush();
   const reopened = new ChangeStore(repository, metadata);
   await reopened.load();
+  assert.equal(reopened.getSnapshot().replay.state.habits[0].icon, packed.icon);
   assert.equal(reopened.redo(), true);
   assert.equal(reopened.getSnapshot().replay.state.habits[0].icon, 'emoji:🚶🏽‍♀️');
   const before = reopened.getSnapshot().replay.state.habits[0];

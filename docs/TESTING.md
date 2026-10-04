@@ -598,3 +598,28 @@ back; repeat with a quick drag, a tall name, and near both scroll edges. Check t
 name and date cells move together without flashing at another Y position. Drop,
 Undo, and reload to confirm only the completed order change persists. Check both
 orientations and larger text, since row containers now use explicit total heights.
+
+## Full Phosphor catalogue and drag frame cost — 4 October 2026
+
+The founder confirmed swap flicker is fixed, but reported low FPS on the held row.
+ReorderRow now uses a transform from a constant top: 0 layout anchor, preserving
+stable siblings and shared preview/drop positions. Native drag FPS is not measured.
+The icon picker now offers 1,512 Regular designs, Common/All browsing, full-catalogue
+multiword search, and a bounded virtualized list outside the editor ScrollView.
+
+Phone acceptance pending:
+
+1. Hold, wait for the menu, and drag slowly and quickly through several rows.
+   Compare finger tracking, neighbour swaps, and drop; check no flicker returns.
+   Repeat in landscape, with tall names/units, at scrolling edges, and Reduce Motion.
+2. Open Icon → Icons. Common should be quick to scan. Search “acorn” or
+   “stethoscope”; All icons should scroll through the complete catalogue. Test
+   typing with the keyboard, landscape, larger text, and VoiceOver. Done and Close
+   should retain their draft/save/discard behaviour without clipped controls.
+3. Save an expanded choice, reload, Undo/Redo, and check grid/statistics/archive.
+   Old icon choices remain valid; backup recipients need the expanded-catalogue build.
+
+Automated: 92 tests, code checks, and iOS production export pass. Coverage adds
+full catalogue/alias/category/multiword-search checks and
+uses an expanded icon in the SQLite reopen/Undo/Redo/backup test. UI automation
+was unavailable (no connected browser); layout and native FPS remain phone checks.
