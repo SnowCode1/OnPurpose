@@ -1,5 +1,23 @@
 # Decision log
 
+## 008 — Past-only grid and habit colours
+
+Date: 4 October 2026. Status: requested by the founder; implemented in the demo.
+
+Start with today and the previous two days; today is the newest allowed date.
+Keep names fixed horizontally and date headings visible during vertical scrolling.
+Use inverted, virtualized date-column lists, append older dates as needed, and
+provide a direct Today jump. Store demo values by stable habit ID and local date,
+never by visible column index. Calendar-day arithmetic avoids DST/UTC errors.
+
+Use pure black and a per-habit colour across names, units, checkboxes, numeric
+values, and row rules. Habit details include an eight-colour picker. These choices
+remain in memory until the incremental storage layer is implemented.
+
+The founder has published the GitHub repository and authorised commits. Commit
+local work in coherent changes; preview captures and environment settings remain
+ignored. Selecting a licence is still an open project decision.
+
 ## 007 — Opt-in local preview sharing
 
 Date: 4 October 2026. Status: requested by the founder; implemented.

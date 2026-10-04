@@ -112,7 +112,7 @@ or manual screenshot transfer is needed. This is not streaming or remote control
 5. Start `npm run preview:server` in a second terminal and leave it running.
 6. Fully reload the app in Expo Go. If a changed setting does not appear, restart
    `npm start` and reload. Environment changes need more than Fast Refresh.
-7. Touch and hold **ONPURPOSE · INTERACTION STUDY** for about half a second.
+7. Touch and hold **ONPURPOSE** for about half a second.
    Inside a dialog, hold its title instead. A success haptic fires only after
    the receiver confirms the save. Upload errors are shown and can be retried.
    There is no preview button, added layout space, success popup, or pressed style.

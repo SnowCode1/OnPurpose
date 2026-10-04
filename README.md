@@ -4,8 +4,10 @@ A proposed iPhone habit tracker designed to make recording a completed habit
 almost effortless. Open the list, tap familiar positions, and get on with life.
 
 **Early development.** The name is provisional. This repository currently has an
-Expo/React Native foundation and a 12-row, three-day grid demo. Demo checks reset
-when the app reloads; numeric daily-total entry works, while habit management, saving, statistics, and history are not implemented yet.
+Expo/React Native foundation and a 12-row grid demo. Dates scroll into the past with today at the right edge, and
+habit details include a row-colour picker. Numeric daily-total entry works.
+Entries and colours reset on reload; habit management, durable saving, statistics,
+and the separate change-history browser are not implemented yet.
 
 ## Run locally
 
@@ -25,12 +27,13 @@ the full first-run steps and troubleshooting.
 ```sh
 npm run web          # browser preview on Linux
 npm run check        # TypeScript, lint, and formatting
+npm test             # calendar logic and preview receiver tests
 npm run export:ios   # verify the iOS JS bundle; not a signed iOS build
 ```
 
 For gesture-based screenshot sharing from the iPhone, enable the settings from
 `.env.example` in `.env.local`, run `npm run preview:server`, and reload the app.
-Long-press **ONPURPOSE · INTERACTION STUDY** (or a dialog title) to save the
+Long-press **ONPURPOSE** (or a dialog title) to save the
 visible app to `.dev/previews/latest.png`. A success haptic confirms receipt.
 The initial workspace is already configured. See the
 [preview-sharing guide](docs/DEVELOPMENT.md#share-an-app-preview-from-the-phone).

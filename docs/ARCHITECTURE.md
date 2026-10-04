@@ -3,13 +3,18 @@
 ## Implemented foundation
 
 One React Native screen written in strict TypeScript, running under Expo SDK 57.
-It uses React state for a disposable list interaction and safe-area handling for
-phone notches/home indicators. It follows the system colour preference. Dates are fixed at demo launch; automatic
-date rollover is not implemented. Habit names open an explicit statistics placeholder.
+It uses React state for disposable dated entries and habit colours, with safe
+areas for phone notches/home indicators. The app uses pure black with bright
+per-habit colours. Habit names open a colour picker and statistics placeholder.
+A local-midnight timer and foreground check update the current day.
 
 ```text
 index.ts       registers the app with Expo
-App.tsx        12 sample rows × three dates; checkboxes and numeric total entry
+App.tsx        screen, in-memory state, colour picker and daily-total editor
+src/HabitGrid.tsx  fixed names/date headers; virtualized past-only date columns
+src/calendar.ts   local calendar keys and past-date arithmetic
+src/useLocalToday.ts  midnight and foreground date refresh
+src/habits.ts   typed demo habits and colour palette
 app.json       display name, platform configuration, template assets
 assets/        generated placeholder icons; replace before release
 docs/          setup, decisions, test and release plans
@@ -21,7 +26,22 @@ There is no database, backend, account flow, implemented statistics/history, sch
 or navigation library. The web target is a development convenience; iOS is the
 release target. Android is not part of the committed release scope.
 
-## Proposed next step — after product discovery
+## Grid behaviour
+
+Two synchronized horizontal FlatLists keep date headings and cells aligned.
+They are inverted so index zero is today at the right edge; only non-negative
+past-day offsets exist. Bouncing beyond today is disabled. Older dates are
+appended in batches of 90 as needed, with column virtualization to avoid rendering
+every historical cell at once. A vertical ScrollView moves names and cells
+together while date headings remain visible.
+
+Row heights are measured from habit names/units so wrapped names and larger text
+remain aligned. Three columns are visible normally, two for larger text or narrow
+layouts. Dates snap to column boundaries, and a Today control resets horizontal
+position without changing habit order. Current-day changes remount the grid at
+today while values retain their habit ID/local-date keys.
+
+## Proposed next step — durable storage
 
 Separate the Today screen, habit domain logic, and local storage when we add real
 habits. Prefer a small number of clear modules over a framework of abstractions.

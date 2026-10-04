@@ -91,12 +91,41 @@ The visible buttons have since been replaced with a long press on the app
 heading or dialog title. Verify that there is no added layout space, short taps
 do not capture, and one sustained press produces only one upload. Successful
 uploads provide haptics and a VoiceOver announcement; no success popup appears.
-The gesture itself still needs verification on the physical phone.
+The founder subsequently reported that the gesture works on the physical phone.
 
 Gesture update checks: TypeScript, lint, formatting, iOS bundle export, and all
 21 Expo Doctor checks passed. The release bundle excludes the gesture hint,
 uploader, RNViewShot module, receiver address, and pairing token. The configured
 receiver responded successfully to an authenticated health check.
+
+## Scrollable date grid checks
+
+4 October 2026:
+
+- TypeScript, ESLint, formatting, and the iOS bundle export passed.
+- All 12 automated tests passed, including five new calendar tests covering
+  past-only dates, batch expansion without shifting existing day identities,
+  leap days/month boundaries, Melbourne DST changes, and stable dates at rollover.
+- Entries use habit ID plus local date; virtualized columns never own entry state.
+- Main background is pure black; eight selectable habit colours apply to row
+  labels, units, checkbox states, numbers, and separators.
+- Phone visual/scroll verification for this grid update is pending.
+
+Manual checks for the current grid:
+
+1. Open at today and the two preceding days. Swiping past today cannot reveal
+   future dates. Swipe older dates through a month boundary and beyond 90 days.
+2. Drag both the date headings and the cells: headings and cells should stay
+   aligned while habit names stay fixed. Scroll down: headings stay visible and
+   names/cells move vertically together.
+3. Record different values on two dates, scroll away and return: both keep their
+   original values. A swipe must not toggle a cell accidentally.
+4. Tap Today to return from history. It should preserve vertical scroll position
+   and row order. Try increasing system text size and confirm row alignment.
+5. Tap a habit name, select a colour, then Done. Its name, units and entries across
+   all dates should update together; its saved-in-memory values should stay put.
+6. Check rollover while open and after backgrounding overnight. The grid should
+   return to the new today and earlier entries should remain attached to their dates.
 
 To check manually: share the grid, share a dialog, stop the receiver and verify
 that an error appears instead of a success message, then restart and retry.

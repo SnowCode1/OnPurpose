@@ -20,7 +20,9 @@ Incremental change storage and export are confirmed requirements; read
 ## Stack and layout
 
 - React Native + Expo SDK 57, TypeScript strict mode, npm with package-lock.json.
-- `App.tsx` contains the initial interaction demo. `index.ts` registers it.
+- `App.tsx` owns screen state and dialogs; `src/HabitGrid.tsx` renders the grid.
+- `src/calendar.ts` and `src/useLocalToday.ts` handle local dates and rollover.
+- `src/habits.ts` contains demo habits/colours. `index.ts` registers the app.
 - `app.json` owns Expo configuration. Generated native folders stay ignored.
 - Linux is the development host; a physical iPhone is the primary test device.
 - Use `npx expo install <package>` for Expo/native dependencies to match the SDK.
@@ -38,7 +40,7 @@ Do not trade reliability or readable controls for the three-second aspiration.
 
 ## Verification
 
-Run `npm run check` after code changes, and `npm run export:ios` when changing
+Run `npm run check` and relevant `npm test` suites after code changes, and `npm run export:ios` when changing
 native-facing imports or Expo config. Web preview helps layout checks but is not
 evidence that iOS runs correctly. Report actual checks and any unverified device
 behaviour. Follow `docs/TESTING.md` for phone and release testing.

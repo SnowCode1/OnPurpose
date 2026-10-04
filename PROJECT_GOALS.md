@@ -18,6 +18,12 @@ and uncertainty about whether something was saved.
 - Release the source under an open-source licence, still to be selected.
 - Use a compact, spreadsheet-like home screen: habits run vertically, dates run
   horizontally, with roughly three day columns depending on available space.
+- Start at today and the previous two days. Scroll horizontally into the past;
+  do not show future days.
+- Use a pure black background and user-selectable habit colours across each row,
+  including the habit name, checkboxes, and numeric entries.
+- The founder has published the repository at https://github.com/SnowCode1/OnPurpose
+  and authorised local commits. A project licence is still to be selected.
 - Use [Loop Habit Tracker for Android](https://github.com/iSoron/uhabits) as a
   product reference. This is inspiration for behaviour, not a decision to copy
   its code, assets, scoring formula, or every feature.
@@ -41,8 +47,8 @@ and uncertainty about whether something was saved.
 3. Tap a numeric date cell to enter/edit that day's total.
 4. Tap the habit name to open statistics. Names and date cells have distinct hit
    targets, so recording a value cannot accidentally open statistics.
-5. Keep the current date in a predictable column. Today at the right is the
-   starter experiment; final column direction and older-date navigation are open.
+5. Keep today at the right edge of the initial three-day view. Scroll toward
+   earlier dates while names stay fixed; offer a direct return to Today.
 6. Change ordering only through deliberate editing, not automatic sorting.
 7. Save locally and work offline; do not require an account for everyday tracking.
 8. Use restrained feedback. Explore optional haptics, with no blocking celebration.
@@ -98,10 +104,12 @@ The following capabilities are desired; their milestone order is proposed:
 5. Add comments and the separate history browser on top of the same stored changes.
 6. Validate accessibility, data recovery/upgrades, TestFlight, and App Store release.
 
-The current starter is a disposable 12-row, three-day interaction demo. It has
-checkbox toggles and a numeric-total editor. Statistics are explicitly a
-placeholder. It does not save, implement the change log, or roll dates forward
-while open. Those are subsequent implementation milestones.
+The current starter is a disposable 12-row grid with a three-day viewport (two
+columns at larger text sizes or narrow widths). It supports scrolling into the
+past, returning to Today, editing dated checkbox/numeric values, automatic local
+date rollover, and choosing a row colour in habit details. Statistics remain a
+placeholder. Entries and colours are in memory and reset on reload; durable
+storage and the change log are subsequent milestones.
 
 ## Deferred candidates, not permanent exclusions
 
@@ -112,21 +120,21 @@ and incremental history are desired scope, not excluded candidates.
 
 ## Decisions to make together
 
-| Question                                                               | Current status                                  |
-| ---------------------------------------------------------------------- | ----------------------------------------------- |
-| Which three dates, in which direction? How do we browse older dates?   | Today on the right in the demo; open            |
-| All habits daily, selected weekdays, or frequency targets?             | Open                                            |
-| Do numeric habits have units, targets, and a “lower is better” option? | Daily-total input confirmed; goal rules open    |
-| What exactly counts toward a numeric or scheduled habit's streak?      | Open                                            |
-| Midnight cutoff, late-night logging, backdating, and travel?           | Open; decide before persistence                 |
-| Comments on a habit, a day, a particular entry, or multiple kinds?     | Comments desired; attachment semantics open     |
-| Which app changes enter the history; how do deletion and undo work?    | Incremental storage confirmed; policy open      |
-| Export/import format, backup location, and cross-device sync?          | Change-based export confirmed; details open     |
-| Any reminders or widgets required for version one?                     | Open                                            |
-| Free, paid, donations, or another model?                               | Open                                            |
-| Licence and copyright holder?                                          | Open; choose before public release              |
-| Final name and visual personality?                                     | Open                                            |
-| iOS version, Expo account, Apple Developer membership?                 | iPhone 16 Pro confirmed; account/OS status open |
+| Question                                                               | Current status                                          |
+| ---------------------------------------------------------------------- | ------------------------------------------------------- |
+| Which three dates, in which direction? How do we browse older dates?   | Today on the right; past-only scrolling implemented     |
+| All habits daily, selected weekdays, or frequency targets?             | Open                                                    |
+| Do numeric habits have units, targets, and a “lower is better” option? | Daily-total input confirmed; goal rules open            |
+| What exactly counts toward a numeric or scheduled habit's streak?      | Open                                                    |
+| Midnight cutoff, late-night logging, backdating, and travel?           | Open; decide before persistence                         |
+| Comments on a habit, a day, a particular entry, or multiple kinds?     | Comments desired; attachment semantics open             |
+| Which app changes enter the history; how do deletion and undo work?    | Incremental storage confirmed; policy open              |
+| Export/import format, backup location, and cross-device sync?          | Change-based export confirmed; details open             |
+| Any reminders or widgets required for version one?                     | Open                                                    |
+| Free, paid, donations, or another model?                               | Open                                                    |
+| Licence and copyright holder?                                          | Open; choose before public release                      |
+| Final name and visual personality?                                     | Name open; black background and habit colours confirmed |
+| iOS version, Expo account, Apple Developer membership?                 | iPhone 16 Pro confirmed; account/OS status open         |
 
 ## Milestones
 
@@ -137,6 +145,18 @@ and incremental history are desired scope, not excluded candidates.
 5. **Beta:** own builds, TestFlight, accessibility, reliability, timed usability trials.
 6. **Open-source and App Store release:** licence, public repo, final assets,
    accurate privacy details, App Review, publication.
+
+## Next suggested work
+
+1. Implement the agreed incremental local store and export/replay before daily use.
+2. Add a real habit editor for names, types, units, colour, and manual ordering.
+3. Consider a date picker for jumping to a distant date without repeated swipes.
+4. Discuss an explicit “skipped/not applicable” value before calculating streaks,
+   so intentionally skipping a habit need not look like a missed day.
+5. Decide whether optional completion haptics help rapid checkoff on the phone.
+
+Items 3–5 are suggestions, not approved product requirements. Keep further ideas
+connected to reducing cognitive friction rather than adding screen clutter.
 
 ## Decision discipline
 

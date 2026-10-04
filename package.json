@@ -34,7 +34,9 @@
     "doctor": "npx expo-doctor@latest",
     "export:ios": "expo export --platform ios",
     "preview:server": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/preview-server.mjs",
-    "test:preview": "node --test scripts/preview-receiver.test.mjs"
+    "test:preview": "node --test scripts/preview-receiver.test.mjs",
+    "test:calendar": "node --test scripts/calendar.test.mjs",
+    "test": "node --test scripts/*.test.mjs"
   },
   "private": true,
   "engines": {

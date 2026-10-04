@@ -1,17 +1,22 @@
 import { StatusBar } from 'expo-status-bar';
 import { type ComponentType, useState } from 'react';
 import {
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   type TextProps,
-  useColorScheme,
   View,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { type GridDay, localDateKey } from './src/calendar';
+import { HabitGrid } from './src/HabitGrid';
+import { demoHabits, habitColors, type Habit } from './src/habits';
+import { useLocalToday } from './src/useLocalToday';
 
 // Metro removes this branch (and its module) from release JavaScript.
 const PreviewHeading: ComponentType<TextProps> =
@@ -20,75 +25,42 @@ const PreviewHeading: ComponentType<TextProps> =
       require('./src/dev/DevPreviewText').DevPreviewText
     : Text;
 
-type Habit = { id: string; name: string; unit?: string };
-const habits: Habit[] = [
-  { id: 'walk', name: 'Go for a walk' },
-  { id: 'read', name: 'Read', unit: 'minutes' },
-  { id: 'water', name: 'Drink water', unit: 'glasses' },
-  { id: 'stretch', name: 'Stretch' },
-  { id: 'journal', name: 'Write a little' },
-  { id: 'outside', name: 'Get outside' },
-  { id: 'meditate', name: 'Meditate' },
-  { id: 'cook', name: 'Cook a meal' },
-  { id: 'tidy', name: 'Tidy up' },
-  { id: 'connect', name: 'Call someone' },
-  { id: 'learn', name: 'Learn something' },
-  { id: 'sleep', name: 'Wind down' },
-];
-
-// Disposable interaction study: dates are captured at launch; no records are saved.
-function makeDays() {
-  return [2, 1, 0].map((offset) => {
-    const date = new Date();
-    date.setDate(date.getDate() - offset);
-    return {
-      key: `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`,
-      label:
-        offset === 0
-          ? 'Today'
-          : date.toLocaleDateString(undefined, { weekday: 'short' }),
-      number: date.getDate(),
-      fullLabel: date.toLocaleDateString(),
-    };
-  });
-}
-
 export default function App() {
-  const dark = useColorScheme() === 'dark';
-  const colors = dark
-    ? {
-        background: '#141A17',
-        text: '#F2F5EE',
-        muted: '#AAB8AD',
-        line: '#34463A',
-        accent: '#A8D8B8',
-        selected: '#294333',
-      }
-    : {
-        background: '#F7F8F2',
-        text: '#20372B',
-        muted: '#5F7065',
-        line: '#CBD6CB',
-        accent: '#315F43',
-        selected: '#DDEBDC',
-      };
-  const [days] = useState(makeDays);
+  const today = useLocalToday();
+  const [habits, setHabits] = useState(demoHabits);
   const [values, setValues] = useState<Record<string, number>>({});
   const [editing, setEditing] = useState<{
     key: string;
     habit: Habit;
-    date: string;
+    day: GridDay;
   } | null>(null);
-  const [detail, setDetail] = useState<Habit | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const detail = habits.find((habit) => habit.id === detailId);
   const [input, setInput] = useState('');
   const trimmed = input.trim().replace(',', '.');
   const numeric = Number(trimmed);
   const valid =
     trimmed === '' ||
     (/^\d+(\.\d*)?$/.test(trimmed) && Number.isFinite(numeric));
+  const accent = editing?.habit.color ?? detail?.color ?? '#FFFFFF';
+
+  function pressCell(habit: Habit, day: GridDay) {
+    if (day.key > localDateKey(new Date())) return;
+    const key = `${habit.id}:${day.key}`;
+    if (habit.unit) {
+      setInput(values[key] === undefined ? '' : String(values[key]));
+      setEditing({ key, habit, day });
+    } else {
+      setValues((previous) => ({
+        ...previous,
+        [key]: previous[key] === 1 ? 0 : 1,
+      }));
+    }
+  }
 
   function saveNumber() {
-    if (!editing || !valid) return;
+    if (!editing || !valid || editing.day.key > localDateKey(new Date()))
+      return;
     setValues((previous) => {
       const next = { ...previous };
       if (trimmed === '') delete next[editing.key];
@@ -98,205 +70,168 @@ export default function App() {
     setEditing(null);
   }
 
+  function closeDialog() {
+    setEditing(null);
+    setDetailId(null);
+  }
+
   return (
     <SafeAreaProvider>
-      <SafeAreaView
-        style={[styles.screen, { backgroundColor: colors.background }]}
-      >
-        <StatusBar style={dark ? 'light' : 'dark'} />
+      <SafeAreaView style={styles.screen}>
+        <StatusBar style="light" />
         <View style={styles.content}>
-          <View style={styles.heading}>
-            <PreviewHeading style={[styles.eyebrow, { color: colors.muted }]}>
-              ONPURPOSE · INTERACTION STUDY
-            </PreviewHeading>
-            <Text style={[styles.title, { color: colors.text }]}>
-              A little, every day.
-            </Text>
-          </View>
-          <View
-            style={[
-              styles.row,
-              styles.columnHead,
-              { borderColor: colors.line },
-            ]}
-          >
-            <Text style={[styles.habitName, { color: colors.muted }]}>
-              Your habits
-            </Text>
-            {days.map((day) => (
-              <View key={day.key} style={styles.dayCell}>
-                <Text style={[styles.dayLabel, { color: colors.muted }]}>
-                  {day.label}
-                </Text>
-                <Text style={[styles.dayNumber, { color: colors.text }]}>
-                  {day.number}
-                </Text>
-              </View>
-            ))}
-          </View>
-          <ScrollView
-            style={styles.list}
-            contentContainerStyle={styles.listContent}
-          >
-            {habits.map((habit) => (
-              <View
-                key={habit.id}
-                style={[styles.row, { borderColor: colors.line }]}
-              >
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`${habit.name}, habit details`}
-                  onPress={() => setDetail(habit)}
-                  style={({ pressed }) => [
-                    styles.habitName,
-                    styles.nameButton,
-                    { opacity: pressed ? 0.6 : 1 },
-                  ]}
-                >
-                  <Text style={[styles.name, { color: colors.text }]}>
-                    {habit.name}
-                  </Text>
-                  {habit.unit && (
-                    <Text style={[styles.unit, { color: colors.muted }]}>
-                      {habit.unit}
-                    </Text>
-                  )}
-                </Pressable>
-                {days.map((day) => {
-                  const key = `${habit.id}:${day.key}`;
-                  const value = values[key];
-                  const checked = value === 1;
-                  return (
-                    <Pressable
-                      key={day.key}
-                      testID={`cell-${key}`}
-                      accessibilityRole={habit.unit ? 'button' : 'checkbox'}
-                      accessibilityState={habit.unit ? undefined : { checked }}
-                      accessibilityLabel={`${habit.name}, ${day.fullLabel}${habit.unit ? `, ${value === undefined ? 'not recorded' : `${value} ${habit.unit}`}` : ''}`}
-                      accessibilityHint={
-                        habit.unit
-                          ? 'Opens daily total entry'
-                          : 'Toggles completion'
-                      }
-                      onPress={() => {
-                        if (habit.unit) {
-                          setInput(value === undefined ? '' : String(value));
-                          setEditing({ key, habit, date: day.fullLabel });
-                        } else {
-                          setValues((previous) => ({
-                            ...previous,
-                            [key]: previous[key] === 1 ? 0 : 1,
-                          }));
-                        }
-                      }}
-                      style={({ pressed }) => [
-                        styles.dayCell,
-                        styles.checkCell,
-                        {
-                          backgroundColor:
-                            pressed ||
-                            (habit.unit ? value !== undefined : checked)
-                              ? colors.selected
-                              : 'transparent',
-                        },
-                      ]}
-                    >
-                      <Text style={[styles.value, { color: colors.accent }]}>
-                        {habit.unit
-                          ? value === undefined
-                            ? '—'
-                            : String(value)
-                          : checked
-                            ? '✓'
-                            : '○'}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ))}
-          </ScrollView>
-          <Text style={[styles.footer, { color: colors.muted }]}>
-            Demo only · changes are not saved
+          <PreviewHeading style={styles.brand}>ONPURPOSE</PreviewHeading>
+          <HabitGrid
+            key={today}
+            today={today}
+            habits={habits}
+            values={values}
+            onHabitPress={(habit) => setDetailId(habit.id)}
+            onCellPress={pressCell}
+          />
+          <Text style={styles.footer}>
+            Demo · entries and colours reset on reload
           </Text>
         </View>
         <Modal
-          visible={editing !== null || detail !== null}
+          visible={editing !== null || detail !== undefined}
           animationType="fade"
           transparent
-          onRequestClose={() => {
-            setEditing(null);
-            setDetail(null);
-          }}
+          onRequestClose={closeDialog}
         >
-          <View style={styles.overlay}>
-            <View
-              accessibilityViewIsModal
-              style={[styles.dialog, { backgroundColor: colors.background }]}
-            >
-              <PreviewHeading
-                style={[styles.dialogTitle, { color: colors.text }]}
+          <KeyboardAvoidingView
+            style={styles.overlay}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          >
+            <View accessibilityViewIsModal style={styles.dialog}>
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
               >
-                {editing?.habit.name ?? detail?.name}
-              </PreviewHeading>
-              {editing ? (
-                <>
-                  <Text style={{ color: colors.muted }}>
-                    {editing.date} · {editing.habit.unit}
-                  </Text>
-                  <TextInput
-                    autoFocus
-                    keyboardType="decimal-pad"
-                    accessibilityLabel={`Daily total in ${editing.habit.unit}`}
-                    value={input}
-                    onChangeText={setInput}
-                    onSubmitEditing={saveNumber}
-                    style={[
-                      styles.input,
-                      { color: colors.text, borderColor: colors.line },
-                    ]}
-                  />
-                  <Text style={{ color: colors.muted }}>
-                    {valid
-                      ? 'Leave blank to clear this entry.'
-                      : 'Enter a number of zero or more.'}
-                  </Text>
-                  <View style={styles.actions}>
+                <Text style={styles.eyebrow}>
+                  {editing ? 'DAILY TOTAL' : 'HABIT DETAILS'}
+                </Text>
+                <PreviewHeading style={[styles.dialogTitle, { color: accent }]}>
+                  {editing?.habit.name ?? detail?.name}
+                </PreviewHeading>
+                {editing ? (
+                  <>
+                    <Text style={styles.secondary}>
+                      {editing.day.fullLabel}
+                    </Text>
+                    <View style={styles.inputRow}>
+                      <TextInput
+                        autoFocus
+                        keyboardType="decimal-pad"
+                        accessibilityLabel={`Daily total in ${editing.habit.unit}`}
+                        value={input}
+                        onChangeText={setInput}
+                        onSubmitEditing={saveNumber}
+                        selectionColor={accent}
+                        placeholder="0"
+                        placeholderTextColor="#555555"
+                        style={[
+                          styles.input,
+                          { color: accent, borderColor: `${accent}66` },
+                        ]}
+                      />
+                      <Text style={[styles.inputUnit, { color: accent }]}>
+                        {editing.habit.unit}
+                      </Text>
+                    </View>
+                    <Text style={styles.secondary}>
+                      {valid
+                        ? 'Leave blank to clear this entry.'
+                        : 'Enter a number of zero or more.'}
+                    </Text>
+                    <View style={styles.actions}>
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={closeDialog}
+                        style={styles.action}
+                      >
+                        <Text style={styles.actionText}>Cancel</Text>
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityState={{ disabled: !valid }}
+                        disabled={!valid}
+                        onPress={saveNumber}
+                        style={[
+                          styles.action,
+                          styles.primaryAction,
+                          { backgroundColor: accent, opacity: valid ? 1 : 0.4 },
+                        ]}
+                      >
+                        <Text style={styles.primaryActionText}>Save total</Text>
+                      </Pressable>
+                    </View>
+                  </>
+                ) : detail ? (
+                  <>
+                    <Text style={styles.secondary}>
+                      Statistics and streaks are coming next.
+                    </Text>
+                    <Text style={styles.sectionLabel}>ROW COLOUR</Text>
+                    <View style={styles.swatches}>
+                      {habitColors.map((color) => (
+                        <Pressable
+                          key={color.value}
+                          accessibilityRole="radio"
+                          accessibilityLabel={color.name}
+                          accessibilityState={{
+                            selected: detail.color === color.value,
+                          }}
+                          onPress={() =>
+                            setHabits((previous) =>
+                              previous.map((habit) =>
+                                habit.id === detail.id
+                                  ? { ...habit, color: color.value }
+                                  : habit,
+                              ),
+                            )
+                          }
+                          style={styles.swatchTarget}
+                        >
+                          <View
+                            style={[
+                              styles.swatch,
+                              { backgroundColor: color.value },
+                            ]}
+                          >
+                            {detail.color === color.value && (
+                              <Text
+                                allowFontScaling={false}
+                                style={styles.swatchCheck}
+                              >
+                                ✓
+                              </Text>
+                            )}
+                          </View>
+                        </Pressable>
+                      ))}
+                    </View>
+                    <Text style={styles.secondary}>
+                      Used for this habit’s name, checkboxes and numbers.
+                    </Text>
                     <Pressable
                       accessibilityRole="button"
-                      onPress={() => setEditing(null)}
-                      style={styles.action}
+                      onPress={closeDialog}
+                      style={[
+                        styles.action,
+                        styles.doneAction,
+                        { borderColor: `${accent}66` },
+                      ]}
                     >
-                      <Text style={{ color: colors.text }}>Cancel</Text>
+                      <Text style={{ color: accent, fontWeight: '600' }}>
+                        Done
+                      </Text>
                     </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityState={{ disabled: !valid }}
-                      disabled={!valid}
-                      onPress={saveNumber}
-                      style={[styles.action, { opacity: valid ? 1 : 0.4 }]}
-                    >
-                      <Text style={{ color: colors.accent }}>Save</Text>
-                    </Pressable>
-                  </View>
-                </>
-              ) : (
-                <>
-                  <Text style={[styles.detailText, { color: colors.muted }]}>
-                    This is where this habit’s statistics and streaks will live.
-                    They are not built yet.
-                  </Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => setDetail(null)}
-                    style={styles.action}
-                  >
-                    <Text style={{ color: colors.accent }}>Back to habits</Text>
-                  </Pressable>
-                </>
-              )}
+                  </>
+                ) : null}
+              </ScrollView>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </Modal>
       </SafeAreaView>
     </SafeAreaProvider>
@@ -304,68 +239,101 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
+  screen: { flex: 1, backgroundColor: '#000000' },
   content: {
     flex: 1,
     width: '100%',
     maxWidth: 600,
     alignSelf: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
   },
-  heading: { paddingTop: 16, paddingBottom: 18 },
-  eyebrow: { fontSize: 10, fontWeight: '600', letterSpacing: 1.2 },
-  title: { fontSize: 28, fontWeight: '600', marginTop: 10 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    minHeight: 52,
+  brand: {
+    color: '#A0A0A0',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 2.5,
+    paddingTop: 12,
+    paddingBottom: 18,
   },
-  columnHead: { paddingBottom: 8, alignItems: 'center' },
-  habitName: { flex: 1, paddingRight: 8 },
-  nameButton: { justifyContent: 'center', paddingVertical: 10, minHeight: 52 },
-  name: { fontSize: 15, fontWeight: '500' },
-  unit: { fontSize: 11, marginTop: 2 },
-  dayCell: { width: 56, alignItems: 'center', justifyContent: 'center' },
-  dayLabel: { fontSize: 11 },
-  dayNumber: { fontSize: 16, marginTop: 3, fontWeight: '600' },
-  checkCell: { minHeight: 52, borderRadius: 8, paddingVertical: 8 },
-  value: { fontSize: 21, fontWeight: '500', fontVariant: ['tabular-nums'] },
-  list: { flex: 1 },
-  listContent: { paddingBottom: 12 },
-  footer: { fontSize: 11, textAlign: 'center', paddingVertical: 10 },
+  footer: {
+    color: '#777777',
+    fontSize: 10,
+    textAlign: 'center',
+    paddingVertical: 10,
+  },
   overlay: {
     flex: 1,
-    backgroundColor: '#00000066',
+    backgroundColor: '#000000BB',
     justifyContent: 'center',
     padding: 24,
   },
   dialog: {
+    backgroundColor: '#101010',
+    borderColor: '#2A2A2A',
+    borderWidth: 1,
     padding: 24,
-    borderRadius: 20,
+    borderRadius: 24,
     width: '100%',
     maxWidth: 420,
+    maxHeight: '90%',
     alignSelf: 'center',
   },
-  dialogTitle: { fontSize: 24, fontWeight: '600', marginBottom: 12 },
-  detailText: { fontSize: 16, lineHeight: 24 },
-  input: {
-    borderWidth: 1,
-    borderRadius: 10,
-    fontSize: 28,
-    padding: 12,
-    marginVertical: 16,
+  eyebrow: {
+    color: '#929292',
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 1.5,
+    marginBottom: 10,
   },
+  dialogTitle: { fontSize: 26, fontWeight: '600', marginBottom: 12 },
+  secondary: { color: '#A1A1A1', fontSize: 13, lineHeight: 20 },
+  inputRow: { marginVertical: 20 },
+  input: { borderWidth: 1, borderRadius: 14, fontSize: 36, padding: 16 },
+  inputUnit: { fontSize: 12, marginTop: 8 },
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 16,
-    marginTop: 12,
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 24,
   },
   action: {
     minHeight: 48,
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    alignItems: 'center',
+    paddingHorizontal: 16,
     paddingVertical: 12,
   },
+  actionText: { color: '#D0D0D0' },
+  primaryAction: { borderRadius: 14 },
+  primaryActionText: { color: '#000000', fontWeight: '600' },
+  sectionLabel: {
+    color: '#929292',
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 1.5,
+    marginTop: 28,
+    marginBottom: 10,
+  },
+  swatches: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginBottom: 12,
+  },
+  swatchTarget: {
+    width: 52,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  swatch: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  swatchCheck: { color: '#000000', fontSize: 20, fontWeight: '700' },
+  doneAction: { borderWidth: 1, borderRadius: 14, marginTop: 24 },
 });
