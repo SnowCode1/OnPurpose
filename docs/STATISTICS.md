@@ -7,17 +7,21 @@ They do not establish frequency targets, scheduled weekdays, or numeric goals.
 
 ## Screen
 
-Tap a habit name to open a full-screen view. The mounted grid keeps its date and
-scroll position under it. Back returns to the grid; an intentional downward pull
-released at least 76 points beyond the top also dismisses. Only a drag beginning
-at the top qualifies; returning from deeper content or momentum cannot dismiss.
-The screen follows the pull slightly and slides down in 180 ms, or settles back
-for a short/cancelled pull. Reverse motion cancels. Animation stays on the UI
-thread and honours Reduce Motion. The Back button remains available.
-Edit opens the existing draft
-editor above statistics. Changes update the statistics without recording new
-statistics events. The header and habit title retain the guarded development
-preview gesture.
+Tap a habit name to open a large native iOS page sheet, matching History and
+Settings. The founder requested bottom-up entry and easier downward dismissal.
+This supersedes the sideways full-screen transition and custom 76-point
+overscroll gate. UIKit owns the slide and interactive swipe dismissal; the
+content is an ordinary native ScrollView. Pull down from the header or the top
+of the content, or use the accessible Close button. From deeper content, scroll
+back to the top first. The founder confirmed the revised sheet looks good on the iPhone. Detailed
+short/reversed drag, nested-editor and Reduce Motion checks remain in TESTING.md.
+
+The mounted grid keeps its viewed dates and scroll position beneath the sheet.
+`App.tsx` hosts statistics and its numeric/habit/description/version dialogs within
+the same presentation tree so nested editors present above it. Save failure/retry
+is also visible inside the statistics sheet. Edits update derived statistics
+without introducing separate statistics events. Development preview capture is
+now globally available through face-down-and-back; title holds remain optional.
 
 Optional habit descriptions appear first in a compact rounded note card,
 before the range controls and charts,

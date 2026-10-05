@@ -86,7 +86,8 @@ and uncertainty about whether something was saved.
   Statistics use each habit's own continuous calendar period since its start;
   another habit's activity must not affect its denominator. Numeric averages divide
   by all calendar days in the selected period since the start, including blanks.
-- Allow pulling down from the top of statistics to return to the grid.
+- Statistics comes up from the bottom and dismisses with the same native downward
+  swipe as History/Settings. Preserve a direct Close button and full statistics content.
 - Offer saved row- and column-spacing settings.
 - Develop without owning a Mac; use the physical iPhone for actual testing.
 - Maintain project goals, agent guidance including CLAUDE.md, and a docs folder.

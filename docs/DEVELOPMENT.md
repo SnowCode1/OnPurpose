@@ -97,9 +97,8 @@ replace iPhone checks. Re-evaluate MCP if its device support changes.
 ## Share an app preview from the phone
 
 Preview sharing is an opt-in development tool. It captures the visible native
-app when you long-press the month/year label or a dialog/panel title, then uploads
-a PNG to a receiver on your
-computer. The receiver writes `.dev/previews/latest.png` and a dated copy. An
+app from any screen using a deliberate face-down-and-back gesture, then uploads
+a PNG to a receiver on your computer. Title holds remain optional shortcuts. The receiver writes `.dev/previews/latest.png` and a dated copy. An
 assistant with workspace access can open those files directly; say “check the
 latest preview” after the app confirms it was saved. No photo-library permission
 or manual screenshot transfer is needed. This is not streaming or remote control.
@@ -114,13 +113,36 @@ or manual screenshot transfer is needed. This is not streaming or remote control
 5. Start `npm run preview:server` in a second terminal and leave it running.
 6. Fully reload the app in Expo Go. If a changed setting does not appear, restart
    `npm start` and reload. Environment changes need more than Fast Refresh.
-7. Touch and hold the **month/year label** for about half a second.
-   Inside a dialog or History/Settings panel, hold its title instead. A success haptic fires only after
-   the receiver confirms the save. Upload errors are shown and can be retried.
-   There is no preview button, added layout space, success popup, or pressed style.
-   VoiceOver users can choose the label’s **Share preview** accessibility action;
-   successful uploads are announced. If iOS disables haptics (for example in Low
-   Power Mode), check the receiver log or latest image to confirm the save.
+7. From any screen (including pickers and the description editor), gently turn
+   the phone so its screen faces down. Hold until a firm haptic tap (roughly half
+   a second), then turn it back toward you within four seconds and pause briefly.
+   The settled screen is captured; two firm taps confirm that the receiver saved
+   it. This does not use or change Expo Go's shake gesture.
+8. Holding a month/year or available title still works. Settings also has a
+   development-only **Share preview** button and gesture instructions as an
+   accessible fallback. There is no new overlay or layout on the main grid.
+9. An upload failure offers **Retry**, sending the already-captured image rather
+   than capturing the error alert. A new gesture intentionally captures a fresh
+   screen. The app distinguishes capture, network/timeout, pairing and receiver
+   failures. Successful saves are announced to VoiceOver without a popup.
+
+Only one capture/upload can run at a time across all triggers. Motion sampling
+runs at 10 Hz while the app is active, with no per-sample React updates. It stops
+and cancels the gesture on backgrounding. A stable viewing pose, face-down dwell,
+settled return, deadline and cooldown guard against ordinary rotation/shaking or
+setting the phone down for a long time. No motion data is stored or uploaded.
+The real device still needs acceptance testing for gesture comfort and captures
+of native sheets, keyboards and DOM editors.
+
+On the founder's Linux workstation the receiver was found stopped on 5 October.
+It has been restarted as `onpurpose-preview.service`, a transient user service
+with a 256 MB memory bound and Restart=on-failure. It keeps running independently
+of the agent's terminal, but is not a permanent boot-time service. Logs stay in
+ignored `.dev/preview-receiver.log`. Check/stop it with
+`systemctl --user status onpurpose-preview` /
+`systemctl --user stop onpurpose-preview`. Other checkouts can continue using
+`npm run preview:server`; if the service already owns the port, do not start a
+second receiver. The authenticated health check passed after restarting.
 
 The initial workspace has `.env.local` configured and enabled. Screenshots and
 local environment settings are ignored by Git. Dated captures are retained until
@@ -307,3 +329,8 @@ only the app multiplier; native controls retain OS font scaling. The layout hook
 combines both scales, as does the DOM editor. `textSize.ts` owns validated bounds
 and pure style calculations. Do not independently scale nested text or override
 native `defaultProps`. Fixed icons/checkbox glyphs remain decorative.
+
+The founder confirmed the global gesture works and statistics looks good on
+5 October. A new phone preview arrived and was inspected. At their request,
+preview feedback was strengthened to one heavy arming tap and two heavy saved
+taps, 110 ms apart; the stronger pattern still needs subjective phone feedback.

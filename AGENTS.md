@@ -88,7 +88,11 @@ The requested preset icon update uses normal undoable edits in
 - `src/displayPreferences.ts` owns column spacing, week start and date fading defaults; keep absent-field defaults compatible with old logs and all preferences outside History/Undo. Read docs/SETTINGS.md.
 - `src/rowSpacing.ts` owns saved Compact/Standard/Roomy geometry; preserve font scaling and measured row heights.
 - `src/StartDateField.tsx` owns the native draft date picker; existing dates remain inferred until edited. Explicit start dates bound statistics without deleting entries. New edits/exports use v8, retaining v1–v7 replay.
-- `src/useStatsDismissal.ts` owns UI-thread pull dismissal; only a drag starting at the top qualifies. Keep an accessible Back button.
+- Statistics uses the same native pageSheet/slide/swipe dismissal as History and
+  Settings; UIKit owns its gesture. `App.tsx` nests numeric, habit, description
+  and version dialogs inside the statistics presentation and preserves visible
+  save failure/retry. Keep an accessible Close button and the underlying grid.
+  Do not reintroduce sideways entry or a separate JS overscroll threshold.
 - `src/gridLayout.ts` calculates adaptive column geometry for both orientations.
 - `src/useGridScroll.ts` synchronizes native scrolling on the UI thread; never
   put per-frame list synchronization back on the JavaScript thread.
@@ -140,11 +144,19 @@ Add focused tests when persistence, date logic, event replay/export, or other co
 arrives; avoid tests that merely duplicate trivial markup.
 
 For phone screenshots, read `.dev/previews/latest.png` after the founder shares
-a preview by long-pressing the month/year label or a dialog/panel title; dated images are
+a preview by turning the phone face down until a tap, then back toward them and
+pausing (title holds remain optional); dated images are
 alongside it. Preview settings are in ignored
 `.env.local`. Use `npm run preview:server` for the local receiver. Do not commit
 captures or pairing tokens. Run `npm run test:preview` after changing the receiver;
 preserve both the env flag and `__DEV__` guard around preview capture.
+`src/dev/DevPreviewCapture.tsx` mounts once for all screens, samples motion only
+while active and never updates React per sample. `previewMotion.ts` validates
+intentional holds/settling/deadlines/cooldown. `previewCapture.ts` shares one busy
+gate and retains one failed image for Retry; `previewUpload.ts` distinguishes
+network/capture/receiver errors. No sensor or screenshot data enters habit storage.
+Settings exposes an accessible dev-only fallback. Keep all these modules out of
+release JS and never print pairing tokens.
 
 ## Documentation and release
 

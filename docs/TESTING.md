@@ -960,3 +960,47 @@ serialized draft writes/discard, draft validation and separate memory sample dra
 Automated coverage includes scale validation/nested styles and grid geometry,
 v8 replay/reload/backups/rollback/retry, legacy-prefix preservation and navigation
 cycling/cancellation. These checks do not establish native clipping or frame rates.
+
+## 5 October — Global preview capture and native statistics sheet
+
+- Fully reload Expo Go after adding expo-sensors. On the grid, a colour/icon
+  picker, statistics, description editor (keyboard open), Versions and a
+  link/highlight menu, gently turn the phone face down until a tap, then back
+  toward you within four seconds and pause. Each gesture should save one settled
+  screen without a success popup. Check `.dev/previews/latest.png`.
+- Rotate normally, shake, briefly flip, leave face down longer than four seconds
+  after arming, background/resume, and repeat during an upload. These must not
+  cause unexpected or overlapping captures. Sensors are foreground/dev-only.
+- Stop the receiver, capture, and verify a clear network error. Restart it and
+  choose Retry: the saved PNG should show the original menu, not the error alert.
+  Test the title/accessibility shortcut and Settings → Share preview fallback.
+  Receiver/transport/motion tests use temporary synthetic images, not real data.
+- Tap a habit: statistics enters upwards in an iOS page sheet. Drag the header or
+  pull content down at the top; compare with Settings/History. Short/reversed
+  drags should cancel naturally. Deeper scrolling, checkbox toggles and chart
+  selections should work without dismissal. Check both orientations and Reduce Motion.
+- Edit a numeric calendar cell, description, Versions and habit details from
+  statistics. These must present above statistics and return to it. Close/swipe
+  statistics must restore the grid's dates/scroll position. Save errors/retry stay
+  visible; edits/history/archive behaviour must remain intact.
+
+Release exports must contain no global preview listener, accelerometer preview
+code, capture/upload code, receiver address or token even with the env flag on.
+Expo Sensors may remain a linked native dependency; this test verifies release JS
+exclusion rather than native binary stripping. Native gesture/capture acceptance
+remains pending until observed on the physical iPhone.
+
+5 October verification for this change: `npm run check`, all 198 `npm test`
+cases, seven `npm run test:preview` receiver cases, iOS export and web export
+passed. The focused receiver/transport/motion suite passed all thirteen cases.
+An authenticated receiver health check returned 200/ready. Four iOS release
+assets were inspected with the preview env flag on: RNViewShot, preview upload
+messages, motion listener, ExponentAccelerometer, configured URL and pairing
+token were absent. Checks/bundles ran under a 2 GB Linux cgroup and one bundler
+worker. These are not physical-device performance or gesture acceptance results.
+
+The founder subsequently confirmed the face-down gesture works and the statistics
+sheet looks good on phone. A new 1206×2622 PNG arrived and was opened successfully.
+They asked for stronger preview haptics: the final implementation uses one heavy
+arming impact and two heavy save impacts 110 ms apart, without waiting before
+capture/upload. This final strength remains a subjective device check.

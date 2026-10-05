@@ -776,3 +776,36 @@ Next change cycles through altered passages with bounded measurement retries and
 manual-scroll cancellation. Editor icons use a fourteen-icon subset generated
 from the existing Tabler paths, adding no dependency and keeping the full icon
 catalogue out of the editor bundle.
+
+## 5 October 2026 — Preview recovery and global motion shortcut
+
+The founder reported failed preview sharing and that many menus have no usable
+title. The local receiver was found stopped, restarted, and passed authenticated
+health checking; the exact phone error was unavailable on retry. The founder
+requested a motion alternative excluding shake (reserved by Expo Go).
+
+Use foreground-only Expo Accelerometer sampling at 10 Hz. A stable viewing pose,
+face-down hold, small arming tap and settled return within four seconds trigger
+a single capture from any native/DOM screen. Deadline/cooldown and magnitude/
+movement checks reject transient movement and long unattended face-down poses.
+One shared capture busy gate replaces per-title lifecycles; failed uploads retain
+one image for explicit Retry. Title/accessibility shortcuts remain, with an
+accessible Settings fallback. All are env + **DEV** guarded and excluded from
+release JS; screenshots/tokens/logs remain ignored and motion data is not stored.
+The receiver now runs under a transient Linux user service with automatic process
+recovery and a 256 MB cap. Device gesture comfort still needs phone acceptance.
+
+## 5 October 2026 — Statistics uses the native bottom sheet
+
+The founder requested bottom-up entry and easier downward dismissal matching
+History/Settings. Use the same native pageSheet, slide animation and swipe
+dismissal, superseding sideways entry and custom overscroll calculations. Keep
+full statistics content, accessible Close and the grid mounted underneath. Nested
+editors and save-failure/retry live within the presentation tree. Native layout,
+scroll/dismiss coordination and nested presentation need physical-iPhone QA.
+
+The founder confirmed the gesture works and statistics looks good on the iPhone.
+A received preview was inspected. They requested stronger preview feedback, so
+arming now uses one heavy impact and confirmed saving uses two heavy impacts
+110 ms apart. Feedback failure never changes a capture/upload result, and these
+explicit development cues remain separate from routine habit feedback.

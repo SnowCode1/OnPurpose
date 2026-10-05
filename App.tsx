@@ -61,6 +61,15 @@ const PreviewDateButton: ComponentType<PressableProps> =
       require('./src/dev/DevPreviewText').DevPreviewButton
     : Pressable;
 
+// One global capture listener reaches native sheets and DOM editors alike.
+const previewTools: typeof import('./src/dev/DevPreviewCapture') | null =
+  __DEV__ && process.env.EXPO_PUBLIC_DEV_PREVIEW === 'true'
+    ? // eslint-disable-next-line @typescript-eslint/no-require-imports -- Development-only sensor/capture code.
+      require('./src/dev/DevPreviewCapture')
+    : null;
+const PreviewCapture = previewTools?.DevPreviewCapture;
+const PreviewControls = previewTools?.DevPreviewControls;
+
 // Development sample history is excluded from production bundles.
 const SampleDataMode:
   typeof import('./src/dev/SampleDataMode').SampleDataMode | null = __DEV__
@@ -69,6 +78,14 @@ const SampleDataMode:
   : null;
 
 export default function App() {
+  return (
+    <>
+      {PreviewCapture && <PreviewCapture />}
+      <StoreApp />
+    </>
+  );
+}
+function StoreApp() {
   const { store, error, retry } = useStoreOpening();
   if (!store) return <StorageGate error={error} onRetry={retry} />;
   if (SampleDataMode)
@@ -488,32 +505,239 @@ function PersistentApp({
       />
     ) : null;
 
+  const overlays = (
+    <>
+      {descriptionHabit && (
+        <DescriptionEditor
+          key={descriptionHabit.id}
+          title={descriptionHabit.name}
+          colour={descriptionHabit.color}
+          initialValue={descriptionHabit.description ?? ''}
+          draftKey={descriptionDraftKey(descriptionHabit.id)}
+          temporary={sampleData}
+          editable={editable}
+          Heading={PreviewHeading}
+          onClose={() => setDescriptionId(null)}
+          onApply={(description) =>
+            restoreDescription(descriptionHabit.id, description)
+          }
+        />
+      )}
+      {versionsHabit && (
+        <DescriptionVersions
+          key={versionsHabit.id}
+          habit={versionsHabit}
+          actions={versions}
+          state={snapshot.replay.state}
+          editable={editable}
+          Heading={PreviewHeading}
+          onRestore={restoreDescription}
+          onClose={() => setVersionsId(null)}
+        />
+      )}
+      <Modal
+        visible={editing !== null}
+        animationType="fade"
+        supportedOrientations={[
+          'portrait',
+          'landscape-left',
+          'landscape-right',
+        ]}
+        transparent
+        onRequestClose={closeDialog}
+      >
+        <KeyboardAvoidingView
+          style={styles.overlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View accessibilityViewIsModal style={styles.dialog}>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {editing && <Text style={styles.eyebrow}>DAILY TOTAL</Text>}
+              <PreviewHeading style={[styles.dialogTitle, { color: accent }]}>
+                {editing?.habit.name ?? detail?.name}
+              </PreviewHeading>
+              {editing ? (
+                <>
+                  <Text style={styles.secondary}>{editing.day.fullLabel}</Text>
+                  <View style={styles.inputRow}>
+                    <TextInput
+                      autoFocus
+                      keyboardType="decimal-pad"
+                      accessibilityLabel={`Daily total${editing.habit.unit ? ` in ${editing.habit.unit}` : ''}`}
+                      value={input}
+                      onChangeText={setInput}
+                      onSubmitEditing={saveNumber}
+                      selectionColor={accent}
+                      placeholder="0"
+                      placeholderTextColor="#555555"
+                      style={[
+                        styles.input,
+                        { color: accent, borderColor: `${accent}66` },
+                      ]}
+                    />
+                    <Text style={[styles.inputUnit, { color: accent }]}>
+                      {editing.habit.unit}
+                    </Text>
+                  </View>
+                  <Text style={styles.secondary}>
+                    {valid
+                      ? 'Leave blank to clear this entry.'
+                      : 'Enter a number of zero or more.'}
+                  </Text>
+                  <View style={styles.actions}>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={closeDialog}
+                      style={styles.action}
+                    >
+                      <Text style={styles.actionText}>Cancel</Text>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityState={{ disabled: !valid }}
+                      disabled={!valid}
+                      onPress={saveNumber}
+                      style={[
+                        styles.action,
+                        styles.primaryAction,
+                        {
+                          backgroundColor: accent,
+                          opacity: valid ? 1 : 0.4,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.primaryActionText,
+                          { color: checkmarkColor(accent) },
+                        ]}
+                      >
+                        Save total
+                      </Text>
+                    </Pressable>
+                  </View>
+                </>
+              ) : null}
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+      {habitDialog}
+      <AppPanel
+        sampleData={sampleData}
+        developmentControls={
+          <>
+            {developmentControls}
+            {PreviewControls && <PreviewControls />}
+          </>
+        }
+        page={panel.page}
+        onArchive={() => setPanel({ page: 'archive', visible: true })}
+        onBack={() => setPanel({ page: 'settings', visible: true })}
+        onRestoreHabit={(habit) => saveHabit({ ...habit, archived: false })}
+        visible={panel.visible}
+        HeadingComponent={PreviewHeading}
+        snapshot={snapshot}
+        backupBusy={backupBusy}
+        onRestoreDescription={restoreDescription}
+        onUndo={undo}
+        onRedo={redo}
+        onExport={() => {
+          void backupAction(() => shareBackup(store));
+        }}
+        onRestore={() => {
+          void restoreBackup();
+        }}
+        onRecover={() => {
+          void recoverPrevious();
+        }}
+        onRetry={() => {
+          void store.retry();
+        }}
+        columnSpacing={columnSpacing}
+        weekStart={weekStart}
+        dateFading={dateFading}
+        onColumnSpacingChange={(after) => {
+          if (!editable) return;
+          const before =
+            store.getSnapshot().replay.state.columnSpacing ??
+            displayDefaults.columnSpacing;
+          if (store.change({ kind: 'columnSpacing', before, after }))
+            feedback('selection');
+        }}
+        onWeekStartChange={(after) => {
+          if (!editable) return;
+          const before =
+            store.getSnapshot().replay.state.weekStart ??
+            displayDefaults.weekStart;
+          if (store.change({ kind: 'weekStart', before, after }))
+            feedback('selection');
+        }}
+        onDateFadingChange={(after) => {
+          if (!editable) return;
+          const before =
+            store.getSnapshot().replay.state.dateFading ??
+            displayDefaults.dateFading;
+          if (store.change({ kind: 'dateFading', before, after }))
+            feedback('selection');
+        }}
+        textScale={textScale}
+        onTextScaleChange={(after) => {
+          if (!editable) return;
+          const before =
+            store.getSnapshot().replay.state.textScale ??
+            displayDefaults.textScale;
+          if (store.change({ kind: 'textScale', before, after }))
+            feedback('selection');
+        }}
+        rowSpacing={rowSpacing}
+        onRowSpacingChange={(after: RowSpacing) => {
+          if (!editable) return;
+          const before =
+            store.getSnapshot().replay.state.rowSpacing ?? 'standard';
+          if (store.change({ kind: 'rowSpacing', before, after }))
+            feedback('selection');
+        }}
+        hapticsEnabled={hapticsEnabled}
+        onHapticsChange={changeHaptics}
+        onClose={() =>
+          setPanel((previous) => ({ ...previous, visible: false }))
+        }
+      />
+    </>
+  );
+
+  const saveError = snapshot.error && (
+    <View
+      accessibilityLiveRegion="assertive"
+      style={{
+        paddingHorizontal: 18,
+        paddingVertical: 8,
+        backgroundColor: '#251C16',
+      }}
+    >
+      <Text style={styles.secondary}>{snapshot.error}</Text>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => {
+          void store.retry();
+        }}
+        style={styles.action}
+      >
+        <Text style={styles.actionText}>Retry saving</Text>
+      </Pressable>
+    </View>
+  );
+
   return (
     <TypographyProvider scale={textScale}>
       <SafeAreaProvider>
         <SafeAreaView style={styles.screen}>
           <StatusBar style="light" />
-          {snapshot.error && (
-            <View
-              accessibilityLiveRegion="assertive"
-              style={{
-                paddingHorizontal: 18,
-                paddingVertical: 8,
-                backgroundColor: '#251C16',
-              }}
-            >
-              <Text style={styles.secondary}>{snapshot.error}</Text>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => {
-                  void store.retry();
-                }}
-                style={styles.action}
-              >
-                <Text style={styles.actionText}>Retry saving</Text>
-              </Pressable>
-            </View>
-          )}
+          {!statsHabit && saveError}
           <View style={{ flex: 1 }}>
             <View
               style={styles.content}
@@ -547,228 +771,52 @@ function PersistentApp({
               </PerformanceBoundary>
             </View>
             {statsHabit && (
-              <PerformanceBoundary name="statistics">
-                <HabitStatsScreen
-                  weekStart={weekStart}
-                  key={statsHabit.id}
-                  habit={statsHabit}
-                  values={values}
-                  events={snapshot.events}
-                  today={today}
-                  Heading={PreviewHeading}
-                  editable={editable}
-                  onBack={closeStats}
-                  onCellPress={pressCell}
-                  onDescriptionEdit={() => setDescriptionId(statsHabit.id)}
-                  onDescriptionVersions={
-                    versions.length
-                      ? () => setVersionsId(statsHabit.id)
-                      : undefined
-                  }
-                  onEdit={editStats}
-                />
-              </PerformanceBoundary>
+              <Modal
+                visible
+                animationType="slide"
+                presentationStyle="pageSheet"
+                allowSwipeDismissal
+                supportedOrientations={[
+                  'portrait',
+                  'landscape-left',
+                  'landscape-right',
+                ]}
+                onRequestClose={closeStats}
+                backdropColor="#000000"
+              >
+                <SafeAreaProvider>
+                  <SafeAreaView style={styles.screen}>
+                    {saveError}
+                    <PerformanceBoundary name="statistics">
+                      <HabitStatsScreen
+                        weekStart={weekStart}
+                        key={statsHabit.id}
+                        habit={statsHabit}
+                        values={values}
+                        events={snapshot.events}
+                        today={today}
+                        Heading={PreviewHeading}
+                        editable={editable}
+                        onBack={closeStats}
+                        onCellPress={pressCell}
+                        onDescriptionEdit={() =>
+                          setDescriptionId(statsHabit.id)
+                        }
+                        onDescriptionVersions={
+                          versions.length
+                            ? () => setVersionsId(statsHabit.id)
+                            : undefined
+                        }
+                        onEdit={editStats}
+                      />
+                    </PerformanceBoundary>
+                    {overlays}
+                  </SafeAreaView>
+                </SafeAreaProvider>
+              </Modal>
             )}
           </View>
-          {descriptionHabit && (
-            <DescriptionEditor
-              key={descriptionHabit.id}
-              title={descriptionHabit.name}
-              colour={descriptionHabit.color}
-              initialValue={descriptionHabit.description ?? ''}
-              draftKey={descriptionDraftKey(descriptionHabit.id)}
-              temporary={sampleData}
-              editable={editable}
-              Heading={PreviewHeading}
-              onClose={() => setDescriptionId(null)}
-              onApply={(description) =>
-                restoreDescription(descriptionHabit.id, description)
-              }
-            />
-          )}
-          {versionsHabit && (
-            <DescriptionVersions
-              key={versionsHabit.id}
-              habit={versionsHabit}
-              actions={versions}
-              state={snapshot.replay.state}
-              editable={editable}
-              Heading={PreviewHeading}
-              onRestore={restoreDescription}
-              onClose={() => setVersionsId(null)}
-            />
-          )}
-          <Modal
-            visible={editing !== null}
-            animationType="fade"
-            supportedOrientations={[
-              'portrait',
-              'landscape-left',
-              'landscape-right',
-            ]}
-            transparent
-            onRequestClose={closeDialog}
-          >
-            <KeyboardAvoidingView
-              style={styles.overlay}
-              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            >
-              <View accessibilityViewIsModal style={styles.dialog}>
-                <ScrollView
-                  keyboardShouldPersistTaps="handled"
-                  showsVerticalScrollIndicator={false}
-                >
-                  {editing && <Text style={styles.eyebrow}>DAILY TOTAL</Text>}
-                  <PreviewHeading
-                    style={[styles.dialogTitle, { color: accent }]}
-                  >
-                    {editing?.habit.name ?? detail?.name}
-                  </PreviewHeading>
-                  {editing ? (
-                    <>
-                      <Text style={styles.secondary}>
-                        {editing.day.fullLabel}
-                      </Text>
-                      <View style={styles.inputRow}>
-                        <TextInput
-                          autoFocus
-                          keyboardType="decimal-pad"
-                          accessibilityLabel={`Daily total${editing.habit.unit ? ` in ${editing.habit.unit}` : ''}`}
-                          value={input}
-                          onChangeText={setInput}
-                          onSubmitEditing={saveNumber}
-                          selectionColor={accent}
-                          placeholder="0"
-                          placeholderTextColor="#555555"
-                          style={[
-                            styles.input,
-                            { color: accent, borderColor: `${accent}66` },
-                          ]}
-                        />
-                        <Text style={[styles.inputUnit, { color: accent }]}>
-                          {editing.habit.unit}
-                        </Text>
-                      </View>
-                      <Text style={styles.secondary}>
-                        {valid
-                          ? 'Leave blank to clear this entry.'
-                          : 'Enter a number of zero or more.'}
-                      </Text>
-                      <View style={styles.actions}>
-                        <Pressable
-                          accessibilityRole="button"
-                          onPress={closeDialog}
-                          style={styles.action}
-                        >
-                          <Text style={styles.actionText}>Cancel</Text>
-                        </Pressable>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityState={{ disabled: !valid }}
-                          disabled={!valid}
-                          onPress={saveNumber}
-                          style={[
-                            styles.action,
-                            styles.primaryAction,
-                            {
-                              backgroundColor: accent,
-                              opacity: valid ? 1 : 0.4,
-                            },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.primaryActionText,
-                              { color: checkmarkColor(accent) },
-                            ]}
-                          >
-                            Save total
-                          </Text>
-                        </Pressable>
-                      </View>
-                    </>
-                  ) : null}
-                </ScrollView>
-              </View>
-            </KeyboardAvoidingView>
-          </Modal>
-          {habitDialog}
-          <AppPanel
-            sampleData={sampleData}
-            developmentControls={developmentControls}
-            page={panel.page}
-            onArchive={() => setPanel({ page: 'archive', visible: true })}
-            onBack={() => setPanel({ page: 'settings', visible: true })}
-            onRestoreHabit={(habit) => saveHabit({ ...habit, archived: false })}
-            visible={panel.visible}
-            HeadingComponent={PreviewHeading}
-            snapshot={snapshot}
-            backupBusy={backupBusy}
-            onRestoreDescription={restoreDescription}
-            onUndo={undo}
-            onRedo={redo}
-            onExport={() => {
-              void backupAction(() => shareBackup(store));
-            }}
-            onRestore={() => {
-              void restoreBackup();
-            }}
-            onRecover={() => {
-              void recoverPrevious();
-            }}
-            onRetry={() => {
-              void store.retry();
-            }}
-            columnSpacing={columnSpacing}
-            weekStart={weekStart}
-            dateFading={dateFading}
-            onColumnSpacingChange={(after) => {
-              if (!editable) return;
-              const before =
-                store.getSnapshot().replay.state.columnSpacing ??
-                displayDefaults.columnSpacing;
-              if (store.change({ kind: 'columnSpacing', before, after }))
-                feedback('selection');
-            }}
-            onWeekStartChange={(after) => {
-              if (!editable) return;
-              const before =
-                store.getSnapshot().replay.state.weekStart ??
-                displayDefaults.weekStart;
-              if (store.change({ kind: 'weekStart', before, after }))
-                feedback('selection');
-            }}
-            onDateFadingChange={(after) => {
-              if (!editable) return;
-              const before =
-                store.getSnapshot().replay.state.dateFading ??
-                displayDefaults.dateFading;
-              if (store.change({ kind: 'dateFading', before, after }))
-                feedback('selection');
-            }}
-            textScale={textScale}
-            onTextScaleChange={(after) => {
-              if (!editable) return;
-              const before =
-                store.getSnapshot().replay.state.textScale ??
-                displayDefaults.textScale;
-              if (store.change({ kind: 'textScale', before, after }))
-                feedback('selection');
-            }}
-            rowSpacing={rowSpacing}
-            onRowSpacingChange={(after: RowSpacing) => {
-              if (!editable) return;
-              const before =
-                store.getSnapshot().replay.state.rowSpacing ?? 'standard';
-              if (store.change({ kind: 'rowSpacing', before, after }))
-                feedback('selection');
-            }}
-            hapticsEnabled={hapticsEnabled}
-            onHapticsChange={changeHaptics}
-            onClose={() =>
-              setPanel((previous) => ({ ...previous, visible: false }))
-            }
-          />
+          {!statsHabit && overlays}
         </SafeAreaView>
       </SafeAreaProvider>
     </TypographyProvider>
