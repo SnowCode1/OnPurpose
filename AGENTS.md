@@ -69,7 +69,7 @@ The requested preset icon update uses normal undoable edits in
   `docs/DESCRIPTIONS.md`. `src/RichDescription.tsx` is the offline Expo DOM/Tiptap
   editing surface; `src/richText/` owns safe document mapping, formatting, local
   Undo/Redo and bounded highlights. Preserve native readers and request a current
-  DOM snapshot before applying. Applied descriptions use ordinary habit changes (v9 for new writes);
+  DOM snapshot before applying. Applied descriptions use ordinary habit changes (v10 for new writes);
   recoverable drafts stay outside History/backups in a separate local store. Keep
   `storage/descriptionDraftModel.ts` distinct from native/web adapters for Metro.
   `src/dev/sampleData.ts` owns isolated mock history for statistics testing. Keep
@@ -87,7 +87,7 @@ The requested preset icon update uses normal undoable edits in
   date-cell layout timing aligned.
 - `src/displayPreferences.ts` owns column spacing, week start and date fading defaults; keep absent-field defaults compatible with old logs and all preferences outside History/Undo. Read docs/SETTINGS.md.
 - `src/rowSpacing.ts` owns saved Compact/Standard/Roomy geometry; preserve font scaling and measured row heights.
-- `src/StartDateField.tsx` owns the native draft date picker; existing dates remain inferred until edited. Explicit start dates bound statistics without deleting entries. New edits/exports use v9, retaining v1–v8 replay.
+- `src/StartDateField.tsx` owns the native draft date picker; existing dates remain inferred until edited. Explicit start dates bound statistics without deleting entries. New edits/exports use v10, retaining v1–v9 replay.
 - Statistics uses the same native pageSheet/slide/swipe dismissal as History and
   Settings; UIKit owns its gesture. `App.tsx` nests numeric, habit, description
   and version dialogs inside the statistics presentation and preserves visible
@@ -200,3 +200,18 @@ First editor opens place caret and viewport at the start. Matching-text bookmark
 still resume. Observe writing viewport and editor content through keyboard resize,
 stop restoration on deliberate user input, and keep scroll inside the writing
 area. Opening editor feedback must stop on readiness or an explicit load error.
+
+`entries.ts` owns daily value types (number/text/category IDs), canonical sorted
+multi-selection, labels and bounded cell previews. `CategoryEditor.tsx` drafts
+stable category IDs/labels/short labels and archives options without erasing
+records. `DailyRecordDialog.tsx` applies text/multiple selections only on Done;
+Close cancels. `RecordStatsScreen.tsx` and pure `recordStatistics.ts` show logging
+counts/streaks, category frequency, editable calendar and virtualized entries,
+without claiming completion. `habitCompletion.ts` still completes only checked
+checkboxes until per-habit conditions are defined. `sampleRecords.ts` appends
+fictional Workout/Highlight examples only to the isolated sample store, leaving
+the original v7 sample fixture and real presets untouched. Main log/export v10
+retains unchanged v1–v9 prefixes; array preconditions/grouping/inverses compare
+values rather than references. SQL stays at schema 1. Grid text/category cells
+try two lines and native fitting down to 95% while retaining app/OS scaling.
+Do not infer native text fitting from browser captures. Comments remain deferred.

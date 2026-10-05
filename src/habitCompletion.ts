@@ -1,12 +1,13 @@
-import { isNumericHabit, type Habit } from './habits.ts';
+import type { EntryValue, EntryValues } from './entries.ts';
+import { habitType, type Habit } from './habits.ts';
 // One place for completion conditions. Checkbox checks are defined today;
 // numeric totals are records, not completion, until per-habit rules are designed.
-export function habitIsComplete(habit: Habit, value: number | undefined) {
-  return !isNumericHabit(habit) && value === 1;
+export function habitIsComplete(habit: Habit, value: EntryValue | undefined) {
+  return habitType(habit) === 'checkbox' && value === 1;
 }
 export function completionMask(
   habits: readonly Habit[],
-  values: Readonly<Record<string, number>>,
+  values: Readonly<EntryValues>,
   day: string,
 ) {
   return habits

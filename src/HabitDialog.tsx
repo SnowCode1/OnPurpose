@@ -1,3 +1,4 @@
+import { CategoryEditor } from './CategoryEditor';
 import { TextInput, Text, useAppWindowDimensions } from './Typography';
 import { completeDescriptionDraft } from './storage/descriptionBookmarks';
 import { DescriptionEditor } from './DescriptionEditor';
@@ -17,7 +18,12 @@ import {
   type TextProps,
 } from 'react-native';
 import { ColourPicker } from './ColourPicker';
-import { isNumericHabit, type Habit } from './habits';
+import {
+  habitType,
+  habitTypeLabel,
+  type Habit,
+  type HabitType,
+} from './habits';
 import { Icon } from './Icon';
 import { HabitIconPicker } from './HabitIconPicker';
 import { HabitSymbol } from './HabitSymbol';
@@ -67,7 +73,10 @@ export function HabitDialog({
   );
   const [name, setName] = useState(habit.name),
     [unit, setUnit] = useState(habit.unit ?? ''),
-    [numeric, setNumeric] = useState(isNumericHabit(habit));
+    [type, setType] = useState<HabitType>(habitType(habit));
+  const numeric = type === 'number';
+  const [categories, setCategories] = useState(habit.categories ?? []);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [colour, setColour] = useState(habit.color),
     [picker, setPicker] = useState(false),
     [pickerDraft, setPickerDraft] = useState(habit.color);
@@ -80,13 +89,16 @@ export function HabitDialog({
     validDate(startDate) &&
     !!name.trim() &&
     name.trim().length <= 200 &&
-    unit.trim().length <= 80;
+    unit.trim().length <= 80 &&
+    (type !== 'categorical' ||
+      (categories.length > 0 && categories.some((option) => !option.archived)));
   const editing = mode === 'edit' || mode === 'create';
   function save() {
     const {
       unit: _unit,
       icon: _icon,
       description: _description,
+      categories: _categories,
       ...base
     } = habit;
     const after: Habit = {
@@ -99,7 +111,8 @@ export function HabitDialog({
       color: colour,
       ...(icon ? { icon } : {}),
       ...(numeric && unit.trim() ? { unit: unit.trim() } : {}),
-      type: numeric ? 'number' : 'checkbox',
+      type,
+      ...(type === 'categorical' ? { categories } : {}),
     };
     if (onSave(after)) {
       void completeDescriptionDraft(
@@ -205,30 +218,42 @@ export function HabitDialog({
                     <View>
                       <Text style={styles.label}>Record as</Text>
                       <View style={styles.types}>
-                        {(['checkbox', 'number'] as const).map((type) => (
+                        {(
+                          ['checkbox', 'number', 'categorical', 'text'] as const
+                        ).map((value) => (
                           <Pressable
-                            key={type}
+                            key={value}
                             accessibilityRole="button"
                             accessibilityState={{
-                              selected: numeric === (type === 'number'),
+                              selected: type === value,
                             }}
-                            onPress={() => setNumeric(type === 'number')}
+                            onPress={() => setType(value)}
                             style={[
                               styles.type,
                               {
+                                flexBasis: 130 * Math.max(1, fontScale),
+                                flexGrow: 1,
+                              },
+                              {
                                 backgroundColor:
-                                  numeric === (type === 'number')
-                                    ? '#303030'
-                                    : '#181818',
+                                  type === value ? '#303030' : '#181818',
                               },
                             ]}
                           >
                             <Icon
-                              name={type === 'number' ? 'number' : 'checked'}
+                              name={
+                                value === 'number'
+                                  ? 'number'
+                                  : value === 'checkbox'
+                                    ? 'checked'
+                                    : value === 'categorical'
+                                      ? 'categories'
+                                      : 'text'
+                              }
                               size={18}
                             />
                             <Text style={styles.buttonText}>
-                              {type === 'number' ? 'Daily total' : 'Checkbox'}
+                              {habitTypeLabel({ ...habit, type: value })}
                             </Text>
                           </Pressable>
                         ))}
@@ -236,9 +261,30 @@ export function HabitDialog({
                     </View>
                   ) : (
                     <Text style={styles.description}>
-                      {numeric ? 'Numeric daily total' : 'Checkbox habit'} ·
-                      Type is set when creating a habit.
+                      {habitTypeLabel({ ...habit, type })} · Type is set when
+                      creating a habit.
                     </Text>
+                  )}
+                  {type === 'categorical' && (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Edit categories"
+                      onPress={() => setCategoriesOpen(true)}
+                      style={styles.descriptionControl}
+                    >
+                      <View style={{ flex: 1, gap: 4 }}>
+                        <Text style={styles.buttonText}>Categories</Text>
+                        <Text numberOfLines={1} style={styles.description}>
+                          {categories.length
+                            ? categories
+                                .filter((option) => !option.archived)
+                                .map((option) => option.label)
+                                .join(' · ')
+                            : 'Add the options you want to track'}
+                        </Text>
+                      </View>
+                      <Icon name="edit" size={17} color="#888888" />
+                    </Pressable>
                   )}
                   {numeric && (
                     <View>
@@ -361,6 +407,17 @@ export function HabitDialog({
             </View>
           )}
         </View>
+        {categoriesOpen && (
+          <CategoryEditor
+            categories={categories}
+            colour={colour}
+            onClose={() => setCategoriesOpen(false)}
+            onApply={(next) => {
+              setCategories(next);
+              setCategoriesOpen(false);
+            }}
+          />
+        )}
         {descriptionOpen && (
           <DescriptionEditor
             title={name || 'New habit'}
@@ -476,7 +533,7 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF30',
   },
   noIcon: { fontSize: 24, lineHeight: 28 },
-  types: { flexDirection: 'row', gap: 8 },
+  types: { flexWrap: 'wrap', flexDirection: 'row', gap: 8 },
   type: {
     flex: 1,
     minHeight: 48,

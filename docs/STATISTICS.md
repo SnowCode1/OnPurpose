@@ -122,7 +122,7 @@ floating bottom Notes/Statistics island and horizontal swipes share native
 paging through `useHabitPages.ts`. Panels retain their scroll/range/chart state;
 measured island height keeps final chart/calendar/info controls reachable. The
 outer page sheet still enters upward and dismisses downward through UIKit.
-Nothing is stored separately; the existing version-1–9 logs and projection remain authoritative.
+Nothing is stored separately; the existing version-1–10 logs and projection remain authoritative.
 
 `node --max-old-space-size=256 --test --test-timeout=15000 scripts/statistics.test.mjs`
 covers per-habit calendar denominators, unfinished today,
@@ -158,3 +158,21 @@ labels cannot fit at the combined app/system text scale. Normal-size portrait
 and wide landscape keep one row. Metric values can wrap rather than pushing
 labels out of the screen. Web layouts were inspected at 100% and 150%; native
 large-text comfort remains a device check.
+
+## Categorical and text recording statistics
+
+`RecordStatsScreen.tsx` uses pure `recordStatistics.ts` and the shared trend
+chart in recording mode. Both types show recorded days out of all eligible
+calendar days since the habit start, logging streaks, recording-rate bars, an
+editable month calendar and a virtualized dated entry list. These are recording
+metrics, with no completion/success score until per-habit rules exist. Streaks
+exclude pre-start/future entries and allow an unfinished Today as other types do.
+
+Categories show days each stable option was selected, including archived options
+when they have records. Counts are not mutually exclusive; selecting several on
+a day counts that day for each option. Bars divide by all eligible calendar days
+of the selected period. Text entries preserve full strings; list previews are
+bounded to three lines and open the same daily editor as the grid. Corrections
+update all derived views and use normal Undo/Redo. Month/range/scroll state stays
+within the existing floating Notes/Statistics sheet. Sample mode adds Workout
+and Daily highlight with sixty days of fictional records, isolated from real data.

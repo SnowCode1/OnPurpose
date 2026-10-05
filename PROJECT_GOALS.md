@@ -41,7 +41,8 @@ and uncertainty about whether something was saved.
 - Use [Loop Habit Tracker for Android](https://github.com/iSoron/uhabits) as a
   product reference. This is inspiration for behaviour, not a decision to copy
   its code, assets, scoring formula, or every feature.
-- Support checkbox habits and numeric habits. Numeric entries are primarily a
+- Support checkbox, numeric, categorical and free-text habits. Categorical
+  entries support multiple selections on one day. Numeric entries are primarily a
   daily total, rather than repeated increments throughout the day.
 - Add restrained haptic feedback to recording and deliberate selections. Keep
   rapid checkoff immediate and routine scrolling quiet.
@@ -274,3 +275,20 @@ choice. The assistant implemented both while keeping Notes one name tap away,
 retaining each page's scroll/range state and preserving accessible visible tabs.
 The island is sized for text scaling and reserves scroll room beneath content.
 This interaction still needs physical-iPhone acceptance.
+
+## Categorical and free-text records
+
+The founder authorised both types, explicitly rejecting a one-category-per-day
+restriction. Categories have stable options with optional short grid labels;
+several can be selected on a day. Free text is the primary daily value, separate
+from a habit description. Both use ordinary persistence, History, Undo/Redo and
+backups. Completion conditions remain deferred; recording is distinct from
+completion. Comments can wait; the founder suggested they might eventually be
+daily, but their attachment/design is not yet decided.
+
+The founder requested testing dynamic cell text fitting. The initial 80%
+minimum felt too small on the iPhone, so the revised trial uses
+up to two lines, bounded shrinking to 95% and truncation with full value access
+in the entry sheet. App/system font scaling is retained. The founder confirmed
+multi-selection and Done/Close on the iPhone. Revised text fitting and keyboard
+layout still require device review.

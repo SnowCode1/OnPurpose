@@ -1,3 +1,5 @@
+import { RecordStatsScreen } from './RecordStatsScreen';
+import type { EntryValues } from './entries';
 import { memo, useState, type ComponentType } from 'react';
 import { Pressable, StyleSheet, View, type TextProps } from 'react-native';
 import { Text, useAppWindowDimensions } from './Typography';
@@ -30,7 +32,7 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
 }: {
   habit: Habit;
   weekStart: WeekStart;
-  values: Record<string, number>;
+  values: EntryValues;
   events: StoredEvent[];
   today: string;
   Heading: ComponentType<TextProps>;
@@ -41,6 +43,10 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
   onCellPress: (habit: Habit, day: EntryDay) => void;
   editable: boolean;
 }) {
+  const StatsContent =
+    habit.type === 'categorical' || habit.type === 'text'
+      ? RecordStatsScreen
+      : HabitStatsScreen;
   const [width, setWidth] = useState(0);
   const [islandHeight, setIslandHeight] = useState(54);
   const { fontScale } = useAppWindowDimensions();
@@ -164,7 +170,7 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
                 }
               >
                 {visited.statistics && (
-                  <HabitStatsScreen
+                  <StatsContent
                     habit={habit}
                     weekStart={weekStart}
                     values={values}

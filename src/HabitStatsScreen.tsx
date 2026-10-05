@@ -1,3 +1,4 @@
+import type { EntryValues } from './entries';
 import { Text, useAppWindowDimensions } from './Typography';
 import { weekDayOrder, type WeekStart } from './displayPreferences';
 import { memo, useMemo, useState } from 'react';
@@ -26,12 +27,14 @@ const dateLabel = (key: string, withYear = false) =>
     ...(withYear ? { year: 'numeric' as const } : {}),
   });
 
-function Chart({
+export function Chart({
   buckets,
   colour,
   numeric,
   unit,
+  recording = false,
 }: {
+  recording?: boolean;
   buckets: StatsBucket[];
   colour: string;
   numeric: boolean;
@@ -58,12 +61,16 @@ function Chart({
   const value = current
     ? current.value === null
       ? 'No records'
-      : `${format(current.value)}${numeric ? (unit ? ` ${unit}` : '') : '% completed'}`
+      : `${format(current.value)}${numeric ? (unit ? ` ${unit}` : '') : recording ? '% recorded' : '% completed'}`
     : 'Tap it again to clear';
   return (
     <View style={{ gap: 10 }}>
       <Text style={styles.small}>
-        {numeric ? unit || 'total' : 'completion (%)'}
+        {numeric
+          ? unit || 'total'
+          : recording
+            ? 'days recorded (%)'
+            : 'completion (%)'}
       </Text>
       <View style={styles.chartPlot}>
         <View style={styles.chartScale} accessible={false}>
@@ -230,7 +237,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
 }: {
   habit: Habit;
   weekStart: WeekStart;
-  values: Record<string, number>;
+  values: EntryValues;
   events: StoredEvent[];
   today: string;
   onCellPress: (habit: Habit, day: EntryDay) => void;
@@ -250,7 +257,10 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   const weekDays = weekDayOrder(weekStart);
   const monthMax = Math.max(
     1,
-    ...calendar.days.map((day) => values[`${habit.id}:${day}`] ?? 0),
+    ...calendar.days.map((day) => {
+      const value = values[`${habit.id}:${day}`];
+      return typeof value === 'number' ? value : 0;
+    }),
   );
   const unit = habit.unit ?? '';
   function changeMonth(delta: number) {
@@ -495,13 +505,14 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
             />
           ))}
           {calendar.days.map((day) => {
-            const value = values[`${habit.id}:${day}`];
+            const entry = values[`${habit.id}:${day}`];
+            const value = typeof entry === 'number' ? entry : undefined;
             const recorded = stats.numeric ? value !== undefined : value === 1;
             const date = entryDay(day);
             const background = recorded
               ? colorOnBlack(
                   habit.color,
-                  stats.numeric ? 0.35 + (0.65 * value) / monthMax : 1,
+                  stats.numeric ? 0.35 + (0.65 * (value ?? 0)) / monthMax : 1,
                 )
               : day > today
                 ? '#0C0C0C'
@@ -514,7 +525,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
                   disabled: !editable,
                   ...(stats.numeric ? {} : { checked: recorded }),
                 }}
-                accessibilityLabel={`${habit.name}, ${date.fullLabel}${day === today ? ', today' : ''}${day > today ? ', future date' : ''}, ${recorded ? (stats.numeric ? `${format(value)} ${unit}` : 'completed') : 'not recorded'}`}
+                accessibilityLabel={`${habit.name}, ${date.fullLabel}${day === today ? ', today' : ''}${day > today ? ', future date' : ''}, ${recorded ? (stats.numeric ? `${format(value ?? null)} ${unit}` : 'completed') : 'not recorded'}`}
                 accessibilityHint={
                   stats.numeric ? 'Edit daily total' : 'Toggle completion'
                 }

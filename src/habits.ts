@@ -1,4 +1,11 @@
 import type { HabitIcon } from './habitIcons.ts';
+export type HabitType = 'checkbox' | 'number' | 'categorical' | 'text';
+export type HabitCategory = {
+  id: string;
+  label: string;
+  shortLabel?: string;
+  archived?: boolean;
+};
 export type Habit = {
   id: string;
   startDate?: string;
@@ -6,12 +13,21 @@ export type Habit = {
   description?: string;
   color: string;
   unit?: string;
-  type?: 'checkbox' | 'number';
+  type?: HabitType;
+  categories?: HabitCategory[];
   archived?: boolean;
   icon?: HabitIcon;
 };
-export const isNumericHabit = (habit: Habit) =>
-  habit.type ? habit.type === 'number' : !!habit.unit;
+export const habitType = (habit: Habit): HabitType =>
+  habit.type ?? (habit.unit ? 'number' : 'checkbox');
+export const isNumericHabit = (habit: Habit) => habitType(habit) === 'number';
+export const habitTypeLabel = (habit: Habit) =>
+  ({
+    checkbox: 'Checkbox',
+    number: 'Daily total',
+    categorical: 'Categories',
+    text: 'Free text',
+  })[habitType(habit)];
 
 export const habitColors = [
   { name: 'Mint', value: '#82E6BC' },

@@ -1,3 +1,13 @@
+import {
+  entryLabel,
+  sameEntry,
+  validEntryText,
+  MAX_CATEGORIES,
+  MAX_CATEGORY_LABEL,
+  MAX_CATEGORY_SHORT_LABEL,
+  type EntryValue,
+  type EntryValues,
+} from '../entries.ts';
 import { isTextScale } from '../textSize.ts';
 import { validDescription } from '../description.ts';
 import {
@@ -9,11 +19,11 @@ import {
 } from '../displayPreferences.ts';
 import { isRowSpacing, type RowSpacing } from '../rowSpacing.ts';
 import { isHabitIcon } from '../habitIcons.ts';
-import { isNumericHabit, type Habit } from '../habits.ts';
+import { habitType, isNumericHabit, type Habit } from '../habits.ts';
 
 export type StoredState = {
   habits: Habit[];
-  values: Record<string, number>;
+  values: EntryValues;
   hapticsEnabled: boolean;
   rowSpacing?: RowSpacing;
   columnSpacing?: ColumnSpacing;
@@ -27,8 +37,8 @@ export type Change =
       kind: 'entry';
       habitId: string;
       date: string;
-      before: number | null;
-      after: number | null;
+      before: EntryValue | null;
+      after: EntryValue | null;
     }
   | { kind: 'colour'; habitId: string; before: string; after: string }
   | {
@@ -72,7 +82,7 @@ export function isPreference(change: Change): change is PreferenceChange {
 }
 export type HabitChange = Exclude<Change, PreferenceChange>;
 export type EventMeta = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
   id: string;
   sequence: number;
   recordedAt: string;
@@ -84,7 +94,7 @@ export type LegacyChangeEvent = EventMeta & { version: 1 } & (
     | { type: 'undo' | 'redo'; targetId: string; change: Change }
   );
 export type CurrentChangeEvent = EventMeta & {
-  version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+  version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 } & (
     | { type: 'change'; groupId: string; change: HabitChange }
     | { type: 'undo' | 'redo'; targetId: string; change: HabitChange }
@@ -117,6 +127,7 @@ export type Replay = {
   hasV7: boolean;
   hasV8: boolean;
   hasV9: boolean;
+  hasV10: boolean;
 };
 export const emptyReplay = (): Replay => ({
   state: { habits: [], values: {}, hapticsEnabled: true },
@@ -133,6 +144,7 @@ export const emptyReplay = (): Replay => ({
   hasV7: false,
   hasV8: false,
   hasV9: false,
+  hasV10: false,
 });
 export const GROUP_INACTIVITY_MS = 2 * 60 * 1000;
 
@@ -182,7 +194,7 @@ function amount(value: unknown): asserts value is number | null {
     'Invalid daily value.',
   );
 }
-function sameValue(left: unknown, right: unknown): boolean {
+export function sameValue(left: unknown, right: unknown): boolean {
   if (left === right) return true;
   if (!left || !right || typeof left !== 'object' || typeof right !== 'object')
     return false;
@@ -190,7 +202,9 @@ function sameValue(left: unknown, right: unknown): boolean {
     b = right as Record<string, unknown>;
   return (
     Object.keys(a).length === Object.keys(b).length &&
-    Object.keys(a).every((key) => Object.hasOwn(b, key) && a[key] === b[key])
+    Object.keys(a).every(
+      (key) => Object.hasOwn(b, key) && sameValue(a[key], b[key]),
+    )
   );
 }
 function validateHabit(
@@ -208,6 +222,7 @@ function validateHabit(
       ...(version >= 4 ? ['icon'] : []),
       ...(version >= 5 ? ['startDate'] : []),
       ...(version >= 7 ? ['description'] : []),
+      ...(version >= 10 ? ['categories'] : []),
     ].filter((key) => Object.hasOwn(value, key)),
   ]);
   id(value.id);
@@ -227,7 +242,10 @@ function validateHabit(
     );
   if (Object.hasOwn(value, 'type'))
     insist(
-      value.type === 'checkbox' || value.type === 'number',
+      value.type === 'checkbox' ||
+        value.type === 'number' ||
+        (version >= 10 &&
+          (value.type === 'categorical' || value.type === 'text')),
       'Invalid habit type.',
     );
   if (Object.hasOwn(value, 'description'))
@@ -239,21 +257,107 @@ function validateHabit(
   if (Object.hasOwn(value, 'archived'))
     insist(typeof value.archived === 'boolean', 'Invalid archived state.');
   insist(
-    value.type !== 'checkbox' || !value.unit,
-    'Checkbox habits cannot have a unit.',
+    !value.unit || habitType(value as Habit) === 'number',
+    'Only numeric habits can have a unit.',
   );
+  if (Object.hasOwn(value, 'categories')) {
+    insist(
+      value.type === 'categorical',
+      'Only categorical habits have categories.',
+    );
+    insist(
+      Array.isArray(value.categories) &&
+        value.categories.length > 0 &&
+        value.categories.length <= MAX_CATEGORIES,
+      'Invalid categories.',
+    );
+    const ids = new Set<string>();
+    for (const option of value.categories) {
+      object(option);
+      keys(option, [
+        'id',
+        'label',
+        ...['shortLabel', 'archived'].filter((key) =>
+          Object.hasOwn(option, key),
+        ),
+      ]);
+      id(option.id);
+      insist(!ids.has(option.id), 'Repeated category identifier.');
+      ids.add(option.id);
+      insist(
+        typeof option.label === 'string' &&
+          option.label.trim().length > 0 &&
+          option.label.length <= MAX_CATEGORY_LABEL,
+        'Invalid category label.',
+      );
+      if (Object.hasOwn(option, 'shortLabel'))
+        insist(
+          typeof option.shortLabel === 'string' &&
+            option.shortLabel.trim().length > 0 &&
+            option.shortLabel.length <= MAX_CATEGORY_SHORT_LABEL,
+          'Invalid short category label.',
+        );
+      if (Object.hasOwn(option, 'archived'))
+        insist(
+          typeof option.archived === 'boolean',
+          'Invalid archived category.',
+        );
+    }
+    insist(
+      value.categories.some((option) => !option.archived),
+      'Keep at least one active category.',
+    );
+  }
+  insist(
+    value.type !== 'categorical' || Object.hasOwn(value, 'categories'),
+    'Categorical habits need categories.',
+  );
+}
+function dailyValue(value: unknown, version: number) {
+  if (version < 10 || value === null || typeof value === 'number')
+    return amount(value);
+  if (typeof value === 'string')
+    return insist(validEntryText(value), 'Invalid text entry.');
+  insist(
+    Array.isArray(value) && value.length > 0 && value.length <= MAX_CATEGORIES,
+    'Invalid category selection.',
+  );
+  for (const item of value) id(item);
+  insist(
+    new Set(value).size === value.length &&
+      value.every((item, index) => index === 0 || value[index - 1] < item),
+    'Category selections must be unique and sorted.',
+  );
+}
+function entryFits(habit: Habit, value: EntryValue | null) {
+  if (value === null) return true;
+  switch (habitType(habit)) {
+    case 'checkbox':
+      return value === 1;
+    case 'number':
+      return typeof value === 'number';
+    case 'text':
+      return typeof value === 'string';
+    case 'categorical':
+      return (
+        Array.isArray(value) &&
+        value.every((id) =>
+          habit.categories?.some((option) => option.id === id),
+        )
+      );
+  }
 }
 export function validateChange(
   value: unknown,
-  version = 9,
+  version = 10,
 ): asserts value is Change {
   object(value);
   if (value.kind === 'entry') {
     keys(value, ['kind', 'habitId', 'date', 'before', 'after']);
     id(value.habitId);
     insist(validDate(value.date), 'Invalid calendar date.');
-    amount(value.before);
-    amount(value.after);
+    dailyValue(value.before, version);
+    dailyValue(value.after, version);
   } else if (value.kind === 'colour') {
     keys(value, ['kind', 'habitId', 'before', 'after']);
     id(value.habitId);
@@ -355,7 +459,8 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
       value.version === 6 ||
       value.version === 7 ||
       value.version === 8 ||
-      value.version === 9,
+      value.version === 9 ||
+      value.version === 10,
     'Unsupported event version.',
   );
   id(value.id);
@@ -445,8 +550,8 @@ function sameChange(left: Change, right: Change): boolean {
     );
   return (
     left.kind === right.kind &&
-    left.before === right.before &&
-    left.after === right.after &&
+    sameValue(left.before, right.before) &&
+    sameValue(left.after, right.after) &&
     (isPreference(left) ||
       (!isPreference(right) && left.habitId === right.habitId)) &&
     (left.kind !== 'entry' ||
@@ -487,7 +592,7 @@ export function canCoalesce(
   const elapsed = Date.parse(meta.recordedAt) - Date.parse(group.recordedAt);
   return (
     sameField(group.change, change) &&
-    group.change.after === change.before &&
+    sameValue(group.change.after, change.before) &&
     elapsed >= 0 &&
     elapsed < GROUP_INACTIVITY_MS &&
     group.timeZone === meta.timeZone &&
@@ -535,6 +640,7 @@ function reduceEvent(
       hasV7: event.version >= 7,
       hasV8: event.version >= 8,
       hasV9: event.version >= 9,
+      hasV10: event.version >= 10,
     };
   }
   insist(
@@ -572,6 +678,10 @@ function reduceEvent(
   insist(
     !previous.hasV9 || event.version >= 9,
     'Older events cannot follow version-9 events.',
+  );
+  insist(
+    !previous.hasV10 || event.version >= 10,
+    'Older events cannot follow version-10 events.',
   );
   const undo = mutable ? previous.undo : [...previous.undo];
   const redo = mutable ? previous.redo : [...previous.redo];
@@ -647,7 +757,7 @@ function reduceEvent(
             canCoalesce(lastGroup, event, event.change),
           'Invalid edit group or inactivity window.',
         );
-        if (lastGroup.change.before !== lastGroup.change.after) {
+        if (!sameValue(lastGroup.change.before, lastGroup.change.after)) {
           insist(
             undo.at(-1)?.id === lastGroup.id,
             'Group is no longer the latest action.',
@@ -713,6 +823,7 @@ function reduceEvent(
     hasV7: previous.hasV7 || event.version >= 7,
     hasV8: previous.hasV8 || event.version >= 8,
     hasV9: previous.hasV9 || event.version >= 9,
+    hasV10: previous.hasV10 || event.version >= 10,
   };
 }
 export function applyChange(state: StoredState, change: Change): StoredState {
@@ -786,7 +897,7 @@ function reduceChange(
     if (
       change.before &&
       change.after &&
-      isNumericHabit(change.before) !== isNumericHabit(change.after)
+      habitType(change.before) !== habitType(change.after)
     )
       insist(
         !Object.keys(state.values).some((key) =>
@@ -794,6 +905,16 @@ function reduceChange(
         ),
         'Cannot change type while entries exist.',
       );
+    if (change.after) {
+      const prefix = `${change.habitId}:`;
+      insist(
+        Object.entries(state.values).every(
+          ([key, value]) =>
+            !key.startsWith(prefix) || entryFits(change.after!, value),
+        ),
+        'Cannot remove categories referenced by entries; archive them instead.',
+      );
+    }
     const habits = [...state.habits];
     habits.splice(
       change.index,
@@ -821,16 +942,13 @@ function reduceChange(
     } else {
       const key = `${change.habitId}:${change.date}`;
       insist(
-        (state.values[key] ?? null) === change.before,
+        sameEntry(state.values[key] ?? null, change.before),
         'Daily value precondition failed.',
       );
-      if (!isNumericHabit(habit))
-        insist(
-          [change.before, change.after].every(
-            (value) => value === null || value === 1,
-          ),
-          'Checkbox entries must be checked or absent.',
-        );
+      insist(
+        [change.before, change.after].every((value) => entryFits(habit, value)),
+        'Daily value does not match habit type or categories.',
+      );
       const values = mutable ? state.values : { ...state.values };
       if (change.after === null) delete values[key];
       else values[key] = change.after;
@@ -884,6 +1002,8 @@ export function describeChange(change: Change, state: StoredState): string {
       ? 'Cleared'
       : habit && isNumericHabit(habit)
         ? `${change.after}${habit.unit ? ` ${habit.unit}` : ''}`
-        : 'Checked';
+        : habit
+          ? entryLabel(habit, change.after)
+          : String(change.after);
   return `${name} · ${value}`;
 }

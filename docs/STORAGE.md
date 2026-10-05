@@ -8,20 +8,21 @@ backup/share-sheet acceptance remain under evaluation.
 
 ## What is saved
 
-Checkbox entries, numeric daily totals, applied habit colours, and the haptic
+Checkbox entries, numeric daily totals, multi-select categorical records,
+free-text daily values, applied habit colours, and the haptic
 preference now survive a reload. The existing 12 sample habits are initialized
 once, not on every launch. Habit creation, renaming, units, icons, start dates, descriptions, ordering, and archival now persist as well. Row/column spacing, app-wide text size, week start and date fading are saved global preferences.
 Full-screen statistics are derived from saved values; comments and targets remain
 later work. See [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md).
 
-`src/storage/model.ts` defines version-9 events and deterministic replay, with
-backward-compatible interpretation of existing version-1/2/3/4/5/6/7/8 records.
+`src/storage/model.ts` defines version-10 events and deterministic replay, with
+backward-compatible interpretation of existing version-1/2/3/4/5/6/7/8/9 records.
 `repository.ts` implements the native database operations against a small SQL
 interface; `native.ts` connects it to Expo SQLite and native UUID/SHA-256 support.
 `store.ts` owns loading, immediate UI state, the serialized write queue, undo,
 redo, and exclusive backup work. React subscribes through `usePersistentStore.ts`.
 
-Grid cells use `selection.ts` to subscribe to their individual primitive value;
+Grid cells use `selection.ts` to subscribe to their individual primitive or stable array value;
 date headings select whether their date has any active-habit entry. Unchanged
 selections ignore save acknowledgements and unrelated edits. This is derived
 notification filtering, not another persisted/cache projection. Store timing can
@@ -78,15 +79,15 @@ migration from an earlier persisted OnPurpose version.
 
 Every event carries:
 
-| Field              | Meaning                                                                        |
-| ------------------ | ------------------------------------------------------------------------------ |
-| `version`          | Event schema version, currently `9`; existing `1`–`8` records remain supported |
-| `id`               | Stable UUID generated once, retained on save retry                             |
-| `sequence`         | Contiguous order starting at `1`; authoritative even if the clock changes      |
-| `recordedAt`       | UTC edit instant in ISO form with milliseconds                                 |
-| `timeZone`         | Device time-zone name at edit time, or `unknown` if unavailable                |
-| `utcOffsetMinutes` | Local offset east of UTC at edit time                                          |
-| `type`             | `initialize`, `change`, `undo`, `redo`, or `preference`                        |
+| Field              | Meaning                                                                         |
+| ------------------ | ------------------------------------------------------------------------------- |
+| `version`          | Event schema version, currently `10`; existing `1`–`9` records remain supported |
+| `id`               | Stable UUID generated once, retained on save retry                              |
+| `sequence`         | Contiguous order starting at `1`; authoritative even if the clock changes       |
+| `recordedAt`       | UTC edit instant in ISO form with milliseconds                                  |
+| `timeZone`         | Device time-zone name at edit time, or `unknown` if unavailable                 |
+| `utcOffsetMinutes` | Local offset east of UTC at edit time                                           |
+| `type`             | `initialize`, `change`, `undo`, `redo`, or `preference`                         |
 
 `initialize` records the ordered habit definitions and starts with no entries and
 haptics enabled. Each subsequent edit includes `before` and `after` values.
@@ -99,11 +100,11 @@ Redo targets its latest undo event ID and restores the original action.
 Existing version-1 logs retain their original interpretation, including historical
 preference undo/redo and abandoned redo branches. Their habit edits remain
 individual undo steps, with settings and undo/redo rows filtered from the view.
-New events use version 9. A log can progress from versions 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9, skipping
+New events use version 10. A log can progress from versions 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10, skipping
 versions if needed, but never downgrade. New habit-definition changes record
 `habitId`, `index`, and `before`/`after` definitions (null for creation/removal).
 Order changes record exact before/after ID arrays. Definitions may include an
-explicit checkbox/number `type` and an `archived` boolean; legacy numeric habits
+explicit checkbox/number/categorical/text `type` and an `archived` boolean; legacy numeric habits
 remain inferred from their units. Archive preserves entries. Undoing creation
 cannot remove a habit while it still has entries, and type conversion is rejected
 while values exist. Definition equality ignores JSON field ordering.
@@ -168,6 +169,26 @@ fixture extends the exact unchanged v8 prefix. The completion predicate is
 separate from storage: checkbox checks qualify now; numeric conditions are
 founder-deferred. SQL schema remains version 1, with no rewritten events.
 
+Version 10 adds explicit `categorical` and `text` habit types and mixed daily
+values. Categories are a bounded list (1–40) of stable `id`, `label` (up to 60
+characters), optional `shortLabel` (up to 12) and optional `archived` fields. At
+least one option stays active. Entries are nonempty sorted unique ID arrays;
+several options can be selected on one day. References must belong to that
+habit. Archiving/renaming an option preserves its ID and selections; referenced
+options cannot be removed from the definition. Text values are nonblank plain
+strings, up to 10,000 UTF-16 characters; meaningful whitespace/newlines are
+preserved. Empty selections or blank text clear to null. Units belong only to
+numeric habits. Versions 1–9 reject new types/fields/value shapes. Logs cannot
+downgrade after v10. SQL stays at schema 1, with no reseeding or rewritten events.
+
+Array preconditions, group continuity, net-zero suppression and Undo/Redo
+inverses compare content, including after JSON/SQLite round trips. Unchanged
+entry arrays keep their references for per-cell subscriptions. Categorical/text
+edits use the same serialized atomic queue and correction window. Habit type
+changes with any entries remain forbidden, comparing all four effective types.
+The v10 fixture extends the exact unchanged v9 prefix with both definitions,
+multi-selection, multiline text correction, Undo and Redo.
+
 Recoverable description drafts are separate from applied habit state. A separate
 native draft database/browser key keeps unfinished text outside the canonical log,
 History and backups; sample drafts remain memory-only. Local v2 draft JSON adds
@@ -183,7 +204,8 @@ archived positions remain present. No old events are rewritten, and no database
 reset or SQL schema change is required. Older builds must reject v4 data rather
 than discard unfamiliar events.
 
-Daily entries use stable habit IDs and explicit calendar dates. Numeric zero is a
+Daily entries use stable habit IDs and explicit calendar dates. New text/category
+values follow the v10 rules above; existing numeric semantics remain unchanged. Numeric zero is a
 recorded value; `null` is absent/cleared. Checkbox values are `1` or `null`, so
 unchecking clears the entry. Numeric values must be finite, nonnegative, and no
 larger than JavaScript's maximum safe integer; decimals remain supported. Colours
@@ -267,12 +289,13 @@ Undo is not permanent erasure. There is no deletion or erasure UI. Decide
 privacy/erasure rules before implementing comments; do not assume append-only
 history makes erasure impossible or unwanted.
 
-## Portable backup version 9
+## Portable backup version 10
 
 Settings → Backups → Export backup opens the iOS share sheet; save the JSON to Files or
 another destination. The app first waits for pending saves and captures a stable
 log. The export is a readable JSON container of **changes**, not a replacement
-snapshot of habit/day values. See [the version-9 synthetic example](examples/storage-v9.json),
+snapshot of habit/day values. See [the version-10 synthetic example](examples/storage-v10.json),
+[the version-9 synthetic example](examples/storage-v9.json),
 [the version-8 synthetic example](examples/storage-v8.json),
 [the version-7 synthetic example](examples/storage-v7.json),
 [the version-6 synthetic example](examples/storage-v6.json),
@@ -282,13 +305,13 @@ snapshot of habit/day values. See [the version-9 synthetic example](examples/sto
 [version-2 fixture](examples/storage-v2.json), and
 [the unchanged version-1 fixture](examples/storage-v1.json).
 
-The container has `format: "onpurpose.changes"`, `version: 9`, `exportedAt`,
+The container has `format: "onpurpose.changes"`, `version: 10`, `exportedAt`,
 `eventCount`, `sha256`, and `events`. The digest is SHA-256 of UTF-8
 `JSON.stringify(events)` with its existing property order. It detects accidental
 modification/incompleteness; it is not an authenticated signature. Exports are not
 encrypted and may reveal habit names, descriptions, dated values, colours, and preference/edit
 metadata. Pre-restore copies are not bundled into the active export. The exporter
-always writes container version 9. The importer accepts versions 1–9;
+always writes container version 10. The importer accepts versions 1–10;
 a container cannot contain events newer than its own version. New containers can
 retain legacy prefixes, including full raw edits and undo/redo operations that
 are omitted from the active History view.

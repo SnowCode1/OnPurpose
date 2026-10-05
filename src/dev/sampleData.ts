@@ -1,3 +1,4 @@
+import { withSampleRecords } from './sampleRecords.ts';
 import { sampleDescriptions } from './sampleDescriptions.ts';
 import { calendarDay, localDateKey } from '../calendar.ts';
 import { demoHabits, isNumericHabit } from '../habits.ts';
@@ -112,7 +113,9 @@ export function createSampleEvents(today: string): StoredEvent[] {
 // An entirely separate in-memory store exercises the normal grid, history,
 // stats and Undo/Redo code. No SQLite, files, localStorage or backup replacement.
 export async function createSampleStore(today: string): Promise<ChangeStore> {
-  let { events, replay } = replayEvents(createSampleEvents(today));
+  let { events, replay } = replayEvents(
+    withSampleRecords(createSampleEvents(today), today),
+  );
   const repository: Repository = {
     async load() {
       return { ...replayEvents(events), hasRecovery: false };

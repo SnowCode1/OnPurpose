@@ -1,8 +1,9 @@
+import type { EntryValues } from './entries';
 import { Text } from './Typography';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import type { Habit } from './habits';
-import { isNumericHabit } from './habits';
+import { habitTypeLabel } from './habits';
 import { Icon } from './Icon';
 import { HabitSymbol } from './HabitSymbol';
 import { appear, disappear, rowTransition } from './motion';
@@ -18,7 +19,7 @@ export function ArchivedHabits({
 }: {
   sampleData?: boolean;
   habits: Habit[];
-  values: Record<string, number>;
+  values: EntryValues;
   editable: boolean;
   pending: number;
   error: string | null;
@@ -71,10 +72,8 @@ export function ArchivedHabits({
                 {habit.name}
               </Text>
               <Text style={styles.description}>
-                {isNumericHabit(habit)
-                  ? (habit.unit ?? 'Daily total')
-                  : 'Checkbox'}{' '}
-                · {count} recorded {count === 1 ? 'day' : 'days'}
+                {habit.unit ?? habitTypeLabel(habit)} · {count} recorded{' '}
+                {count === 1 ? 'day' : 'days'}
               </Text>
             </View>
             <Pressable

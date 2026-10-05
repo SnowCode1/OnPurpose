@@ -1195,3 +1195,52 @@ Validation after the fix: `npm run check` passed without warnings, all 220 tests
 passed, and the single-worker iOS export succeeded under the existing 2 GiB
 memory/no-swap scope. The founder confirmed the panel-opening fix on the iPhone
 ("All good now"). This does not establish the wider gesture/accessibility matrix.
+
+## Categorical and free-text records
+
+- Add a categorical habit, configure several names and optional short labels.
+  Category editor Done returns to the draft; habit Done persists it. Close either
+  editor must discard the appropriate draft. Rename and archive/restore an option;
+  earlier records retain it, and archiving every option is prevented.
+- Select several categories on one day, Done, reopen and reload. All selections
+  must survive. Changing several options before Close saves nothing. Clear entry
+  requires Done. Repeat in past/future grid dates and the statistics calendar.
+- Add free text, enter short words and a multiline paragraph, apply/reopen/reload.
+  Newlines and full text must survive even if grid preview is truncated. Close
+  discards edits. Blank text clears, while explicit numeric zero still records.
+- Try grid text at Compact/Standard/Roomy row/column spacing, portrait/landscape,
+  85–150% app text and OS Larger Text. Native fitting is bounded to 95%, two lines
+  maximum. Full values remain available to the editor/accessibility. Browser
+  captures cannot prove native text-fit or keyboard handling.
+- Undo/Redo entries, corrections and option edits after reload. Export/restore
+  both kinds with the normal confirmation/recovery copy. Older v1–v9 archives
+  remain readable; v10 cannot be disguised in an older container.
+- Statistics show recording, not completion. Category counts can overlap. Future
+  and pre-start values are excluded from metrics but kept. Other habits must not
+  affect denominators. Hide completed today must not hide new types until rules
+  exist. Statistics/nested editors and main-sheet dismissal remain usable.
+- Sample data has Workout/Highlight examples without adding them to the real
+  list. Reset/reload the isolated sample to see both.
+
+`entry-types.test.mjs` exercises real SQLite round trips, multiselect corrections
+after serialization/reload, net-zero grouping, Undo/Redo and preferences, backups
+and atomic recovery, malformed/version/type rejection, stable option changes and
+archival, per-cell subscriptions, recording calculations, bounded text and the
+unchanged v9 prefix in the v10 portable fixture. The existing legacy suites and
+fixtures remain part of full verification.
+
+Validation: `npm run check` passed without warnings, all 229 tests passed, and
+single-worker iOS and web exports succeeded within the existing 2 GiB memory /
+no-swap scope. The release iOS bundle excludes the new sample-record identifiers
+and preview capture module. No dependencies were added.
+
+An isolated bounded Chrome review covered multi-selection, Done/Close, exact
+multiline text and reload, new habit creation, option renaming/archival, recording
+statistics and calendar editing. Layout captures covered portrait, landscape and
+150% app text; an archived selection remained available after draft deselection.
+Temporary browser profiles were removed, with captures and synthetic data ignored.
+The founder confirmed on the iPhone that multiple categorical selections persist
+and Done/Close work. The initial 80% text fit felt too small; the revised trial
+uses a 95% minimum and a 32-character preview cap. Native font fitting after this
+revision, text keyboard placement, OS Larger Text and the remaining phone matrix
+still require device review.

@@ -1,6 +1,5 @@
 import { completionMask } from '../habitCompletion.ts';
 import type { Habit } from '../habits.ts';
-import { isNumericHabit } from '../habits.ts';
 import type { ChangeStore, StoreSnapshot } from './store.ts';
 
 // Primitive/reference-stable selections let mounted cells ignore unrelated
@@ -34,7 +33,7 @@ export function recordedDaySelection(
   return selectStore(store, (snapshot) =>
     habits.some((habit) => {
       const value = snapshot.replay.state.values[`${habit.id}:${day}`];
-      return isNumericHabit(habit) ? value !== undefined : value === 1;
+      return value !== undefined;
     }),
   );
 }

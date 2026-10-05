@@ -1,8 +1,9 @@
+import { cellEntryLabel, entryLabel } from './entries';
 import { Text } from './Typography';
 import { memo, useMemo, useSyncExternalStore } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { GridDay } from './calendar';
-import { isNumericHabit, type Habit } from './habits';
+import { habitType, isNumericHabit, type Habit } from './habits';
 import { ReorderRow, type RowMotion } from './ReorderRow';
 import { dayTone, dateTones, type GridPalette } from './gridAppearance';
 import { entrySelection, recordedDaySelection } from './storage/selection';
@@ -39,18 +40,26 @@ const GridCell = memo(function GridCell({
   );
   recordPerformance('grid.cell.render');
   const numeric = isNumericHabit(habit);
+  const checkbox = habitType(habit) === 'checkbox';
   const checked = value === 1;
+  const recorded = value !== undefined;
   const tone = palette.tones[dayTone(day.daysAgo)];
   return (
     <ReorderRow motion={motion}>
       <Pressable
         testID={`cell-${habit.id}-${day.key}`}
         disabled={disabled}
-        accessibilityRole={numeric ? 'button' : 'checkbox'}
-        accessibilityState={numeric ? { disabled } : { checked, disabled }}
-        accessibilityLabel={`${habit.name}, ${day.fullLabel}${numeric ? `, ${value === undefined ? 'not recorded' : `${value}${habit.unit ? ` ${habit.unit}` : ''}`}` : ''}`}
+        accessibilityRole={checkbox ? 'checkbox' : 'button'}
+        accessibilityState={checkbox ? { checked, disabled } : { disabled }}
+        accessibilityLabel={`${habit.name}, ${day.fullLabel}${checkbox ? '' : `, ${value === undefined ? 'not recorded' : entryLabel(habit, value) + (habit.unit ? ` ${habit.unit}` : '')}`}`}
         accessibilityHint={
-          numeric ? 'Edit this day’s total' : 'Toggle this day’s completion'
+          checkbox
+            ? 'Toggle this day’s completion'
+            : numeric
+              ? 'Edit this day’s total'
+              : habit.type === 'categorical'
+                ? 'Choose categories for this day'
+                : 'Read or edit this day’s text'
         }
         onPress={() => onPress(habit, day)}
         style={({ pressed }) => [
@@ -66,17 +75,18 @@ const GridCell = memo(function GridCell({
           },
         ]}
       >
-        {numeric ? (
+        {!checkbox ? (
           <Text
-            numberOfLines={1}
+            numberOfLines={numeric ? 1 : 2}
             adjustsFontSizeToFit
-            minimumFontScale={0.65}
+            minimumFontScale={numeric ? 0.65 : 0.95}
+            ellipsizeMode="tail"
             style={[
-              styles.numeric,
-              { color: value !== undefined ? habit.color : tone.number },
+              numeric ? styles.numeric : styles.textEntry,
+              { color: recorded ? habit.color : tone.number },
             ]}
           >
-            {value === undefined ? '—' : String(value)}
+            {cellEntryLabel(habit, value)}
           </Text>
         ) : (
           <View
@@ -235,6 +245,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 4,
     borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  textEntry: {
+    fontSize: 14,
+    lineHeight: 16,
+    fontWeight: '500',
+    width: '100%',
+    textAlign: 'center',
   },
   numeric: { fontSize: 18, fontWeight: '500', fontVariant: ['tabular-nums'] },
   checkbox: {

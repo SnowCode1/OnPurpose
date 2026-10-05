@@ -331,3 +331,17 @@ position-only callbacks avoid sending unchanged Markdown. Native background
 requests exact text and draft writes remain serialized separately from main
 History. No persistence or export schema changes are needed. Sample-only
 progressive notes live in `dev/sampleDescriptions.ts`.
+
+## Categorical and text values
+
+`entries.ts` supplies `EntryValue` (number/string/string-array), labels, canonical
+category sets, text limits and bounded grid previews. `habits.ts` centralizes the
+four effective types, retaining legacy unit inference. Storage v10 validates
+these shapes, stable category references and deep definition/array equality
+while retaining old replay and the same SQLite schema/queue. `DailyRecordDialog`
+is nested in the existing App overlays for grid and statistics recording.
+`CategoryEditor` edits option drafts independently of daily selections.
+`RecordStatsScreen` retains recording range/month state and virtualizes daily
+entry rows; `recordStatistics` shares calendar/start rules without interpreting
+text or categories as numbers. The old numerical/checkbox statistics stay in
+`HabitStatsScreen`; its Chart has an explicit recording-label mode.

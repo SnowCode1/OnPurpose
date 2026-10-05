@@ -1,5 +1,7 @@
+import { sameValue } from './storage/model.ts';
+import { entryLabel } from './entries.ts';
 import { localDateKey } from './calendar.ts';
-import { isNumericHabit } from './habits.ts';
+import { habitType, isNumericHabit } from './habits.ts';
 import type { HistoryAction, StoredState } from './storage/model.ts';
 import type { IconName } from './Icon.tsx';
 
@@ -84,7 +86,8 @@ export function historyPresentation(event: HistoryAction, state: StoredState) {
                 change.before.unit === change.after.unit &&
                 change.before.startDate === change.after.startDate &&
                 change.before.description === change.after.description &&
-                isNumericHabit(change.before) === isNumericHabit(change.after)
+                habitType(change.before) === habitType(change.after) &&
+                sameValue(change.before.categories, change.after.categories)
               ? change.after.icon
                 ? 'Icon changed'
                 : 'Icon removed'
@@ -115,6 +118,18 @@ export function historyPresentation(event: HistoryAction, state: StoredState) {
         ? 'Cleared'
         : `${change.after}${habit.unit ? ` ${habit.unit}` : ''}`;
     summary = `${before} → ${after}`;
+  } else if (habit && habitType(habit) !== 'checkbox') {
+    icon =
+      change.after === null
+        ? 'erase'
+        : habit.type === 'categorical'
+          ? 'categories'
+          : 'text';
+    const compact = (value: typeof change.before) => {
+      const label = entryLabel(habit, value).replace(/\s+/g, ' ');
+      return label.length > 55 ? label.slice(0, 54) + '…' : label;
+    };
+    summary = `${compact(change.before)} → ${change.after === null ? 'Cleared' : compact(change.after)}`;
   } else {
     icon = change.after === null ? 'unchecked' : 'checked';
     summary = change.after === null ? 'Unchecked' : 'Checked';

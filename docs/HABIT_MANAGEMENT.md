@@ -65,14 +65,14 @@ outside Undo.
 
 ## Storage compatibility
 
-New events and backup containers use version 9 (optional hiding of completed rows); version 8 added app-wide text size; version 7 added descriptions; version 6 added display settings; version 5 added editable start dates and row spacing; version 3 introduced definitions
+New events and backup containers use version 10 (categorical/text records); version 9 added optional hiding of completed rows; version 8 added app-wide text size; version 7 added descriptions; version 6 added display settings; version 5 added editable start dates and row spacing; version 3 introduced definitions
 and ordering, and version 4 adds optional icons. A habit change captures its stable
 ID, position, and before/after definition; creation uses a null before-definition.
 Undoing creation can remove it only after its entries have been undone. This is
 not a permanent deletion feature. An order change carries exact before/after ID
 lists, validated as a permutation of every stored habit.
 
-Old v1/v2/v3/v4/v5/v6 logs and backups remain readable, unchanged. Legacy numeric habits are
+Old v1–v9 logs and backups remain readable, unchanged. Legacy numeric habits are
 inferred from their unit field; new definitions may use an explicit type and an
 archived flag. No SQL schema change or reseeding occurs. See [STORAGE.md](STORAGE.md)
 and [the synthetic v4 export](examples/storage-v4.json).
@@ -152,3 +152,25 @@ The preference persists outside habit History/Undo and is included in backups.
 Sample-mode settings stay in its separate disposable store.
 
 Column spacing, date fading and week start are documented in [SETTINGS.md](SETTINGS.md).
+
+## Categorical and free text
+
+New habit creation offers a wrapping Checkbox / Daily total / Categories / Free
+text grid. Existing habit type remains read-only. Categories opens a dedicated
+draft editor with full names, optional short grid labels, Add and Archive/Restore.
+Stable IDs survive renames and archival; at least one category remains active.
+The inner editor's Done returns to the habit draft; the habit editor's Done
+applies one undoable definition change. Close discards the appropriate draft.
+
+A categorical day opens a compact bottom sheet with accessible multi-select
+choices. Choosing does not close it; Done applies the complete set atomically.
+Archived categories already selected on that day remain visible for removal.
+Text days open a plain multiline input in the same sheet, with a 10,000-character
+limit. Done applies, Close cancels, Clear entry edits the draft until Done. These
+sheets also work from the statistics calendar/entry list and nest above habit
+details. Comments and completion rules remain deferred.
+
+Grid cells show up to two lines with native fitting to a minimum 95% font size
+and bounded previews, retaining full values in editors. Unrecorded cells show a
+dash, recorded cells use the habit colour; recording is not completion. Text
+fitting is a device trial, not validated by browser screenshots.

@@ -1,3 +1,4 @@
+import type { EntryValues } from './entries.ts';
 import type { WeekStart } from './displayPreferences.ts';
 import { isNumericHabit, type Habit } from './habits.ts';
 import type { StoredEvent } from './storage/model.ts';
@@ -42,7 +43,7 @@ function habitStart(
 // Legacy habits acquire a display default without rewriting their event log.
 export function habitTrackingStart(
   habit: Habit,
-  values: Record<string, number>,
+  values: EntryValues,
   events: StoredEvent[],
   todayKey: string,
 ) {
@@ -65,7 +66,7 @@ function countWeekday(start: number, end: number, weekday?: number) {
 }
 export function habitStatistics(
   habit: Habit,
-  values: Record<string, number>,
+  values: EntryValues,
   events: StoredEvent[],
   todayKey: string,
   range: StatsRange,
@@ -75,7 +76,10 @@ export function habitStatistics(
     prefix = `${habit.id}:`,
     explicitStart = habit.startDate ? dayNumber(habit.startDate) : -Infinity;
   const records = Object.entries(values)
-    .filter(([key]) => key.startsWith(prefix))
+    .filter(
+      (entry): entry is [string, number] =>
+        entry[0].startsWith(prefix) && typeof entry[1] === 'number',
+    )
     .map(([key, value]) => ({
       day: dayNumber(key.slice(prefix.length)),
       value,

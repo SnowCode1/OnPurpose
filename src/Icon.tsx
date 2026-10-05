@@ -8,6 +8,8 @@ export type IconName =
   | 'checked'
   | 'unchecked'
   | 'number'
+  | 'categories'
+  | 'text'
   | 'erase'
   | 'palette'
   | 'haptics'
@@ -66,6 +68,15 @@ export function Icon({
           {name === 'checked' && <Path d="m7.5 12 3 3 6-6" />}
         </>
       )}
+      {name === 'categories' && (
+        <>
+          <Rect x={3} y={4} width={7} height={7} rx={2} />
+          <Rect x={14} y={4} width={7} height={7} rx={2} />
+          <Rect x={3} y={15} width={7} height={5} rx={2} />
+          <Path d="M14 17.5h7" />
+        </>
+      )}
+      {name === 'text' && <Path d="M4 5h16M4 10h16M4 15h11M4 20h8" />}
       {name === 'number' && <Path d="M9 3 7 21M17 3l-2 18M4 8h17M3 16h17" />}
       {name === 'erase' && (
         <Path d="m3.5 13 8-9a2 2 0 0 1 2.8-.2l6 5.3a2 2 0 0 1 .2 2.8L14 19H8l-4.3-3.7a1.6 1.6 0 0 1-.2-2.3ZM8 8l10 8M14 19h7" />

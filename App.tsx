@@ -1,3 +1,6 @@
+import { sameValue } from './src/storage/model';
+import { DailyRecordDialog } from './src/DailyRecordDialog';
+import { sameEntry, type EntryValue } from './src/entries';
 import { TypographyProvider, TextInput, Text } from './src/Typography';
 import { DescriptionVersions } from './src/DescriptionVersions';
 import { descriptionVersions } from './src/descriptionVersions';
@@ -34,7 +37,7 @@ import { type EntryDay } from './src/calendar';
 import { PerformanceBoundary } from './src/PerformanceBoundary';
 import { HabitDetailsScreen } from './src/HabitDetailsScreen';
 import { HabitGrid } from './src/HabitGrid';
-import { isNumericHabit, type Habit } from './src/habits';
+import { habitType, isNumericHabit, type Habit } from './src/habits';
 import { randomUUID } from 'expo-crypto';
 import { HabitDialog, type HabitDialogMode } from './src/HabitDialog';
 import { displayedHabitOrder, moveHabit } from './src/habitOrdering';
@@ -189,6 +192,11 @@ function PersistentApp({
     habit: Habit;
     day: EntryDay;
   } | null>(null);
+  const [recording, setRecording] = useState<{
+    key: string;
+    habit: Habit;
+    day: EntryDay;
+  } | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const detail = habits.find((habit) => habit.id === detailId);
   const [habitMode, setHabitMode] = useState<HabitDialogMode>('edit');
@@ -224,6 +232,9 @@ function PersistentApp({
       if (isNumericHabit(habit)) {
         setInput(before === null ? '' : String(before));
         setEditing({ key, habit, day });
+        feedback('selection');
+      } else if (habitType(habit) !== 'checkbox') {
+        setRecording({ key, habit, day });
         feedback('selection');
       } else {
         const after = before === 1 ? null : 1;
@@ -283,8 +294,24 @@ function PersistentApp({
     if (before !== after) feedback(after === null ? 'undo' : 'confirm');
   }
 
+  function saveRecord(after: EntryValue | null): boolean {
+    if (!recording || !store.canEdit()) return false;
+    const before =
+      store.getSnapshot().replay.state.values[recording.key] ?? null;
+    if (sameEntry(before, after)) return true;
+    const accepted = store.change({
+      kind: 'entry',
+      habitId: recording.habit.id,
+      date: recording.day.key,
+      before,
+      after,
+    });
+    if (accepted) feedback(after === null ? 'undo' : 'confirm');
+    return accepted;
+  }
   function closeDialog() {
     setEditing(null);
+    setRecording(null);
     setDetailId(null);
     setNewHabit(null);
   }
@@ -313,7 +340,8 @@ function PersistentApp({
         before.name === after.name &&
         before.color === after.color &&
         before.unit === after.unit &&
-        isNumericHabit(before) === isNumericHabit(after) &&
+        habitType(before) === habitType(after) &&
+        sameValue(before.categories, after.categories) &&
         before.archived === after.archived &&
         before.icon === after.icon &&
         before.startDate === after.startDate &&
@@ -626,6 +654,18 @@ function PersistentApp({
           </View>
         </KeyboardAvoidingView>
       </Modal>
+      {recording && (
+        <DailyRecordDialog
+          key={recording.key}
+          habit={recording.habit}
+          day={recording.day}
+          value={values[recording.key]}
+          editable={editable}
+          Heading={PreviewHeading}
+          onClose={() => setRecording(null)}
+          onSave={saveRecord}
+        />
+      )}
       {habitDialog}
       <AppPanel
         sampleData={sampleData}

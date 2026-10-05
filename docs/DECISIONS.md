@@ -922,3 +922,28 @@ passes after the fix. GitNexus had no OnPurpose index; source inspection and the
 connected runtime supplied the trace. The founder confirmed the fix on the
 iPhone ("All good now"). The wider swipe/rotation/accessibility matrix remains
 separate; browser-only opening checks do not establish native event safety.
+
+## 5 October 2026 — Categorical and free-text habits
+
+The founder authorised both and explicitly rejected limiting a day to one
+category. The implemented categorical value is a set of any number of configured
+options (up to the bounded option list); it is not a single-choice field. Stable
+option IDs and optional short labels preserve records across rename/archive.
+Completion rules are deferred; logged entries stay distinct from completion.
+Free text uses a plain multiline daily value, separate from the Markdown habit
+description. Comments remain deferred; daily comments are a founder suggestion
+without a confirmed attachment/design.
+
+The founder requested testing dynamic cell text size. The first 80% minimum felt
+too small on the iPhone. The revised implementation caps previews at 32 characters
+and allows two lines, native fitting bounded at 95% and truncation with full-value
+access. It preserves app/OS scaling. Category/text entry sheets apply only on
+Done; Close cancels. Category configuration has its own full-screen draft editor
+so the main habit form stays compact. These are assistant implementation choices
+within the authorised scope, pending device feel/layout acceptance.
+
+New log/export v10 retains v1–v9 prefixes, the same atomic SQLite schema/queue
+and Undo/grouping semantics, with content comparisons for arrays. Statistics
+show recording counts/rates/streaks and category frequencies, never an invented
+completion score. Workout/Highlight fixtures extend only the isolated sample
+store; the existing v7 sample fixture and real presets are unchanged.

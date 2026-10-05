@@ -183,3 +183,16 @@ First editor opens align caret/viewport at the start, with viewport/content resi
 restoration until deliberate interaction. Existing matching bookmarks remain.
 The writing area owns scrolling, with DOM roots clipped to prevent outer scrolling;
 startup feedback does not imply the WebView/editor initialization cost is gone.
+
+## Categorical and free-text cells
+
+Daily values include primitives and stable arrays of category IDs. Per-cell
+subscriptions retain unchanged references through save acknowledgements; category
+corrections compare array contents across SQLite serialization. Native horizontal
+scroll synchronization and the loading backdrop are unchanged.
+
+Grid previews collapse whitespace and cap measurement at 32 Unicode characters,
+with two lines and a minimum 95% font-fit scale for category/text cells. Full values
+remain in storage and the editor. Recording statistics virtualize their dated
+entry list rather than mounting every full text value. Browser checks cover layout,
+not native font fitting or iPhone frame rates.

@@ -249,10 +249,10 @@ Metro with `npm run start:clear` if it cannot resolve an installed module).
 Settings → Backups → Export backup opens the share sheet; choose Save to Files. Restore
 backup validates first and asks before replacing data, retaining a local copy.
 
-New habit edits use version-9 events with grouped actions; global preferences save
-outside visible History/Undo. Exports use container version 9; existing version-1/2/3/4/5/6/7/8
+New habit edits use version-10 events with grouped actions; global preferences save
+outside visible History/Undo. Exports use container version 10; existing version-1/2/3/4/5/6/7/8/9
 backups remain importable and old log records stay unchanged. Fully reload Expo Go
-to test storage updates. Do not downgrade to an older build after writing v9 data;
+to test storage updates. Do not downgrade to an older build after writing v10 data;
 older builds cannot interpret it and will refuse to load rather than reset.
 The web preview uses separate browser localStorage, not the iPhone SQLite file.
 
@@ -344,3 +344,10 @@ and Edit at each size, including immediate Done after typing. `sampleDescription
 extends only the isolated sample definitions; never use it to update real habits
 or replace their saved descriptions. See DESCRIPTIONS.md and TESTING.md for the
 reader/editor performance and experimental compact-card flow.
+
+Sample mode now adds Workout (multiple categories) and Daily highlight (free
+text), with sixty days of fictional values. The existing twelve-habit v7 fixture
+remains unchanged; `sampleRecords.ts` appends v10 examples only to the in-memory
+sample store. Reload/reset sample mode to see them. Real lists are not populated
+with these examples. Create either type through Add habit. See
+HABIT_MANAGEMENT.md and STORAGE.md for entry/option drafts and backup compatibility.
