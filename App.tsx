@@ -37,7 +37,7 @@ import { HabitGrid } from './src/HabitGrid';
 import { isNumericHabit, type Habit } from './src/habits';
 import { randomUUID } from 'expo-crypto';
 import { HabitDialog, type HabitDialogMode } from './src/HabitDialog';
-import { fullHabitOrder, moveHabit } from './src/habitOrdering';
+import { displayedHabitOrder, moveHabit } from './src/habitOrdering';
 import type { HabitAction } from './src/HabitName';
 import { checkmarkColor } from './src/colors';
 import { useLocalToday } from './src/useLocalToday';
@@ -168,6 +168,7 @@ function PersistentApp({
     columnSpacing = displayDefaults.columnSpacing,
     weekStart = displayDefaults.weekStart,
     dateFading = displayDefaults.dateFading,
+    hideCompleted = displayDefaults.hideCompleted,
     textScale = displayDefaults.textScale,
   } = snapshot.replay.state;
   const activeHabits = useMemo(
@@ -346,7 +347,7 @@ function PersistentApp({
     (ids: string[]): boolean => {
       const current = store.getSnapshot().replay.state.habits;
       const before = current.map((habit) => habit.id),
-        after = fullHabitOrder(current, ids);
+        after = displayedHabitOrder(current, ids);
       if (before.join('|') === after.join('|')) return false;
       return store.change({ kind: 'order', before, after });
     },
@@ -629,10 +630,12 @@ function PersistentApp({
       <AppPanel
         sampleData={sampleData}
         developmentControls={
-          <>
-            {developmentControls}
-            {PreviewControls && <PreviewControls />}
-          </>
+          developmentControls || PreviewControls ? (
+            <>
+              {developmentControls}
+              {PreviewControls && <PreviewControls />}
+            </>
+          ) : undefined
         }
         page={panel.page}
         onArchive={() => setPanel({ page: 'archive', visible: true })}
@@ -659,6 +662,15 @@ function PersistentApp({
         }}
         columnSpacing={columnSpacing}
         weekStart={weekStart}
+        hideCompleted={hideCompleted}
+        onHideCompletedChange={(after) => {
+          if (!editable) return;
+          const before =
+            store.getSnapshot().replay.state.hideCompleted ??
+            displayDefaults.hideCompleted;
+          if (store.change({ kind: 'hideCompleted', before, after }))
+            feedback('selection');
+        }}
         dateFading={dateFading}
         onColumnSpacingChange={(after) => {
           if (!editable) return;
@@ -751,6 +763,7 @@ function PersistentApp({
                 <HabitGrid
                   columnSpacing={columnSpacing}
                   dateFading={dateFading}
+                  hideCompleted={hideCompleted}
                   rowSpacing={rowSpacing}
                   sampleData={sampleData}
                   HeadingComponent={PreviewHeading}

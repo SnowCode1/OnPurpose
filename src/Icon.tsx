@@ -16,6 +16,7 @@ export type IconName =
   | 'edit'
   | 'reorder'
   | 'archive'
+  | 'info'
   | 'plus';
 
 // Small, consistent outline icons; no icon font or loading state.
@@ -94,6 +95,13 @@ export function Icon({
         </>
       )}
       {name === 'plus' && <Path d="M12 5v14M5 12h14" />}
+      {name === 'info' && (
+        <>
+          <Circle cx={12} cy={12} r={9} />
+          <Path d="M12 11v6" />
+          <Circle cx={12} cy={7} r={0.6} fill={color} />
+        </>
+      )}
     </Svg>
   );
 }

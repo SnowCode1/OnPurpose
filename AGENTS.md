@@ -44,7 +44,7 @@ The requested preset icon update uses normal undoable edits in
 - Keep the compact top bar visible, with Today centred and History/Settings at right.
   Month/year stays beside the day headings; future pull streak grows left from the
   fixed right edge of the existing divider beneath the headings. Do not add a border.
-- `src/AppPanel.tsx` owns real change History/undo and the Settings/backup sheet; `src/Icon.tsx` owns outline icons.
+- `src/AppPanel.tsx` owns real change History/undo and the Settings/backup sheet; `src/SettingsScreen.tsx` owns the compact settings index and detail pages; `src/Icon.tsx` owns outline icons.
 - `src/HistoryView.tsx` renders compact action rows and sticky edit-day groups;
   `src/history.ts` keeps grouping separate from effective habit dates. Preserve
   reverse sequence order; do not reorder logged actions by their timestamps.
@@ -69,7 +69,7 @@ The requested preset icon update uses normal undoable edits in
   `docs/DESCRIPTIONS.md`. `src/RichDescription.tsx` is the offline Expo DOM/Tiptap
   editing surface; `src/richText/` owns safe document mapping, formatting, local
   Undo/Redo and bounded highlights. Preserve native readers and request a current
-  DOM snapshot before applying. Applied descriptions use ordinary habit changes (v8 for new writes);
+  DOM snapshot before applying. Applied descriptions use ordinary habit changes (v9 for new writes);
   recoverable drafts stay outside History/backups in a separate local store. Keep
   `storage/descriptionDraftModel.ts` distinct from native/web adapters for Metro.
   `src/dev/sampleData.ts` owns isolated mock history for statistics testing. Keep
@@ -87,7 +87,7 @@ The requested preset icon update uses normal undoable edits in
   date-cell layout timing aligned.
 - `src/displayPreferences.ts` owns column spacing, week start and date fading defaults; keep absent-field defaults compatible with old logs and all preferences outside History/Undo. Read docs/SETTINGS.md.
 - `src/rowSpacing.ts` owns saved Compact/Standard/Roomy geometry; preserve font scaling and measured row heights.
-- `src/StartDateField.tsx` owns the native draft date picker; existing dates remain inferred until edited. Explicit start dates bound statistics without deleting entries. New edits/exports use v8, retaining v1–v7 replay.
+- `src/StartDateField.tsx` owns the native draft date picker; existing dates remain inferred until edited. Explicit start dates bound statistics without deleting entries. New edits/exports use v9, retaining v1–v8 replay.
 - Statistics uses the same native pageSheet/slide/swipe dismissal as History and
   Settings; UIKit owns its gesture. `App.tsx` nests numeric, habit, description
   and version dialogs inside the statistics presentation and preserves visible
@@ -127,7 +127,7 @@ The requested preset icon update uses normal undoable edits in
 
 ## UI and accessibility
 
-Keep completed rows in place. Avoid gesture-only essential actions. Expose
+Keep completed rows in place by default. Optional Hide completed today filters checkbox-complete rows at Today; numeric completion conditions are deferred. Preserve Show completed and full rows when browsing other dates. Avoid gesture-only essential actions. Expose
 checkbox state and meaningful labels to accessibility services. Permit font
 scaling, respect safe areas, and allow scrolling when content needs it.
 Do not trade reliability or readable controls for the three-second aspiration.
@@ -167,3 +167,11 @@ Keep deployment and signing manual until release automation is deliberately set
 up. Do not claim App Store readiness from a successful JavaScript bundle export.
 Preserve the Expo template notice in `docs/licenses/EXPO_TEMPLATE_LICENSE.txt`.
 Project licence, pricing, final bundle identifier, and final brand remain open.
+
+`src/habitCompletion.ts` centralizes completion rules; do not infer numeric
+completion from a recorded total before per-habit conditions are defined.
+`completedHabitsSelection` uses a primitive today mask; disabled filtering,
+numeric edits and save acknowledgements must not rerender the grid container.
+`displayedHabitOrder` fills only displayed slots and preserves hidden/archived
+positions while saving a full undoable permutation. `hideCompleted` is a v9
+preference outside History/Undo, defaulting to false for older logs.

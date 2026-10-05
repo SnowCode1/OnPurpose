@@ -207,7 +207,7 @@ causality and reconstructs undo/redo stacks. Undo appends the inverse of the lat
 active grouped action rather than deleting source events. History projects active
 habit actions; Undo removes the row and Redo restores it. Global preferences stay
 in storage without appearing in History or affecting habit Undo/Redo. Settings
-exports/restores a checksum-validated version-3 JSON
+exports/restores a checksum-validated version-9 JSON
 change archive; confirmed restore atomically retains a pre-restore copy.
 
 The local-midnight boundary remains the current default; recorded date keys do
@@ -271,8 +271,8 @@ before/after versions. `description.ts` parses Markdown and supplies validation,
 summary/preview and insertion helpers. `DescriptionText.tsx` renders native blocks
 and intentional OS links without HTML execution or remote image requests.
 
-Descriptions were introduced in v7; new ordinary habit events use v8, with
-unchanged SQL schema and v1–v7 replay. `storage/descriptionDraftModel.ts` supplies the separate serialized
+Descriptions were introduced in v7; new ordinary habit events use v9, with
+unchanged SQL schema and v1–v8 replay. `storage/descriptionDraftModel.ts` supplies the separate serialized
 draft adapters; platform modules select SQLite/browser storage and sample mode
 selects memory. Keep the pure model's name distinct from platform adapters so Metro
 cannot resolve it recursively. See DESCRIPTIONS.md and STORAGE.md.
@@ -289,3 +289,19 @@ style calculations; the global preference uses v8 and stays outside History/Undo
 unmeasured Before/After passages; manual scrolling and closure cancel pending
 work. `editorIconPaths.ts` contains a generated fourteen-icon Tabler subset used
 by the DOM SVG `richText/EditorIcon.tsx`, avoiding a full catalogue import.
+
+## Settings structure and optional today filtering
+
+`AppPanel.tsx` retains native sheet/header/history/archive hosting.
+`SettingsScreen.tsx` owns the compact settings index and appearance/tracking/
+backup/development detail pages. New events/exports use v9; `hideCompleted` is a
+preference outside Undo with a compatible false default. Existing v1–v8 records
+and SQL schema 1 remain unchanged.
+
+`habitCompletion.ts` defines completion separately from recorded totals. Checkbox
+checks qualify now; per-habit numeric conditions are deferred. HabitGrid selects
+a primitive completion mask only when hiding is enabled, ignoring unrelated
+writes. At Today it filters displayed rows, offers Show completed, and restores
+all rows when browsing other dates. `displayedHabitOrder` persists a full
+permutation while keeping hidden and archived slots fixed. UI-thread scrolling,
+cell selectors and the fallback backdrop remain in place.

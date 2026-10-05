@@ -1,4 +1,6 @@
 import { Text, useAppWindowDimensions } from './Typography';
+import { completedHabitsSelection } from './storage/selection';
+import { visibleHabitRows } from './habitCompletion';
 import type { ColumnSpacing } from './displayPreferences';
 import { gridRowHeight, type RowSpacing } from './rowSpacing';
 import {
@@ -9,6 +11,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react';
 import {
   FlatList,
@@ -24,7 +27,7 @@ import {
 import { type GridDay, createGridDayCache, calendarDay } from './calendar';
 import type { Habit } from './habits';
 import { HabitName, type HabitAction } from './HabitName';
-import { habitRowPositions } from './habitOrdering';
+import { habitRowPositions, moveHabit } from './habitOrdering';
 import type { RowMotion } from './ReorderRow';
 import { useHabitReorder } from './useHabitReorder';
 import { createGridPalette } from './gridAppearance';
@@ -55,6 +58,7 @@ type Props = {
   rowSpacing: RowSpacing;
   columnSpacing: ColumnSpacing;
   dateFading: boolean;
+  hideCompleted: boolean;
   sampleData?: boolean;
   HeadingComponent: ComponentType<TextProps>;
   DateButtonComponent: ComponentType<PressableProps>;
@@ -75,6 +79,7 @@ export const HabitGrid = memo(function HabitGrid({
   rowSpacing,
   columnSpacing,
   dateFading,
+  hideCompleted,
   sampleData = false,
   HeadingComponent,
   DateButtonComponent,
@@ -104,6 +109,34 @@ export const HabitGrid = memo(function HabitGrid({
   } | null>(null);
   const [rightmostDay, setRightmostDay] = useState(0);
   const atTodayBoundary = rightmostDay === 0 && futureCount === 0;
+  const [completionView, setCompletionView] = useState({
+    enabled: hideCompleted,
+    show: false,
+  });
+  if (completionView.enabled !== hideCompleted)
+    setCompletionView({ enabled: hideCompleted, show: false });
+  const showCompleted =
+    completionView.enabled === hideCompleted && completionView.show;
+  const completionSelection = useMemo(
+    () => completedHabitsSelection(store, sourceHabits, today, hideCompleted),
+    [store, sourceHabits, today, hideCompleted],
+  );
+  const completed = useSyncExternalStore(
+    completionSelection.subscribe,
+    completionSelection.getSnapshot,
+  );
+  const completedCount = [...completed].filter((value) => value === '1').length;
+  const habits = useMemo(
+    () =>
+      visibleHabitRows(
+        sourceHabits,
+        completed,
+        hideCompleted,
+        showCompleted,
+        rightmostDay,
+      ),
+    [sourceHabits, completed, hideCompleted, showCompleted, rightmostDay],
+  );
   const [rowHeights, setRowHeights] = useState<Record<string, number>>({});
   const baseRowHeight = gridRowHeight(rowSpacing, fontScale);
   const {
@@ -126,9 +159,8 @@ export const HabitGrid = memo(function HabitGrid({
     beginOrMove: moveReorder,
     drop: dropReorder,
     hold: holdHabit,
-  } = useHabitReorder(sourceHabits, rowHeights, baseRowHeight, onReorder);
+  } = useHabitReorder(habits, rowHeights, baseRowHeight, onReorder);
   // Keep sibling order stable during preview swaps; only animated Y targets move.
-  const habits = sourceHabits;
   const menuHabit = sourceHabits.find((habit) => habit.id === habitMenu?.id);
   const [menuHeight, setMenuHeight] = useState(250);
   const dateCache = useMemo(() => createGridDayCache(today), [today]);
@@ -183,12 +215,12 @@ export const HabitGrid = memo(function HabitGrid({
       <GridDateHeading
         dateFading={dateFading}
         store={store}
-        habits={habits}
+        habits={sourceHabits}
         day={day}
         width={columnWidth}
       />
     ),
-    [store, habits, columnWidth, dateFading],
+    [store, sourceHabits, columnWidth, dateFading],
   );
   const cellsDisabled = !editable || !!dragId || reorderMode;
   const renderColumn = useCallback(
@@ -220,6 +252,21 @@ export const HabitGrid = memo(function HabitGrid({
       onCellPress,
     ],
   );
+  function actOnHabit(habit: Habit, action: HabitAction) {
+    if (action === 'moveUp' || action === 'moveDown') {
+      const ids = habits.map((row) => row.id);
+      if (
+        onReorder(
+          moveHabit(
+            ids,
+            habit.id,
+            ids.indexOf(habit.id) + (action === 'moveUp' ? -1 : 1),
+          ),
+        )
+      )
+        feedback('selection');
+    } else onHabitAction(habit, action);
+  }
   const newest = calendarDay(today, rightmostDay);
   const oldest = calendarDay(today, rightmostDay + visibleDays - 1);
   const sameMonth =
@@ -544,10 +591,12 @@ export const HabitGrid = memo(function HabitGrid({
             >
               {!habits.length && (
                 <View
-                  style={{ paddingVertical: 60, alignItems: 'center', gap: 16 }}
+                  style={{ paddingVertical: 24, alignItems: 'center', gap: 16 }}
                 >
                   <Text style={{ color: '#888888', fontSize: 14 }}>
-                    A little space for your next intention.
+                    {sourceHabits.length
+                      ? 'Completed habits are hidden.'
+                      : 'No habits yet.'}
                   </Text>
                 </View>
               )}
@@ -574,7 +623,7 @@ export const HabitGrid = memo(function HabitGrid({
                       onCancel={cancelReorder}
                       onAction={(action) => {
                         if (action === 'reorder') setReorderMode(true);
-                        else onHabitAction(habit, action);
+                        else actOnHabit(habit, action);
                       }}
                       onLayout={(event) => {
                         const height = event.nativeEvent.layout.height;
@@ -625,6 +674,34 @@ export const HabitGrid = memo(function HabitGrid({
                   />
                 </View>
               </View>
+              {hideCompleted && completedCount > 0 && rightmostDay === 0 && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    showCompleted
+                      ? 'Hide completed habits'
+                      : `Show ${completedCount} completed habits`
+                  }
+                  disabled={!!dragId || reorderMode}
+                  onPress={() =>
+                    setCompletionView((value) => ({
+                      enabled: hideCompleted,
+                      show: !value.show,
+                    }))
+                  }
+                  style={{
+                    minHeight: 48,
+                    justifyContent: 'center',
+                    paddingVertical: 12,
+                  }}
+                >
+                  <Text style={{ color: '#AAAAAA', fontSize: 14 }}>
+                    {showCompleted
+                      ? 'Hide completed'
+                      : `Show completed · ${completedCount}`}
+                  </Text>
+                </Pressable>
+              )}
               <Animated.View layout={rowTransition}>
                 <Pressable
                   accessibilityRole="button"
@@ -758,7 +835,7 @@ export const HabitGrid = memo(function HabitGrid({
                   onPress={() => {
                     setHabitMenu(null);
                     if (action === 'reorder') setReorderMode(true);
-                    else onHabitAction(menuHabit, action);
+                    else actOnHabit(menuHabit, action);
                   }}
                   style={({ pressed }) => ({
                     minHeight: 46,

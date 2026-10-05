@@ -118,7 +118,7 @@ or manual screenshot transfer is needed. This is not streaming or remote control
    a second), then turn it back toward you within four seconds and pause briefly.
    The settled screen is captured; two firm taps confirm that the receiver saved
    it. This does not use or change Expo Go's shake gesture.
-8. Holding a month/year or available title still works. Settings also has a
+8. Holding a month/year or available title still works. Settings → Development also has a
    development-only **Share preview** button and gesture instructions as an
    accessible fallback. There is no new overlay or layout on the main grid.
 9. An upload failure offers **Retry**, sending the already-captured image rather
@@ -246,13 +246,13 @@ uninstalling. No reset command or destructive recovery button is provided.
 
 After adding native storage/file dependencies, fully reload Expo Go (restart
 Metro with `npm run start:clear` if it cannot resolve an installed module).
-Settings → Export backup opens the share sheet; choose Save to Files. Restore
+Settings → Backups → Export backup opens the share sheet; choose Save to Files. Restore
 backup validates first and asks before replacing data, retaining a local copy.
 
-New habit edits use version-8 events with grouped actions; global preferences save
-outside visible History/Undo. Exports use container version 8; existing version-1/2/3/4/5/6/7
+New habit edits use version-9 events with grouped actions; global preferences save
+outside visible History/Undo. Exports use container version 9; existing version-1/2/3/4/5/6/7/8
 backups remain importable and old log records stay unchanged. Fully reload Expo Go
-to test storage updates. Do not downgrade to an older build after writing v8 data;
+to test storage updates. Do not downgrade to an older build after writing v9 data;
 older builds cannot interpret it and will refuse to load rather than reset.
 The web preview uses separate browser localStorage, not the iPhone SQLite file.
 
@@ -280,11 +280,11 @@ shared geometry; there is no separately styled floating row.
 
 ## Sample history for statistics
 
-In Expo Go, Settings → Sample data switches to an isolated, in-memory history with
+In Expo Go, Settings → Development → Sample data switches to an isolated, in-memory history with
 all 12 presets and 180 days of fictional checkbox/numeric entries. The existing
 brand label becomes SAMPLE DATA. Use the normal grid and statistics screens;
 cell edits, Undo/Redo, colours, and archive actions affect only this sample session.
-Settings → Reset sample data rebuilds the fixture relative to today's local date.
+Settings → Development → Reset sample data rebuilds the fixture relative to today's local date.
 Turning Sample data off returns to the real store. A new sample session is created
 on full reload; in-session toggles retain the sample until it is reset.
 
@@ -318,7 +318,7 @@ Markdown/plain-text notes are available during creation/editing and appear befor
 statistics. The full-screen editor uses the pure-JavaScript markdown-it browser
 build; no additional native build is required. Fully reload Expo Go to populate
 placeholder notes in the current sample and existing real store. Applied notes use
-v8 events, with v1–v7 replay retained. See [DESCRIPTIONS.md](DESCRIPTIONS.md) for
+v9 events, with v1–v8 replay retained. See [DESCRIPTIONS.md](DESCRIPTIONS.md) for
 editor drafts, links, history comparison and recovery, and TESTING.md for phone QA.
 
 ## Shared text sizing

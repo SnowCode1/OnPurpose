@@ -13,7 +13,9 @@ export function TextSizeSetting({
   value,
   editable,
   onChange,
+  compact = false,
 }: {
+  compact?: boolean;
   value: number;
   editable: boolean;
   onChange: (scale: number) => void;
@@ -77,10 +79,12 @@ export function TextSizeSetting({
           {Math.round(draft * 100)}%
         </Text>
       </View>
-      <Text style={{ color: '#969696', fontSize: 14, lineHeight: 21 }}>
-        Applies throughout the app, including notes. Works alongside iPhone text
-        size.
-      </Text>
+      {!compact && (
+        <Text style={{ color: '#969696', fontSize: 14, lineHeight: 21 }}>
+          Applies throughout the app, including notes. Works alongside iPhone
+          text size.
+        </Text>
+      )}
     </View>
   );
 }

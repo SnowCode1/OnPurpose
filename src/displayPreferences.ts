@@ -17,6 +17,7 @@ export function isWeekStart(value: unknown): value is WeekStart {
 }
 export const displayDefaults = {
   textScale: 1,
+  hideCompleted: false,
   columnSpacing: 'compact',
   weekStart: 'monday',
   dateFading: true,

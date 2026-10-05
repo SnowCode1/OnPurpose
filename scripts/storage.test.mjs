@@ -638,7 +638,7 @@ test('v5 start dates and spacing survive SQLite reload, undo/redo and backup rou
     '2026-10-04T06:00:00.000Z',
     digest,
   );
-  assert.equal(JSON.parse(text).version, 8);
+  assert.equal(JSON.parse(text).version, 9);
   const decoded = await decodeArchive(text, digest);
   assert.deepEqual(decoded.replay, reopened.getSnapshot().replay);
   const archive = JSON.parse(text);
@@ -813,7 +813,7 @@ test('v6 display settings persist through SQLite, preserve Redo and round-trip w
     '2026-10-04T08:00:00.000Z',
     digest,
   );
-  assert.equal(JSON.parse(archive).version, 8);
+  assert.equal(JSON.parse(archive).version, 9);
   const decoded = await decodeArchive(archive, digest);
   assert.deepEqual(decoded.replay, reopened.getSnapshot().replay);
   assert.equal(decoded.replay.state.values['walk:2026-10-04'], 1);
@@ -1085,7 +1085,7 @@ test('v8 text size persists across reload and backup without breaking habit grou
     '2026-10-05T03:00:00.000Z',
     digest,
   );
-  assert.equal(JSON.parse(text).version, 8);
+  assert.equal(JSON.parse(text).version, 9);
   const decoded = await decodeArchive(text, digest);
   assert.deepEqual(decoded.events, snapshot.events);
   assert.deepEqual(decoded.replay, snapshot.replay);
@@ -1200,4 +1200,177 @@ test('v1–v7 backups accept v8 text size without rewriting their events, entrie
   assert.deepEqual(documented.events.slice(0, -1), v7.events);
   assert.equal(documented.replay.state.textScale, 1.2);
   assert.deepEqual(documented.replay.undo, v7.replay.undo);
+});
+
+test('v9 completion preference survives SQLite reload and backup while preserving habit Redo', async (t) => {
+  const { store, repository } = await fixture(t);
+  assert.equal(store.getSnapshot().replay.state.hideCompleted, undefined);
+  assert.equal(store.change(entry(null, 1)), true);
+  assert.equal(store.undo(), true);
+  assert.equal(
+    store.change({ kind: 'hideCompleted', before: false, after: true }),
+    true,
+  );
+  assert.equal(store.getSnapshot().events.at(-1).type, 'preference');
+  assert.equal(store.getSnapshot().replay.undo.length, 0);
+  assert.equal(store.getSnapshot().replay.redo.length, 1);
+  await store.flush();
+  const reopened = new ChangeStore(repository, metadata);
+  await reopened.load();
+  assert.equal(reopened.getSnapshot().replay.state.hideCompleted, true);
+  assert.equal(reopened.redo(), true);
+  assert.equal(
+    reopened.getSnapshot().replay.state.values['walk:2026-10-04'],
+    1,
+  );
+  assert.equal(reopened.getSnapshot().replay.undo.length, 1);
+  assert.equal(reopened.undo(), true);
+  assert.equal(reopened.getSnapshot().replay.state.hideCompleted, true);
+  const text = await encodeArchive(
+    reopened.getSnapshot().events,
+    '2026-10-05T08:00:00.000Z',
+    digest,
+  );
+  assert.equal(JSON.parse(text).version, 9);
+  const decoded = await decodeArchive(text, digest);
+  assert.equal(decoded.replay.state.hideCompleted, true);
+  assert.equal(decoded.replay.redo.length, 1);
+  await reopened.flush();
+});
+test('completion preference retains entry grouping and its default without reseeding old fixtures', async (t) => {
+  const { store } = await fixture(t);
+  store.change(entry(null, 1));
+  store.change({ kind: 'hideCompleted', before: false, after: true });
+  store.change(entry(1, null));
+  assert.equal(store.getSnapshot().replay.undo.length, 0);
+  assert.equal(store.getSnapshot().replay.state.hideCompleted, true);
+  store.change({ kind: 'hideCompleted', before: true, after: false });
+  assert.equal(store.getSnapshot().replay.undo.length, 0);
+  await store.flush();
+  for (let version = 1; version <= 8; version++) {
+    const text = await import('node:fs').then((fs) =>
+      fs.readFileSync(
+        new URL(`../docs/examples/storage-v${version}.json`, import.meta.url),
+        'utf8',
+      ),
+    );
+    const decoded = await decodeArchive(text, digest);
+    assert.equal(decoded.replay.state.hideCompleted, undefined);
+  }
+});
+test('v9 completion validation rejects older schemas, malformed values and habit-action disguises', () => {
+  const seed = initialize();
+  const preference = {
+    ...metadata(2),
+    version: 9,
+    type: 'preference',
+    change: { kind: 'hideCompleted', before: false, after: true },
+  };
+  assert.equal(
+    replayEvents([seed, preference]).replay.state.hideCompleted,
+    true,
+  );
+  for (let version = 1; version < 9; version++)
+    assert.throws(() => replayEvents([seed, { ...preference, version }]));
+  for (const fields of [
+    { after: 1 },
+    { before: true },
+    { after: null },
+    { extra: true },
+  ])
+    assert.throws(() =>
+      replayEvents([
+        seed,
+        { ...preference, change: { ...preference.change, ...fields } },
+      ]),
+    );
+  assert.throws(() =>
+    replayEvents([
+      seed,
+      { ...preference, type: 'change', groupId: preference.id },
+    ]),
+  );
+  assert.throws(() =>
+    replayEvents([
+      seed,
+      preference,
+      {
+        ...metadata(3),
+        version: 8,
+        type: 'change',
+        groupId: 'older',
+        change: entry(null, 1),
+      },
+    ]),
+  );
+});
+test('failed completion preference write rolls back log and projection and retries once', async (t) => {
+  let fail = false;
+  const { raw, repository, store } = await fixture(t, (sql) => {
+    if (fail && sql.startsWith('INSERT INTO current_state'))
+      throw new Error('Disk full');
+  });
+  const original = raw
+    .prepare('SELECT state_json FROM current_state')
+    .get().state_json;
+  fail = true;
+  assert.equal(
+    store.change({ kind: 'hideCompleted', before: false, after: true }),
+    true,
+  );
+  await assert.rejects(store.flush());
+  assert.equal(
+    raw.prepare('SELECT COUNT(*) AS count FROM changes').get().count,
+    1,
+  );
+  assert.equal(
+    raw.prepare('SELECT state_json FROM current_state').get().state_json,
+    original,
+  );
+  assert.ok(store.getSnapshot().error);
+  fail = false;
+  await store.retry();
+  await store.flush();
+  assert.equal(
+    raw.prepare('SELECT COUNT(*) AS count FROM changes').get().count,
+    2,
+  );
+  assert.equal((await repository.load()).replay.state.hideCompleted, true);
+});
+test('v9 documented backup retains its exact v8 prefix and supports subsequent undo/redo', async () => {
+  const { readFileSync } = await import('node:fs');
+  const old = JSON.parse(
+    readFileSync(
+      new URL('../docs/examples/storage-v8.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const decoded = await decodeArchive(
+    readFileSync(
+      new URL('../docs/examples/storage-v9.json', import.meta.url),
+      'utf8',
+    ),
+    digest,
+  );
+  assert.deepEqual(decoded.events.slice(0, old.events.length), old.events);
+  assert.equal(decoded.replay.state.hideCompleted, true);
+  assert.equal(decoded.replay.state.textScale, 1.2);
+  const undo = {
+    ...metadata(11),
+    version: 9,
+    type: 'undo',
+    targetId: 'v7-description',
+    change: inverse(decoded.replay.undo.at(-1).change),
+  };
+  const undone = applyEvent(decoded.replay, undo);
+  assert.equal(undone.state.habits[0].description, undefined);
+  assert.equal(undone.state.hideCompleted, true);
+  const redone = applyEvent(undone, {
+    ...metadata(12),
+    version: 9,
+    type: 'redo',
+    targetId: undo.id,
+    change: decoded.replay.undo.at(-1).change,
+  });
+  assert.deepEqual(redone.state, decoded.replay.state);
 });

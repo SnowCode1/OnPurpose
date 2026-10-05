@@ -64,7 +64,7 @@ outside Undo.
 
 ## Storage compatibility
 
-New events and backup containers use version 8 (app-wide text size); version 7 added descriptions; version 6 added display settings; version 5 added editable start dates and row spacing; version 3 introduced definitions
+New events and backup containers use version 9 (optional hiding of completed rows); version 8 added app-wide text size; version 7 added descriptions; version 6 added display settings; version 5 added editable start dates and row spacing; version 3 introduced definitions
 and ordering, and version 4 adds optional icons. A habit change captures its stable
 ID, position, and before/after definition; creation uses a null before-definition.
 Undoing creation can remove it only after its entries have been undone. This is

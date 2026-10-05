@@ -809,3 +809,32 @@ A received preview was inspected. They requested stronger preview feedback, so
 arming now uses one heavy impact and confirmed saving uses two heavy impacts
 110 ms apart. Feedback failure never changes a capture/upload result, and these
 explicit development cues remain separate from routine habit feedback.
+
+## 5 October 2026 — Quiet statistics, grouped settings and optional hiding
+
+The founder requested plain, human statistics and a settings redesign that can
+expand. The assistant replaced the dominant percentage and repeated KPI cards
+with a count/total summary, quieter secondary percentage, date range and compact
+streak rows. Existing calculations, notes-first placement, charts and editable
+calendar remain. Settings now opens a compact index with Appearance, Daily
+tracking, Archived habits and Backups; development content moves behind one row.
+Back/Close remain accessible and saving errors remain visible.
+
+The founder requested hiding completed activities and clarified that each habit
+will eventually have completion conditions. Those rules remain deferred: the
+shared completion predicate currently counts checked checkbox habits only;
+numeric records, including zero, do not automatically mean complete. Assistant
+choices pending phone review: off by default, Today-only filtering, Show completed
+for correction/statistics, and full list on past/future browsing. Reordering
+fills displayed slots without moving hidden/archived slots. The strict v9 boolean
+preference preserves History, Undo/Redo, grouping and existing v1–v8 replay; SQL
+schema stays 1. Exact screenshot deduplication removed three old duplicate files,
+retaining each distinct capture and latest.png.
+
+The founder confirmed the new Settings/statistics layouts look better and that
+Hide completed/Show completed behaves as intended. Three new phone previews were
+received and inspected. They asked to remove remaining blocks of explanation or
+put them behind info buttons. The final pass uses accessible labelled info
+disclosures, collapsed by default, and removes the obvious single-day bar caption.
+Chart units, aggregate bucket sizes, save state/errors and restore confirmation
+remain direct. This small final disclosure pass still needs device review.

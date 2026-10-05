@@ -49,7 +49,7 @@ and uncertainty about whether something was saved.
   history/settings at right. Keep the month/year date control beside the day
   headings. Future-pull feedback should grow leftwards from a fixed right edge
   on the existing divider beneath the day headings, without text or a new border. The founder accepted this UI; local incremental storage with undo is now implemented.
-- Let users arrange their own habit order. Completed habits stay in place.
+- Let users arrange their own habit order. Completed habits stay in place by default; optional Hide completed today can filter them.
 - Design for muscle memory; the aspiration is opening the app and recording five
   checkbox habits in about three seconds.
 - Plan for approximately 10–20 habits. The primary test phone is an iPhone 16 Pro.
@@ -111,7 +111,7 @@ and uncertainty about whether something was saved.
 9. Preserve readable text, VoiceOver support, and usable touch targets. Scroll
    when necessary instead of squeezing all 20 habits into uncomfortably small rows.
 
-Manual ordering and stable completed positions are confirmed. The remaining
+Manual ordering and stable completed positions by default are confirmed; the founder also requested an optional Hide completed today setting. The remaining
 interaction details are proposals to validate on the phone.
 
 ## Two kinds of history
@@ -196,7 +196,7 @@ and incremental history are desired scope, not excluded candidates.
 | Midnight cutoff, late-night logging, backdating, and travel?           | Local midnight implemented; later cutoff/travel policy pending     |
 | Comments on a habit, a day, a particular entry, or multiple kinds?     | Comments desired; attachment semantics open                        |
 | Which app changes enter the history; how do deletion and undo work?    | Active habit actions; preferences excluded; deletion/erasure open  |
-| Export/import format, backup location, and cross-device sync?          | Version-8 JSON backup; v1–v7 import retained; sync deferred        |
+| Export/import format, backup location, and cross-device sync?          | Version-9 JSON backup; v1–v8 import retained; sync deferred        |
 | Any reminders or widgets required for version one?                     | Open                                                               |
 | Free, paid, donations, or another model?                               | Open                                                               |
 | Licence and copyright holder?                                          | Open; choose before public release                                 |
@@ -237,3 +237,15 @@ connected to reducing cognitive friction rather than adding screen clutter.
 Keep founder-confirmed requirements separate from proposals. Record meaningful
 technical choices in [DECISIONS.md](docs/DECISIONS.md). Update this file as the
 conversation develops; do not silently turn an experiment into a requirement.
+
+## 5 October 2026 — Calmer statistics and scalable settings
+
+Founder-confirmed: replace the oversized statistics completion-rate treatment
+and messy flat Settings layout; add an option to hide activities completed today.
+Completion conditions will be defined per habit later. Current implementation
+uses checkbox checks and leaves numeric records visible until their conditions
+are designed. Assistant choices: hide off by default, a Show completed shortcut,
+full rows for browsing other dates, and separate Appearance/Daily tracking/
+Backups detail pages with development tools tucked away. Statistics leads with
+plain counts and compact streak rows while keeping notes first and existing
+charts/calendar. The founder confirmed the revised layouts look better and hide/reveal feels right on the iPhone. Remaining explanatory text is collapsed behind info controls, following their feedback.

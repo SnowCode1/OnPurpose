@@ -19,6 +19,7 @@ import {
   type StatsRange,
 } from './statistics';
 import { Icon } from './Icon';
+import { InfoNote } from './InfoNote';
 import { HabitSymbol } from './HabitSymbol';
 import { checkmarkColor, colorOnBlack } from './colors';
 import { entryDay, type EntryDay } from './calendar';
@@ -219,10 +220,10 @@ function Metric({
 }) {
   return (
     <View style={styles.metric}>
+      <Text style={[styles.caption, { flex: 1 }]}>{label}</Text>
       <Text style={[styles.metricValue, { color: colour ?? '#E5E5E5' }]}>
         {value}
       </Text>
-      <Text style={styles.caption}>{label}</Text>
     </View>
   );
 }
@@ -256,6 +257,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   const { fontScale } = useAppWindowDimensions();
   const calendarHeight = Math.max(44, Math.ceil(44 * fontScale));
   const [range, setRange] = useState<StatsRange>(30);
+  const [rangeWidth, setRangeWidth] = useState(0);
   const [month, setMonth] = useState(today.slice(0, 7));
   const stats = useMemo(
     () => habitStatistics(habit, values, events, today, range),
@@ -275,10 +277,6 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
       return date.toISOString().slice(0, 7);
     });
   }
-  const difference =
-    stats.rate !== null && stats.previous.rate !== null
-      ? (stats.rate - stats.previous.rate) * 100
-      : null;
   return (
     <View style={styles.screen} accessibilityViewIsModal>
       <View style={styles.header}>
@@ -338,7 +336,16 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
           onEdit={onDescriptionEdit}
           onVersions={onDescriptionVersions}
         />
-        <View accessibilityRole="tablist" style={styles.ranges}>
+        <View
+          accessibilityRole="tablist"
+          style={styles.ranges}
+          onLayout={(event) => {
+            const width = event.nativeEvent.layout.width;
+            setRangeWidth((previous) =>
+              previous === width ? previous : width,
+            );
+          }}
+        >
           {([30, 90, 365, 'all'] as const).map((value) => (
             <Pressable
               key={value}
@@ -350,6 +357,12 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
               onPress={() => setRange(value)}
               style={[
                 styles.range,
+                {
+                  flexBasis:
+                    rangeWidth > 0 && (rangeWidth - 20) / 4 < 78 * fontScale
+                      ? '46%'
+                      : '20%',
+                },
                 range === value && { backgroundColor: '#303030' },
               ]}
             >
@@ -360,82 +373,69 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
                   fontWeight: '600',
                 }}
               >
-                {value === 'all' ? 'All' : value === 365 ? '1Y' : `${value}D`}
+                {value === 'all'
+                  ? 'All time'
+                  : value === 365
+                    ? 'Year'
+                    : `${value} days`}
               </Text>
             </Pressable>
           ))}
         </View>
-        <View style={{ gap: 6 }}>
-          <Text style={styles.eyebrow}>
-            {stats.numeric ? 'TOTAL RECORDED' : 'COMPLETION RATE'}
+        <View style={{ gap: 8 }}>
+          <Text style={styles.small}>
+            {stats.eligible
+              ? `${dateLabel(stats.start, stats.start.slice(0, 4) !== today.slice(0, 4))} – ${dateLabel(today, stats.start.slice(0, 4) !== today.slice(0, 4))}`
+              : `Starts ${dateLabel(stats.trackingStart, true)}`}
           </Text>
-          <Text
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.65}
-            style={[styles.hero, { color: habit.color }]}
-          >
+          <Text style={styles.summary}>
             {stats.numeric
-              ? format(stats.recorded ? stats.total : null)
-              : stats.rate === null
-                ? '—'
-                : `${Math.round(stats.rate * 100)}%`}
+              ? stats.recorded
+                ? `${format(stats.total)}${unit ? ` ${unit}` : ''} recorded`
+                : 'Nothing recorded in this period'
+              : stats.eligible
+                ? `${stats.successes} of ${stats.eligible} days checked`
+                : 'No days in this period yet'}
           </Text>
           <Text style={styles.caption}>
             {stats.numeric
-              ? `${unit ? `${unit} · ` : ''}${stats.recorded} days recorded`
-              : `${stats.successes} completed of ${stats.eligible} calendar days`}
+              ? `${stats.recorded} days with an entry${stats.eligible ? ` · ${stats.eligible} days in this period` : ''}`
+              : stats.rate === null
+                ? 'Your records will appear here.'
+                : `${Math.round(stats.rate * 100)}% of days in this period`}
           </Text>
-          {!stats.numeric && range !== 'all' && difference !== null && (
-            <Text style={styles.small}>
-              {difference > 0 ? '+' : ''}
-              {format(difference)} percentage points vs previous period
-            </Text>
-          )}
         </View>
         <View style={styles.metrics}>
+          {stats.numeric && (
+            <>
+              <Metric
+                value={`${format(stats.average)}${unit ? ` ${unit}` : ''}`}
+                label="Average per day"
+              />
+              <Metric
+                value={`${format(stats.recorded ? stats.best : null)}${unit ? ` ${unit}` : ''}`}
+                label="Highest daily total"
+              />
+            </>
+          )}
           <Metric
-            value={format(stats.numeric ? stats.average : stats.streak)}
-            label={
-              stats.numeric
-                ? `Average / calendar day${unit ? ` (${unit})` : ''}`
-                : 'Current streak · days'
-            }
+            value={`${stats.streak} ${stats.streak === 1 ? 'day' : 'days'}`}
+            label={stats.numeric ? 'Days recorded in a row' : 'Current streak'}
           />
           <Metric
-            value={format(stats.numeric ? stats.best : stats.bestStreak)}
-            label={
-              stats.numeric
-                ? `Highest daily total${unit ? ` (${unit})` : ''}`
-                : 'Best streak · all time'
-            }
-          />
-          <Metric
-            value={format(stats.numeric ? stats.streak : stats.successes)}
-            label={
-              stats.numeric
-                ? 'Logging streak · days'
-                : 'Completions · selected period'
-            }
-          />
-          <Metric
-            value={format(stats.numeric ? stats.recorded : stats.eligible)}
-            label={
-              stats.numeric
-                ? 'Days recorded · selected period'
-                : 'Calendar days · selected period'
-            }
+            value={`${stats.bestStreak} ${stats.bestStreak === 1 ? 'day' : 'days'}`}
+            label="Longest streak · all time"
           />
         </View>
         <View style={styles.section}>
           <Text accessibilityRole="header" style={styles.sectionTitle}>
-            {stats.numeric ? 'Recorded totals' : 'Consistency over time'}
+            {stats.numeric ? 'Daily totals' : 'Days checked'}
           </Text>
-          <Text style={styles.caption}>
-            {stats.bucketDays === 1
-              ? 'One bar per day'
-              : `Each bar covers up to ${stats.bucketDays} days${stats.numeric ? ' · added together' : ''}`}
-          </Text>
+          {stats.bucketDays > 1 && (
+            <Text style={styles.caption}>
+              {`Up to ${stats.bucketDays} days per bar${stats.numeric ? ' · totals added together' : ''}`}
+            </Text>
+          )}
           <Chart
             key={`${habit.id}-${range}-${today}`}
             buckets={stats.buckets}
@@ -444,9 +444,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
             unit={unit}
           />
           {!stats.recorded && (
-            <Text style={styles.caption}>
-              Your records will bring this chart to life.
-            </Text>
+            <Text style={styles.caption}>Nothing recorded in this period.</Text>
           )}
         </View>
         <View style={styles.section}>
@@ -454,7 +452,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
             By day of the week
           </Text>
           <Text style={styles.caption}>
-            {stats.numeric ? 'Average / calendar day' : 'Completion rate'}
+            {stats.numeric ? 'Average per day' : 'Days checked (%)'}
             {stats.numeric && unit ? ` · ${unit}` : ''} · selected period
           </Text>
           {weekDays.map((weekday) => {
@@ -618,20 +616,23 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
               );
             })}
           </View>
-          <Text style={styles.caption}>
-            {stats.numeric
-              ? 'Tap a day to edit its total. Brighter days have higher totals; zero still has colour.'
-              : 'Tap a day to check or uncheck it. Coloured days are completed.'}
-          </Text>
+          <InfoNote
+            label="About the calendar"
+            text={
+              stats.numeric
+                ? 'Tap a day to edit its total. Brighter days have higher totals; zero still has colour.'
+                : 'Tap a day to check or uncheck it. Coloured days are completed.'
+            }
+          />
         </View>
-        <Text style={styles.note}>
-          {stats.numeric
-            ? 'Averages divide totals by calendar days since the start, including today and blank days. Blanks stay empty; zero is a recorded total. A logging streak counts consecutive days with an entry.'
-            : 'Rates use all calendar days since the start, including today. Streaks count consecutive checked days; an unfinished today does not break the current streak.'}{' '}
-          Future entries and records before the start date are excluded from
-          charts and statistics. Earlier records stay saved; edit the start date
-          to include them.
-        </Text>
+        <InfoNote
+          label="How statistics work"
+          text={`${
+            stats.numeric
+              ? 'Averages divide totals by calendar days since the start, including today and blank days. Blanks stay empty; zero is a recorded total. A logging streak counts consecutive days with an entry.'
+              : 'Rates use all calendar days since the start, including today. Streaks count consecutive checked days; an unfinished today does not break the current streak.'
+          } Future entries and records before the start date are excluded from charts and statistics. Earlier records stay saved; edit the start date to include them.`}
+        />
       </ScrollView>
     </View>
   );
@@ -661,11 +662,11 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 720,
     alignSelf: 'center',
-    padding: 24,
+    padding: 20,
     paddingBottom: 40,
-    gap: 28,
+    gap: 20,
   },
-  name: { fontSize: 32, fontWeight: '600', letterSpacing: -0.8 },
+  name: { fontSize: 26, fontWeight: '600', letterSpacing: -0.4 },
   caption: { color: '#989898', fontSize: 13, lineHeight: 19 },
   small: {
     color: '#858585',
@@ -675,46 +676,49 @@ const styles = StyleSheet.create({
   },
   ranges: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
     padding: 4,
     borderRadius: 13,
     backgroundColor: '#171717',
   },
   range: {
-    flex: 1,
+    flexGrow: 1,
     minHeight: 44,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  eyebrow: {
-    color: '#919191',
-    fontSize: 11,
-    letterSpacing: 1.3,
-    fontWeight: '600',
+  summary: {
+    color: '#E2E2E2',
+    fontSize: 22,
+    fontWeight: '500',
+    lineHeight: 30,
   },
-  hero: {
-    fontSize: 58,
-    fontWeight: '600',
-    letterSpacing: -2,
-    fontVariant: ['tabular-nums'],
+  metrics: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#242424',
   },
-  metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   metric: {
-    flexBasis: '45%',
-    flexGrow: 1,
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: '#141414',
-    gap: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    minHeight: 44,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#242424',
   },
   metricValue: {
-    fontSize: 27,
+    fontSize: 16,
     fontWeight: '500',
     fontVariant: ['tabular-nums'],
+    flexShrink: 1,
+    maxWidth: '55%',
+    textAlign: 'right',
   },
   section: {
-    gap: 14,
-    paddingTop: 24,
+    gap: 12,
+    paddingTop: 18,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#282828',
   },
@@ -768,5 +772,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  note: { color: '#747474', fontSize: 12, lineHeight: 19 },
 });

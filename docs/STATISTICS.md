@@ -29,12 +29,16 @@ with a bounded Markdown preview, Read more/Show less and direct full-screen edit
 Links open only when tapped. See [DESCRIPTIONS.md](DESCRIPTIONS.md). These notes do
 not change statistical calculations.
 
-Choose 30 days, 90 days, one year (365 days), or All. Ranges include today. Checkbox
-cards show completion rate, current streak, all-time best streak, completions,
-and calendar-day count. An equal-length previous-period comparison is shown when
-both periods have a denominator. Numeric cards show total, average, highest daily
-total, logging streak, and recorded-day count. Numeric averages are labelled
-Average / calendar day.
+Choose 30 days, 90 days, one year (365 days), or All time. Ranges include today.
+The founder requested a more natural layout instead of a large marketing-style
+completion percentage and repeated cards. A plain summary now leads: for example,
+“20 of 30 days checked,” followed by a quieter percentage and actual date range.
+Compact label/value rows show current and all-time longest streaks. Numeric habits
+lead with their recorded total and show average per calendar day, highest daily
+total, recorded-day count and recording streaks. The previous-period KPI is no
+longer displayed; its pure calculation remains available. Notes remain first.
+The founder confirmed this presentation looks better on the phone; the
+calendar-day denominators and all calculations are unchanged.
 
 Charts show checkbox completion percentages or numeric totals. Numeric 30-day
 charts use daily bars; longer ranges aggregate into labelled multi-day buckets.
@@ -113,7 +117,7 @@ to VoiceOver; numeric days announce the full date and recorded value.
 
 `src/statistics.ts` is pure derived logic. `src/HabitStatsScreen.tsx` owns the screen,
 charts, and month/range selection. Nothing is stored separately; the existing
-version-1/2/3/4/5/6/7 logs and projection remain authoritative.
+version-1–9 logs and projection remain authoritative.
 
 `node --max-old-space-size=256 --test --test-timeout=15000 scripts/statistics.test.mjs`
 covers per-habit calendar denominators, unfinished today,
@@ -126,7 +130,7 @@ remain device acceptance checks in [TESTING.md](TESTING.md).
 
 ## Reviewing with fictional history
 
-Development Settings → Sample data supplies 180 days for every preset without
+Settings → Development → Sample data supplies 180 days for every preset without
 mixing with real entries. Read has increasing minutes; Drink water has decimal
 values, zeros, and missing days. Go for a walk has a recent uninterrupted streak;
 Meditate has a recent gap. Stretch/Learn trend upward, while Write a little trends
@@ -137,3 +141,15 @@ not proposed habit targets or product scoring rules.
 Test 30-day/90-day/year/all ranges, bucket inspection, weekday bars, and calendar
 months. Settings can reset the sample or return to real data. Sample edits are
 session-only; see DEVELOPMENT.md for the startup env switch.
+
+The founder subsequently requested less explanatory copy. Calendar guidance and
+calculation details now use collapsed labelled info disclosures. Daily bars no
+longer repeat “One bar per day”; aggregation bounds remain visible for multi-day
+bars. This preserves necessary chart units and period context. New disclosure
+interaction remains a device check.
+
+Range controls measure their available width and wrap into two rows when four
+labels cannot fit at the combined app/system text scale. Normal-size portrait
+and wide landscape keep one row. Metric values can wrap rather than pushing
+labels out of the screen. Web layouts were inspected at 100% and 150%; native
+large-text comfort remains a device check.

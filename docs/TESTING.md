@@ -973,7 +973,7 @@ cycling/cancellation. These checks do not establish native clipping or frame rat
   cause unexpected or overlapping captures. Sensors are foreground/dev-only.
 - Stop the receiver, capture, and verify a clear network error. Restart it and
   choose Retry: the saved PNG should show the original menu, not the error alert.
-  Test the title/accessibility shortcut and Settings → Share preview fallback.
+  Test the title/accessibility shortcut and Settings → Development → Share preview fallback.
   Receiver/transport/motion tests use temporary synthetic images, not real data.
 - Tap a habit: statistics enters upwards in an iOS page sheet. Drag the header or
   pull content down at the top; compare with Settings/History. Short/reversed
@@ -1004,3 +1004,48 @@ sheet looks good on phone. A new 1206×2622 PNG arrived and was opened successfu
 They asked for stronger preview haptics: the final implementation uses one heavy
 arming impact and two heavy save impacts 110 ms apart, without waiting before
 capture/upload. This final strength remains a subjective device check.
+
+## 5 October — Settings redesign, statistics and hidden completed habits
+
+- Reload Expo Go. Settings should open a short grouped index. Open Appearance,
+  Daily tracking, Backups, Development and Archived habits; verify Back/Close,
+  safe-area spacing, portrait/landscape, 150% app text and larger system text.
+  Development/sample/preview tools must not crowd the main index.
+- In sample statistics inspect a checkbox and number habit. Notes remain first;
+  summary counts/totals, date range, compact streak rows and charts should read
+  naturally. Select/clear chart bars and edit calendar days; ranges and calculated
+  values must retain their previous meanings. Check empty/future-start habits.
+- Hide completed today defaults off. Enable in Daily tracking: checked checkbox
+  rows hide at Today; numeric totals/zero remain visible. Show completed reveals
+  rows for correction/statistics, Hide completed resumes filtering. Other viewed
+  dates show the full list. Returning to Today resumes hiding. Next local day
+  must use that day's checks rather than yesterday's.
+- Reorder while some rows are hidden, with an archived habit present. Reveal and
+  restore the archive: hidden/archived saved slots must be preserved. Undo/Redo
+  the reorder, and Undo a check through History to reveal that habit again.
+- In real data reload and export/restore a v9 backup: hiding persists outside
+  History/Undo, preserves an existing Redo and does not split rapid-toggle groups.
+  Sample mode stays separate. Save failure/retry remains visible on all detail
+  pages; a failed preference transaction must retry once without duplicate events.
+
+Automated coverage includes completion rules and calendar scope, selector
+notification isolation, displayed-subset ordering, v9 validation/reload/backup/
+rollback/retry, unchanged legacy fixtures and Undo/Redo preservation. Native
+layout, gestures and animation remain physical-device checks.
+
+The founder confirmed the grouped Settings/statistics layout is better and
+hide/reveal feels right; three native previews were inspected. Final text cleanup
+adds labelled info disclosures: check that they expand/collapse, announce expanded
+state and remain readable at larger text. This interaction and the complete
+reorder/restore/rollover matrix above are still device checks.
+
+Final verification: `npm run check`, all 208 `npm test` cases, one-worker iOS
+export and one-worker web export passed. An isolated headless Chrome preview
+exercised Settings navigation, hidden development controls in release, info
+expand/collapse, hiding/revealing completed habits and both habit statistics
+screens. Nine web captures cover portrait, landscape and 150% text; larger-text
+range buttons were adjusted to wrap. Tests/bundles used a 2 GB Linux cgroup,
+Chrome a separate 1 GB cgroup, and test processes retain their 256 MB heap cap.
+These results do not establish native frame rates or replace the remaining
+phone matrix above. Captures, browser profile, local logs and synthetic runtime
+data were kept outside Git; the temporary browser profile was removed.

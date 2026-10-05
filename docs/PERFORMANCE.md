@@ -128,3 +128,18 @@ per edit. Its event ordering, atomic writes, failure/retry and backups were not
 changed in this pass. A next data-engine pass should measure native timings and
 consider per-entry SQLite projections plus more local in-memory updates, with
 explicit migration and recovery tests. A new remote backend is not involved.
+
+## Optional completed-row filtering
+
+Hide completed today is off by default. When enabled, the grid selects a
+primitive mask through `completedHabitsSelection`: only today's checkbox
+completion changes notify it. Numeric edits, other dates, preferences and save
+acknowledgements leave the mask unchanged. When disabled, entry edits retain
+the existing per-cell update path without notifying the container.
+
+Filtering changes displayed row geometry, so a qualifying check does rebuild the
+visible rows. This is the cost of the explicitly requested optional behaviour,
+not a replacement for stable rows by default. Names, cells and fallback geometry
+use the same displayed IDs; date-heading recorded-state reads the full active
+list. Native scrolling remains on the UI thread. Hidden/archived order slots
+stay fixed when the displayed subset is reordered.

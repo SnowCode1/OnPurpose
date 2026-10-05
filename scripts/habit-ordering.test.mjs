@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { replayEvents } from '../src/storage/model.ts';
 import {
   moveHabit,
   fullHabitOrder,
+  displayedHabitOrder,
   dragDestination,
   habitRowPositions,
 } from '../src/habitOrdering.ts';
@@ -74,4 +76,93 @@ test('row positions preserve content height and leave no gaps for every drag des
         );
     }
   assert.deepEqual(habitRowPositions([], heights, 52), { tops: {}, total: 0 });
+});
+
+test('filtered reorder preserves hidden and archived slots and validates the displayed subset', () => {
+  const habits = [
+    { id: 'a' },
+    { id: 'hidden' },
+    { id: 'archived', archived: true },
+    { id: 'b' },
+    { id: 'c' },
+  ];
+  assert.deepEqual(displayedHabitOrder(habits, ['c', 'a', 'b']), [
+    'c',
+    'hidden',
+    'archived',
+    'a',
+    'b',
+  ]);
+  assert.deepEqual(
+    displayedHabitOrder(habits, []),
+    habits.map((h) => h.id),
+  );
+  assert.deepEqual(
+    displayedHabitOrder(habits, ['a']),
+    habits.map((h) => h.id),
+  );
+  for (const ids of [['a', 'a'], ['archived'], ['unknown']])
+    assert.throws(() => displayedHabitOrder(habits, ids));
+  assert.deepEqual(
+    displayedHabitOrder(habits, ['hidden', 'c', 'b', 'a']),
+    fullHabitOrder(habits, ['hidden', 'c', 'b', 'a']),
+  );
+  assert.deepEqual(
+    habits.map((h) => h.id),
+    ['a', 'hidden', 'archived', 'b', 'c'],
+  );
+});
+
+test('a filtered drop saves a full order event and Undo/Redo restores hidden and archived positions', () => {
+  const habits = ['a', 'hidden', 'archived', 'b'].map((id) => ({
+    id,
+    name: id,
+    color: '#82E6BC',
+    ...(id === 'archived' ? { archived: true } : {}),
+  }));
+  const meta = (sequence) => ({
+    version: 9,
+    id: `filtered-${sequence}`,
+    sequence,
+    recordedAt: '2026-10-05T08:00:00.000Z',
+    timeZone: 'UTC',
+    utcOffsetMinutes: 0,
+  });
+  const before = habits.map((h) => h.id);
+  const after = displayedHabitOrder(habits, ['b', 'a']);
+  const events = [
+    { ...meta(1), type: 'initialize', habits },
+    {
+      ...meta(2),
+      type: 'change',
+      groupId: 'filtered-2',
+      change: { kind: 'order', before, after },
+    },
+    {
+      ...meta(3),
+      type: 'undo',
+      targetId: 'filtered-2',
+      change: { kind: 'order', before: after, after: before },
+    },
+    {
+      ...meta(4),
+      type: 'redo',
+      targetId: 'filtered-3',
+      change: { kind: 'order', before, after },
+    },
+  ];
+  assert.deepEqual(
+    replayEvents(events.slice(0, 2)).replay.state.habits.map((h) => h.id),
+    ['b', 'hidden', 'archived', 'a'],
+  );
+  assert.deepEqual(
+    replayEvents(events.slice(0, 3)).replay.state.habits.map((h) => h.id),
+    before,
+  );
+  const redone = replayEvents(events).replay.state.habits;
+  assert.deepEqual(
+    redone.map((h) => h.id),
+    after,
+  );
+  assert.equal(redone[2].archived, true);
 });

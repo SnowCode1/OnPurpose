@@ -45,7 +45,7 @@ export function DevPreviewCapture() {
         });
       } catch {
         console.info(
-          'Preview motion unavailable; use title hold or Settings → Share preview.',
+          'Preview motion unavailable; use title hold or Settings → Development → Share preview.',
         );
       }
     };

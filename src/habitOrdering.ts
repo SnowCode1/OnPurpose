@@ -26,6 +26,23 @@ export function fullHabitOrder(habits: Habit[], visible: string[]): string[] {
   let index = 0;
   return habits.map((habit) => (habit.archived ? habit.id : visible[index++]));
 }
+// Reordering a filtered grid fills only displayed slots; hidden/archived rows
+// keep their saved places. The persisted result is still a full permutation.
+export function displayedHabitOrder(
+  habits: Habit[],
+  displayed: string[],
+): string[] {
+  const ids = new Set(displayed);
+  if (
+    ids.size !== displayed.length ||
+    displayed.some((id) => !habits.some((h) => h.id === id && !h.archived))
+  )
+    throw new Error('Invalid displayed habit order.');
+  let index = 0;
+  return habits.map((habit) =>
+    ids.has(habit.id) ? displayed[index++] : habit.id,
+  );
+}
 export function dragDestination(
   ids: string[],
   heights: Record<string, number>,

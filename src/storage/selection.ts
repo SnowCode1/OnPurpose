@@ -1,3 +1,4 @@
+import { completionMask } from '../habitCompletion.ts';
 import type { Habit } from '../habits.ts';
 import { isNumericHabit } from '../habits.ts';
 import type { ChangeStore, StoreSnapshot } from './store.ts';
@@ -35,5 +36,18 @@ export function recordedDaySelection(
       const value = snapshot.replay.state.values[`${habit.id}:${day}`];
       return isNumericHabit(habit) ? value !== undefined : value === 1;
     }),
+  );
+}
+
+// A primitive mask ignores acknowledgements, numeric totals and unrelated dates.
+// Disabled filtering does not subscribe the grid container to entry changes.
+export function completedHabitsSelection(
+  store: ChangeStore,
+  habits: Habit[],
+  day: string,
+  enabled: boolean,
+) {
+  return selectStore(store, (snapshot) =>
+    enabled ? completionMask(habits, snapshot.replay.state.values, day) : '',
   );
 }

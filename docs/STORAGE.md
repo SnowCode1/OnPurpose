@@ -14,8 +14,8 @@ once, not on every launch. Habit creation, renaming, units, icons, start dates, 
 Full-screen statistics are derived from saved values; comments and targets remain
 later work. See [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md).
 
-`src/storage/model.ts` defines version-8 events and deterministic replay, with
-backward-compatible interpretation of existing version-1/2/3/4/5/6/7 records.
+`src/storage/model.ts` defines version-9 events and deterministic replay, with
+backward-compatible interpretation of existing version-1/2/3/4/5/6/7/8 records.
 `repository.ts` implements the native database operations against a small SQL
 interface; `native.ts` connects it to Expo SQLite and native UUID/SHA-256 support.
 `store.ts` owns loading, immediate UI state, the serialized write queue, undo,
@@ -78,15 +78,15 @@ migration from an earlier persisted OnPurpose version.
 
 Every event carries:
 
-| Field              | Meaning                                                                                        |
-| ------------------ | ---------------------------------------------------------------------------------------------- |
-| `version`          | Event schema version, currently `7`; existing `1`/`2`/`3`/`4`/`5`/`6` records remain supported |
-| `id`               | Stable UUID generated once, retained on save retry                                             |
-| `sequence`         | Contiguous order starting at `1`; authoritative even if the clock changes                      |
-| `recordedAt`       | UTC edit instant in ISO form with milliseconds                                                 |
-| `timeZone`         | Device time-zone name at edit time, or `unknown` if unavailable                                |
-| `utcOffsetMinutes` | Local offset east of UTC at edit time                                                          |
-| `type`             | `initialize`, `change`, `undo`, `redo`, or `preference`                                        |
+| Field              | Meaning                                                                        |
+| ------------------ | ------------------------------------------------------------------------------ |
+| `version`          | Event schema version, currently `9`; existing `1`–`8` records remain supported |
+| `id`               | Stable UUID generated once, retained on save retry                             |
+| `sequence`         | Contiguous order starting at `1`; authoritative even if the clock changes      |
+| `recordedAt`       | UTC edit instant in ISO form with milliseconds                                 |
+| `timeZone`         | Device time-zone name at edit time, or `unknown` if unavailable                |
+| `utcOffsetMinutes` | Local offset east of UTC at edit time                                          |
+| `type`             | `initialize`, `change`, `undo`, `redo`, or `preference`                        |
 
 `initialize` records the ordered habit definitions and starts with no entries and
 haptics enabled. Each subsequent edit includes `before` and `after` values.
@@ -99,7 +99,7 @@ Redo targets its latest undo event ID and restores the original action.
 Existing version-1 logs retain their original interpretation, including historical
 preference undo/redo and abandoned redo branches. Their habit edits remain
 individual undo steps, with settings and undo/redo rows filtered from the view.
-New events use version 8. A log can progress from versions 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8, skipping
+New events use version 9. A log can progress from versions 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9, skipping
 versions if needed, but never downgrade. New habit-definition changes record
 `habitId`, `index`, and `before`/`after` definitions (null for creation/removal).
 Order changes record exact before/after ID arrays. Definitions may include an
@@ -159,6 +159,14 @@ through the ordinary atomic queue, and is excluded from History/Undo. It preserv
 Redo and does not close habit correction groups. Versions 1–7 reject this field;
 logs cannot downgrade after v8. The v8 fixture extends the unchanged v7 prefix.
 The SQL schema remains version 1 and older records are never rewritten.
+
+Version 9 adds `hideCompleted`, a strict boolean global preference. Missing
+fields resolve to false, preserving existing row visibility. It persists as a
+`preference` event outside History/Undo, preserving Redo and entry groups.
+Versions 1–8 reject this change; logs cannot downgrade after v9. The v9 synthetic
+fixture extends the exact unchanged v8 prefix. The completion predicate is
+separate from storage: checkbox checks qualify now; numeric conditions are
+founder-deferred. SQL schema remains version 1, with no rewritten events.
 
 Recoverable description drafts are separate from applied habit state. A separate
 native draft database/browser key keeps unfinished text outside the canonical log,
@@ -259,12 +267,13 @@ Undo is not permanent erasure. There is no deletion or erasure UI. Decide
 privacy/erasure rules before implementing comments; do not assume append-only
 history makes erasure impossible or unwanted.
 
-## Portable backup version 8
+## Portable backup version 9
 
-Settings → Export backup opens the iOS share sheet; save the JSON to Files or
+Settings → Backups → Export backup opens the iOS share sheet; save the JSON to Files or
 another destination. The app first waits for pending saves and captures a stable
 log. The export is a readable JSON container of **changes**, not a replacement
-snapshot of habit/day values. See [the version-8 synthetic example](examples/storage-v8.json),
+snapshot of habit/day values. See [the version-9 synthetic example](examples/storage-v9.json),
+[the version-8 synthetic example](examples/storage-v8.json),
 [the version-7 synthetic example](examples/storage-v7.json),
 [the version-6 synthetic example](examples/storage-v6.json),
 [the version-5 synthetic example](examples/storage-v5.json),
@@ -273,13 +282,13 @@ snapshot of habit/day values. See [the version-8 synthetic example](examples/sto
 [version-2 fixture](examples/storage-v2.json), and
 [the unchanged version-1 fixture](examples/storage-v1.json).
 
-The container has `format: "onpurpose.changes"`, `version: 8`, `exportedAt`,
+The container has `format: "onpurpose.changes"`, `version: 9`, `exportedAt`,
 `eventCount`, `sha256`, and `events`. The digest is SHA-256 of UTF-8
 `JSON.stringify(events)` with its existing property order. It detects accidental
 modification/incompleteness; it is not an authenticated signature. Exports are not
 encrypted and may reveal habit names, descriptions, dated values, colours, and preference/edit
 metadata. Pre-restore copies are not bundled into the active export. The exporter
-always writes container version 8. The importer accepts versions 1–8;
+always writes container version 9. The importer accepts versions 1–9;
 a container cannot contain events newer than its own version. New containers can
 retain legacy prefixes, including full raw edits and undo/redo operations that
 are omitted from the active History view.
@@ -291,7 +300,7 @@ that current entries, colours, and settings will be replaced. Confirmed restore
 runs exclusively, stores a complete pre-restore log in `recovery_archives`, replaces
 the active log, and updates the projection in one transaction. Failure rolls back
 all three. There is no automatic merge with current edits or other devices.
-Settings → Restore pre-restore copy returns to the latest saved copy, preserving
+Settings → Backups → Restore previous data returns to the latest saved copy, preserving
 another copy of the data it replaces. Copies survive reopening; repeated restores
 retain older copies too, although the UI exposes only the latest. A retention and
 permanent-removal policy must be designed before release.

@@ -20,6 +20,7 @@ export type StoredState = {
   weekStart?: WeekStart;
   dateFading?: boolean;
   textScale?: number;
+  hideCompleted?: boolean;
 };
 export type Change =
   | {
@@ -43,7 +44,8 @@ export type Change =
   | { kind: 'columnSpacing'; before: ColumnSpacing; after: ColumnSpacing }
   | { kind: 'weekStart'; before: WeekStart; after: WeekStart }
   | { kind: 'dateFading'; before: boolean; after: boolean }
-  | { kind: 'textScale'; before: number; after: number };
+  | { kind: 'textScale'; before: number; after: number }
+  | { kind: 'hideCompleted'; before: boolean; after: boolean };
 export type PreferenceChange = Extract<
   Change,
   {
@@ -53,7 +55,8 @@ export type PreferenceChange = Extract<
       | 'columnSpacing'
       | 'weekStart'
       | 'dateFading'
-      | 'textScale';
+      | 'textScale'
+      | 'hideCompleted';
   }
 >;
 export function isPreference(change: Change): change is PreferenceChange {
@@ -63,12 +66,13 @@ export function isPreference(change: Change): change is PreferenceChange {
     change.kind === 'columnSpacing' ||
     change.kind === 'weekStart' ||
     change.kind === 'dateFading' ||
-    change.kind === 'textScale'
+    change.kind === 'textScale' ||
+    change.kind === 'hideCompleted'
   );
 }
 export type HabitChange = Exclude<Change, PreferenceChange>;
 export type EventMeta = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
   id: string;
   sequence: number;
   recordedAt: string;
@@ -80,7 +84,7 @@ export type LegacyChangeEvent = EventMeta & { version: 1 } & (
     | { type: 'undo' | 'redo'; targetId: string; change: Change }
   );
 export type CurrentChangeEvent = EventMeta & {
-  version: 2 | 3 | 4 | 5 | 6 | 7 | 8;
+  version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 } & (
     | { type: 'change'; groupId: string; change: HabitChange }
     | { type: 'undo' | 'redo'; targetId: string; change: HabitChange }
@@ -112,6 +116,7 @@ export type Replay = {
   hasV6: boolean;
   hasV7: boolean;
   hasV8: boolean;
+  hasV9: boolean;
 };
 export const emptyReplay = (): Replay => ({
   state: { habits: [], values: {}, hapticsEnabled: true },
@@ -127,6 +132,7 @@ export const emptyReplay = (): Replay => ({
   hasV6: false,
   hasV7: false,
   hasV8: false,
+  hasV9: false,
 });
 export const GROUP_INACTIVITY_MS = 2 * 60 * 1000;
 
@@ -239,7 +245,7 @@ function validateHabit(
 }
 export function validateChange(
   value: unknown,
-  version = 8,
+  version = 9,
 ): asserts value is Change {
   object(value);
   if (value.kind === 'entry') {
@@ -296,6 +302,13 @@ export function validateChange(
       valid(value.before) && valid(value.after),
       'Invalid display preference.',
     );
+  } else if (value.kind === 'hideCompleted') {
+    keys(value, ['kind', 'before', 'after']);
+    insist(version >= 9, 'Completed visibility requires version 9.');
+    insist(
+      typeof value.before === 'boolean' && typeof value.after === 'boolean',
+      'Invalid completed visibility.',
+    );
   } else if (value.kind === 'textScale') {
     keys(value, ['kind', 'before', 'after']);
     insist(version >= 8, 'Text size requires version 8.');
@@ -341,7 +354,8 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
       value.version === 5 ||
       value.version === 6 ||
       value.version === 7 ||
-      value.version === 8,
+      value.version === 8 ||
+      value.version === 9,
     'Unsupported event version.',
   );
   id(value.id);
@@ -520,6 +534,7 @@ function reduceEvent(
       hasV6: event.version >= 6,
       hasV7: event.version >= 7,
       hasV8: event.version >= 8,
+      hasV9: event.version >= 9,
     };
   }
   insist(
@@ -553,6 +568,10 @@ function reduceEvent(
   insist(
     !previous.hasV8 || event.version >= 8,
     'Older events cannot follow version-8 events.',
+  );
+  insist(
+    !previous.hasV9 || event.version >= 9,
+    'Older events cannot follow version-9 events.',
   );
   const undo = mutable ? previous.undo : [...previous.undo];
   const redo = mutable ? previous.redo : [...previous.redo];
@@ -693,6 +712,7 @@ function reduceEvent(
     hasV6: previous.hasV6 || event.version >= 6,
     hasV7: previous.hasV7 || event.version >= 7,
     hasV8: previous.hasV8 || event.version >= 8,
+    hasV9: previous.hasV9 || event.version >= 9,
   };
 }
 export function applyChange(state: StoredState, change: Change): StoredState {
@@ -709,7 +729,8 @@ function reduceChange(
     change.kind === 'columnSpacing' ||
     change.kind === 'weekStart' ||
     change.kind === 'dateFading' ||
-    change.kind === 'textScale'
+    change.kind === 'textScale' ||
+    change.kind === 'hideCompleted'
   ) {
     insist(
       (state[change.kind] ?? displayDefaults[change.kind]) === change.before,
@@ -843,6 +864,8 @@ export function describeChange(change: Change, state: StoredState): string {
   if (change.kind === 'columnSpacing')
     return `Column spacing · ${change.after}`;
   if (change.kind === 'weekStart') return `Week starts on ${change.after}`;
+  if (change.kind === 'hideCompleted')
+    return `Hide completed today ${change.after ? 'on' : 'off'}`;
   if (change.kind === 'textScale')
     return `Text size · ${Math.round(change.after * 100)}%`;
   if (change.kind === 'dateFading')
