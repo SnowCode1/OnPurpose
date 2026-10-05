@@ -226,6 +226,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   today,
   onCellPress,
   editable,
+  bottomInset = 40,
 }: {
   habit: Habit;
   weekStart: WeekStart;
@@ -234,6 +235,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   today: string;
   onCellPress: (habit: Habit, day: EntryDay) => void;
   editable: boolean;
+  bottomInset?: number;
 }) {
   const { fontScale } = useAppWindowDimensions();
   const calendarHeight = Math.max(44, Math.ceil(44 * fontScale));
@@ -262,8 +264,9 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
     <ScrollView
       testID="habit-statistics"
       alwaysBounceVertical
+      directionalLockEnabled
       contentInsetAdjustmentBehavior="never"
-      contentContainerStyle={styles.body}
+      contentContainerStyle={[styles.body, { paddingBottom: bottomInset }]}
       showsVerticalScrollIndicator={false}
     >
       <Text style={styles.caption}>

@@ -147,8 +147,13 @@ stay fixed when the displayed subset is reordered.
 ## Large descriptions
 
 The compact-card experiment is superseded by Notes/Statistics tabs. The initial
-panel alone mounts; each visited panel then retains layout/state, hidden from
-touch/accessibility when inactive. Statistics does not render notes. Habit edit
+panel alone mounts, then its neighbour warms after 200 ms or first navigation.
+Both remain mounted in a fixed-width native horizontal pager, excluded from
+touch/accessibility when inactive. `useHabitPages.ts` sends no per-frame React
+updates: shared values move the floating selection pill; an aligned-offset reaction
+updates selection once. Native directional locking handles horizontal /
+vertical interaction; orientation aligns the settled page at the new width.
+Statistics does not render notes. Habit edit
 and Versions use bounded excerpts; the edit form memoizes them. Full note reading
 uses native FlatList passages with top-level list items split into individual
 rows, preserving nested contents and numbering. Its disposable cache is capped

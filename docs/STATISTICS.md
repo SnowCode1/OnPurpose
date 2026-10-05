@@ -117,9 +117,12 @@ to VoiceOver; numeric days announce the full date and recorded value.
 
 `src/statistics.ts` is pure derived logic. `src/HabitDetailsScreen.tsx` owns the Notes/Statistics tab trial and common header.
 `src/HabitStatsScreen.tsx` owns Statistics content, charts and month/range selection.
-Habits with notes open the full reader directly, others open Statistics. Panels
-mount lazily, then retain their scroll/range/chart state across switches. Nothing is stored separately; the existing
-version-1–9 logs and projection remain authoritative.
+Habits with notes open the full reader directly, others open Statistics. The
+floating bottom Notes/Statistics island and horizontal swipes share native
+paging through `useHabitPages.ts`. Panels retain their scroll/range/chart state;
+measured island height keeps final chart/calendar/info controls reachable. The
+outer page sheet still enters upward and dismisses downward through UIKit.
+Nothing is stored separately; the existing version-1–9 logs and projection remain authoritative.
 
 `node --max-old-space-size=256 --test --test-timeout=15000 scripts/statistics.test.mjs`
 covers per-habit calendar denominators, unfinished today,

@@ -267,3 +267,10 @@ but prioritises one-tap access to the complete note over a compact preview. They
 authorised a Notes / Statistics tab trial, opening Notes first when present and
 Statistics for empty descriptions. This supersedes the compact-card experiment;
 keep both panels' positions when switching and preserve native sheet dismissal.
+
+The founder found the top Notes/Statistics tabs hard to reach with a thumb and
+suggested horizontal swipes, a floating bottom island or both, delegating the
+choice. The assistant implemented both while keeping Notes one name tap away,
+retaining each page's scroll/range state and preserving accessible visible tabs.
+The island is sized for text scaling and reserves scroll room beneath content.
+This interaction still needs physical-iPhone acceptance.

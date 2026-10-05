@@ -177,9 +177,14 @@ positions while saving a full undoable permutation. `hideCompleted` is a v9
 preference outside History/Undo, defaulting to false for older logs.
 
 `HabitDetailsScreen.tsx` owns the Notes/Statistics tab trial in one native sheet.
-Name taps open full Notes when present, Statistics otherwise. Mount panels lazily,
-then retain their layout/scroll/range state; inactive panels must not accept
-input or appear in accessibility. The compact-card experiment is superseded. `descriptionReading.ts` bounds excerpts and
+Name taps open full Notes when present, Statistics otherwise. `useHabitPages.ts`
+owns native horizontal paging and the floating bottom switch. Mount the first
+panel immediately, warm its neighbour after 200 ms or navigation, then retain
+fixed viewport geometry/scroll/range state. Native directional locking handles
+gesture arbitration, shared values animate the island pill, and React receives
+only discrete aligned-page changes. Reserve bottom content padding from measured
+island height, preserve font scaling, rotation and reduced motion; inactive panels
+must not accept input or appear in accessibility. The compact-card experiment is superseded. `descriptionReading.ts` bounds excerpts and
 virtualizes top-level list items with intact nesting/numbering. Keep its disposable
 cache capped at five documents/100,000 characters. `sampleDescriptions.ts` owns
 long fictional notes on Walk/Read/Meditate only in the isolated sample store;

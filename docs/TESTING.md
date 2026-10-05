@@ -1136,3 +1136,45 @@ latency. The founder confirmed first editor opens now start correctly without
 the black jump. They reported that tab access/switching needs refinement;
 specifics and the wider phone matrix remain pending. Temporary
 browser profiles were removed and captures/logs/synthetic data remain ignored.
+
+## Floating habit switch and horizontal swipes
+
+- Tap a habit: Notes is first if present, Statistics if empty. The compact
+  floating island is near the bottom above the home indicator, with no top tabs.
+  Check portrait/landscape and 150% app plus Larger Text. Read to the final line,
+  then open Statistics guidance at the bottom: all content must scroll above it.
+- Swipe left from Notes to Statistics, right to return. Slow partial drags should
+  follow the finger and settle naturally. Small drags return to the same page;
+  rapid swipes cannot go past either end. Island taps scroll to the matching page.
+- Vertical/diagonal reading should remain vertical once locked. Swipe across a
+  link, chart or calendar: it must not accidentally follow a link, select a bar
+  or record a day. Normal taps must retain those actions. Native downward sheet
+  dismissal at the top and Close must still work.
+- Deeply scroll both panels, select range/bar/month and switch by both methods:
+  positions and selections remain. Rotate on each page and during a swipe; the
+  selected page should align with its new width. Inactive content stays hidden
+  to VoiceOver. Tabs remain the accessible alternative to the gesture.
+- Selection haptics should happen once per changed page, with Haptics off silent.
+  Routine vertical scrolling stays quiet. Reduce Motion removes animated tab-tap
+  scrolling, retaining interactive native paging. Edit/Versions/numeric dialogs
+  must still open above the habit sheet and return to the selected page.
+
+No storage/event schema changed. Native direction arbitration, gesture feel,
+rotation during momentum and safe-area reachability require physical-device QA;
+web captures/checks do not establish iPhone behaviour or frame rates.
+
+Bounded Chrome checks passed on the three isolated sample notes: bottom control
+placement and 44-point minimum tab targets, tab-tap alignment, retained note
+positions and 90-day range, vertical touch scrolling, both horizontal touch
+swipes, and Statistics-first positioning for an empty note. Layout captures
+covered portrait, landscape and 150% app text. The final Meditate passage at
+150% in landscape cleared the floating island by 41.5 pixels. Virtualized note
+rows were allowed to finish measuring before checking end clearance; a single
+jump to the estimated end is not a valid final-line test. These browser results
+do not validate native gesture arbitration, OS Larger Text or device speed.
+Temporary browser profiles were removed; captures and synthetic data stay ignored.
+
+Validation: `npm run check` passed without warnings, `npm test` passed all 219
+tests, and single-worker iOS and web exports succeeded. Checks/exports ran
+sequentially in a 2 GiB memory/no-swap scope; the isolated Chrome review used a
+1 GiB memory/no-swap scope. No dependencies or storage formats changed.

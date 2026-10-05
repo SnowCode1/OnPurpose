@@ -309,8 +309,13 @@ cell selectors and the fallback backdrop remain in place.
 ## Description performance and reader trial
 
 `HabitDetailsScreen.tsx` owns the current Notes/Statistics tab trial. It opens
-full Notes if present, otherwise Statistics. Panels mount lazily and then retain
-layout/state underneath the selected panel, with touch/accessibility exclusion.
+full Notes if present, otherwise Statistics. `useHabitPages.ts` drives native
+horizontal paging and the floating bottom switch. The initial panel mounts first, its neighbour warms after 200 ms or input,
+then both retain fixed viewport geometry/scroll/state side by side. Native
+scrolling and directional locking handle the gesture; shared values drive the
+island pill on the UI thread, with only discrete aligned-page changes sent to React.
+Inactive panels remain excluded from touch/accessibility. Measured island height
+reserves bottom padding in both vertical scrollers.
 `descriptionReading.ts` supplies bounded edit/version summaries and full balanced
 passages, top-level list-item virtualization and a five-document/100,000-character
 read cache. `DescriptionReader.tsx` renders the Notes FlatList without another

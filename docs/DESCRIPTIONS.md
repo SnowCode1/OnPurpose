@@ -18,9 +18,22 @@ note step. Empty Notes offers Add a note. The common header shows the habit and
 Close, with Edit description on Notes and Edit habit on Statistics. Versions
 remains available within Notes when history exists.
 
-The first selected panel mounts alone. Each panel remains mounted after its
-first visit, preserving reading/statistics scroll, chart selections and ranges
-when switching tabs. Inactive panels retain their layout but accept no touches
+The founder found top tabs hard to reach and delegated the choice between
+swiping and a floating bottom control. The assistant chose both: a compact
+floating Notes/Statistics island inside the sheet's bottom safe area, plus
+native horizontal paging. The active pill follows page motion on the UI thread;
+a tab tap scrolls to its page, respecting Reduce Motion. Vertical child scrollers
+and the outer horizontal pager use native directional locking. The sheet's
+upward entry/downward dismissal remain unchanged.
+
+The first selected panel mounts alone, with its neighbour warmed after 200 ms
+or at the first horizontal drag/tab tap. Both then stay mounted side by side,
+preserving reading/statistics scroll, chart selections and ranges. Each page has
+fixed viewport geometry, preventing nested vertical content growing the pager.
+The island follows app/system text scaling; measured height reserves bottom
+content padding so final text and controls can be scrolled above it. A
+non-interactive fade separates the floating control from content behind it.
+Inactive panels retain their layout but accept no touches
 and are hidden from accessibility. The reader FlatList mounts nearby passages
 and splits top-level lists into individual rows, retaining nesting and numbering.
 Its disposable cache is capped at five documents/100,000 source characters.

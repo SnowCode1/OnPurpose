@@ -885,3 +885,22 @@ now start correctly without the black jump on the iPhone. The tab arrangement
 and broader bookmark/keyboard matrix still need phone review. The founder then
 reported that access or tab switching needs refinement; the specific problem is
 awaiting clarification. Do not treat the tab trial as accepted.
+
+## 5 October 2026 — Reachable habit tabs and swipe navigation
+
+The founder clarified that the top tabs are hard to reach with a thumb. They
+proposed horizontal swipes, moving tabs to a floating bottom island, or both,
+and delegated the design choice. The assistant chose both: a compact bottom
+Notes/Statistics island with habit-coloured selection, plus native horizontal
+paging. No change to the outer sheet's upward entry/downward UIKit dismissal.
+
+Native directional locking separates vertical reading/statistics scrolling from
+horizontal paging; presses remain distinct. The initial panel mounts first,
+then its neighbour warms after 200 ms or navigation. Both retain fixed viewport
+geometry and reading/range/chart state. UI-thread offsets move the selection
+pill, while React handles only discrete aligned pages. Island height is measured
+for bottom content clearance and text scaling. Tab taps respect Reduce Motion;
+rotation realigns the settled page. Haptics occur once for an actual page change,
+never for routine vertical scrolling. A non-interactive fade makes the floating
+control legible. New gesture feel, thumb reach and native sheet interaction still
+need phone acceptance; this is an implementation choice, not approved device QA.

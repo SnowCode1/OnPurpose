@@ -14,12 +14,14 @@ export const DescriptionReader = memo(function DescriptionReader({
   editable,
   onEdit,
   onVersions,
+  bottomInset = 40,
 }: {
   description?: string;
   colour: string;
   editable: boolean;
   onEdit: () => void;
   onVersions?: () => void;
+  bottomInset?: number;
 }) {
   const passages = useMemo(
     () => descriptionReadingPassages(description ?? ''),
@@ -42,8 +44,9 @@ export const DescriptionReader = memo(function DescriptionReader({
       updateCellsBatchingPeriod={16}
       windowSize={7}
       alwaysBounceVertical
+      directionalLockEnabled
       contentInsetAdjustmentBehavior="never"
-      contentContainerStyle={styles.body}
+      contentContainerStyle={[styles.body, { paddingBottom: bottomInset }]}
       showsVerticalScrollIndicator={false}
       ListHeaderComponent={
         onVersions ? (
