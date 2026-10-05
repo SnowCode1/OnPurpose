@@ -7,7 +7,11 @@ phone layout, keyboard and recovery acceptance are pending.
 
 A habit can have an optional description containing plain text or Markdown.
 Its purpose is to keep motivation, reminders and links one habit-name tap away.
-The description appears before the charts in full-screen statistics. Long notes
+The description appears before the charts in full-screen statistics, inside a
+compact rounded card requested by the founder to distinguish notes from statistics.
+The dark surface, subtle outline and inset text define the note's boundary;
+Edit and Read more stay within it. The collapsed fade matches the card surface.
+Long notes
 show a bounded preview and Read more/Show less, so a note does not force a long
 scroll to reach the statistics. Empty descriptions show one small Add description
 action, with no empty card or instructional block.

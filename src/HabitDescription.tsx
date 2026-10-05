@@ -1,8 +1,16 @@
 import { useMemo, useState } from 'react';
-import { Pressable, Text, View, useWindowDimensions } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { DescriptionText } from './DescriptionText';
 import { descriptionPreview } from './description';
+
+const NOTE_SURFACE = '#111111';
 
 export function HabitDescription({
   description,
@@ -25,7 +33,7 @@ export function HabitDescription({
   const limit = 150 * Math.max(1, fontScale);
   const truncated = !expanded && (preview.truncated || height > limit + 1);
   return (
-    <View style={{ gap: 4 }}>
+    <View style={[styles.container, description && styles.card]}>
       <View
         style={{
           flexDirection: 'row',
@@ -33,7 +41,7 @@ export function HabitDescription({
           justifyContent: 'space-between',
         }}
       >
-        <Text style={{ color: '#777777', fontSize: 12 }}>Description</Text>
+        <Text style={{ color: '#929292', fontSize: 12 }}>Description</Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={
@@ -70,7 +78,7 @@ export function HabitDescription({
             {!expanded && height > limit + 1 && (
               <LinearGradient
                 pointerEvents="none"
-                colors={['#00000000', '#000000']}
+                colors={[`${NOTE_SURFACE}00`, NOTE_SURFACE]}
                 style={{
                   position: 'absolute',
                   bottom: 0,
@@ -103,3 +111,16 @@ export function HabitDescription({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { gap: 4 },
+  card: {
+    backgroundColor: NOTE_SURFACE,
+    borderColor: '#292929',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingTop: 2,
+    paddingBottom: 8,
+  },
+});

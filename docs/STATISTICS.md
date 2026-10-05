@@ -19,7 +19,8 @@ editor above statistics. Changes update the statistics without recording new
 statistics events. The header and habit title retain the guarded development
 preview gesture.
 
-Optional habit descriptions appear first, before the range controls and charts,
+Optional habit descriptions appear first in a compact rounded note card,
+before the range controls and charts,
 with a bounded Markdown preview, Read more/Show less and direct full-screen editing.
 Links open only when tapped. See [DESCRIPTIONS.md](DESCRIPTIONS.md). These notes do
 not change statistical calculations.
