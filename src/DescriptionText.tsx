@@ -1,12 +1,9 @@
 import { memo, type ReactNode } from 'react';
-import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { highlightColours, isHighlightColour } from './richText/highlights';
 import { contrastOnBlack } from './colors';
-import {
-  parseDescription,
-  descriptionLink,
-  type DescriptionToken,
-} from './description';
+import { openDescriptionLink } from './descriptionLinks';
+import { parseDescription, type DescriptionToken } from './description';
 
 type Node = { token: DescriptionToken; children: Node[] };
 function tree(tokens: DescriptionToken[]) {
@@ -22,18 +19,6 @@ function tree(tokens: DescriptionToken[]) {
     if (token.nesting === 1) stack.push(node.children);
   }
   return root;
-}
-async function openLink(url: string) {
-  const link = descriptionLink(url);
-  if (!link) return;
-  try {
-    await Linking.openURL(link);
-  } catch {
-    Alert.alert(
-      'Couldn’t open link',
-      'Check the address or whether its app is installed.',
-    );
-  }
 }
 export const DescriptionText = memo(function DescriptionText({
   text,
@@ -77,7 +62,7 @@ export const DescriptionText = memo(function DescriptionText({
             accessibilityRole="link"
             accessibilityHint={`Open ${url}`}
             onPress={() => {
-              void openLink(url);
+              void openDescriptionLink(url);
             }}
             style={{ color: linkColour, textDecorationLine: 'underline' }}
           >

@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type Ref,
+  type ReactNode,
   type CSSProperties,
 } from 'react';
 import {
@@ -12,6 +13,8 @@ import {
   type DOMImperativeFactory,
   type DOMProps,
 } from 'expo/dom';
+import { TextSelection } from '@tiptap/pm/state';
+import { selectedHighlight, selectedLink } from './richText/selection';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
 import {
   descriptionExtensions,
@@ -39,6 +42,7 @@ export default function RichDescription({
   onSnapshot,
   onReady,
   onLimit,
+  onOpenLink,
 }: {
   ref: Ref<RichDescriptionRef>;
   initialValue: string;
@@ -49,6 +53,7 @@ export default function RichDescription({
   onSnapshot: (action: string, markdown: string) => Promise<void>;
   onReady: () => Promise<void>;
   onLimit: () => Promise<void>;
+  onOpenLink: (url: string) => Promise<void>;
   dom?: DOMProps;
 }) {
   const [menu, setMenu] = useState<'text' | 'colour' | 'link' | null>(null);
@@ -62,6 +67,7 @@ export default function RichDescription({
     existing: false,
   });
   const [linkError, setLinkError] = useState('');
+  const [dismissedLink, setDismissedLink] = useState<string | null>(null);
   const editor = useEditor({
     extensions: descriptionExtensions(() => {
       void onLimit();
@@ -75,9 +81,14 @@ export default function RichDescription({
         'aria-multiline': 'true',
         spellcheck: 'true',
       },
-      handleClick: (_view, _position, event) => {
+      handleClick: (view, position, event) => {
         if ((event.target as Element).closest('a')) {
           event.preventDefault();
+          view.dispatch(
+            view.state.tr.setSelection(
+              TextSelection.create(view.state.doc, position),
+            ),
+          );
           return true;
         }
         return false;
@@ -102,8 +113,8 @@ export default function RichDescription({
             strike: editor.isActive('strike'),
             code: editor.isActive('code'),
             link: editor.isActive('link'),
-            highlight: editor.getAttributes('highlight').color as
-              HighlightColour | undefined,
+            highlight: selectedHighlight(editor),
+            inspectedLink: selectedLink(editor),
             undo: editor.can().undo(),
             redo: editor.can().redo(),
           }
@@ -124,10 +135,36 @@ export default function RichDescription({
   }, [editor, editable]);
   useEditorReady(editor, onReady);
   useFloatingMenuSpace(container, controls, !!editor);
+  const inspectedLink = state?.inspectedLink;
+  const linkKey = inspectedLink
+    ? `${inspectedLink.from}:${inspectedLink.href}`
+    : null;
+  useEffect(() => {
+    if (!editor) return;
+    const selectionChanged = () => {
+      const link = selectedLink(editor);
+      const key = link ? `${link.from}:${link.href}` : null;
+      setDismissedLink((dismissed) =>
+        dismissed && dismissed !== key ? null : dismissed,
+      );
+    };
+    editor.on('selectionUpdate', selectionChanged);
+    editor.on('update', selectionChanged);
+    return () => {
+      editor.off('selectionUpdate', selectionChanged);
+      editor.off('update', selectionChanged);
+    };
+  }, [editor]);
   if (!editor) return null;
+  const highlight = state?.highlight;
+  const highlightLabel = highlight?.mixed
+    ? 'Mixed selection'
+    : highlight?.colour
+      ? `${highlightColours[highlight.colour].label} applied`
+      : 'None applied';
   function tool(
     label: string,
-    symbol: string,
+    symbol: ReactNode,
     action: () => void,
     active = false,
     disabled = false,
@@ -215,6 +252,9 @@ export default function RichDescription({
           event.preventDefault();
           setMenu(null);
           editor.commands.focus(null, { scrollIntoView: false });
+        } else if (event.key === 'Escape' && !menu && inspectedLink) {
+          event.preventDefault();
+          setDismissedLink(linkKey);
         }
       }}
       style={
@@ -294,14 +334,86 @@ export default function RichDescription({
             state?.link || menu === 'link',
           )}
           {tool(
-            'Highlight colours',
-            '◒',
+            `Highlight colours, ${highlightLabel}`,
+            <span className="highlight-symbol" aria-hidden="true">
+              ◒
+              <span
+                className={`highlight-indicator${highlight?.mixed ? ' mixed' : ''}`}
+                style={{
+                  backgroundColor: highlight?.colour
+                    ? highlightColours[highlight.colour].text
+                    : undefined,
+                }}
+              />
+            </span>,
             () => setMenu(menu === 'colour' ? null : 'colour'),
-            !!state?.highlight || menu === 'colour',
+            !!highlight?.colour || !!highlight?.mixed || menu === 'colour',
             false,
             { id: 'highlight-options', open: menu === 'colour' },
           )}
         </div>
+        {!menu && inspectedLink && dismissedLink !== linkKey && (
+          <div
+            className="popover link-inspector"
+            role="group"
+            aria-label="Selected link"
+          >
+            <div className="link-destination" title={inspectedLink.href}>
+              {inspectedLink.href}
+            </div>
+            <div className="link-inspector-actions">
+              <button
+                type="button"
+                onPointerDown={(event) => event.preventDefault()}
+                onClick={() => void onOpenLink(inspectedLink.href)}
+              >
+                Open
+              </button>
+              <button
+                type="button"
+                disabled={!editable}
+                onPointerDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  editor.commands.setTextSelection({
+                    from: inspectedLink.from,
+                    to: inspectedLink.to,
+                  });
+                  openLink();
+                }}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                disabled={!editable}
+                onPointerDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  formatDescription(editor, () =>
+                    editor
+                      .chain()
+                      .setTextSelection({
+                        from: inspectedLink.from,
+                        to: inspectedLink.to,
+                      })
+                      .focus(null, { scrollIntoView: false })
+                      .unsetLink()
+                      .run(),
+                  );
+                }}
+              >
+                Remove
+              </button>
+              <button
+                type="button"
+                aria-label="Close link inspector"
+                onPointerDown={(event) => event.preventDefault()}
+                onClick={() => setDismissedLink(linkKey)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
         {menu === 'text' && (
           <div
             id="text-options"
@@ -386,7 +498,7 @@ export default function RichDescription({
                 type="button"
                 key={id}
                 aria-label={`${highlightColours[id].label} highlight`}
-                aria-pressed={state?.highlight === id}
+                aria-pressed={highlight?.colour === id && !highlight.mixed}
                 disabled={!editable}
                 onPointerDown={(event) => event.preventDefault()}
                 onClick={() =>

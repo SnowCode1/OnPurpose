@@ -1,5 +1,23 @@
 # Decision log
 
+## 034 — Compact description inspection and versions
+
+Date: 5 October 2026. Status: founder approved all three suggested improvements;
+implemented, iPhone review pending.
+
+Show actual highlight colour (or a mixed-selection indicator) on the existing
+toolbar button. Inspect selected links in a floating compact panel; explicit Open
+uses the native handler, Edit/Remove target the complete link while retaining its
+words/formatting and temporary Undo. Avoid navigating on an editing tap.
+
+Add Versions beside Edit on the statistics note card, with a virtualized list of
+that habit's active description actions and the existing Before/After reader.
+Restore overlays only the text on the current habit as an ordinary v7 change.
+Do not restore an entire outdated habit definition or erase raw events. Match
+History's sequence ordering and Undo/Redo semantics. Keep repeated saved text so
+its distinct Before versions remain accessible. No extra persistence, dependency,
+clipboard polling, remote previews or grid computation is required.
+
 ## 033 — Descriptions close to the habit
 
 Date: 5 October 2026. Status: founder authorised the proposed design and requested

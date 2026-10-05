@@ -22,6 +22,7 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { MAX_DESCRIPTION_LENGTH, normalizeDescription } from './description';
 import RichDescription, { type RichDescriptionRef } from './RichDescription';
+import { openDescriptionLink } from './descriptionLinks';
 import { draftsFor } from './descriptionDrafts';
 
 export function DescriptionEditor({
@@ -250,6 +251,7 @@ export function DescriptionEditor({
                 colour={colour}
                 fontScale={fontScale}
                 editable={editable}
+                onOpenLink={openDescriptionLink}
                 onReady={handleReady}
                 onChange={async (value) => update(value)}
                 onSnapshot={snapshot}

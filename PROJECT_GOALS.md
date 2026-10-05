@@ -78,6 +78,8 @@ and uncertainty about whether something was saved.
   habits with editable placeholder notes while preserving any user-written text.
   Keep formatting controls above the keyboard, float text/colour menus without
   shifting the document, and let pasting a URL onto selected words create a link.
+  Show current highlight colour, offer explicit link Open/Edit/Remove inspection,
+  and provide description Versions beside Edit with undoable text-only restore.
 - Give each habit an editable start date, initially Today, to support old records.
   Statistics use each habit's own continuous calendar period since its start;
   another habit's activity must not affect its denominator. Numeric averages divide

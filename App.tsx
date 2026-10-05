@@ -1,3 +1,5 @@
+import { DescriptionVersions } from './src/DescriptionVersions';
+import { descriptionVersions } from './src/descriptionVersions';
 import { DescriptionEditor } from './src/DescriptionEditor';
 import { descriptionDraftKey } from './src/descriptionDrafts';
 import { applyPlaceholderDescriptions } from './src/storage/presetDescriptions';
@@ -175,10 +177,16 @@ function PersistentApp({
   const [newHabit, setNewHabit] = useState<Habit | null>(null);
   const [descriptionId, setDescriptionId] = useState<string | null>(null);
   const descriptionHabit = habits.find((habit) => habit.id === descriptionId);
+  const [versionsId, setVersionsId] = useState<string | null>(null);
+  const versionsHabit = habits.find((habit) => habit.id === versionsId);
   const [statsId, setStatsId] = useState<string | null>(null);
   const statsHabit = habits.find(
     (habit) => habit.id === statsId && !habit.archived,
   );
+  const versions = useMemo(() => {
+    const id = versionsId ?? statsId;
+    return id ? descriptionVersions(snapshot.replay.undo, id) : [];
+  }, [snapshot.replay.undo, versionsId, statsId]);
   const editable = store.canEdit() && !backupBusy;
   const [input, setInput] = useState('');
   const trimmed = input.trim().replace(',', '.');
@@ -305,6 +313,17 @@ function PersistentApp({
       return accepted;
     },
     [store],
+  );
+  const restoreDescription = useCallback(
+    (id: string, description: string | undefined) => {
+      const current = store
+        .getSnapshot()
+        .replay.state.habits.find((habit) => habit.id === id);
+      if (!current || !editable) return false;
+      const { description: _description, ...rest } = current;
+      return saveHabit({ ...rest, ...(description ? { description } : {}) });
+    },
+    [store, editable, saveHabit],
   );
   const reorderHabits = useCallback(
     (ids: string[]): boolean => {
@@ -540,6 +559,11 @@ function PersistentApp({
                 onBack={closeStats}
                 onCellPress={pressCell}
                 onDescriptionEdit={() => setDescriptionId(statsHabit.id)}
+                onDescriptionVersions={
+                  versions.length
+                    ? () => setVersionsId(statsHabit.id)
+                    : undefined
+                }
                 onEdit={editStats}
               />
             </PerformanceBoundary>
@@ -556,19 +580,21 @@ function PersistentApp({
             editable={editable}
             Heading={PreviewHeading}
             onClose={() => setDescriptionId(null)}
-            onApply={(description) => {
-              const current = store
-                .getSnapshot()
-                .replay.state.habits.find(
-                  (habit) => habit.id === descriptionHabit.id,
-                );
-              if (!current || !editable) return false;
-              const { description: _description, ...rest } = current;
-              return saveHabit({
-                ...rest,
-                ...(description ? { description } : {}),
-              });
-            }}
+            onApply={(description) =>
+              restoreDescription(descriptionHabit.id, description)
+            }
+          />
+        )}
+        {versionsHabit && (
+          <DescriptionVersions
+            key={versionsHabit.id}
+            habit={versionsHabit}
+            actions={versions}
+            state={snapshot.replay.state}
+            editable={editable}
+            Heading={PreviewHeading}
+            onRestore={restoreDescription}
+            onClose={() => setVersionsId(null)}
           />
         )}
         <Modal
@@ -672,17 +698,7 @@ function PersistentApp({
           HeadingComponent={PreviewHeading}
           snapshot={snapshot}
           backupBusy={backupBusy}
-          onRestoreDescription={(id, description) => {
-            const current = store
-              .getSnapshot()
-              .replay.state.habits.find((habit) => habit.id === id);
-            if (!current || !editable) return false;
-            const { description: _description, ...rest } = current;
-            return saveHabit({
-              ...rest,
-              ...(description ? { description } : {}),
-            });
-          }}
+          onRestoreDescription={restoreDescription}
           onUndo={undo}
           onRedo={redo}
           onExport={() => {

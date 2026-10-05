@@ -16,11 +16,13 @@ export function HabitDescription({
   description,
   colour,
   onEdit,
+  onVersions,
   editable,
 }: {
   description?: string;
   colour: string;
   onEdit: () => void;
+  onVersions?: () => void;
   editable: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -42,24 +44,49 @@ export function HabitDescription({
         }}
       >
         <Text style={{ color: '#929292', fontSize: 12 }}>Description</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
-            description ? 'Edit description' : 'Add description'
-          }
-          disabled={!editable}
-          onPress={onEdit}
-          style={({ pressed }) => ({
-            minHeight: 44,
-            paddingLeft: 14,
-            justifyContent: 'center',
-            opacity: !editable ? 0.35 : pressed ? 0.6 : 1,
-          })}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            justifyContent: 'flex-end',
+            flexShrink: 1,
+          }}
         >
-          <Text style={{ color: '#BBBBBB', fontSize: 13 }}>
-            {description ? 'Edit' : 'Add description'}
-          </Text>
-        </Pressable>
+          {onVersions && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Previous description versions"
+              onPress={onVersions}
+              style={({ pressed }) => ({
+                minHeight: 44,
+                paddingHorizontal: 10,
+                justifyContent: 'center',
+                opacity: pressed ? 0.6 : 1,
+              })}
+            >
+              <Text style={{ color: '#BBBBBB', fontSize: 13 }}>Versions</Text>
+            </Pressable>
+          )}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              description ? 'Edit description' : 'Add description'
+            }
+            disabled={!editable}
+            onPress={onEdit}
+            style={({ pressed }) => ({
+              minHeight: 44,
+              paddingLeft: 14,
+              justifyContent: 'center',
+              opacity: !editable ? 0.35 : pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={{ color: '#BBBBBB', fontSize: 13 }}>
+              {description ? 'Edit' : 'Add description'}
+            </Text>
+          </Pressable>
+        </View>
       </View>
       {description && (
         <>

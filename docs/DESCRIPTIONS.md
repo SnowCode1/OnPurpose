@@ -12,7 +12,7 @@ Its purpose is to keep motivation, reminders and links one habit-name tap away.
 The description appears before the charts in full-screen statistics, inside a
 compact rounded card requested by the founder to distinguish notes from statistics.
 The dark surface, subtle outline and inset text define the note's boundary;
-Edit and Read more stay within it. The collapsed fade matches the card surface.
+Edit, Versions and Read more stay within it. The collapsed fade matches the card surface.
 Long notes
 show up to four complete blocks in a 220-point preview (scaled with system text),
 with Read more/Show less when more content remains or the measured height exceeds
@@ -38,6 +38,20 @@ above the toolbar without changing the writing area's size or scroll position.
 They fit the remaining editor height after keyboard/orientation/text-size changes
 and scroll when necessary. A 140 ms opening transition respects Reduce Motion.
 Tap the menu button again, tap the document or use Escape to dismiss a menu.
+The Highlight button has a small colour indicator reflecting the whole selected
+range. Plain text shows a neutral indicator; mixed colours or highlighted/plain
+text show a mixed indicator with an accessible mixed-selection label. The palette
+marks a colour selected only for a uniform selection.
+
+Putting the caret/selection in a single link opens a compact inspector above the
+formatting strip, showing its destination and Open/Edit/Remove/Close. Tapping a
+link while editing places the caret and inspects it; it never follows the link.
+Open deliberately hands the validated destination to the native link handler;
+reader and editor share the same failed-open message. Edit selects the complete
+link, including differently formatted words, for the existing link sheet. Remove
+keeps the words and other formatting and supports local Undo/Redo. Close keeps
+the caret and remains dismissed until leaving/re-entering that link. Inspectors
+do not compete with open text, colour or link-entry menus.
 
 Link entry uses a compact bottom sheet within the editor, above the keyboard.
 Its address field receives focus and its Cancel/Apply/Remove actions have a separate
@@ -134,6 +148,17 @@ colour, icon, entries and archive status, as a new undoable edit. Restoring an
 empty version clears the description. A version already applied cannot be
 restored redundantly. Visible History continues to contain active actions only;
 Undo removes rows and Redo restores them, while the raw log remains complete.
+
+Versions beside Edit/Add opens a compact, virtualized list of this habit's active
+description changes, newest by sequence first. It uses the same Before/After
+reader and Restore path as History. Rows include saved time and a short text
+summary; only the latest matching applied version is marked Current. Repeated
+text is retained because different Before versions may contain recoverable notes.
+Cleared notes retain Versions even without a note card. The control is absent
+until a description action exists. Initial/seed text is available as Before the
+first edit; this is not a second snapshot store. Undo/Redo affect the rows exactly
+as in History, with all raw events retained in export. Access from the statistics
+card also keeps restoring separate from unfinished creation/edit-form drafts.
 
 ## Interrupted drafts
 

@@ -47,6 +47,20 @@ landscape, larger text, VoiceOver and draft recovery checks remain pending:
   should remove just that link change; Redo restores it. Try changing an existing
   link by pasting another URL. Pasting normal prose, into code or at an empty
   cursor must retain normal paste behaviour. The link sheet still works.
+- Select plain, uniformly highlighted and mixed text; the existing Highlight button
+  must show neutral, that colour or mixed respectively without extra toolbar width.
+  VoiceOver must identify the state, and the palette must agree.
+- Tap link text while editing: a compact inspector must show the address without
+  opening it. Try Open, Edit, Remove and Close with the keyboard visible and in
+  landscape. Edit/Remove must include bold/italic portions of one link, preserve
+  the label/other marks and support local Undo/Redo. Close must keep the caret and
+  stay dismissed while typing there; leaving/re-entering restores inspection.
+- Apply two different notes, then use Versions beside Edit in statistics. Read
+  Before/After and restore older text. Name, colour, icon, start date and entries
+  must remain intact. Restore is undoable in History and survives reload/backup;
+  Undo/Redo remove/restore version rows. Repeated saved text retains its Before
+  reader, and clearing the note must leave Versions available. Verify only the
+  latest applied matching row says Current and current Restore is disabled.
 - The note card now previews four complete blocks within a taller 220-point
   height limit. Short notes that fit need no Read more. Long paragraphs/lists
   remain bounded and expanded notes still offer Show less.

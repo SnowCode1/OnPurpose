@@ -55,7 +55,12 @@ The requested preset icon update uses normal undoable edits in
   end of the grid. `src/HabitStatsScreen.tsx` owns full-screen statistics, with pure
   calculations in `src/statistics.ts`. Read HABIT_MANAGEMENT.md and STATISTICS.md.
   `src/HabitDescription.tsx`, `src/DescriptionEditor.tsx` and `src/DescriptionHistory.tsx`
-  own description reading, full-screen draft editing and Before/After restore. Read
+  own description reading, full-screen draft editing and Before/After restore.
+  `src/DescriptionVersions.tsx` lists that habit's active note actions using the pure
+  `descriptionVersions.ts` filter; retain repeated content and reverse sequence order.
+  Restore only description onto the current definition. `richText/selection.ts`
+  reads whole-selection highlight/link state; `descriptionLinks.ts` shares explicit
+  native opening between reader/editor. Read
   `docs/DESCRIPTIONS.md`. `src/RichDescription.tsx` is the offline Expo DOM/Tiptap
   editing surface; `src/richText/` owns safe document mapping, formatting, local
   Undo/Redo and bounded highlights. Preserve native readers and request a current

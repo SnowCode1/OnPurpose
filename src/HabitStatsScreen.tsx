@@ -243,6 +243,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   Heading,
   onBack,
   onDescriptionEdit,
+  onDescriptionVersions,
   onEdit,
   onCellPress,
   editable,
@@ -255,6 +256,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   Heading: ComponentType<TextProps>;
   onBack: () => void;
   onDescriptionEdit: () => void;
+  onDescriptionVersions?: () => void;
   onEdit: () => void;
   onCellPress: (habit: Habit, day: EntryDay) => void;
   editable: boolean;
@@ -360,6 +362,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
             colour={habit.color}
             editable={editable}
             onEdit={onDescriptionEdit}
+            onVersions={onDescriptionVersions}
           />
           <View accessibilityRole="tablist" style={styles.ranges}>
             {([30, 90, 365, 'all'] as const).map((value) => (

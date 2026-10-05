@@ -11,6 +11,7 @@ import {
   descriptionSnapshot,
   formatDescription,
 } from '../src/richText/extensions.ts';
+import { selectedHighlight, selectedLink } from '../src/richText/selection.ts';
 import { markdownDocument } from '../src/richText/markdownDocument.ts';
 import {
   highlightColours,
@@ -363,4 +364,75 @@ test('highlight syntax is bounded, handles escaped delimiters and never admits a
   ])
     assert.deepEqual(highlightIds(literal), []);
   assert.deepEqual(highlightIds('`==code==`'), []);
+});
+
+test('highlight indicator reads uniform, mixed, partially highlighted and plain selections', (t) => {
+  const { editor } = fixture(t, 'One Two');
+  editor.commands.setTextSelection({ from: 1, to: 4 });
+  for (const colour of Object.keys(highlightColours)) {
+    editor.commands.setHighlight({ color: colour });
+    assert.deepEqual(selectedHighlight(editor), { colour, mixed: false });
+    editor.commands.setTextSelection(2);
+    assert.deepEqual(selectedHighlight(editor), { colour, mixed: false });
+    editor.commands.setTextSelection({ from: 1, to: 4 });
+  }
+  editor.commands.setTextSelection({ from: 1, to: 8 });
+  assert.deepEqual(selectedHighlight(editor), { colour: null, mixed: true });
+  editor.commands.setTextSelection({ from: 5, to: 8 });
+  assert.deepEqual(selectedHighlight(editor), { colour: null, mixed: false });
+  editor.commands.setHighlight({ color: 'blue' });
+  editor.commands.setTextSelection({ from: 1, to: 8 });
+  assert.deepEqual(selectedHighlight(editor), { colour: null, mixed: true });
+  editor.commands.unsetHighlight();
+  assert.deepEqual(selectedHighlight(editor), { colour: null, mixed: false });
+});
+
+test('link inspection expands across other marks and excludes plain or multiple-link selections', (t) => {
+  const { editor } = fixture(
+    t,
+    'A [**bold** and _italic_](https://example.com/notes) tail',
+  );
+  const expected = { from: 3, to: 18, href: 'https://example.com/notes' };
+  for (const range of [4, 10, 16, { from: 3, to: 18 }, { from: 5, to: 16 }]) {
+    editor.commands.setTextSelection(range);
+    assert.deepEqual(selectedLink(editor), expected);
+  }
+  for (const range of [1, 20, { from: 1, to: 18 }, { from: 3, to: 22 }]) {
+    editor.commands.setTextSelection(range);
+    assert.equal(selectedLink(editor), null);
+  }
+  const adjacent = fixture(
+    t,
+    '[One](https://one.example.com)[Two](https://two.example.com)',
+  ).editor;
+  adjacent.commands.setTextSelection({ from: 1, to: 7 });
+  assert.equal(selectedLink(adjacent), null);
+  adjacent.commands.setTextSelection(5);
+  assert.deepEqual(selectedLink(adjacent), {
+    from: 4,
+    to: 7,
+    href: 'https://two.example.com',
+  });
+});
+
+test('inspected link removal preserves words and their other marks and is independently undoable', (t) => {
+  const { editor, snapshot } = fixture(
+    t,
+    '[**My** =={blue}notes==](https://example.com)',
+  );
+  editor.commands.setTextSelection(3);
+  const range = selectedLink(editor);
+  assert.ok(range);
+  const before = snapshot();
+  formatDescription(editor, () =>
+    editor.chain().setTextSelection(range).unsetLink().run(),
+  );
+  assert.equal(selectedLink(editor), null);
+  assert.equal(editor.getText(), 'My notes');
+  assert.deepEqual(highlightIds(snapshot()), ['blue']);
+  assert.ok(snapshot().includes('**My**'));
+  assert.equal(editor.commands.undo(), true);
+  assert.equal(snapshot(), before);
+  assert.equal(editor.commands.redo(), true);
+  assert.equal(selectedLink(editor), null);
 });
