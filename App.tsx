@@ -8,6 +8,7 @@ import { DescriptionEditor } from './src/DescriptionEditor';
 import { descriptionDraftKey } from './src/descriptionDrafts';
 import { applyPlaceholderDescriptions } from './src/storage/presetDescriptions';
 import { displayDefaults } from './src/displayPreferences';
+import { useGridDisplayPreferences } from './src/useGridDisplayPreferences';
 import type { RowSpacing } from './src/rowSpacing';
 import { habitTrackingStart } from './src/statistics';
 import { StatusBar } from 'expo-status-bar';
@@ -186,7 +187,12 @@ function PersistentApp({
   const [panel, setPanel] = useState<{
     page: 'history' | 'settings' | 'archive';
     visible: boolean;
-  }>({ page: 'history', visible: false });
+    deferGrid: boolean;
+  }>({ page: 'history', visible: false, deferGrid: false });
+  const gridDisplay = useGridDisplayPreferences(
+    { rowSpacing, columnSpacing, textScale, dateFading, hideCompleted },
+    panel.deferGrid,
+  );
   const [editing, setEditing] = useState<{
     key: string;
     habit: Habit;
@@ -260,11 +266,11 @@ function PersistentApp({
 
   const openHistory = useCallback(() => {
     feedback('selection');
-    setPanel({ page: 'history', visible: true });
+    setPanel({ page: 'history', visible: true, deferGrid: true });
   }, []);
   const openSettings = useCallback(() => {
     feedback('selection');
-    setPanel({ page: 'settings', visible: true });
+    setPanel({ page: 'settings', visible: true, deferGrid: true });
   }, []);
 
   function changeHaptics(value: boolean) {
@@ -678,8 +684,12 @@ function PersistentApp({
           ) : undefined
         }
         page={panel.page}
-        onArchive={() => setPanel({ page: 'archive', visible: true })}
-        onBack={() => setPanel({ page: 'settings', visible: true })}
+        onArchive={() =>
+          setPanel({ page: 'archive', visible: true, deferGrid: true })
+        }
+        onBack={() =>
+          setPanel({ page: 'settings', visible: true, deferGrid: true })
+        }
         onRestoreHabit={(habit) => saveHabit({ ...habit, archived: false })}
         visible={panel.visible}
         HeadingComponent={PreviewHeading}
@@ -758,6 +768,13 @@ function PersistentApp({
         onClose={() =>
           setPanel((previous) => ({ ...previous, visible: false }))
         }
+        onDismiss={() =>
+          setPanel((previous) =>
+            previous.visible || !previous.deferGrid
+              ? previous
+              : { ...previous, deferGrid: false },
+          )
+        }
       />
     </>
   );
@@ -799,29 +816,31 @@ function PersistentApp({
                 statsHabit ? 'no-hide-descendants' : 'auto'
               }
             >
-              <PerformanceBoundary name="grid">
-                <HabitGrid
-                  columnSpacing={columnSpacing}
-                  dateFading={dateFading}
-                  hideCompleted={hideCompleted}
-                  rowSpacing={rowSpacing}
-                  sampleData={sampleData}
-                  HeadingComponent={PreviewHeading}
-                  DateButtonComponent={PreviewDateButton}
-                  key={today}
-                  today={today}
-                  habits={activeHabits}
-                  editable={editable}
-                  onHabitAction={habitAction}
-                  onReorder={reorderHabits}
-                  store={store}
-                  onHabitPress={openDetails}
-                  onCellPress={pressCell}
-                  onHistoryPress={openHistory}
-                  onSettingsPress={openSettings}
-                  onAddHabit={addHabit}
-                />
-              </PerformanceBoundary>
+              <TypographyProvider scale={gridDisplay.textScale}>
+                <PerformanceBoundary name="grid">
+                  <HabitGrid
+                    columnSpacing={gridDisplay.columnSpacing}
+                    dateFading={gridDisplay.dateFading}
+                    hideCompleted={gridDisplay.hideCompleted}
+                    rowSpacing={gridDisplay.rowSpacing}
+                    sampleData={sampleData}
+                    HeadingComponent={PreviewHeading}
+                    DateButtonComponent={PreviewDateButton}
+                    key={today}
+                    today={today}
+                    habits={activeHabits}
+                    editable={editable}
+                    onHabitAction={habitAction}
+                    onReorder={reorderHabits}
+                    store={store}
+                    onHabitPress={openDetails}
+                    onCellPress={pressCell}
+                    onHistoryPress={openHistory}
+                    onSettingsPress={openSettings}
+                    onAddHabit={addHabit}
+                  />
+                </PerformanceBoundary>
+              </TypographyProvider>
             </View>
             {statsHabit && (
               <Modal

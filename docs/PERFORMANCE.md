@@ -199,3 +199,20 @@ disabled for text/categories because our iOS renderer ignores `minimumFontScale`
 Full values remain in storage and the editor. Recording statistics virtualize
 their dated entry list rather than mounting every full text value. Browser checks cover layout,
 not native font fitting or iPhone frame rates.
+
+## Appearance changes behind Settings
+
+The grid previously received each new row/column spacing value while hidden
+behind Settings. A column-width change recreated the two keyed native lists;
+row changes propagated layout/measurement work. `useGridDisplayPreferences.ts`
+now holds grid-only display values until native sheet dismissal, then releases
+the latest choices together. Settings and the durable write queue remain current.
+An inner TypographyProvider prevents app text-size choices from invalidating
+the hidden grid through context. The grid stays mounted with its scroll state;
+cell/store subscriptions and actual entry/definition changes remain live.
+
+A bounded React regression counts one initial memoized grid render, no grid
+renders for several hidden appearance choices/save acknowledgements, and one
+render when the final preferences are released. Returning settings to their
+original displayed values produces no grid render. This establishes the
+presentation update boundary, not native latency or iPhone frame rates.

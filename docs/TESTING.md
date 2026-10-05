@@ -1266,3 +1266,30 @@ app text with Compact/Standard/Roomy rows and columns. It verified identical
 letter sizes for every phrase (12/18 points respectively), two versus three-line
 capacity, and captured layouts. The browser profile was removed. This establishes
 web layout only; the revised iOS truncation/readability requires phone acceptance.
+
+## Settings appearance responsiveness
+
+The founder reported slow row/column option feedback with the grid hidden behind
+Settings. `grid-preferences.test.mjs` exercises the actual presentation hook in
+bounded React/jsdom, checking immediate current Settings values, unchanged grid
+render counts/font context while deferred, one latest-value update on dismissal,
+retained mounted scroll state and no extra update after reverting choices. It
+executes App's actual dismissal handler to cover a closed sheet and stale callbacks
+after reopening. Assertions compare scalars/identity booleans only; the DOM is
+closed in `finally`. Grid storage/entries remain live, with no new schema.
+
+Validation: `npm run check` passed, all 233 tests passed, and single-worker iOS/web
+exports succeeded in the existing 2 GiB memory/no-swap scope. An isolated 1 GiB
+Chrome review verified saved preferences and immediate selection highlights,
+unchanged hidden cell identity/width/height/font through several spacing choices
+and a real text-size slider release, then final geometry on Close/dismissal.
+Reopening/closing without edits retained the columns. Its profile was removed;
+captures/synthetic data remain ignored. Browser checks are not iPhone timings.
+
+Phone checks: tap repeatedly between spacing choices in Appearance; highlights
+and haptics should respond promptly. Try text size/fading, then Close and repeat
+with native downward dismissal. Check the final row heights, column widths,
+header/cell alignment and readable text. Repeat while browsing past/future days,
+with larger OS text and landscape; return should retain the viewed date/range.
+Force a save failure through the existing test harness to confirm Settings still
+shows Retry and blocks changes appropriately. Preferences remain outside Undo.

@@ -86,6 +86,12 @@ The requested preset icon update uses normal undoable edits in
   `src/motion.ts` shares reduced-motion-aware row/menu transitions; keep name and
   date-cell layout timing aligned.
 - `src/displayPreferences.ts` owns column spacing, week start and date fading defaults; keep absent-field defaults compatible with old logs and all preferences outside History/Undo. Read docs/SETTINGS.md.
+- `useGridDisplayPreferences.ts` holds only grid display preferences while the
+  History/Settings/archive sheet is presented or dismissing. Settings and storage
+  use current values immediately; native `AppPanel.onDismiss` releases the latest
+  values together. Keep the mounted grid and its inner TypographyProvider stable.
+  Do not defer durable writes, unmount the grid, or rebuild hidden day lists on
+  every spacing/text-size choice.
 - `src/rowSpacing.ts` owns saved Compact/Standard/Roomy geometry; preserve font scaling and measured row heights.
 - `src/StartDateField.tsx` owns the native draft date picker; existing dates remain inferred until edited. Explicit start dates bound statistics without deleting entries. New edits/exports use v10, retaining v1–v9 replay.
 - Statistics uses the same native pageSheet/slide/swipe dismissal as History and

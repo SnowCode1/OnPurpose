@@ -966,3 +966,18 @@ Compact/Standard normally get two, Roomy three. Column spacing/orientation
 changes the width available to native wrapping. Full values remain intact and
 accessible. This is the assistant's corrective implementation choice following
 the founder's readability feedback; iPhone acceptance remains pending.
+
+## 5 October 2026 — Defer hidden grid appearance work
+
+The founder reported delayed feedback for row/column spacing buttons while in
+Settings. Source tracing confirmed every choice propagated to the hidden grid;
+column changes remounted header/body lists through their width keys. Keep those
+keys and native UI-thread scroll alignment, while holding grid presentation
+preferences during the History/Settings/archive sheet and its dismissal.
+
+Settings highlights and durable preference writes remain immediate. Native
+`onDismiss` releases the final row/column/text-size/fading/filter values once;
+an inner TypographyProvider prevents hidden font-context invalidation. Keep the
+grid mounted to retain range/scroll state, with live entry subscriptions and
+save failure/retry. This is the assistant's performance correction within the
+founder's request; no storage schema, new dependency or backend is needed.

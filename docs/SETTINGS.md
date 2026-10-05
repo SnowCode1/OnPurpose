@@ -30,7 +30,7 @@ History and Undo/Redo. Corrections can still group across a preference change, a
 settings do not clear Redo. Sample-mode preferences are session-only in its isolated
 store; use real data to test persistence.
 
-Absent fields preserve previous behaviour without rewriting old logs. New writes and exports use v9; imports retain v1–v8 compatibility. Text size was introduced in v8.
+Absent fields preserve previous behaviour without rewriting old logs. New writes and exports use v10; imports retain v1–v9 compatibility. Text size was introduced in v8.
 The original display preferences were introduced in v6. Invalid settings or
 new settings disguised as old events/habit actions are rejected. See STORAGE.md.
 Settings continue to expose save failure/retry and disable edits when saving is
@@ -51,8 +51,9 @@ checkmarks, emoji and vector icons keep their control geometry. Native text and
 inputs share `Typography.tsx`; nested spans inherit the scaled parent without
 double scaling. The DOM description editor receives the same combined scale.
 
-The slider previews its percentage while dragging and applies once on release,
-so the grid does not repeatedly remount under a moving thumb. At larger sizes,
+The slider previews its percentage while dragging and saves once on release.
+The Settings controls adopt the saved text size immediately; the grid holds its
+display size until the sheet finishes dismissing. At larger sizes,
 rows grow, fewer day columns fit, settings choices wrap and the statistics
 calendar grows. Smaller text does not shrink touch targets below existing minima.
 This shares the grid's existing geometry/scroll restoration path. Phone testing
@@ -99,3 +100,25 @@ blocks or hide them behind info buttons. `InfoNote.tsx` now provides labelled,
 Daily tracking and Backups. Save status/errors remain direct. Explanations expand
 only on request and can collapse again; text scaling is preserved. This final
 small disclosure change still needs device review.
+
+## Responsive appearance changes
+
+The founder reported slow spacing-option feedback. Row choices were relaying
+geometry changes into the mounted hidden grid; column-width changes remounted
+both native day lists for each choice. The width keys remain necessary to keep
+header/body positioning aligned, but the hidden work now waits.
+
+`useGridDisplayPreferences.ts` retains the displayed row/column spacing, text
+size, fading and completion filtering while History/Settings/archive is open or
+dismissing. The Settings highlight and normal durable write use current values
+immediately. `AppPanel`'s native `onDismiss` releases only the latest values, so
+rapid choices cause one final grid layout change. An inner TypographyProvider
+keeps the hidden grid's font context stable while Settings scales. This is only
+presentation deferral; preferences are still saved, backed up and excluded from
+History/Undo as before. Closing by button or native swipe follows the same path.
+
+The grid stays mounted, retaining date range, viewed day and scrolling state.
+Necessary width-related list remounts occur after dismissal. Entry subscriptions,
+save failure/retry and archive restores remain live. Native rotation/system text
+changes are not frozen. Phone testing must confirm press responsiveness and a
+correctly aligned return in both orientations and with larger text.

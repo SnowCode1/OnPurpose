@@ -43,6 +43,7 @@ export function AppPanel({
   hapticsEnabled,
   onHapticsChange,
   onClose,
+  onDismiss,
   snapshot,
   backupBusy,
   onRestoreDescription,
@@ -79,6 +80,7 @@ export function AppPanel({
   hapticsEnabled: boolean;
   onHapticsChange: (enabled: boolean) => void;
   onClose: () => void;
+  onDismiss: () => void;
   snapshot: StoreSnapshot;
   backupBusy: boolean;
   onRestoreDescription: (id: string, text: string | undefined) => boolean;
@@ -109,6 +111,7 @@ export function AppPanel({
       allowSwipeDismissal
       supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}
       onRequestClose={onClose}
+      onDismiss={onDismiss}
       backdropColor="#000000"
     >
       <SafeAreaProvider>
