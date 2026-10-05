@@ -1,3 +1,6 @@
+import { DescriptionEditor } from './DescriptionEditor';
+import { descriptionSummary } from './description';
+import { draftsFor, descriptionDraftKey } from './descriptionDrafts';
 import { StartDateField } from './StartDateField';
 import { validDate } from './storage/model';
 import { useState, type ComponentType } from 'react';
@@ -23,6 +26,7 @@ import { habitIconLabel, type HabitIcon } from './habitIcons';
 
 export type HabitDialogMode = 'colour' | 'edit' | 'create';
 export function HabitDialog({
+  temporary,
   habit,
   initialStartDate,
   mode,
@@ -32,6 +36,7 @@ export function HabitDialog({
   onColour,
   editable,
 }: {
+  temporary: boolean;
   habit: Habit;
   initialStartDate: string;
   mode: HabitDialogMode;
@@ -41,6 +46,18 @@ export function HabitDialog({
   onColour: (colour: string) => boolean;
   editable: boolean;
 }) {
+  const [description, setDescription] = useState(habit.description);
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const draftKey = descriptionDraftKey(
+    mode === 'create' ? undefined : habit.id,
+  );
+  function discard() {
+    if (mode !== 'colour')
+      void draftsFor(temporary)
+        .remove(draftKey)
+        .catch(() => {});
+    onClose();
+  }
   const { fontScale } = useWindowDimensions();
   const [startDate, setStartDate] = useState(
     habit.startDate ?? initialStartDate,
@@ -63,19 +80,30 @@ export function HabitDialog({
     unit.trim().length <= 80;
   const editing = mode === 'edit' || mode === 'create';
   function save() {
-    const { unit: _unit, icon: _icon, ...base } = habit;
+    const {
+      unit: _unit,
+      icon: _icon,
+      description: _description,
+      ...base
+    } = habit;
     const after: Habit = {
       ...base,
       name: name.trim(),
       ...(startDate !== initialStartDate || habit.startDate || mode === 'create'
         ? { startDate }
         : {}),
+      ...(description ? { description } : {}),
       color: colour,
       ...(icon ? { icon } : {}),
       ...(numeric && unit.trim() ? { unit: unit.trim() } : {}),
       type: numeric ? 'number' : 'checkbox',
     };
-    if (onSave(after)) onClose();
+    if (onSave(after)) {
+      void draftsFor(temporary)
+        .remove(draftKey)
+        .catch(() => {});
+      onClose();
+    }
   }
   const button = (label: string, onPress: () => void, disabled = false) => (
     <Pressable
@@ -94,7 +122,7 @@ export function HabitDialog({
       transparent
       animationType="fade"
       supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}
-      onRequestClose={onClose}
+      onRequestClose={discard}
     >
       <KeyboardAvoidingView
         style={styles.overlay}
@@ -119,7 +147,7 @@ export function HabitDialog({
               onPress={() => {
                 if (iconPicker) setIconPicker(false);
                 else if (picker) setPicker(false);
-                else onClose();
+                else discard();
               }}
               style={styles.close}
             >
@@ -220,6 +248,27 @@ export function HabitDialog({
                       />
                     </View>
                   )}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      description ? 'Edit description' : 'Add description'
+                    }
+                    onPress={() => setDescriptionOpen(true)}
+                    style={({ pressed }) => [
+                      styles.descriptionControl,
+                      { opacity: pressed ? 0.6 : 1 },
+                    ]}
+                  >
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Text style={styles.buttonText}>Description</Text>
+                      <Text numberOfLines={2} style={styles.description}>
+                        {description
+                          ? descriptionSummary(description)
+                          : 'Notes, motivation or a link · optional'}
+                      </Text>
+                    </View>
+                    <Icon name="edit" size={17} color="#888888" />
+                  </Pressable>
                   <StartDateField
                     value={startDate}
                     onChange={setStartDate}
@@ -306,6 +355,24 @@ export function HabitDialog({
             </View>
           )}
         </View>
+        {descriptionOpen && (
+          <DescriptionEditor
+            title={name || 'New habit'}
+            colour={colour}
+            initialValue={description ?? ''}
+            baseValue={habit.description ?? ''}
+            draftKey={draftKey}
+            temporary={temporary}
+            keepDraftOnApply
+            editable={editable}
+            Heading={Heading}
+            onApply={(value) => {
+              setDescription(value);
+              return true;
+            }}
+            onClose={() => setDescriptionOpen(false)}
+          />
+        )}
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -366,6 +433,15 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   buttonText: { color: '#DDDDDD', fontSize: 15, fontWeight: '500' },
+  descriptionControl: {
+    minHeight: 60,
+    backgroundColor: '#1C1C1C',
+    borderRadius: 12,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   appearance: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   appearanceButton: {
     flexGrow: 1,

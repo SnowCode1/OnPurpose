@@ -818,3 +818,44 @@ Follow [SETTINGS.md](SETTINGS.md) for column-density, fading, week-order, large-
 and native scrolling checks. Confirm both orientations retain header/body/loading
 alignment after changing density, including away from Today. Real-store reload and
 v6 export/restore should retain all preferences without changing History/Redo.
+
+## Habit descriptions
+
+Native acceptance is pending; a successful bundle does not verify the keyboard,
+nested full-screen modal presentation, Markdown touch targets or screen-reader flow.
+
+- Reload Expo Go. In sample mode, each preset has fictional Markdown notes; in the
+  real store older habits receive undoable placeholders once. Existing notes,
+  entries, positions and archived habits must remain intact. Example links should
+  be obvious placeholders. Undo a placeholder, reload, and confirm it stays absent.
+- Add a habit: open Description, write text and a link, Preview, then Done. The
+  creation dialog shows a compact summary. Outer Close creates no habit/history
+  action; outer Done saves both. Repeat editing an existing habit; inner Done must
+  not apply until outer Done. Colour-only dialogs must not discard unrelated drafts.
+- Tap a name: notes appear before charts. Short notes fit without a Read more
+  control; long paragraphs/lists can expand and collapse without blocking access
+  to statistics. Try portrait, landscape and large text. Links open only when
+  tapped and invalid/unavailable app links report errors. No remote images load.
+- From statistics use Edit/Add description. Try typing, selecting text, toolbar
+  shortcuts, Write/Preview and scrolling with the keyboard. Close/Done stay visible.
+  Close changed text asks before discard; Done saves one undoable action. Blank text
+  clears the field. Try a long note near the character limit.
+- Apply a note, force quit/reopen, then Undo/Redo. History shows Description edited
+  or cleared. Tap its row, compare Before/After and restore an older/empty version.
+  Restore changes only the description, preserving current name/colour/icon/date,
+  entries and archive status. Undo/Redo the restore. Archive/restore retains notes.
+- Leave writing unfinished for at least a second, background/force quit/reopen and
+  re-enter its editor. Recover the draft. Change the saved note through Undo before
+  opening an older draft: choose between current saved text and recovery. Discard
+  should not return after reload; applied text must remain separate from unfinished
+  writing. Abrupt termination before a debounce write can lose recent keystrokes.
+- In the real store export a v7 backup, edit descriptions and restore with the
+  existing confirmation. Applied notes and History survive; unfinished drafts are
+  excluded, and a pre-restore copy remains. A retained conflicting draft prompts
+  instead of silently replacing restored text. Sample mode cannot change real notes
+  or drafts; sample notes/drafts disappear on full reload.
+
+Automated tests cover Markdown/token/link rules, preview boundaries, selection
+shortcuts, strict v7 validation, legacy v1–v6 imports without mutation, native SQL
+reload/Undo/Redo/archive/clear/backup, failure rollback/retry, placeholder protection,
+serialized draft writes/discard, draft validation and separate memory sample drafts.

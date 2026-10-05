@@ -19,6 +19,11 @@ editor above statistics. Changes update the statistics without recording new
 statistics events. The header and habit title retain the guarded development
 preview gesture.
 
+Optional habit descriptions appear first, before the range controls and charts,
+with a bounded Markdown preview, Read more/Show less and direct full-screen editing.
+Links open only when tapped. See [DESCRIPTIONS.md](DESCRIPTIONS.md). These notes do
+not change statistical calculations.
+
 Choose 30 days, 90 days, one year (365 days), or All. Ranges include today. Checkbox
 cards show completion rate, current streak, all-time best streak, completions,
 and tracking-day count. An equal-length previous-period comparison is shown when
@@ -97,7 +102,7 @@ to VoiceOver; numeric days announce the full date and recorded value.
 
 `src/statistics.ts` is pure derived logic. `src/HabitStatsScreen.tsx` owns the screen,
 charts, and month/range selection. Nothing is stored separately; the existing
-version-1/2/3/4 logs and projection remain authoritative.
+version-1/2/3/4/5/6/7 logs and projection remain authoritative.
 
 `node --test scripts/statistics.test.mjs` covers denominators, unfinished today,
 streaks, zero versus blank, future exclusion, archive/restore including Undo/Redo,

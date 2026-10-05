@@ -227,10 +227,10 @@ Metro with `npm run start:clear` if it cannot resolve an installed module).
 Settings → Export backup opens the share sheet; choose Save to Files. Restore
 backup validates first and asks before replacing data, retaining a local copy.
 
-New habit edits use version-4 events with grouped actions; global preferences save
-outside visible History/Undo. Exports use container version 4; existing version-1/2/3
+New habit edits use version-7 events with grouped actions; global preferences save
+outside visible History/Undo. Exports use container version 7; existing version-1/2/3/4/5/6
 backups remain importable and old log records stay unchanged. Fully reload Expo Go
-to test storage updates. Do not downgrade to an older build after writing v4 data;
+to test storage updates. Do not downgrade to an older build after writing v7 data;
 older builds cannot interpret it and will refuse to load rather than reset.
 The web preview uses separate browser localStorage, not the iPhone SQLite file.
 
@@ -268,7 +268,7 @@ startup flag. No app-data reset, seeding into an existing database, or backup im
 is involved. Backup controls are hidden/disabled in sample mode, and its repository
 rejects restore operations. History/archive indicate that sample changes are temporary.
 
-`src/dev/sampleData.ts` builds deterministic valid v4 events and an independent
+`src/dev/sampleData.ts` builds deterministic valid v7 events and an independent
 ChangeStore backed only by memory. `SampleDataMode.tsx` owns the development switch.
 App loads both behind `__DEV__`; the production iOS export excludes their code
 regardless of the env value. Verify this when changing the gate. Tests exercise
@@ -283,3 +283,12 @@ plugin in app.json. Expo documents this component as [included in Expo Go](https
 Fully reload after installing it; production/development native builds include it
 on their next build. The web-specific StartDateField keeps browser preview separate
 from the native picker. Native presentation/VoiceOver still require phone checks.
+
+## Habit descriptions
+
+Markdown/plain-text notes are available during creation/editing and appear before
+statistics. The full-screen editor uses the pure-JavaScript markdown-it browser
+build; no additional native build is required. Fully reload Expo Go to populate
+placeholder notes in the current sample and existing real store. Applied notes use
+v7 events, with v1–v6 replay retained. See [DESCRIPTIONS.md](DESCRIPTIONS.md) for
+editor drafts, links, history comparison and recovery, and TESTING.md for phone QA.

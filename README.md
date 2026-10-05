@@ -8,7 +8,7 @@ Expo/React Native foundation and a 12-row grid demo. Adaptive columns work in
 portrait and landscape. Scroll into the past or deliberately pull beyond today
 to reveal future dates; checkbox and daily-total entries work in both directions.
 Habit details offer 24 colour presets, a custom visual picker, and hex input.
-Optional emoji or searchable Phosphor icons help identify habits; pack icons use
+Optional emoji or searchable Phosphor/Tabler icons help identify habits; pack icons use
 the row colour.
 Entries, colours, and the haptic setting now persist locally in SQLite. History
 shows active habit actions with grouped undo/redo; rapid corrections to the same
@@ -18,7 +18,8 @@ Add habits at the bottom of the grid. Hold a name for editing, colours, archival
 or drag ordering. Settings → Archived habits restores archived rows with their
 entries and positions. Tap a name for full-screen statistics: completion trends
 and streaks for checkboxes, totals and averages for numbers, weekday patterns, and
-a monthly calendar. Comments and goal/scheduling rules remain to be implemented. Sample habits are seeded once; they no longer reset on reload.
+a monthly calendar. Optional Markdown descriptions sit above statistics, with a
+full-screen editor, links, recoverable drafts and undoable history. Comments and goal/scheduling rules remain to be implemented. Sample habits are seeded once; they no longer reset on reload.
 
 ## Run locally
 
@@ -56,6 +57,7 @@ The initial workspace is already configured. See the
 - [Development setup](docs/DEVELOPMENT.md)
 - [Architecture and current limitations](docs/ARCHITECTURE.md)
 - [Incremental storage and export design](docs/STORAGE.md)
+- [Habit descriptions](docs/DESCRIPTIONS.md)
 - [Technical decisions](docs/DECISIONS.md)
 - [Testing the three-second idea](docs/TESTING.md)
 - [Path to the App Store](docs/RELEASING.md)

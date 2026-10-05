@@ -1,3 +1,4 @@
+import { presetDescriptions } from '../presetDescriptions.ts';
 import { calendarDay, localDateKey } from '../calendar.ts';
 import { demoHabits, isNumericHabit } from '../habits.ts';
 import {
@@ -18,7 +19,7 @@ function hash(text: string): number {
 }
 function meta(sequence: number, date: Date, prefix: string): EventMeta {
   return {
-    version: 4,
+    version: 7,
     sequence,
     id: `${prefix}_${sequence}`,
     recordedAt: date.toISOString(),
@@ -34,7 +35,10 @@ export function createSampleEvents(today: string): StoredEvent[] {
     {
       ...meta(1, started, 'sample_seed'),
       type: 'initialize',
-      habits: demoHabits.map((habit) => ({ ...habit })),
+      habits: demoHabits.map((habit) => ({
+        ...habit,
+        description: presetDescriptions[habit.id],
+      })),
     },
   ];
   for (let ago = SAMPLE_DAYS - 1; ago >= 0; ago--) {

@@ -123,6 +123,7 @@ export function AppPanel({
   onClose,
   snapshot,
   backupBusy,
+  onRestoreDescription,
   onUndo,
   onRedo,
   onExport,
@@ -154,6 +155,7 @@ export function AppPanel({
   onClose: () => void;
   snapshot: StoreSnapshot;
   backupBusy: boolean;
+  onRestoreDescription: (id: string, text: string | undefined) => boolean;
   onUndo: () => void;
   onRedo: () => void;
   onExport: () => void;
@@ -215,9 +217,11 @@ export function AppPanel({
             <Animated.View key={page} entering={appear} style={{ flex: 1 }}>
               {page === 'history' ? (
                 <HistoryView
+                  Heading={HeadingComponent}
                   sampleData={sampleData}
                   snapshot={snapshot}
                   backupBusy={backupBusy}
+                  onRestoreDescription={onRestoreDescription}
                   onUndo={onUndo}
                   onRedo={onRedo}
                   onRetry={onRetry}

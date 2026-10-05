@@ -1,5 +1,30 @@
 # Decision log
 
+## 033 — Descriptions close to the habit
+
+Date: 5 October 2026. Status: founder authorised the proposed design and requested
+placeholder Markdown notes for every existing habit; implemented, phone review pending.
+
+Show an optional description before statistics so a name tap reaches motivation
+and linked notes. Keep the main grid unchanged. Use one compact creation/edit
+control and a full-screen Write/Preview editor with fixed Close/Done. Bound long
+reading previews and allow expansion. Parent-form descriptions stay drafts until
+outer Done; statistics edits apply directly. Preserve applied text through History,
+Undo/Redo, archive/restore and full backups.
+
+Implementation choices: parse Markdown with markdown-it's browser build and render
+native text/views, avoiding a WebView. Use tap-only links, no remote image loading,
+a 20,000-character limit and a two-block/height-bounded preview. Recover interrupted
+writing in a separate local draft store; never autosave unfinished text into habit
+History. Description History rows open Before/After with restore as a new ordinary
+edit. These choices are documented in DESCRIPTIONS.md for adjustment after testing.
+
+Version 7 adds the optional field; existing v1–v6 raw events and SQL schema remain
+unchanged. Add requested placeholders through ordinary undoable edits, protecting
+past description decisions and deliberate blank new habits. Sample notes/drafts
+remain isolated in memory. Duplicate client prompts are now covered by shared
+AGENTS.md guidance and the CLAUDE.md entry point.
+
 ## 032 — Focused display settings
 
 Date: 4 October 2026. Status: founder requested column spacing and authorised

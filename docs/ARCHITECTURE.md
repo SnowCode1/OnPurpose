@@ -35,7 +35,7 @@ scripts/       local preview receiver and its integration tests
 ```
 
 Native SQLite and a real change-history browser are implemented. There is no
-backend, account flow, implemented statistics, scheduler, analytics SDK,
+backend, account flow, scheduler, analytics SDK,
 or navigation library. The web target is a development convenience; iOS is the
 release target. Android is not part of the committed release scope.
 
@@ -262,3 +262,17 @@ HabitDialog presents statistics, editor, and colour drafts. ManageHabits runs
 inside the existing Settings sheet; nested editors are hosted by that same sheet
 when needed. See [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md) for interaction rules
 and version-3 definition/order events, with unchanged v1/v2 replay.
+
+## Habit descriptions
+
+`HabitDescription.tsx` adds a bounded reader before statistics; `DescriptionEditor.tsx`
+owns full-screen writing/preview, and `DescriptionHistory.tsx` compares active
+before/after versions. `description.ts` parses Markdown and supplies validation,
+summary/preview and insertion helpers. `DescriptionText.tsx` renders native blocks
+and intentional OS links without HTML execution or remote image requests.
+
+Applied descriptions use v7 ordinary habit events, with unchanged SQL schema and
+v1–v6 replay. `storage/descriptionDraftModel.ts` supplies the separate serialized
+draft adapters; platform modules select SQLite/browser storage and sample mode
+selects memory. Keep the pure model's name distinct from platform adapters so Metro
+cannot resolve it recursively. See DESCRIPTIONS.md and STORAGE.md.

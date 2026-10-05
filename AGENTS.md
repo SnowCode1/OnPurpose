@@ -6,6 +6,14 @@ Read `PROJECT_GOALS.md`, `docs/DEVELOPMENT.md`, and `docs/DECISIONS.md`.
 OnPurpose is a provisional name. The founder is new to the stack: explain
 technical choices in plain language and connect them to the product goal.
 
+## Duplicate messages
+
+The Codex client sometimes repeats a user message. When a message clearly
+repeats one already handled and adds no new instruction, ignore it or reply with
+one brief acknowledgement. Do not repeat the explanation, restart completed work,
+or run the same mutation twice. Continue when the next substantive message arrives.
+Treat deliberate requests to retry or repeat an action as new instructions.
+
 ## Product direction
 
 The core goal is minimising cognitive friction so tracking becomes a seamless
@@ -46,6 +54,11 @@ The requested preset icon update uses normal undoable edits in
   `src/ArchivedHabits.tsx` owns the Settings archive/restore list. Add belongs at the
   end of the grid. `src/HabitStatsScreen.tsx` owns full-screen statistics, with pure
   calculations in `src/statistics.ts`. Read HABIT_MANAGEMENT.md and STATISTICS.md.
+  `src/HabitDescription.tsx`, `src/DescriptionEditor.tsx` and `src/DescriptionHistory.tsx`
+  own description reading, full-screen draft editing and Before/After restore. Read
+  `docs/DESCRIPTIONS.md`. Applied descriptions use ordinary v7 habit changes;
+  recoverable drafts stay outside History/backups in a separate local store. Keep
+  `storage/descriptionDraftModel.ts` distinct from native/web adapters for Metro.
   `src/dev/sampleData.ts` owns isolated mock history for statistics testing. Keep
   it in memory, excluded via `__DEV__` from release, and separate from real data.
   `src/HabitSymbol.tsx` renders optional emoji/Phosphor/Tabler icons; the editor owns
@@ -61,7 +74,7 @@ The requested preset icon update uses normal undoable edits in
   date-cell layout timing aligned.
 - `src/displayPreferences.ts` owns column spacing, week start and date fading defaults; keep absent-field defaults compatible with old logs and all preferences outside History/Undo. Read docs/SETTINGS.md.
 - `src/rowSpacing.ts` owns saved Compact/Standard/Roomy geometry; preserve font scaling and measured row heights.
-- `src/StartDateField.tsx` owns the native draft date picker; existing dates remain inferred until edited. Explicit start dates bound statistics without deleting entries. New edits/exports use v6, retaining v1–v5 replay.
+- `src/StartDateField.tsx` owns the native draft date picker; existing dates remain inferred until edited. Explicit start dates bound statistics without deleting entries. New edits/exports use v7, retaining v1–v6 replay.
 - `src/useStatsDismissal.ts` owns UI-thread pull dismissal; only a drag starting at the top qualifies. Keep an accessible Back button.
 - `src/gridLayout.ts` calculates adaptive column geometry for both orientations.
 - `src/useGridScroll.ts` synchronizes native scrolling on the UI thread; never

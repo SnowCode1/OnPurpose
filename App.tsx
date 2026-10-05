@@ -1,3 +1,6 @@
+import { DescriptionEditor } from './src/DescriptionEditor';
+import { descriptionDraftKey } from './src/descriptionDrafts';
+import { applyPlaceholderDescriptions } from './src/storage/presetDescriptions';
 import { displayDefaults } from './src/displayPreferences';
 import type { RowSpacing } from './src/rowSpacing';
 import { habitTrackingStart } from './src/statistics';
@@ -134,7 +137,10 @@ function PersistentApp({
 }) {
   const snapshot = usePersistentStore(store);
   useEffect(() => {
-    if (!sampleData && snapshot.status === 'ready') applyPresetIcons(store);
+    if (!sampleData && snapshot.status === 'ready') {
+      applyPresetIcons(store);
+      applyPlaceholderDescriptions(store);
+    }
   }, [store, snapshot.status, sampleData]);
   const {
     habits,
@@ -167,6 +173,8 @@ function PersistentApp({
   const detail = habits.find((habit) => habit.id === detailId);
   const [habitMode, setHabitMode] = useState<HabitDialogMode>('edit');
   const [newHabit, setNewHabit] = useState<Habit | null>(null);
+  const [descriptionId, setDescriptionId] = useState<string | null>(null);
+  const descriptionHabit = habits.find((habit) => habit.id === descriptionId);
   const [statsId, setStatsId] = useState<string | null>(null);
   const statsHabit = habits.find(
     (habit) => habit.id === statsId && !habit.archived,
@@ -205,7 +213,7 @@ function PersistentApp({
           feedback(after === null ? 'undo' : 'confirm');
       }
     },
-    [store],
+    [store, setInput, setEditing],
   );
 
   const openDetails = useCallback((habit: Habit) => {
@@ -282,7 +290,8 @@ function PersistentApp({
         isNumericHabit(before) === isNumericHabit(after) &&
         before.archived === after.archived &&
         before.icon === after.icon &&
-        before.startDate === after.startDate
+        before.startDate === after.startDate &&
+        before.description === after.description
       )
         return true;
       const accepted = store.change({
@@ -450,6 +459,7 @@ function PersistentApp({
           snapshot.events,
           today,
         )}
+        temporary={sampleData}
         mode={habitMode}
         Heading={PreviewHeading}
         onClose={closeDialog}
@@ -529,11 +539,38 @@ function PersistentApp({
                 editable={editable}
                 onBack={closeStats}
                 onCellPress={pressCell}
+                onDescriptionEdit={() => setDescriptionId(statsHabit.id)}
                 onEdit={editStats}
               />
             </PerformanceBoundary>
           )}
         </View>
+        {descriptionHabit && (
+          <DescriptionEditor
+            key={descriptionHabit.id}
+            title={descriptionHabit.name}
+            colour={descriptionHabit.color}
+            initialValue={descriptionHabit.description ?? ''}
+            draftKey={descriptionDraftKey(descriptionHabit.id)}
+            temporary={sampleData}
+            editable={editable}
+            Heading={PreviewHeading}
+            onClose={() => setDescriptionId(null)}
+            onApply={(description) => {
+              const current = store
+                .getSnapshot()
+                .replay.state.habits.find(
+                  (habit) => habit.id === descriptionHabit.id,
+                );
+              if (!current || !editable) return false;
+              const { description: _description, ...rest } = current;
+              return saveHabit({
+                ...rest,
+                ...(description ? { description } : {}),
+              });
+            }}
+          />
+        )}
         <Modal
           visible={editing !== null}
           animationType="fade"
@@ -635,6 +672,17 @@ function PersistentApp({
           HeadingComponent={PreviewHeading}
           snapshot={snapshot}
           backupBusy={backupBusy}
+          onRestoreDescription={(id, description) => {
+            const current = store
+              .getSnapshot()
+              .replay.state.habits.find((habit) => habit.id === id);
+            if (!current || !editable) return false;
+            const { description: _description, ...rest } = current;
+            return saveHabit({
+              ...rest,
+              ...(description ? { description } : {}),
+            });
+          }}
           onUndo={undo}
           onRedo={redo}
           onExport={() => {

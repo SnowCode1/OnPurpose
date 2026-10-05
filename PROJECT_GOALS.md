@@ -1,6 +1,6 @@
 # OnPurpose — project goals
 
-Status: living product brief. Last updated: 4 October 2026.
+Status: living product brief. Last updated: 5 October 2026.
 “OnPurpose” is a working name, not a final brand or reserved App Store name.
 
 ## Primary goal
@@ -71,6 +71,10 @@ and uncertainty about whether something was saved.
   History and Undo. Show active habit actions: Undo removes their rows and Redo
   restores them. Group rapid corrections to one entry and hide net-zero groups;
   show the next Undo target. Start with two minutes of inactivity between groups.
+- Give each habit an optional Markdown/plain-text description with links, available
+  during creation and editing. Show it first in statistics, with a full-screen editor,
+  and retain applied changes in incremental storage and Undo/Redo. Populate existing
+  habits with editable placeholder notes while preserving any user-written text.
 - Give each habit an editable start date, initially Today, to support old records.
 - Allow pulling down from the top of statistics to return to the grid.
 - Offer saved row- and column-spacing settings.

@@ -62,24 +62,33 @@ export function historyPresentation(event: HistoryAction, state: StoredState) {
     };
   if (change.kind === 'habit') {
     const habit = change.after ?? change.before!;
-    const summary = !change.before
-      ? 'Habit added'
-      : !change.after
-        ? 'Habit removed'
-        : change.before.archived !== change.after.archived
-          ? change.after.archived
-            ? 'Archived'
-            : 'Restored'
-          : change.before.icon !== change.after.icon &&
-              change.before.name === change.after.name &&
-              change.before.color === change.after.color &&
-              change.before.unit === change.after.unit &&
-              change.before.startDate === change.after.startDate &&
-              isNumericHabit(change.before) === isNumericHabit(change.after)
-            ? change.after.icon
-              ? 'Icon changed'
-              : 'Icon removed'
-            : 'Habit edited';
+    const descriptionChanged =
+      change.before &&
+      change.after &&
+      change.before.description !== change.after.description;
+    const summary = descriptionChanged
+      ? change.after?.description
+        ? 'Description edited'
+        : 'Description cleared'
+      : !change.before
+        ? 'Habit added'
+        : !change.after
+          ? 'Habit removed'
+          : change.before.archived !== change.after.archived
+            ? change.after.archived
+              ? 'Archived'
+              : 'Restored'
+            : change.before.icon !== change.after.icon &&
+                change.before.name === change.after.name &&
+                change.before.color === change.after.color &&
+                change.before.unit === change.after.unit &&
+                change.before.startDate === change.after.startDate &&
+                change.before.description === change.after.description &&
+                isNumericHabit(change.before) === isNumericHabit(change.after)
+              ? change.after.icon
+                ? 'Icon changed'
+                : 'Icon removed'
+              : 'Habit edited';
     return {
       title: habit.name,
       summary,

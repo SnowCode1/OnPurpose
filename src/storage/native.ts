@@ -1,3 +1,4 @@
+import { presetDescriptions } from '../presetDescriptions';
 import { localDateKey } from '../calendar';
 import { openDatabaseAsync } from 'expo-sqlite';
 import {
@@ -13,7 +14,7 @@ import type { EventMeta } from './model';
 function metadata(sequence: number): EventMeta {
   const now = new Date();
   return {
-    version: 6,
+    version: 7,
     id: randomUUID(),
     sequence,
     recordedAt: now.toISOString(),
@@ -34,6 +35,7 @@ export function openStore(): Promise<ChangeStore> {
           type: 'initialize',
           habits: demoHabits.map((habit) => ({
             ...habit,
+            description: presetDescriptions[habit.id],
             startDate: localDateKey(new Date()),
           })),
         })),

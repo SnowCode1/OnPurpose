@@ -1,3 +1,4 @@
+import { HabitDescription } from './HabitDescription';
 import { weekDayOrder, type WeekStart } from './displayPreferences';
 import { useStatsDismissal } from './useStatsDismissal';
 import { memo, useEffect, useMemo, useState, type ComponentType } from 'react';
@@ -241,6 +242,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   today,
   Heading,
   onBack,
+  onDescriptionEdit,
   onEdit,
   onCellPress,
   editable,
@@ -252,6 +254,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   today: string;
   Heading: ComponentType<TextProps>;
   onBack: () => void;
+  onDescriptionEdit: () => void;
   onEdit: () => void;
   onCellPress: (habit: Habit, day: EntryDay) => void;
   editable: boolean;
@@ -352,6 +355,12 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
               {dateLabel(stats.trackingStart, true)}
             </Text>
           </View>
+          <HabitDescription
+            description={habit.description}
+            colour={habit.color}
+            editable={editable}
+            onEdit={onDescriptionEdit}
+          />
           <View accessibilityRole="tablist" style={styles.ranges}>
             {([30, 90, 365, 'all'] as const).map((value) => (
               <Pressable

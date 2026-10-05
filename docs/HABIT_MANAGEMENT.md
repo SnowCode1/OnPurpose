@@ -8,7 +8,8 @@ acceptance remains pending on the iPhone 16 Pro.
 Tap a habit name to open a full-screen statistics view. Back returns to the same
 mounted grid and date position. Checkbox rates and streaks, numerical totals and
 averages, time-range charts, weekday patterns, and a calendar are described in
-[STATISTICS.md](STATISTICS.md). Editors remain compact dialogs.
+[STATISTICS.md](STATISTICS.md). Editors remain compact dialogs; descriptions use
+a separate full-screen editor.
 
 Hold a name for 380 ms to select its row with a haptic tick and show an anchored
 menu: Colour, Edit habit, Reorder, Archive. Releasing leaves the menu open. Each
@@ -42,7 +43,9 @@ a colour inside the editor updates its draft until the outer Done saves the habi
 
 New habits specify a name, checkbox or numeric daily-total type, colour, optional
 emoji/pack icon, and an
-optional numeric unit. The creation dialog has no extra “Make it yours” heading.
+optional numeric unit, plus an optional Markdown/plain-text description. Its compact
+control opens a full-screen editor, retaining the outer Done/Close draft contract;
+see [DESCRIPTIONS.md](DESCRIPTIONS.md). The creation dialog has no extra “Make it yours” heading.
 Start date defaults to local Today and is editable in creation and existing-habit
 editors. iOS uses a compact native date picker; web preview uses a validated ISO
 date input. Earlier dates support backfilling. Done applies the draft and Close
@@ -61,14 +64,14 @@ outside Undo.
 
 ## Storage compatibility
 
-New events and backup containers use version 6 (display settings); version 5 added editable start dates and row spacing; version 3 introduced definitions
+New events and backup containers use version 7 (descriptions); version 6 added display settings; version 5 added editable start dates and row spacing; version 3 introduced definitions
 and ordering, and version 4 adds optional icons. A habit change captures its stable
 ID, position, and before/after definition; creation uses a null before-definition.
 Undoing creation can remove it only after its entries have been undone. This is
 not a permanent deletion feature. An order change carries exact before/after ID
 lists, validated as a permutation of every stored habit.
 
-Old v1/v2/v3/v4/v5 logs and backups remain readable, unchanged. Legacy numeric habits are
+Old v1/v2/v3/v4/v5/v6 logs and backups remain readable, unchanged. Legacy numeric habits are
 inferred from their unit field; new definitions may use an explicit type and an
 archived flag. No SQL schema change or reseeding occurs. See [STORAGE.md](STORAGE.md)
 and [the synthetic v4 export](examples/storage-v4.json).

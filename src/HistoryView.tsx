@@ -1,5 +1,13 @@
-import { memo, useState } from 'react';
-import { Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
+import { DescriptionHistory } from './DescriptionHistory';
+import { memo, useState, type ComponentType } from 'react';
+import {
+  Pressable,
+  SectionList,
+  StyleSheet,
+  Text,
+  View,
+  type TextProps,
+} from 'react-native';
 import { Icon } from './Icon';
 import {
   historyDayLabel,
@@ -15,10 +23,12 @@ const HistoryRow = memo(function HistoryRow({
   event,
   state,
   pending,
+  onDescriptionPress,
 }: {
   event: HistoryAction;
   state: StoredState;
   pending: boolean;
+  onDescriptionPress: (event: HistoryAction) => void;
 }) {
   const row = historyPresentation(event, state);
   const accent = contrastOnBlack(row.color) >= 3 ? row.color : '#B8B8B8';
@@ -40,8 +50,18 @@ const HistoryRow = memo(function HistoryRow({
     event.change.kind === 'colour'
       ? `, ${event.change.before} to ${event.change.after}`
       : '';
+  const descriptionChanged =
+    event.change.kind === 'habit' &&
+    event.change.before?.description !== event.change.after?.description;
   return (
-    <View
+    <Pressable
+      onPress={descriptionChanged ? () => onDescriptionPress(event) : undefined}
+      accessibilityRole={descriptionChanged ? 'button' : undefined}
+      accessibilityHint={
+        descriptionChanged
+          ? 'Compare description versions and restore'
+          : undefined
+      }
       accessible
       accessibilityLabel={`${row.title}, ${row.summary}${colourDescription}${date ? `, entry for ${date}` : ''}, ${time}${pending ? ', saving' : ''}`}
       style={styles.row}
@@ -78,7 +98,7 @@ const HistoryRow = memo(function HistoryRow({
           {pending && <Text style={styles.pending}>Saving…</Text>}
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 });
 
@@ -114,20 +134,26 @@ function HistoryButton({
 }
 
 export function HistoryView({
+  Heading,
   sampleData = false,
   snapshot,
   backupBusy,
+  onRestoreDescription,
   onUndo,
   onRedo,
   onRetry,
 }: {
+  Heading: ComponentType<TextProps>;
   sampleData?: boolean;
   snapshot: StoreSnapshot;
   backupBusy: boolean;
+  onRestoreDescription: (id: string, text: string | undefined) => boolean;
   onUndo: () => void;
   onRedo: () => void;
   onRetry: () => void;
 }) {
+  const [descriptionAction, setDescriptionAction] =
+    useState<HistoryAction | null>(null);
   const today = useLocalToday();
   const [limit, setLimit] = useState(100);
   const sections = historySections(snapshot.replay.undo, limit);
@@ -206,6 +232,16 @@ export function HistoryView({
           </Pressable>
         </View>
       )}
+      {descriptionAction && (
+        <DescriptionHistory
+          Heading={Heading}
+          action={descriptionAction}
+          state={snapshot.replay.state}
+          editable={editable}
+          onRestore={onRestoreDescription}
+          onClose={() => setDescriptionAction(null)}
+        />
+      )}
       <SectionList
         sections={sections}
         extraData={snapshot}
@@ -227,6 +263,7 @@ export function HistoryView({
           <HistoryRow
             event={item}
             state={snapshot.replay.state}
+            onDescriptionPress={setDescriptionAction}
             pending={item.lastChangedSequence > savedCount}
           />
         )}

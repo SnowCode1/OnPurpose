@@ -638,7 +638,7 @@ test('v5 start dates and spacing survive SQLite reload, undo/redo and backup rou
     '2026-10-04T06:00:00.000Z',
     digest,
   );
-  assert.equal(JSON.parse(text).version, 6);
+  assert.equal(JSON.parse(text).version, 7);
   const decoded = await decodeArchive(text, digest);
   assert.deepEqual(decoded.replay, reopened.getSnapshot().replay);
   const archive = JSON.parse(text);
@@ -655,7 +655,7 @@ test('v5 start dates and spacing survive SQLite reload, undo/redo and backup rou
         type: 'preference',
         change: { kind: 'haptics', before: true, after: false },
       }),
-    /version-5/,
+    /version-[57]/,
   );
 });
 test('v5 strictly validates dates, preference values, preconditions and version boundaries', async (t) => {
@@ -813,7 +813,7 @@ test('v6 display settings persist through SQLite, preserve Redo and round-trip w
     '2026-10-04T08:00:00.000Z',
     digest,
   );
-  assert.equal(JSON.parse(archive).version, 6);
+  assert.equal(JSON.parse(archive).version, 7);
   const decoded = await decodeArchive(archive, digest);
   assert.deepEqual(decoded.replay, reopened.getSnapshot().replay);
   assert.equal(decoded.replay.state.values['walk:2026-10-04'], 1);
@@ -831,7 +831,7 @@ test('v6 display settings persist through SQLite, preserve Redo and round-trip w
         type: 'preference',
         change: { kind: 'haptics', before: true, after: false },
       }),
-    /version-6/,
+    /version-[67]/,
   );
 });
 test('v6 preferences preserve correction grouping and restore default values', async (t) => {
@@ -935,4 +935,128 @@ test('documented v6 backup restores display choices and a habit redo across pref
   assert.equal(replay.state.values['walk:2026-10-04'], 1);
   assert.equal(replay.undo.length, 1);
   assert.equal(replay.undo[0].id, 'v6-check');
+});
+
+test('v7 descriptions survive native reload, Undo/Redo, archive/restore, clear and a full backup', async (t) => {
+  const { store, repository } = await fixture(t);
+  store.change(entry(null, 1));
+  const before = store.getSnapshot().replay.state.habits[0];
+  const description =
+    '**My reason**\n\n- A small start\n\n[My notes](obsidian://open?vault=Personal)';
+  const withNote = { ...before, description };
+  store.change({
+    kind: 'habit',
+    habitId: before.id,
+    index: 0,
+    before,
+    after: withNote,
+  });
+  await store.flush();
+  const reopened = new ChangeStore(repository, metadata);
+  await reopened.load();
+  assert.equal(
+    reopened.getSnapshot().replay.state.habits[0].description,
+    description,
+  );
+  assert.ok(reopened.undo());
+  await reopened.flush();
+  assert.equal(
+    reopened.getSnapshot().replay.state.habits[0].description,
+    undefined,
+  );
+  assert.ok(reopened.redo());
+  await reopened.flush();
+  const archived = { ...withNote, archived: true };
+  reopened.change({
+    kind: 'habit',
+    habitId: before.id,
+    index: 0,
+    before: withNote,
+    after: archived,
+  });
+  reopened.undo();
+  reopened.redo();
+  reopened.change({
+    kind: 'habit',
+    habitId: before.id,
+    index: 0,
+    before: archived,
+    after: { ...archived, archived: false },
+  });
+  await reopened.flush();
+  const restoredHabit = reopened.getSnapshot().replay.state.habits[0];
+  assert.equal(restoredHabit.description, description);
+  assert.equal(
+    reopened.getSnapshot().replay.state.values['walk:2026-10-04'],
+    1,
+  );
+  reopened.undo();
+  reopened.redo(); // close correction group
+  const { description: _description, ...cleared } = restoredHabit;
+  reopened.change({
+    kind: 'habit',
+    habitId: before.id,
+    index: 0,
+    before: restoredHabit,
+    after: cleared,
+  });
+  await reopened.flush();
+  const again = new ChangeStore(repository, metadata);
+  await again.load();
+  assert.equal(
+    again.getSnapshot().replay.state.habits[0].description,
+    undefined,
+  );
+  assert.ok(again.undo());
+  await again.flush();
+  assert.equal(
+    again.getSnapshot().replay.state.habits[0].description,
+    description,
+  );
+  const decoded = await decodeArchive(
+    await encodeArchive(
+      again.getSnapshot().events,
+      '2026-10-05T02:00:00.000Z',
+      digest,
+    ),
+    digest,
+  );
+  assert.deepEqual(decoded.replay, again.getSnapshot().replay);
+  assert.deepEqual(decoded.events, again.getSnapshot().events);
+});
+test('failed description save rolls back event and projection together, then retries without losing the note', async (t) => {
+  let fail = false;
+  const { store, repository, raw } = await fixture(t, (sql) => {
+    if (fail && sql.startsWith('INSERT INTO current_state')) {
+      fail = false;
+      throw new Error('Unavailable');
+    }
+  });
+  const before = store.getSnapshot().replay.state.habits[0];
+  fail = true;
+  store.change({
+    kind: 'habit',
+    habitId: before.id,
+    index: 0,
+    before,
+    after: { ...before, description: 'My unfinished thought, now applied.' },
+  });
+  await assert.rejects(store.flush());
+  assert.equal(
+    raw.prepare('SELECT COUNT(*) AS count FROM changes').get().count,
+    1,
+  );
+  assert.equal(
+    (await repository.load()).replay.state.habits[0].description,
+    undefined,
+  );
+  assert.ok(store.getSnapshot().error);
+  await store.retry();
+  await store.flush();
+  const reopened = new ChangeStore(repository, metadata);
+  await reopened.load();
+  assert.equal(
+    reopened.getSnapshot().replay.state.habits[0].description,
+    'My unfinished thought, now applied.',
+  );
 });

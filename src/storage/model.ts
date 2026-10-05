@@ -1,3 +1,4 @@
+import { validDescription } from '../description.ts';
 import {
   displayDefaults,
   isColumnSpacing,
@@ -58,7 +59,7 @@ export function isPreference(change: Change): change is PreferenceChange {
 }
 export type HabitChange = Exclude<Change, PreferenceChange>;
 export type EventMeta = {
-  version: 1 | 2 | 3 | 4 | 5 | 6;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7;
   id: string;
   sequence: number;
   recordedAt: string;
@@ -69,7 +70,9 @@ export type LegacyChangeEvent = EventMeta & { version: 1 } & (
     | { type: 'change'; change: Change }
     | { type: 'undo' | 'redo'; targetId: string; change: Change }
   );
-export type CurrentChangeEvent = EventMeta & { version: 2 | 3 | 4 | 5 | 6 } & (
+export type CurrentChangeEvent = EventMeta & {
+  version: 2 | 3 | 4 | 5 | 6 | 7;
+} & (
     | { type: 'change'; groupId: string; change: HabitChange }
     | { type: 'undo' | 'redo'; targetId: string; change: HabitChange }
     | { type: 'preference'; change: PreferenceChange }
@@ -98,6 +101,7 @@ export type Replay = {
   hasV4: boolean;
   hasV5: boolean;
   hasV6: boolean;
+  hasV7: boolean;
 };
 export const emptyReplay = (): Replay => ({
   state: { habits: [], values: {}, hapticsEnabled: true },
@@ -111,6 +115,7 @@ export const emptyReplay = (): Replay => ({
   hasV4: false,
   hasV5: false,
   hasV6: false,
+  hasV7: false,
 });
 export const GROUP_INACTIVITY_MS = 2 * 60 * 1000;
 
@@ -185,6 +190,7 @@ function validateHabit(
       ...(version >= 3 ? ['type', 'archived'] : []),
       ...(version >= 4 ? ['icon'] : []),
       ...(version >= 5 ? ['startDate'] : []),
+      ...(version >= 7 ? ['description'] : []),
     ].filter((key) => Object.hasOwn(value, key)),
   ]);
   id(value.id);
@@ -207,6 +213,8 @@ function validateHabit(
       value.type === 'checkbox' || value.type === 'number',
       'Invalid habit type.',
     );
+  if (Object.hasOwn(value, 'description'))
+    insist(validDescription(value.description), 'Invalid habit description.');
   if (Object.hasOwn(value, 'startDate'))
     insist(validDate(value.startDate), 'Invalid habit start date.');
   if (Object.hasOwn(value, 'icon'))
@@ -220,7 +228,7 @@ function validateHabit(
 }
 export function validateChange(
   value: unknown,
-  version = 6,
+  version = 7,
 ): asserts value is Change {
   object(value);
   if (value.kind === 'entry') {
@@ -313,7 +321,8 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
       value.version === 3 ||
       value.version === 4 ||
       value.version === 5 ||
-      value.version === 6,
+      value.version === 6 ||
+      value.version === 7,
     'Unsupported event version.',
   );
   id(value.id);
@@ -490,6 +499,7 @@ function reduceEvent(
       hasV4: event.version >= 4,
       hasV5: event.version >= 5,
       hasV6: event.version >= 6,
+      hasV7: event.version >= 7,
     };
   }
   insist(
@@ -515,6 +525,10 @@ function reduceEvent(
   insist(
     !previous.hasV6 || event.version >= 6,
     'Older events cannot follow version-6 events.',
+  );
+  insist(
+    !previous.hasV7 || event.version >= 7,
+    'Older events cannot follow version-7 events.',
   );
   const undo = mutable ? previous.undo : [...previous.undo];
   const redo = mutable ? previous.redo : [...previous.redo];
@@ -653,6 +667,7 @@ function reduceEvent(
     hasV4: previous.hasV4 || event.version >= 4,
     hasV5: previous.hasV5 || event.version >= 5,
     hasV6: previous.hasV6 || event.version >= 6,
+    hasV7: previous.hasV7 || event.version >= 7,
   };
 }
 export function applyChange(state: StoredState, change: Change): StoredState {

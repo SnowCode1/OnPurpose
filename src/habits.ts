@@ -3,6 +3,7 @@ export type Habit = {
   id: string;
   startDate?: string;
   name: string;
+  description?: string;
   color: string;
   unit?: string;
   type?: 'checkbox' | 'number';

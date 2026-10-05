@@ -7,6 +7,7 @@ import {
 } from '../src/dev/sampleData.ts';
 import { replayEvents } from '../src/storage/model.ts';
 import { habitStatistics, dayNumber } from '../src/statistics.ts';
+import { presetDescriptions } from '../src/presetDescriptions.ts';
 import { demoHabits, isNumericHabit } from '../src/habits.ts';
 import { entryDay } from '../src/calendar.ts';
 
@@ -72,8 +73,14 @@ test('sample history is deterministic, valid and bounded to 180 local dates acro
     assert.deepEqual(events, createSampleEvents(date));
     const { replay } = replayEvents(events);
     assert.equal(events[0].type, 'initialize');
-    assert.equal(events[0].version, 4);
-    assert.deepEqual(replay.state.habits, demoHabits);
+    assert.equal(events[0].version, 7);
+    assert.deepEqual(
+      replay.state.habits,
+      demoHabits.map((habit) => ({
+        ...habit,
+        description: presetDescriptions[habit.id],
+      })),
+    );
     const seen = new Set();
     for (const event of events.slice(1)) {
       const { habitId, date: day, after, before } = event.change;
@@ -172,7 +179,13 @@ test('sample edits and Undo/Redo affect only their own in-memory store; a fresh 
   assert.deepEqual(second.getSnapshot(), untouched);
   const reset = await createSampleStore(today);
   assert.equal(reset.getSnapshot().replay.state.values[key] ?? null, before);
-  assert.deepEqual(demoHabits, createSampleEvents(today)[0].habits);
+  assert.deepEqual(
+    demoHabits.map((habit) => ({
+      ...habit,
+      description: presetDescriptions[habit.id],
+    })),
+    createSampleEvents(today)[0].habits,
+  );
 });
 test('sample mode cannot restore a backup or overwrite a persistent repository', async () => {
   const sample = await createSampleStore(today);
