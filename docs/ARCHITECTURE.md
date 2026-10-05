@@ -305,3 +305,22 @@ writes. At Today it filters displayed rows, offers Show completed, and restores
 all rows when browsing other dates. `displayedHabitOrder` persists a full
 permutation while keeping hidden and archived slots fixed. UI-thread scrolling,
 cell selectors and the fallback backdrop remain in place.
+
+## Description performance and reader trial
+
+`HabitDescription.tsx` renders a bounded three-line text excerpt and direct Open
+note/Edit/Versions controls. `descriptionReading.ts` supplies bounded summaries,
+full balanced passages, top-level list-item virtualization and a five-document/
+100,000-character disposable read cache. `DescriptionReader.tsx` presents those
+passages in a full-screen native FlatList. App owns reading ID and nests editor/
+version dialogs and save-failure/retry inside the active reader presentation.
+The compact card/full reader arrangement is explicitly a founder-approved trial.
+
+The DOM editor memoizes initial content and prepares original-byte snapshots.
+Per-editor weak caches share serialization for immutable ProseMirror documents;
+length validation remains synchronous on each changed document. A pure update
+queue batches native text reporting with quiet/deadline/flush/cancel semantics;
+position-only callbacks avoid sending unchanged Markdown. Native background
+requests exact text and draft writes remain serialized separately from main
+History. No persistence or export schema changes are needed. Sample-only
+progressive notes live in `dev/sampleDescriptions.ts`.

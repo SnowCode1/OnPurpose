@@ -9,17 +9,21 @@ acceptance remains pending.
 
 A habit can have an optional description containing plain text or Markdown.
 Its purpose is to keep motivation, reminders and links one habit-name tap away.
-The description appears before the charts in full-screen statistics, inside a
-compact rounded card requested by the founder to distinguish notes from statistics.
-The dark surface, subtle outline and inset text define the note's boundary;
-Edit, Versions and Read more stay within it. The collapsed fade matches the card surface.
-Long notes
-show up to four complete blocks in a 220-point preview (scaled with system text),
-with Read more/Show less when more content remains or the measured height exceeds
-that limit. This expands the earlier two-block/150-point preview at the founder's
-request. Character count alone does not trigger Read more. A note still does not
-force a long scroll to reach the statistics. Empty descriptions show one small Add description
-action, with no empty card or instructional block.
+The founder agreed to **try**, rather than settle on, a compact Notes card before
+statistics. It shows three lines of opening text, with Open note, Edit and Versions
+when available. Excerpts parse at most 600 source characters; they do not build a
+full rich-text document hidden behind a height cutoff. The previous four-block,
+220-point expandable card is superseded for this experiment. Short notes use the
+same clear access. Empty descriptions keep Add description and any Versions.
+
+Open note presents a full-screen native reader above statistics. Full Markdown,
+highlights and intentional link taps remain available there. Its FlatList mounts
+nearby passages and splits top-level lists into individual reading rows, retaining
+nested lists and ordered numbering. A bounded disposable cache retains at most
+five documents/100,000 source characters. Reader text is never another saved
+projection. Edit opens above the reader and returns to it; the statistics screen
+and reader stay mounted underneath. Save failure/retry stays visible in the
+reader. This placement is a phone experiment awaiting acceptance.
 
 Creation and Edit have one compact Description control, showing a two-line text
 summary or an optional-note hint. It opens a full-screen editor with fixed Close
@@ -209,9 +213,13 @@ Old clean buffers with a different saved-description base are ignored rather
 than offered as unsaved recovery. Real unfinished/conflicting drafts keep the
 existing recovery choice. Position-only changes do not enter History or backups.
 
-Selection/scroll reporting waits for a 250 ms pause within the DOM component;
-native draft writes still debounce for 350 ms. Text updates include their current
-position, and Done/Close request an exact text-and-position snapshot. A sudden
+Selection/scroll reporting waits for a 250 ms pause within the DOM component.
+Unchanged documents send position only; pending edits report text and position
+together. Editing stays immediate locally. Text reporting now waits for a 200 ms
+quiet period with a one-second deadline during continuous typing; native draft
+writes still debounce for 350 ms. Done/Close cancel queued copies and request an
+exact text-and-position snapshot. DOM visibility/page-hide and native background
+snapshot requests flush current text rather than relying on quiet-period timers. A sudden
 kill before these debounce windows can lose the last location/keystrokes. Sample
 positions use only the isolated in-memory adapter. Keyboard, orientation and
 large-text restoration still need physical-iPhone acceptance.
@@ -251,3 +259,38 @@ the complete catalogue into the DOM editor. Regenerate it with
 Descriptions and all editor controls follow Settings → Text size and the iPhone
 text-size multiplier. There is no separate description-size preference. The
 keyboard toolbar and menus wrap or scroll while keeping minimum touch targets.
+
+## Large-note performance experiment
+
+The founder requested progressively longer descriptions to test opening statistics
+and editing. Isolated Sample data now assigns Go for a walk 1,874 characters,
+Read 7,723 and Meditate 17,657. Each is fictional Markdown with ordinary paragraphs,
+headings, lists, links, quotes and highlights. Other sample notes and every real
+preset description remain unchanged. Full reload or Reset sample data installs
+them only in the in-memory sample store; they never migrate into the real store.
+
+`RichDescription` memoizes parsed initial content and disables transaction-driven
+whole-component rerenders; toolbar state still updates through useEditorState.
+The initial parsed document primes byte-preserving snapshots, avoiding a second
+Markdown parse on first typing. Validation, draft reporting and Done share exact
+serialization through per-editor weak caches keyed by immutable ProseMirror
+nodes. Every changed document still receives full formatting-aware length
+validation before acceptance. Unchanged snapshots preserve original Markdown
+bytes, including after local Undo. No incremental serialization shortcuts or
+new storage format are introduced.
+
+`descriptionUpdateQueue.ts` batches bridge reporting, not keystrokes, formatting
+or Undo. Its independent maximum deadline prevents continuous typing from
+postponing every draft update. Position-only callbacks avoid retransmitting a
+long unchanged note. Native recovery and history semantics remain unchanged;
+a sudden kill before reporting/draft writes can still lose recent input.
+Creation/edit previews and version-list excerpts are also bounded, with the edit
+form memoizing its summary.
+
+Local Node/jsdom diagnostics on all three sizes counted 75 serializations for
+25 edits plus 25 repeated snapshots before the change, and 25 after caching.
+This verifies duplicate-work removal, not iPhone frame rates or opening latency.
+Automated tests cover exact snapshot parity, original-byte Undo, strict atomic
+length rejection, quiet/deadline/flush/cancel behaviour, reader text/numbering,
+cache eviction and sample isolation. Physical-iPhone opening, typing, scrolling,
+keyboard, background recovery and the experimental layout remain acceptance tests.

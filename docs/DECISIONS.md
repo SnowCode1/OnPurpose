@@ -838,3 +838,26 @@ put them behind info buttons. The final pass uses accessible labelled info
 disclosures, collapsed by default, and removes the obvious single-day bar caption.
 Chart units, aggregate bucket sizes, save state/errors and restore confirmation
 remain direct. This small final disclosure pass still needs device review.
+
+## 5 October 2026 — Large descriptions and a compact Notes trial
+
+The founder requested faster long-note viewing/editing and three progressively
+longer test habits. Sample-only fictional notes now grow from 1,874 characters on
+Go for a walk, through 7,723 on Read, to 17,657 on Meditate. Real habits, initial
+preset notes, history and backups are unchanged.
+
+The founder agreed to try a compact three-line Notes card plus full-screen reader
+but said they are not yet convinced. Keep this explicitly experimental. A bounded
+plain-text excerpt leaves more room before statistics; full formatting and links
+live in a virtualized reader. Edit overlays that reader and returns to it.
+
+Source tracing found full initial-document parsing on native/DOM prop renders,
+whole-document serialization for validation and every change/snapshot, and a
+collapsed reader rendering complete large lists before clipping. Memoized startup,
+prepared original-byte snapshots, weak immutable-document serialization caches,
+bounded excerpts and virtualized reader passages address those costs. Bridge
+text updates batch after 200 ms quiet, with a one-second continuous-input deadline;
+Done/Close remain exact and background paths request current text. Position-only
+updates no longer retransmit unchanged Markdown. Full per-document limit
+validation and local Undo remain immediate. A local diagnostic counted 75 → 25
+serializations at each note size; it is not native frame-rate evidence.

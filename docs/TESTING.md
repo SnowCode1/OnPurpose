@@ -1049,3 +1049,45 @@ Chrome a separate 1 GB cgroup, and test processes retain their 256 MB heap cap.
 These results do not establish native frame rates or replace the remaining
 phone matrix above. Captures, browser profile, local logs and synthetic runtime
 data were kept outside Git; the temporary browser profile was removed.
+
+## Large-note viewing/editing and compact Notes experiment
+
+Use Sample data and fully reload/reset it. Test Go for a walk (1,874 characters),
+Read (7,723), Meditate (17,657), in that order. Real saved notes are not changed.
+
+- Tap each habit for statistics. The Notes card must remain a compact three-line
+  excerpt; opening should not become slower because hidden content was rendered.
+  Check empty notes, long first paragraphs, code and long single lists as well.
+- Open note, scroll deeply and quickly both ways. Paragraphs, highlights, nested
+  lists, continued ordered numbering and intentional link taps must remain intact.
+  Return to statistics with its previous scroll/range preserved.
+- Edit from the card and from the reader. Type near the start, middle and end;
+  select words, toggle formatting, use links/highlights and local Undo/Redo.
+  Editing from the reader must open above it and return to its existing position.
+- Type and immediately tap Done or Close, without waiting for draft reporting.
+  Done must retain the last keystroke; Close must compare the actual current text.
+  Open/close or Undo to the original must preserve original Markdown bytes.
+- Type continuously for several seconds, background/reopen, and recover drafts.
+  Also background immediately after first typing. Check position restoration,
+  matching text and visible draft failures. Abrupt kills before report/write
+  completion may still lose recent input; do not describe these as synchronous saves.
+- Try 150% app text, Larger Text, keyboard and landscape. Share statistics and
+  reader/editor previews via the global face-down-and-back gesture. Evaluate
+  the compact-card/full-reader arrangement as a trial; the founder is undecided.
+
+Automated coverage checks bounded excerpts, full passage retention/numbering,
+long-list rows, cache eviction, exact serialization parity and original-byte
+Undo, atomic length rejection, quiet/deadline/flush/cancel reporting, and isolated
+progressive sample notes. All checks use existing process memory/time caps.
+
+Verification for this pass: `npm run check`, all 218 `npm test` cases, and
+one-worker iOS and web exports passed. An isolated headless Chrome session
+opened statistics, the full reader and the nested editor for all three note
+sizes. Typing followed immediately by Done retained the inserted text in each
+case and returned to the reader. Twelve web captures were saved; the longest
+note's statistics, reader and editor views were visually inspected. These
+are web integration/layout results, not iPhone timing or native-modal evidence.
+The physical-device checks above and the founder's judgement of the trial
+layout remain pending. Checks used the existing 2 GB Linux scope, Chrome a
+separate 1 GB scope; the temporary browser profile was removed. Logs, captures
+and synthetic runtime data stay ignored.

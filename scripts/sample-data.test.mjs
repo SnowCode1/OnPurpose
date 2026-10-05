@@ -7,7 +7,9 @@ import {
 } from '../src/dev/sampleData.ts';
 import { replayEvents } from '../src/storage/model.ts';
 import { habitStatistics, dayNumber } from '../src/statistics.ts';
+import { sampleDescriptions } from '../src/dev/sampleDescriptions.ts';
 import { presetDescriptions } from '../src/presetDescriptions.ts';
+import { MAX_DESCRIPTION_LENGTH } from '../src/description.ts';
 import { demoHabits, isNumericHabit } from '../src/habits.ts';
 import { entryDay } from '../src/calendar.ts';
 
@@ -78,7 +80,7 @@ test('sample history is deterministic, valid and bounded to 180 local dates acro
       replay.state.habits,
       demoHabits.map((habit) => ({
         ...habit,
-        description: presetDescriptions[habit.id],
+        description: sampleDescriptions[habit.id],
       })),
     );
     const seen = new Set();
@@ -182,7 +184,7 @@ test('sample edits and Undo/Redo affect only their own in-memory store; a fresh 
   assert.deepEqual(
     demoHabits.map((habit) => ({
       ...habit,
-      description: presetDescriptions[habit.id],
+      description: sampleDescriptions[habit.id],
     })),
     createSampleEvents(today)[0].habits,
   );
@@ -197,4 +199,19 @@ test('sample mode cannot restore a backup or overwrite a persistent repository',
   await assert.rejects(sample.recoveryEvents(), /no recovery archive/);
   assert.deepEqual(sample.getSnapshot().events, before);
   assert.equal(sample.getSnapshot().busy, false);
+});
+
+test('three sample notes grow progressively towards the limit without altering real preset notes', () => {
+  const lengths = ['walk', 'read', 'meditate'].map(
+    (id) => sampleDescriptions[id].length,
+  );
+  assert.ok(lengths[0] > 1500 && lengths[0] < 2500);
+  assert.ok(lengths[1] > 7000 && lengths[1] < 9000);
+  assert.ok(lengths[2] > 17000 && lengths[2] <= MAX_DESCRIPTION_LENGTH);
+  for (const habit of demoHabits) {
+    assert.ok(presetDescriptions[habit.id].length < 1000);
+    assert.ok(sampleDescriptions[habit.id].length <= MAX_DESCRIPTION_LENGTH);
+    if (!['walk', 'read', 'meditate'].includes(habit.id))
+      assert.equal(sampleDescriptions[habit.id], presetDescriptions[habit.id]);
+  }
 });

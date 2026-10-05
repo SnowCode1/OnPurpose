@@ -143,3 +143,30 @@ not a replacement for stable rows by default. Names, cells and fallback geometry
 use the same displayed IDs; date-heading recorded-state reads the full active
 list. Native scrolling remains on the UI thread. Hidden/archived order slots
 stay fixed when the displayed subset is reordered.
+
+## Large descriptions
+
+Stats Notes cards now render only a three-line, bounded-source excerpt. Opening
+statistics does not parse/render the entire note and clip it. Habit edit and
+Versions excerpts use the same bound; the edit form memoizes it. Full note reading
+uses native FlatList passages with top-level list items split into individual
+rows, preserving nested contents and numbering. Its disposable cache is capped
+at five documents/100,000 characters.
+
+The DOM editor memoizes startup parsing, prepares byte-preserving snapshots from
+that content, and avoids transaction-driven whole-component renders. Toolbar
+selectors remain immediate. Formatting-aware length validation still checks each
+new immutable document, with per-editor weak serialization/snapshot caches
+sharing results across validation/reporting/Done. Unchanged snapshot reads do not
+serialize again. Text crosses the DOM/native bridge after 200 ms quiet or a
+one-second deadline. Selection/scroll settles at 250 ms and sends only position
+when text has already been reported. Background and exact Done/Close snapshots
+remain explicit; native draft writes keep their 350 ms debounce.
+
+The synthetic phone fixtures are Go for a walk (1,874), Read (7,723), Meditate
+(17,657 characters), only in Sample data. A bounded Node/jsdom diagnostic counted
+75 → 25 serializations for 25 edits plus 25 unchanged snapshot reads at every
+size. Node timings do not establish iPhone responsiveness. Opening stats, the
+reader and editor, rapid typing, selecting/formatting, immediate Done, background
+recovery and long scrolling must be checked on the device. The compact card/full
+reader is founder-approved as an experiment, not a final navigation decision.

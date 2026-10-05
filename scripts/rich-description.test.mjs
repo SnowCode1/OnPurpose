@@ -9,6 +9,8 @@ import { useEditorReady } from '../src/richText/useEditorReady.ts';
 import {
   descriptionExtensions,
   descriptionSnapshot,
+  serializeDescriptionDocument,
+  prepareDescriptionSnapshot,
   formatDescription,
 } from '../src/richText/extensions.ts';
 import { clearDescriptionFormatting } from '../src/richText/clearFormatting.ts';
@@ -574,4 +576,44 @@ test('position initialization runs once across native callback changes and stops
     scrollTop: 700,
   });
   assert.equal(editor.can().undo(), false);
+});
+
+test('validation and repeated snapshots share serialization for immutable documents through undo and redo', (t) => {
+  const original = Array.from(
+    { length: 80 },
+    (_, i) =>
+      `Paragraph ${i} with **a reminder** and [notes](https://example.com).`,
+  ).join('\n\n');
+  const { editor, snapshot } = fixture(t, original);
+  let calls = 0;
+  const serialize = editor.markdown.serialize.bind(editor.markdown);
+  editor.markdown.serialize = (...args) => {
+    calls++;
+    return serialize(...args);
+  };
+  assert.equal(snapshot(), original);
+  for (let i = 0; i < 12; i++) {
+    editor.commands.insertContentAt(1, 'a');
+    const value = snapshot();
+    assert.equal(value, editor.getMarkdown());
+    const counted = calls;
+    for (let read = 0; read < 10; read++) assert.equal(snapshot(), value);
+    serializeDescriptionDocument(editor, editor.state.doc);
+    assert.equal(calls, counted);
+  }
+  assert.equal(calls, 24); // 12 validations plus 12 explicit parity checks.
+  editor.commands.undo();
+  assert.equal(snapshot(), original);
+  editor.commands.redo();
+  assert.equal(snapshot(), editor.getMarkdown());
+});
+
+test('prepared editor content keeps original Markdown spelling through first edit and Undo', (t) => {
+  const original = '__Keep this spelling__\n\nA [note](https://example.com).';
+  const { editor, snapshot } = fixture(t, original);
+  prepareDescriptionSnapshot(editor, original, markdownDocument(original));
+  editor.commands.insertContentAt(1, 'a');
+  assert.ok(snapshot().startsWith('**aKeep'));
+  editor.commands.undo();
+  assert.equal(snapshot(), original);
 });

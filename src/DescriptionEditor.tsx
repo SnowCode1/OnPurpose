@@ -70,18 +70,27 @@ export function DescriptionEditor({
   const { fontScale } = useAppWindowDimensions();
   const requestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleReady = useCallback(async () => setReady(true), []);
+  const handleLimit = useCallback(
+    async () =>
+      setStatus(
+        '20,000 character limit reached. Undo or shorten the note to keep writing.',
+      ),
+    [],
+  );
   const latest = useRef(initialValue),
     finished = useRef(false),
     timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const drafts = draftsFor(temporary);
-  function persist(value: string) {
-    return drafts.put(draftKey, {
-      version: 2,
-      base: baseValue,
-      text: value,
-      ...(position.current ? { position: position.current } : {}),
-    });
-  }
+  const persist = useCallback(
+    (value: string) =>
+      drafts.put(draftKey, {
+        version: 2,
+        base: baseValue,
+        text: value,
+        ...(position.current ? { position: position.current } : {}),
+      }),
+    [drafts, draftKey, baseValue],
+  );
   useEffect(() => {
     let active = true;
     void Promise.all([
@@ -141,11 +150,11 @@ export function DescriptionEditor({
         if (active) setLoading(false);
       });
     const subscription = AppState.addEventListener('change', (state) => {
-      if (
-        state !== 'active' &&
-        !finished.current &&
-        (latest.current !== initialValue || !!position.current)
-      )
+      if (state !== 'active' && !finished.current) {
+        // Ask for exact DOM text as well as saving the last acknowledged copy.
+        // This does not depend on a pending quiet-period bridge timer firing.
+        editor.current?.requestSnapshot('draft');
+        if (latest.current === initialValue && !position.current) return;
         void drafts
           .put(draftKey, {
             version: 2,
@@ -157,6 +166,7 @@ export function DescriptionEditor({
             if (active)
               setStatus('Draft couldn’t be kept. Use Done to apply it.');
           });
+      }
     });
     return () => {
       active = false;
@@ -177,20 +187,42 @@ export function DescriptionEditor({
           .catch(() => {});
     };
   }, [drafts, draftKey, initialValue, baseValue]);
-  function update(value: string, location?: DescriptionPosition) {
-    if (finished.current) return;
-    if (validDescriptionPosition(location)) position.current = location;
-    latest.current = value;
-    setText(value);
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      void persist(value)
-        .then(() => setStatus(''))
-        .catch(() =>
-          setStatus('Draft couldn’t be kept. Use Done to apply it.'),
-        );
-    }, 350);
-  }
+  const queueDraft = useCallback(
+    (value: string) => {
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => {
+        void persist(value)
+          .then(() => setStatus(''))
+          .catch(() =>
+            setStatus('Draft couldn’t be kept. Use Done to apply it.'),
+          );
+      }, 350);
+    },
+    [persist],
+  );
+  const update = useCallback(
+    (value: string, location?: DescriptionPosition) => {
+      if (finished.current) return;
+      if (validDescriptionPosition(location)) position.current = location;
+      latest.current = value;
+      setText(value);
+      queueDraft(value);
+    },
+    [queueDraft],
+  );
+  const handleChange = useCallback(
+    async (value: string, location: DescriptionPosition) =>
+      update(value, location),
+    [update],
+  );
+  const handlePosition = useCallback(
+    async (location: DescriptionPosition) => {
+      if (finished.current || !validDescriptionPosition(location)) return;
+      position.current = location;
+      queueDraft(latest.current);
+    },
+    [queueDraft],
+  );
   function finish(discard: boolean, value: string, applied = false) {
     const rememberedText = applied
       ? (normalizeDescription(value) ?? '')
@@ -247,6 +279,17 @@ export function DescriptionEditor({
     value: string,
     location: DescriptionPosition,
   ) {
+    if (action === 'draft') {
+      if (finished.current || value.length > MAX_DESCRIPTION_LENGTH) return;
+      if (validDescriptionPosition(location)) position.current = location;
+      latest.current = value;
+      setText(value);
+      if (timer.current) clearTimeout(timer.current);
+      void persist(value).catch(() =>
+        setStatus('Draft couldn’t be kept. Use Done to apply it.'),
+      );
+      return;
+    }
     if (requestTimer.current) clearTimeout(requestTimer.current);
     setRequesting(false);
     if (finished.current) return;
@@ -315,13 +358,10 @@ export function DescriptionEditor({
                 editable={editable}
                 onOpenLink={openDescriptionLink}
                 onReady={handleReady}
-                onChange={async (value, location) => update(value, location)}
+                onChange={handleChange}
+                onPosition={handlePosition}
                 onSnapshot={snapshot}
-                onLimit={async () =>
-                  setStatus(
-                    '20,000 character limit reached. Undo or shorten the note to keep writing.',
-                  )
-                }
+                onLimit={handleLimit}
                 dom={{
                   style: { flex: 1 },
                   containerStyle: { flex: 1 },

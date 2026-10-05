@@ -236,6 +236,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   Heading,
   onBack,
   onDescriptionEdit,
+  onDescriptionOpen,
   onDescriptionVersions,
   onEdit,
   onCellPress,
@@ -249,6 +250,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   Heading: ComponentType<TextProps>;
   onBack: () => void;
   onDescriptionEdit: () => void;
+  onDescriptionOpen: () => void;
   onDescriptionVersions?: () => void;
   onEdit: () => void;
   onCellPress: (habit: Habit, day: EntryDay) => void;
@@ -333,6 +335,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
           description={habit.description}
           colour={habit.color}
           editable={editable}
+          onOpen={onDescriptionOpen}
           onEdit={onDescriptionEdit}
           onVersions={onDescriptionVersions}
         />

@@ -54,7 +54,7 @@ The requested preset icon update uses normal undoable edits in
   `src/ArchivedHabits.tsx` owns the Settings archive/restore list. Add belongs at the
   end of the grid. `src/HabitStatsScreen.tsx` owns full-screen statistics, with pure
   calculations in `src/statistics.ts`. Read HABIT_MANAGEMENT.md and STATISTICS.md.
-  `src/HabitDescription.tsx`, `src/DescriptionEditor.tsx` and `src/DescriptionHistory.tsx`
+  `src/HabitDescription.tsx`, `src/DescriptionReader.tsx`, `src/DescriptionEditor.tsx` and `src/DescriptionHistory.tsx`
   own description reading, full-screen draft editing and Before/After restore.
   `src/DescriptionVersions.tsx` lists that habit's active note actions using the pure
   `descriptionVersions.ts` filter; retain repeated content and reverse sequence order.
@@ -175,3 +175,14 @@ numeric edits and save acknowledgements must not rerender the grid container.
 `displayedHabitOrder` fills only displayed slots and preserves hidden/archived
 positions while saving a full undoable permutation. `hideCompleted` is a v9
 preference outside History/Undo, defaulting to false for older logs.
+
+The compact three-line Notes card plus full-screen reader is an explicit trial;
+the founder is not yet convinced. `descriptionReading.ts` bounds excerpts and
+virtualizes top-level list items with intact nesting/numbering. Keep its disposable
+cache capped at five documents/100,000 characters. `sampleDescriptions.ts` owns
+long fictional notes on Walk/Read/Meditate only in the isolated sample store;
+never migrate those into real habits. The DOM editor memoizes initial parsing and
+uses weak immutable-document serialization caches. Full length validation stays
+synchronous. `descriptionUpdateQueue.ts` batches bridge reporting only (200 ms
+quiet, one-second deadline); keep exact Done/Close/background snapshots and
+position-only reporting separate from local typing/Undo and main History.

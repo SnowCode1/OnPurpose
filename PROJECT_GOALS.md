@@ -249,3 +249,14 @@ full rows for browsing other dates, and separate Appearance/Daily tracking/
 Backups detail pages with development tools tucked away. Statistics leads with
 plain counts and compact streak rows while keeping notes first and existing
 charts/calendar. The founder confirmed the revised layouts look better and hide/reveal feels right on the iPhone. Remaining explanatory text is collapsed behind info controls, following their feedback.
+
+## Large-note performance and placement experiment
+
+The founder requested better viewing/editing performance for larger descriptions,
+with three progressively longer test notes. These live only in Sample data so
+saved user writing stays intact. The founder agreed to try a compact three-line
+Notes card above statistics and a full-screen reader, but remains unconvinced;
+this is an experiment, not a final placement decision. Notes retain direct Edit,
+full Markdown/links and the existing saved history/draft behaviour. Device tests
+must evaluate opening, long scrolling, typing/formatting and immediate Done at
+approximately 1,900 / 7,700 / 17,700 characters.

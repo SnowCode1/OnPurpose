@@ -11,7 +11,7 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { DescriptionHistory } from './DescriptionHistory';
 import { contrastOnBlack } from './colors';
-import { descriptionSummary } from './description';
+import { descriptionExcerpt } from './descriptionReading';
 import type { Habit } from './habits';
 import type { HistoryAction, StoredState } from './storage/model';
 
@@ -81,7 +81,7 @@ export function DescriptionVersions({
               const text = item.change.after?.description;
               const current = item.id === currentVersion?.id;
               const summary = text
-                ? descriptionSummary(text)
+                ? descriptionExcerpt(text)
                 : 'Description cleared';
               const date = new Date(item.recordedAt).toLocaleString(undefined, {
                 year: 'numeric',

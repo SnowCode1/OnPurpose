@@ -334,3 +334,13 @@ The founder confirmed the global gesture works and statistics looks good on
 5 October. A new phone preview arrived and was inspected. At their request,
 preview feedback was strengthened to one heavy arming tap and two heavy saved
 taps, 110 ms apart; the stronger pattern still needs subjective phone feedback.
+
+### Large-note sample fixtures
+
+Sample data includes progressively longer fictional notes on Go for a walk
+(1,874), Read (7,723) and Meditate (17,657 characters). Reload or use Settings →
+Development → Reset sample data after changes. Test opening statistics, Open note
+and Edit at each size, including immediate Done after typing. `sampleDescriptions.ts`
+extends only the isolated sample definitions; never use it to update real habits
+or replace their saved descriptions. See DESCRIPTIONS.md and TESTING.md for the
+reader/editor performance and experimental compact-card flow.

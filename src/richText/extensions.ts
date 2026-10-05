@@ -1,10 +1,11 @@
-import { Extension, Node, type Editor } from '@tiptap/core';
+import { Extension, Node, type Editor, type JSONContent } from '@tiptap/core';
 import { StarterKit } from '@tiptap/starter-kit';
 import { Markdown } from '@tiptap/markdown';
 import { Highlight } from '@tiptap/extension-highlight';
 import { Placeholder } from '@tiptap/extension-placeholder';
 import { closeHistory } from '@tiptap/pm/history';
 import { Plugin } from '@tiptap/pm/state';
+import type { Node as DocumentNode } from '@tiptap/pm/model';
 import { descriptionLink, MAX_DESCRIPTION_LENGTH } from '../description.ts';
 import {
   highlightColours,
@@ -97,8 +98,10 @@ export function descriptionExtensions(onLimit: () => void = () => {}) {
           new Plugin({
             filterTransaction(transaction) {
               if (!transaction.docChanged) return true;
-              const markdown =
-                editor.markdown?.serialize(transaction.doc.toJSON()) ?? '';
+              const markdown = serializeDescriptionDocument(
+                editor,
+                transaction.doc,
+              );
               if (markdown.length <= MAX_DESCRIPTION_LENGTH) return true;
               onLimit();
               return false;
@@ -118,7 +121,47 @@ const initialDocuments = new WeakMap<
   Editor,
   { source: string; document: ReturnType<Editor['schema']['nodeFromJSON']> }
 >();
+// Use the already parsed startup content. First typing must not parse the
+// original Markdown again just to preserve its bytes for an unchanged/undo case.
+export function prepareDescriptionSnapshot(
+  editor: Editor,
+  source: string,
+  content: JSONContent,
+) {
+  initialDocuments.set(editor, {
+    source,
+    document: editor.schema.nodeFromJSON(content),
+  });
+}
+const serializedDocuments = new WeakMap<
+  Editor,
+  WeakMap<DocumentNode, string>
+>();
+const snapshots = new WeakMap<
+  Editor,
+  { document: DocumentNode; source: string; text: string }
+>();
+// ProseMirror documents are immutable. Validation, draft reporting and Done can
+// share serialization for the exact document, without caching mutable JSON.
+export function serializeDescriptionDocument(
+  editor: Editor,
+  document: DocumentNode,
+): string {
+  let cache = serializedDocuments.get(editor);
+  if (!cache) {
+    cache = new WeakMap();
+    serializedDocuments.set(editor, cache);
+  }
+  const saved = cache.get(document);
+  if (saved !== undefined) return saved;
+  const markdown = editor.markdown?.serialize(document.toJSON()) ?? '';
+  cache.set(document, markdown);
+  return markdown;
+}
 export function descriptionSnapshot(editor: Editor, original: string): string {
+  const saved = snapshots.get(editor);
+  if (saved?.document === editor.state.doc && saved.source === original)
+    return saved.text;
   let initial = initialDocuments.get(editor);
   if (!initial || initial.source !== original) {
     initial = {
@@ -127,7 +170,9 @@ export function descriptionSnapshot(editor: Editor, original: string): string {
     };
     initialDocuments.set(editor, initial);
   }
-  return editor.state.doc.eq(initial.document)
+  const text = editor.state.doc.eq(initial.document)
     ? original
-    : editor.getMarkdown();
+    : serializeDescriptionDocument(editor, editor.state.doc);
+  snapshots.set(editor, { document: editor.state.doc, source: original, text });
+  return text;
 }

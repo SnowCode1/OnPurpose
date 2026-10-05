@@ -1,4 +1,4 @@
-import { presetDescriptions } from '../presetDescriptions.ts';
+import { sampleDescriptions } from './sampleDescriptions.ts';
 import { calendarDay, localDateKey } from '../calendar.ts';
 import { demoHabits, isNumericHabit } from '../habits.ts';
 import {
@@ -37,7 +37,7 @@ export function createSampleEvents(today: string): StoredEvent[] {
       type: 'initialize',
       habits: demoHabits.map((habit) => ({
         ...habit,
-        description: presetDescriptions[habit.id],
+        description: sampleDescriptions[habit.id],
       })),
     },
   ];

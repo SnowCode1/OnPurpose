@@ -1,11 +1,11 @@
 import { TextInput, Text, useAppWindowDimensions } from './Typography';
 import { completeDescriptionDraft } from './storage/descriptionBookmarks';
 import { DescriptionEditor } from './DescriptionEditor';
-import { descriptionSummary } from './description';
+import { descriptionExcerpt } from './descriptionReading';
 import { draftsFor, descriptionDraftKey } from './descriptionDrafts';
 import { StartDateField } from './StartDateField';
 import { validDate } from './storage/model';
-import { useState, type ComponentType } from 'react';
+import { useMemo, useState, type ComponentType } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -46,6 +46,10 @@ export function HabitDialog({
   editable: boolean;
 }) {
   const [description, setDescription] = useState(habit.description);
+  const descriptionText = useMemo(
+    () => descriptionExcerpt(description ?? ''),
+    [description],
+  );
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const draftKey = descriptionDraftKey(
     mode === 'create' ? undefined : habit.id,
@@ -265,7 +269,7 @@ export function HabitDialog({
                       <Text style={styles.buttonText}>Description</Text>
                       <Text numberOfLines={2} style={styles.description}>
                         {description
-                          ? descriptionSummary(description)
+                          ? descriptionText
                           : 'Notes, motivation or a link · optional'}
                       </Text>
                     </View>

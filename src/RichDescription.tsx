@@ -2,6 +2,8 @@
 
 import {
   useEffect,
+  useEffectEvent,
+  useMemo,
   useRef,
   useState,
   type Ref,
@@ -22,6 +24,7 @@ import {
   descriptionExtensions,
   formatDescription,
   descriptionSnapshot,
+  prepareDescriptionSnapshot,
 } from './richText/extensions';
 import { clearDescriptionFormatting } from './richText/clearFormatting';
 import { markdownDocument } from './richText/markdownDocument';
@@ -35,6 +38,7 @@ import {
 import type { DescriptionPosition } from './descriptionPosition';
 import { useEditorReady } from './richText/useEditorReady';
 import { useFloatingMenuSpace } from './richText/useFloatingMenuSpace';
+import { descriptionUpdateQueue } from './richText/descriptionUpdateQueue';
 import './richText/editor.css';
 
 export interface RichDescriptionRef extends DOMImperativeFactory {
@@ -48,6 +52,7 @@ export default function RichDescription({
   fontScale,
   editable,
   onChange,
+  onPosition,
   onSnapshot,
   onReady,
   onLimit,
@@ -60,6 +65,7 @@ export default function RichDescription({
   fontScale: number;
   editable: boolean;
   onChange: (markdown: string, position: DescriptionPosition) => Promise<void>;
+  onPosition: (position: DescriptionPosition) => Promise<void>;
   onSnapshot: (
     action: string,
     markdown: string,
@@ -83,11 +89,32 @@ export default function RichDescription({
   });
   const [linkError, setLinkError] = useState('');
   const [dismissedLink, setDismissedLink] = useState<string | null>(null);
+  const initialDocument = useMemo(
+    () => markdownDocument(initialValue),
+    [initialValue],
+  );
+  const extensions = useMemo(
+    () =>
+      descriptionExtensions(() => {
+        void onLimit();
+      }),
+    [onLimit],
+  );
+  const updates = useRef<ReturnType<typeof descriptionUpdateQueue> | null>(
+    null,
+  );
+  const reportChange = useEffectEvent(
+    (editor: NonNullable<ReturnType<typeof useEditor>>) => {
+      void onChange(
+        descriptionSnapshot(editor, initialValue),
+        editorPosition(editor, writing.current),
+      );
+    },
+  );
   const editor = useEditor({
-    extensions: descriptionExtensions(() => {
-      void onLimit();
-    }),
-    content: markdownDocument(initialValue),
+    extensions,
+    content: initialDocument,
+    shouldRerenderOnTransaction: false,
     editable,
     editorProps: {
       attributes: {
@@ -109,13 +136,25 @@ export default function RichDescription({
         return false;
       },
     },
-    onUpdate: ({ editor }) => {
-      void onChange(
-        descriptionSnapshot(editor, initialValue),
-        editorPosition(editor, writing.current),
-      );
-    },
+    onUpdate: () => updates.current?.queue(),
   });
+  useEffect(() => {
+    if (!editor) return;
+    const queue = descriptionUpdateQueue(() => reportChange(editor));
+    updates.current = queue;
+    const background = () => {
+      if (document.visibilityState !== 'visible') queue.flush();
+    };
+    const leave = () => queue.flush();
+    document.addEventListener('visibilitychange', background);
+    window.addEventListener('pagehide', leave);
+    return () => {
+      queue.dispose();
+      updates.current = null;
+      document.removeEventListener('visibilitychange', background);
+      window.removeEventListener('pagehide', leave);
+    };
+  }, [editor]);
   const state = useEditorState({
     editor,
     selector: ({ editor }) =>
@@ -142,12 +181,14 @@ export default function RichDescription({
     ref,
     () => ({
       requestSnapshot: (action: unknown) => {
-        if (editor && typeof action === 'string')
+        if (editor && typeof action === 'string') {
+          updates.current?.cancel();
           void onSnapshot(
             action,
             descriptionSnapshot(editor, initialValue),
             editorPosition(editor, writing.current),
           );
+        }
       },
     }),
     [editor, initialValue, onSnapshot],
@@ -160,11 +201,15 @@ export default function RichDescription({
     writing,
     initialPosition,
     (position) => {
-      if (editor)
-        void onChange(descriptionSnapshot(editor, initialValue), position);
+      // A pending edit reports its text and position together. An unchanged
+      // document sends only three numbers when scrolling/selecting settles.
+      if (!updates.current?.flush()) void onPosition(position);
     },
   );
-  useEditorReady(editor, onReady, initialize);
+  useEditorReady(editor, onReady, (readyEditor) => {
+    prepareDescriptionSnapshot(readyEditor, initialValue, initialDocument);
+    initialize(readyEditor);
+  });
   useFloatingMenuSpace(container, controls, !!editor);
   const inspectedLink = state?.inspectedLink;
   const linkKey = inspectedLink
