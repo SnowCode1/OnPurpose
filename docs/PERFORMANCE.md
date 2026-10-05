@@ -192,7 +192,10 @@ corrections compare array contents across SQLite serialization. Native horizonta
 scroll synchronization and the loading backdrop are unchanged.
 
 Grid previews collapse whitespace and cap measurement at 32 Unicode characters,
-with two lines and a minimum 95% font-fit scale for category/text cells. Full values
-remain in storage and the editor. Recording statistics virtualize their dated
-entry list rather than mounting every full text value. Browser checks cover layout,
+with a consistent 12-point font before app/OS scaling and native tail ellipsis.
+`gridEntryText.ts` derives 1–3 lines from measured row height and combined scale.
+Column width controls native wrapping, not font compression. Native fitting is
+disabled for text/categories because our iOS renderer ignores `minimumFontScale`.
+Full values remain in storage and the editor. Recording statistics virtualize
+their dated entry list rather than mounting every full text value. Browser checks cover layout,
 not native font fitting or iPhone frame rates.

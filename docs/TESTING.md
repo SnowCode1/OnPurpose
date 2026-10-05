@@ -1209,8 +1209,9 @@ memory/no-swap scope. The founder confirmed the panel-opening fix on the iPhone
   Newlines and full text must survive even if grid preview is truncated. Close
   discards edits. Blank text clears, while explicit numeric zero still records.
 - Try grid text at Compact/Standard/Roomy row/column spacing, portrait/landscape,
-  85–150% app text and OS Larger Text. Native fitting is bounded to 95%, two lines
-  maximum. Full values remain available to the editor/accessibility. Browser
+  85–150% app text and OS Larger Text. Letters must keep their configured
+  size rather than squeeze to fit. Compact/Standard normally show two lines,
+  Roomy three; wider columns reveal more text with native tail truncation. Full values remain available to the editor/accessibility. Browser
   captures cannot prove native text-fit or keyboard handling.
 - Undo/Redo entries, corrections and option edits after reload. Export/restore
   both kinds with the normal confirmation/recovery copy. Older v1–v9 archives
@@ -1244,3 +1245,24 @@ and Done/Close work. The initial 80% text fit felt too small; the revised trial
 uses a 95% minimum and a 32-character preview cap. Native font fitting after this
 revision, text keyboard placement, OS Larger Text and the remaining phone matrix
 still require device review.
+
+## Readable cell text after the native autosizing report
+
+The founder reported unreadable compression for “A quiet afternoon with a friend”
+despite the proposed 95% floor. Installed/upstream React Native 0.86.3 Fabric iOS
+source ignores `minimumFontScale` in this autosizing path. Text/category grid and
+calendar values now disable native autosizing and use tail truncation. Grid line
+capacity follows measured height and combined text scale (1–3 lines).
+
+`grid-entry-text.test.mjs` executes the actual grid fitting prop expression with
+text/numeric contexts: the former unconditional fitting fails the regression.
+It checks the calendar avoids the same path and that line capacity fits actual
+row geometry across app/system scale and spacing combinations, without DOM graphs.
+`npm run check` passed, all 231 tests passed, and single-worker iOS/web exports
+succeeded in the existing bounded memory scope.
+
+An isolated Chrome review used all three founder-provided phrases at 100%/150%
+app text with Compact/Standard/Roomy rows and columns. It verified identical
+letter sizes for every phrase (12/18 points respectively), two versus three-line
+capacity, and captured layouts. The browser profile was removed. This establishes
+web layout only; the revised iOS truncation/readability requires phone acceptance.

@@ -286,9 +286,10 @@ backups. Completion conditions remain deferred; recording is distinct from
 completion. Comments can wait; the founder suggested they might eventually be
 daily, but their attachment/design is not yet decided.
 
-The founder requested testing dynamic cell text fitting. The initial 80%
-minimum felt too small on the iPhone, so the revised trial uses
-up to two lines, bounded shrinking to 95% and truncation with full value access
-in the entry sheet. App/system font scaling is retained. The founder confirmed
-multi-selection and Done/Close on the iPhone. Revised text fitting and keyboard
-layout still require device review.
+The founder requested testing dynamic cell text fitting, then reported unreadable
+compression despite the proposed 80%/95% floors. The current iOS renderer does
+not enforce that prop. The revised implementation uses a consistent readable
+size, app/system scaling and native truncation, showing more lines/text when row
+and column spacing permit. Full values remain one cell tap away. The founder
+confirmed multi-selection and Done/Close on the iPhone; revised text readability
+still needs device review.

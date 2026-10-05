@@ -947,3 +947,22 @@ and Undo/grouping semantics, with content comparisons for arrays. Statistics
 show recording counts/rates/streaks and category frequencies, never an invented
 completion score. Workout/Highlight fixtures extend only the isolated sample
 store; the existing v7 sample fixture and real presets are unchanged.
+
+## 5 October 2026 — Readable text-cell truncation
+
+The founder reported that “A quiet afternoon with a friend” still compressed
+into unreadable letters, while “Finished a chapter” and “A walk by the river”
+were reasonable minimum-size references. The prior 95% claim was incorrect:
+React Native 0.86.3's Fabric iOS text layout reads `minimumFontSize` (default 4),
+not `minimumFontScale`, when autosizing. Confirmed against installed source and
+[the versioned upstream implementation](https://github.com/react/react-native/blob/v0.86.3/packages/react-native/ReactCommon/react/renderer/textlayoutmanager/platform/ios/react/renderer/textlayoutmanager/RCTTextLayoutManager.mm#L246-L249).
+No native dependency patch or unsupported text prop is introduced.
+
+Disable native autosizing for categorical/free-text grid and calendar values.
+Use a readable 12-point grid font (14-point line height) before app/OS scaling;
+native width-based wrapping and tail ellipsis truncate excess text. Grid line
+capacity follows measured row height and combined scale, capped at three:
+Compact/Standard normally get two, Roomy three. Column spacing/orientation
+changes the width available to native wrapping. Full values remain intact and
+accessible. This is the assistant's corrective implementation choice following
+the founder's readability feedback; iPhone acceptance remains pending.

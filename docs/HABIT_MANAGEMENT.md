@@ -170,7 +170,13 @@ limit. Done applies, Close cancels, Clear entry edits the draft until Done. Thes
 sheets also work from the statistics calendar/entry list and nest above habit
 details. Comments and completion rules remain deferred.
 
-Grid cells show up to two lines with native fitting to a minimum 95% font size
-and bounded previews, retaining full values in editors. Unrecorded cells show a
-dash, recorded cells use the habit colour; recording is not completion. Text
-fitting is a device trial, not validated by browser screenshots.
+Grid category/text cells use a consistent 12-point font before app/system
+scaling, with native wrapping and tail ellipsis. Compact/Standard rows normally
+show two lines; Roomy can show three. Line capacity follows the measured row
+height and combined text scale. Wider column spacing reveals more text without
+making letters smaller. Full values stay available in editors/accessibility.
+The preview remains bounded to 32 Unicode characters for cheap measurement.
+Unrecorded cells show a dash, recorded cells use the habit colour; recording is
+not completion. Only numeric cells use native autosizing. The first fitting
+trial was rejected on the iPhone: the current iOS renderer ignores the proposed
+`minimumFontScale` limit. Revised readability needs device acceptance.

@@ -213,5 +213,7 @@ fictional Workout/Highlight examples only to the isolated sample store, leaving
 the original v7 sample fixture and real presets untouched. Main log/export v10
 retains unchanged v1–v9 prefixes; array preconditions/grouping/inverses compare
 values rather than references. SQL stays at schema 1. Grid text/category cells
-try two lines and native fitting down to 95% while retaining app/OS scaling.
+use readable 12-point text with app/OS scaling, native tail truncation and
+geometry-based 1–3 lines from `gridEntryText.ts`. Only numeric cells may autosize;
+our iOS renderer ignores the advertised `minimumFontScale` floor.
 Do not infer native text fitting from browser captures. Comments remain deferred.

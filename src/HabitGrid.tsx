@@ -233,6 +233,7 @@ export const HabitGrid = memo(function HabitGrid({
         motions={rowMotion}
         heights={rowHeights}
         baseHeight={baseRowHeight}
+        fontScale={fontScale}
         width={columnWidth}
         height={gridHeight}
         disabled={cellsDisabled}
@@ -246,6 +247,7 @@ export const HabitGrid = memo(function HabitGrid({
       rowMotion,
       rowHeights,
       baseRowHeight,
+      fontScale,
       columnWidth,
       gridHeight,
       cellsDisabled,

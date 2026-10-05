@@ -232,8 +232,7 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
                   </Text>
                   <Text
                     numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.8}
+                    ellipsizeMode="tail"
                     style={[
                       styles.dayValue,
                       { color: recorded ? habit.color : '#555555' },

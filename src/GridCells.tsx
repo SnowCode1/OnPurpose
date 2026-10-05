@@ -9,6 +9,11 @@ import { dayTone, dateTones, type GridPalette } from './gridAppearance';
 import { entrySelection, recordedDaySelection } from './storage/selection';
 import type { ChangeStore } from './storage/store';
 import { recordPerformance } from './performance';
+import {
+  GRID_ENTRY_FONT_SIZE,
+  GRID_ENTRY_LINE_HEIGHT,
+  gridEntryTextLines,
+} from './gridEntryText';
 
 type CellProps = {
   store: ChangeStore;
@@ -17,6 +22,7 @@ type CellProps = {
   palette: GridPalette;
   motion: RowMotion;
   height: number;
+  fontScale: number;
   disabled: boolean;
   onPress: (habit: Habit, day: GridDay) => void;
 };
@@ -27,6 +33,7 @@ const GridCell = memo(function GridCell({
   palette,
   motion,
   height,
+  fontScale,
   disabled,
   onPress,
 }: CellProps) {
@@ -77,9 +84,9 @@ const GridCell = memo(function GridCell({
       >
         {!checkbox ? (
           <Text
-            numberOfLines={numeric ? 1 : 2}
-            adjustsFontSizeToFit
-            minimumFontScale={numeric ? 0.65 : 0.95}
+            numberOfLines={numeric ? 1 : gridEntryTextLines(height, fontScale)}
+            adjustsFontSizeToFit={numeric}
+            minimumFontScale={numeric ? 0.65 : undefined}
             ellipsizeMode="tail"
             style={[
               numeric ? styles.numeric : styles.textEntry,
@@ -120,6 +127,7 @@ export const GridDateColumn = memo(function GridDateColumn({
   motions,
   heights,
   baseHeight,
+  fontScale,
   width,
   height,
   disabled,
@@ -132,6 +140,7 @@ export const GridDateColumn = memo(function GridDateColumn({
   motions: Record<string, RowMotion>;
   heights: Record<string, number>;
   baseHeight: number;
+  fontScale: number;
   width: number;
   height: number;
   disabled: boolean;
@@ -148,6 +157,7 @@ export const GridDateColumn = memo(function GridDateColumn({
           palette={palettes[habit.id]}
           motion={motions[habit.id]}
           height={heights[habit.id] ?? baseHeight}
+          fontScale={fontScale}
           disabled={disabled}
           onPress={onPress}
         />
@@ -247,8 +257,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   textEntry: {
-    fontSize: 14,
-    lineHeight: 16,
+    fontSize: GRID_ENTRY_FONT_SIZE,
+    lineHeight: GRID_ENTRY_LINE_HEIGHT,
     fontWeight: '500',
     width: '100%',
     textAlign: 'center',
