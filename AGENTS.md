@@ -60,7 +60,12 @@ The requested preset icon update uses normal undoable edits in
   `descriptionVersions.ts` filter; retain repeated content and reverse sequence order.
   Restore only description onto the current definition. `richText/selection.ts`
   reads whole-selection highlight/link state; `descriptionLinks.ts` shares explicit
-  native opening between reader/editor. Read
+  native opening between reader/editor. `descriptionDiff.ts` compares intact Markdown
+  passages with a bounded matrix; keep unchanged passages quiet and reader rows
+  virtualized. `richText/clearFormatting.ts` preserves link marks when clearing styles.
+  `richText/useEditorPosition.ts` restores once and debounces scroll/selection reporting;
+  pair locations with exact text, outside History/backups. v2 local drafts/bookmarks
+  retain v1 reads and the separate draft SQL schema. Read
   `docs/DESCRIPTIONS.md`. `src/RichDescription.tsx` is the offline Expo DOM/Tiptap
   editing surface; `src/richText/` owns safe document mapping, formatting, local
   Undo/Redo and bounded highlights. Preserve native readers and request a current

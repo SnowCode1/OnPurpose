@@ -1,10 +1,20 @@
 import { MAX_DESCRIPTION_LENGTH } from '../description.ts';
 import type { SqlPort } from './repository.ts';
-export type DescriptionDraft = { version: 1; base: string; text: string };
-export interface DraftPort {
+import {
+  validDescriptionPosition,
+  descriptionPositionKey,
+  type DescriptionPosition,
+} from '../descriptionPosition.ts';
+export type DescriptionDraft = { base: string; text: string } & (
+  { version: 1 } | { version: 2; position?: DescriptionPosition }
+);
+export interface DraftStorage {
   get(key: string): Promise<DescriptionDraft | null>;
   put(key: string, draft: DescriptionDraft): Promise<void>;
   remove(key: string): Promise<void>;
+}
+export interface DraftPort extends DraftStorage {
+  complete(key: string, text: string, appliedKey: string): Promise<void>;
 }
 export function validateDraft(
   value: unknown,
@@ -13,8 +23,17 @@ export function validateDraft(
     throw new Error('Invalid description draft.');
   const draft = value as Record<string, unknown>;
   if (
-    Object.keys(draft).length !== 3 ||
-    draft.version !== 1 ||
+    !Object.keys(draft).every((key) =>
+      [
+        'version',
+        'base',
+        'text',
+        ...(draft.version === 2 ? ['position'] : []),
+      ].includes(key),
+    ) ||
+    (draft.version !== 1 && draft.version !== 2) ||
+    (Object.hasOwn(draft, 'position') &&
+      !validDescriptionPosition(draft.position)) ||
     !['base', 'text'].every(
       (key) =>
         typeof draft[key] === 'string' &&
@@ -23,7 +42,7 @@ export function validateDraft(
   )
     throw new Error('Invalid description draft.');
 }
-export function serializedDrafts(port: DraftPort): DraftPort {
+export function serializedDrafts(port: DraftStorage): DraftPort {
   let tail: Promise<unknown> = Promise.resolve();
   function queue<T>(operation: () => Promise<T>): Promise<T> {
     const result = tail.then(operation);
@@ -37,9 +56,21 @@ export function serializedDrafts(port: DraftPort): DraftPort {
       return queue(() => port.put(key, draft));
     },
     remove: (key) => queue(() => port.remove(key)),
+    complete: (key, text, appliedKey) =>
+      queue(async () => {
+        const draft = await port.get(key);
+        if (draft?.text === text && draft.version === 2 && draft.position)
+          await port.put(descriptionPositionKey(appliedKey), {
+            version: 2,
+            base: text,
+            text,
+            position: draft.position,
+          });
+        await port.remove(key);
+      }),
   };
 }
-export function sqliteDrafts(db: SqlPort): DraftPort {
+export function sqliteDrafts(db: SqlPort): DraftStorage {
   return {
     async get(key) {
       const row = await db.getFirstAsync<{ draft_json: string }>(

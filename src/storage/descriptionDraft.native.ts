@@ -3,8 +3,9 @@ import {
   serializedDrafts,
   sqliteDrafts,
   type DraftPort,
+  type DraftStorage,
 } from './descriptionDraftModel';
-let opening: Promise<DraftPort> | null = null;
+let opening: Promise<DraftStorage> | null = null;
 async function open() {
   if (!opening)
     opening = (async () => {

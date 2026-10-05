@@ -1,13 +1,15 @@
-import { useState, type ComponentType } from 'react';
+import { useMemo, useState, type ComponentType } from 'react';
 import {
   Modal,
   Pressable,
-  ScrollView,
+  FlatList,
+  Switch,
   Text,
   View,
   type TextProps,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { descriptionDiff } from './descriptionDiff';
 import { DescriptionText } from './DescriptionText';
 import type { HistoryAction, StoredState } from './storage/model';
 
@@ -27,7 +29,16 @@ export function DescriptionHistory({
   onClose: () => void;
 }) {
   const [version, setVersion] = useState<'before' | 'after'>('after');
+  const [showChanges, setShowChanges] = useState(true);
   const change = action.change;
+  const diff = useMemo(
+    () =>
+      descriptionDiff(
+        change.kind === 'habit' ? (change.before?.description ?? '') : '',
+        change.kind === 'habit' ? (change.after?.description ?? '') : '',
+      ),
+    [change],
+  );
   if (change.kind !== 'habit') return null;
   const habit = change.after ?? change.before!;
   const text = change[version]?.description;
@@ -119,25 +130,99 @@ export function DescriptionHistory({
               </Pressable>
             ))}
           </View>
-          <Text
+          <View
             style={{
-              color: '#777777',
-              fontSize: 12,
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
               paddingHorizontal: 24,
-              paddingTop: 12,
+              paddingTop: 10,
             }}
           >
-            {new Date(action.recordedAt).toLocaleString()}
-          </Text>
-          <ScrollView contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
-            {text ? (
-              <DescriptionText text={text} colour={habit.color} />
-            ) : (
-              <Text style={{ color: '#888888', fontSize: 15 }}>
+            <Text style={{ color: '#888888', fontSize: 12, flexShrink: 1 }}>
+              {new Date(action.recordedAt).toLocaleString()}
+            </Text>
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+            >
+              <Text style={{ color: '#AAAAAA', fontSize: 12 }}>Changes</Text>
+              <Switch
+                accessibilityLabel="Highlight changed description passages"
+                value={showChanges}
+                onValueChange={setShowChanges}
+                trackColor={{ false: '#292929', true: '#365A4B' }}
+                thumbColor="#DDDDDD"
+              />
+            </View>
+          </View>
+          <FlatList
+            key={version}
+            data={diff[version]}
+            keyExtractor={(_passage, index) => String(index)}
+            contentContainerStyle={{
+              paddingHorizontal: 14,
+              paddingTop: 16,
+              paddingBottom: 24,
+              flexGrow: 1,
+            }}
+            ListEmptyComponent={
+              <Text
+                style={{
+                  color: '#888888',
+                  fontSize: 15,
+                  paddingHorizontal: 10,
+                }}
+              >
                 No description in this version.
               </Text>
-            )}
-          </ScrollView>
+            }
+            renderItem={({ item: passage }) => {
+              const highlighted = showChanges && passage.changed;
+              return (
+                <View
+                  style={{
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    marginBottom: 4,
+                    borderRadius: 8,
+                    backgroundColor: highlighted
+                      ? version === 'before'
+                        ? '#251A20'
+                        : '#14251E'
+                      : 'transparent',
+                  }}
+                >
+                  {highlighted && (
+                    <View
+                      accessible
+                      accessibilityLabel={
+                        version === 'before'
+                          ? 'Changed passage in the earlier version'
+                          : 'Changed passage in the new version'
+                      }
+                      pointerEvents="none"
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 6,
+                        bottom: 6,
+                        width: 2,
+                        borderRadius: 1,
+                        backgroundColor:
+                          version === 'before' ? '#AF7E92' : '#79AD96',
+                      }}
+                    />
+                  )}
+                  <DescriptionText
+                    tokens={passage.tokens}
+                    colour={habit.color}
+                  />
+                </View>
+              );
+            }}
+          />
         </SafeAreaView>
       </SafeAreaProvider>
     </Modal>

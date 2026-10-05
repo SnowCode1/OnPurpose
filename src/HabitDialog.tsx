@@ -1,3 +1,4 @@
+import { completeDescriptionDraft } from './storage/descriptionBookmarks';
 import { DescriptionEditor } from './DescriptionEditor';
 import { descriptionSummary } from './description';
 import { draftsFor, descriptionDraftKey } from './descriptionDrafts';
@@ -99,9 +100,12 @@ export function HabitDialog({
       type: numeric ? 'number' : 'checkbox',
     };
     if (onSave(after)) {
-      void draftsFor(temporary)
-        .remove(draftKey)
-        .catch(() => {});
+      void completeDescriptionDraft(
+        draftsFor(temporary),
+        draftKey,
+        description ?? '',
+        descriptionDraftKey(habit.id),
+      ).catch(() => {});
       onClose();
     }
   }

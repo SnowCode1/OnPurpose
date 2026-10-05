@@ -28,6 +28,10 @@ Write/Preview tabs. Bold and italic toggle the selected formatting rather than
 nesting Markdown markers. One compact toolbar provides local Undo/Redo, Bold,
 Italic, text/list options, links and highlight colours. Text options group headings,
 lists, quotes, strikethrough, inline code and Clear formatting in a compact panel.
+Clear formatting removes style marks and block styles while retaining link
+labels/destinations. It preserves the selected range, leaves surrounding inline
+styles intact and is one local Undo/Redo step. At a caret it clears stored style
+marks for subsequent typing, while retaining the link.
 Links can be added, changed or removed while retaining the selected text. Highlight
 options are None, Yellow, Green, Blue, Purple and Pink; choosing the same colour
 again removes it. Additional controls appear only when opened. The toolbar wraps
@@ -59,8 +63,12 @@ padded footer that stays visible while fields scroll if space is tight. Cancel,
 tapping outside or Escape return to the original text selection. New links remain
 selected after Apply. Touch/pointer taps on formatting tools do not take focus
 from the editor. Readiness and initial focus happen once per editor instance;
-Expo DOM callback-proxy replacements during native updates must not refocus at
-the end of the document. `richText/useEditorReady.ts` owns this boundary.
+Expo DOM callback-proxy replacements during native updates must not refocus or
+repeat position restoration. Reopening restores the saved cursor/selection and
+scroll position only for matching text, including recovered drafts. Selection
+orientation is retained; stale offsets are bounded to valid document positions.
+Initial keyboard resizing reapplies the scroll target until the user interacts,
+then normal typing/scrolling takes over. `richText/useEditorReady.ts` owns this boundary.
 
 Select words and paste a full web or app URL to turn the words into a link,
 retaining their other formatting and selection. Pasting onto an existing linked
@@ -145,7 +153,15 @@ A description change has a compact Description edited/cleared History row.
 Tap it to compare Before and After in a full-screen reader. Restore copies just
 the selected description onto the current habit, preserving its current name,
 colour, icon, entries and archive status, as a new undoable edit. Restoring an
-empty version clears the description. A version already applied cannot be
+empty version clears the description. Before/After highlights changed complete
+Markdown passages with a subdued background and edge marker: earlier text in
+Before, new text in After. The compact Changes switch hides the markers without
+changing the text or passage layout. Style/link-destination changes count;
+equivalent Markdown delimiter spellings do not. Unchanged passages retain their
+normal appearance. Lists/code stay intact; native links remain usable. The reader
+virtualizes passages and the pure comparison caps its matching matrix at 250,000
+cells, falling back to marking a large unmatched middle while keeping common
+ends unchanged. This prevents quadratic memory growth for unrelated long notes. A version already applied cannot be
 restored redundantly. Visible History continues to contain active actions only;
 Undo removes rows and Redo restores them, while the raw log remains complete.
 
@@ -179,6 +195,26 @@ before a debounce/background write completes can lose the most recent keystrokes
 Creation uses one recoverable new-habit description slot; it does not recover the
 whole name/icon/colour form. Sample-mode notes and drafts stay entirely in memory
 and disappear on full reload. They cannot write to real drafts or real habit data.
+
+Version-2 local draft JSON optionally includes validated anchor/head/scrollTop;
+version-1 drafts remain readable without being rewritten. No draft SQL schema or
+main v7 event/export change is needed. Separate `position:` keys in the same local
+draft store retain clean, text-matched bookmarks after Done. An unchanged note
+closed normally retains its location. Discarded text does not replace the applied
+note's bookmark. An outer creation/edit Done transfers the matching position to
+the saved habit, including a new habit's actual ID, then removes unfinished text.
+That read/bookmark/discard sequence occupies one serialized operation so reopening
+and writing a fresh draft cannot interleave with its cleanup.
+Old clean buffers with a different saved-description base are ignored rather
+than offered as unsaved recovery. Real unfinished/conflicting drafts keep the
+existing recovery choice. Position-only changes do not enter History or backups.
+
+Selection/scroll reporting waits for a 250 ms pause within the DOM component;
+native draft writes still debounce for 350 ms. Text updates include their current
+position, and Done/Close request an exact text-and-position snapshot. A sudden
+kill before these debounce windows can lose the last location/keystrokes. Sample
+positions use only the isolated in-memory adapter. Keyboard, orientation and
+large-text restoration still need physical-iPhone acceptance.
 
 ## Requested placeholder notes
 

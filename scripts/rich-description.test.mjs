@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
 import { Editor } from '@tiptap/core';
-import { act, createElement } from 'react';
+import { act, createElement, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Slice } from '@tiptap/pm/model';
 import { useEditorReady } from '../src/richText/useEditorReady.ts';
@@ -11,6 +11,12 @@ import {
   descriptionSnapshot,
   formatDescription,
 } from '../src/richText/extensions.ts';
+import { clearDescriptionFormatting } from '../src/richText/clearFormatting.ts';
+import {
+  useEditorPosition,
+  restoreEditorSelection,
+  editorPosition,
+} from '../src/richText/useEditorPosition.ts';
 import { selectedHighlight, selectedLink } from '../src/richText/selection.ts';
 import { markdownDocument } from '../src/richText/markdownDocument.ts';
 import {
@@ -435,4 +441,137 @@ test('inspected link removal preserves words and their other marks and is indepe
   assert.equal(snapshot(), before);
   assert.equal(editor.commands.redo(), true);
   assert.equal(selectedLink(editor), null);
+});
+
+test('Clear formatting preserves distinct links and words while removing marks and block styles, with Undo/Redo', (t) => {
+  const source =
+    '> ## [**First**](https://first.example.com) and [=={blue}_second_==](obsidian://open?vault=Habits)';
+  const { editor, snapshot } = fixture(t, source);
+  editor.commands.selectAll();
+  formatDescription(editor, () => clearDescriptionFormatting(editor));
+  assert.equal(editor.getText(), 'First and second');
+  const json = editor.getJSON();
+  assert.equal(json.content[0].type, 'paragraph');
+  const text = json.content[0].content;
+  assert.deepEqual(
+    text.flatMap((node) => (node.marks ?? []).map((mark) => mark.type)),
+    ['link', 'link'],
+  );
+  assert.deepEqual(
+    text.flatMap((node) => (node.marks ?? []).map((mark) => mark.attrs.href)),
+    ['https://first.example.com', 'obsidian://open?vault=Habits'],
+  );
+  assert.equal(editor.commands.undo(), true);
+  assert.equal(snapshot(), source);
+  assert.equal(editor.commands.redo(), true);
+  assert.equal(editor.getJSON().content[0].type, 'paragraph');
+});
+
+test('Clear formatting keeps selection, leaves surrounding marks alone, and preserves a link for subsequent typing', (t) => {
+  const { editor } = fixture(
+    t,
+    '[**First second**](https://example.com) **outside**',
+  );
+  editor.commands.setTextSelection({ from: 1, to: 6 });
+  formatDescription(editor, () => clearDescriptionFormatting(editor));
+  assert.equal(editor.state.selection.from, 1);
+  assert.equal(editor.state.selection.to, 6);
+  assert.equal(editor.isActive('bold'), false);
+  assert.equal(editor.getAttributes('link').href, 'https://example.com');
+  editor.commands.setTextSelection({ from: 7, to: 13 });
+  assert.equal(editor.isActive('bold'), true);
+  editor.commands.setTextSelection(3);
+  editor.view.dispatch(
+    editor.state.tr.setStoredMarks([
+      editor.schema.marks.bold.create(),
+      editor.schema.marks.link.create({ href: 'https://example.com' }),
+    ]),
+  );
+  formatDescription(editor, () => clearDescriptionFormatting(editor));
+  editor.commands.insertContent('X');
+  editor.commands.setTextSelection({ from: 3, to: 4 });
+  assert.equal(editor.isActive('bold'), false);
+  assert.equal(editor.getAttributes('link').href, 'https://example.com');
+});
+
+test('editor positions preserve selection direction and scroll, clamp stale offsets and never create local Undo', (t) => {
+  const { editor } = fixture(t, '# Heading\n\nBody text');
+  restoreEditorSelection(editor, { anchor: 18, head: 12, scrollTop: 123 });
+  assert.deepEqual(editorPosition(editor, { scrollTop: 123 }), {
+    anchor: 18,
+    head: 12,
+    scrollTop: 123,
+  });
+  assert.equal(editor.can().undo(), false);
+  restoreEditorSelection(editor, {
+    anchor: 100000,
+    head: 100000,
+    scrollTop: 1000,
+  });
+  assert.equal(editor.state.selection.head, editor.state.doc.content.size - 1);
+  const empty = fixture(t, '').editor;
+  restoreEditorSelection(empty, { anchor: 0, head: 100000, scrollTop: 1 });
+  assert.equal(empty.state.selection.from, 1);
+  assert.equal(empty.state.selection.to, 1);
+});
+
+test('position initialization runs once across native callback changes and stops restoring scroll after user interaction', async (t) => {
+  const { editor } = fixture(t, 'Long enough for a selection');
+  const observers = [];
+  const previous = globalThis.ResizeObserver;
+  const previousScrollTo = window.HTMLElement.prototype.scrollTo;
+  window.HTMLElement.prototype.scrollTo = function ({ top }) {
+    this.scrollTop = top;
+  };
+  globalThis.ResizeObserver = class {
+    constructor(callback) {
+      this.callback = callback;
+      observers.push(this);
+    }
+    observe() {}
+    disconnect() {}
+  };
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  t.after(async () => {
+    await act(async () => root.unmount());
+    host.remove();
+    if (previousScrollTo)
+      window.HTMLElement.prototype.scrollTo = previousScrollTo;
+    else delete window.HTMLElement.prototype.scrollTo;
+    if (previous) globalThis.ResizeObserver = previous;
+    else delete globalThis.ResizeObserver;
+  });
+  let ready = 0;
+  const position = { anchor: 3, head: 9, scrollTop: 321 };
+  function Probe({ onReady }) {
+    const writing = useRef(null);
+    const initialize = useEditorPosition(editor, writing, position, () => {});
+    useEditorReady(editor, onReady, initialize);
+    return createElement('div', { ref: writing });
+  }
+  const render = () =>
+    act(async () =>
+      root.render(createElement(Probe, { onReady: async () => ready++ })),
+    );
+  await render();
+  const writing = host.firstChild;
+  assert.equal(ready, 1);
+  assert.deepEqual(editorPosition(editor, writing), position);
+  writing.scrollTop = 0;
+  observers[0].callback();
+  assert.equal(writing.scrollTop, 321);
+  editor.commands.setTextSelection({ from: 5, to: 10 });
+  writing.dispatchEvent(new window.Event('pointerdown'));
+  writing.scrollTop = 700;
+  await render();
+  observers[0].callback();
+  assert.equal(ready, 1);
+  assert.deepEqual(editorPosition(editor, writing), {
+    anchor: 5,
+    head: 10,
+    scrollTop: 700,
+  });
+  assert.equal(editor.can().undo(), false);
 });

@@ -21,10 +21,16 @@ import {
   formatDescription,
   descriptionSnapshot,
 } from './richText/extensions';
+import { clearDescriptionFormatting } from './richText/clearFormatting';
 import { markdownDocument } from './richText/markdownDocument';
 import { highlightColours, type HighlightColour } from './richText/highlights';
 import { descriptionLink } from './description';
 import { contrastOnBlack } from './colors';
+import {
+  editorPosition,
+  useEditorPosition,
+} from './richText/useEditorPosition';
+import type { DescriptionPosition } from './descriptionPosition';
 import { useEditorReady } from './richText/useEditorReady';
 import { useFloatingMenuSpace } from './richText/useFloatingMenuSpace';
 import './richText/editor.css';
@@ -35,6 +41,7 @@ export interface RichDescriptionRef extends DOMImperativeFactory {
 export default function RichDescription({
   ref,
   initialValue,
+  initialPosition,
   colour,
   fontScale,
   editable,
@@ -46,17 +53,23 @@ export default function RichDescription({
 }: {
   ref: Ref<RichDescriptionRef>;
   initialValue: string;
+  initialPosition?: DescriptionPosition;
   colour: string;
   fontScale: number;
   editable: boolean;
-  onChange: (markdown: string) => Promise<void>;
-  onSnapshot: (action: string, markdown: string) => Promise<void>;
+  onChange: (markdown: string, position: DescriptionPosition) => Promise<void>;
+  onSnapshot: (
+    action: string,
+    markdown: string,
+    position: DescriptionPosition,
+  ) => Promise<void>;
   onReady: () => Promise<void>;
   onLimit: () => Promise<void>;
   onOpenLink: (url: string) => Promise<void>;
   dom?: DOMProps;
 }) {
   const [menu, setMenu] = useState<'text' | 'colour' | 'link' | null>(null);
+  const writing = useRef<HTMLDivElement>(null);
   const container = useRef<HTMLDivElement>(null),
     controls = useRef<HTMLDivElement>(null);
   const [link, setLink] = useState({
@@ -95,7 +108,10 @@ export default function RichDescription({
       },
     },
     onUpdate: ({ editor }) => {
-      void onChange(descriptionSnapshot(editor, initialValue));
+      void onChange(
+        descriptionSnapshot(editor, initialValue),
+        editorPosition(editor, writing.current),
+      );
     },
   });
   const state = useEditorState({
@@ -125,7 +141,11 @@ export default function RichDescription({
     () => ({
       requestSnapshot: (action: unknown) => {
         if (editor && typeof action === 'string')
-          void onSnapshot(action, descriptionSnapshot(editor, initialValue));
+          void onSnapshot(
+            action,
+            descriptionSnapshot(editor, initialValue),
+            editorPosition(editor, writing.current),
+          );
       },
     }),
     [editor, initialValue, onSnapshot],
@@ -133,7 +153,16 @@ export default function RichDescription({
   useEffect(() => {
     editor?.setEditable(editable);
   }, [editor, editable]);
-  useEditorReady(editor, onReady);
+  const initialize = useEditorPosition(
+    editor,
+    writing,
+    initialPosition,
+    (position) => {
+      if (editor)
+        void onChange(descriptionSnapshot(editor, initialValue), position);
+    },
+  );
+  useEditorReady(editor, onReady, initialize);
   useFloatingMenuSpace(container, controls, !!editor);
   const inspectedLink = state?.inspectedLink;
   const linkKey = inspectedLink
@@ -266,6 +295,7 @@ export default function RichDescription({
       }
     >
       <div
+        ref={writing}
         className="writing-area"
         inert={menu === 'link'}
         onClick={() => {
@@ -459,7 +489,7 @@ export default function RichDescription({
               ],
               [
                 'Clear formatting',
-                () => editor.chain().focus().unsetAllMarks().clearNodes().run(),
+                () => clearDescriptionFormatting(editor),
                 false,
               ],
             ].map(([label, action, active]) => (

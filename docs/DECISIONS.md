@@ -1,5 +1,26 @@
 # Decision log
 
+## 035 — Safe style clearing, editing continuity and passage comparisons
+
+Date: 5 October 2026. Status: founder approved all three proposed improvements;
+implemented, iPhone acceptance pending.
+
+Keep useful destinations when clearing note styles; explicit link Remove still
+removes them. Clear style marks and normalize blocks in one temporary Undo step.
+Remember cursor/selection and scroll for matching saved or recovered text through
+the local draft store, preserving selection direction and initializing only once.
+Use v2 draft JSON with optional bounded position data and clean bookmark keys;
+retain v1 reads and existing draft SQL schema. Never put these positions in habit
+History/backups or reuse them against different text. Transfer creation/form
+positions when the outer habit draft is applied; discard remains non-applying.
+
+Highlight changed complete Markdown passages in the existing Before/After reader,
+with a compact Changes switch. Preserve formatting and working native links;
+style and destination differences count, equivalent delimiter spellings do not.
+Virtualize passages and cap the comparison matrix to avoid quadratic memory for
+long unrelated notes. These are local UI/derived-data changes, with no new package,
+main storage version, raw-log rewrite or grid work.
+
 ## 034 — Compact description inspection and versions
 
 Date: 5 October 2026. Status: founder approved all three suggested improvements;

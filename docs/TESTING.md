@@ -61,6 +61,25 @@ landscape, larger text, VoiceOver and draft recovery checks remain pending:
   Undo/Redo remove/restore version rows. Repeated saved text retains its Before
   reader, and clearing the note must leave Versions available. Verify only the
   latest applied matching row says Current and current Restore is disabled.
+- Select styled linked words and use Text options → Clear formatting. Links and
+  labels must remain while styles clear; surrounding styles stay intact and local
+  Undo/Redo restores them. At a caret, subsequent typing keeps the destination
+  and loses the cleared style marks.
+- Open a long note, select a phrase, scroll, Done and reopen. Check cursor/selection
+  and scroll restoration, then reload and repeat. Test Close without changes,
+  recovering an interrupted draft, both orientations and larger text. Initial
+  keyboard resizing must keep the remembered position; interacting must stop
+  automatic restoration. Format once after recovery to prove selection retention.
+- Discard changed text: applied text/bookmark must survive. Restore a different
+  note version: stale positions/clean buffers must not replace it or trigger a
+  false unsaved-draft alert. A genuine conflicting unfinished draft still offers
+  recovery. Repeat in Add/Edit and apply outer Done; the position must transfer
+  to the created/edited habit. Outer Close must leave applied text alone.
+- In Versions or History, open a description action and switch Before/After.
+  Changed passages must be marked and unchanged ones quiet, including insertions,
+  removals, formatting-only and link-destination changes. Lists/code stay intact
+  and links still open. Changes off shows the original text without markers or
+  layout jumps. Try long notes, large text and VoiceOver passage indicators.
 - The note card now previews four complete blocks within a taller 220-point
   height limit. Short notes that fit need no Read more. Long paragraphs/lists
   remain bounded and expanded notes still offer Show less.

@@ -23,6 +23,15 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { MAX_DESCRIPTION_LENGTH, normalizeDescription } from './description';
 import RichDescription, { type RichDescriptionRef } from './RichDescription';
 import { openDescriptionLink } from './descriptionLinks';
+import {
+  descriptionPositionKey,
+  validDescriptionPosition,
+  type DescriptionPosition,
+} from './descriptionPosition';
+import {
+  descriptionResume,
+  rememberDescriptionPosition,
+} from './storage/descriptionBookmarks';
 import { draftsFor } from './descriptionDrafts';
 
 export function DescriptionEditor({
@@ -56,6 +65,8 @@ export function DescriptionEditor({
     [requesting, setRequesting] = useState(false),
     [loading, setLoading] = useState(true),
     [status, setStatus] = useState('');
+  const [initialPosition, setInitialPosition] = useState<DescriptionPosition>();
+  const position = useRef<DescriptionPosition | undefined>(undefined);
   const editor = useRef<RichDescriptionRef>(null);
   const { fontScale } = useWindowDimensions();
   const requestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -65,23 +76,45 @@ export function DescriptionEditor({
     timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const drafts = draftsFor(temporary);
   function persist(value: string) {
-    return drafts.put(draftKey, { version: 1, base: baseValue, text: value });
+    return drafts.put(draftKey, {
+      version: 2,
+      base: baseValue,
+      text: value,
+      ...(position.current ? { position: position.current } : {}),
+    });
   }
   useEffect(() => {
     let active = true;
-    void drafts
-      .get(draftKey)
-      .then((saved) => {
-        if (!active || !saved || saved.text === initialValue) return;
+    void Promise.all([
+      drafts.get(draftKey),
+      drafts.get(descriptionPositionKey(draftKey)),
+    ])
+      .then(([saved, bookmark]) => {
+        if (!active) return;
+        const resume = descriptionResume(
+          saved,
+          bookmark,
+          initialValue,
+          baseValue,
+        );
+        if (resume.position) {
+          position.current = resume.position;
+          setInitialPosition(resume.position);
+        }
+        const pending = resume.draft;
+        if (!pending) return;
         const recover = () => {
           if (!active) return;
-          latest.current = saved.text;
-          setText(saved.text);
-          setEditorInitial(saved.text);
+          position.current =
+            pending.version === 2 ? pending.position : undefined;
+          setInitialPosition(position.current);
+          latest.current = pending.text;
+          setText(pending.text);
+          setEditorInitial(pending.text);
           setReady(false);
           setStatus('Recovered unsaved draft');
         };
-        if (saved.base !== baseValue)
+        if (pending.base !== baseValue)
           Alert.alert(
             'A draft from an earlier version',
             'The saved description has changed since this draft was written.',
@@ -112,10 +145,15 @@ export function DescriptionEditor({
       if (
         state !== 'active' &&
         !finished.current &&
-        latest.current !== initialValue
+        (latest.current !== initialValue || !!position.current)
       )
         void drafts
-          .put(draftKey, { version: 1, base: baseValue, text: latest.current })
+          .put(draftKey, {
+            version: 2,
+            base: baseValue,
+            text: latest.current,
+            ...(position.current ? { position: position.current } : {}),
+          })
           .catch(() => {
             if (active)
               setStatus('Draft couldn’t be kept. Use Done to apply it.');
@@ -126,14 +164,23 @@ export function DescriptionEditor({
       subscription.remove();
       if (timer.current) clearTimeout(timer.current);
       if (requestTimer.current) clearTimeout(requestTimer.current);
-      if (!finished.current && latest.current !== initialValue)
+      if (
+        !finished.current &&
+        (latest.current !== initialValue || !!position.current)
+      )
         void drafts
-          .put(draftKey, { version: 1, base: baseValue, text: latest.current })
+          .put(draftKey, {
+            version: 2,
+            base: baseValue,
+            text: latest.current,
+            ...(position.current ? { position: position.current } : {}),
+          })
           .catch(() => {});
     };
   }, [drafts, draftKey, initialValue, baseValue]);
-  function update(value: string) {
+  function update(value: string, location?: DescriptionPosition) {
     if (finished.current) return;
+    if (validDescriptionPosition(location)) position.current = location;
     latest.current = value;
     setText(value);
     if (timer.current) clearTimeout(timer.current);
@@ -145,13 +192,24 @@ export function DescriptionEditor({
         );
     }, 350);
   }
-  function finish(discard: boolean, value: string) {
+  function finish(discard: boolean, value: string, applied = false) {
+    const rememberedText = applied
+      ? (normalizeDescription(value) ?? '')
+      : value;
     Keyboard.dismiss();
     finished.current = true;
     if (timer.current) clearTimeout(timer.current);
-    if (discard || !keepDraftOnApply)
+    if (discard) void drafts.remove(draftKey).catch(() => {});
+    else if (keepDraftOnApply) void persist(rememberedText).catch(() => {});
+    else {
+      void rememberDescriptionPosition(
+        drafts,
+        draftKey,
+        rememberedText,
+        position.current,
+      ).catch(() => {});
       void drafts.remove(draftKey).catch(() => {});
-    else void persist(value).catch(() => {});
+    }
     onClose();
   }
   function close(value: string) {
@@ -185,7 +243,11 @@ export function DescriptionEditor({
     }, 5000);
     editor.current?.requestSnapshot(action);
   }
-  async function snapshot(action: string, value: string) {
+  async function snapshot(
+    action: string,
+    value: string,
+    location: DescriptionPosition,
+  ) {
     if (requestTimer.current) clearTimeout(requestTimer.current);
     setRequesting(false);
     if (finished.current) return;
@@ -193,14 +255,14 @@ export function DescriptionEditor({
       setStatus('The description is too long to apply.');
       return;
     }
-    update(value);
+    update(value, location);
     if (action === 'close') close(value);
     else if (
       action === 'done' &&
       editable &&
       onApply(normalizeDescription(value))
     )
-      finish(false, value);
+      finish(false, value, true);
   }
   return (
     <Modal
@@ -248,12 +310,13 @@ export function DescriptionEditor({
                 key={editorInitial}
                 ref={editor}
                 initialValue={editorInitial}
+                initialPosition={initialPosition}
                 colour={colour}
                 fontScale={fontScale}
                 editable={editable}
                 onOpenLink={openDescriptionLink}
                 onReady={handleReady}
-                onChange={async (value) => update(value)}
+                onChange={async (value, location) => update(value, location)}
                 onSnapshot={snapshot}
                 onLimit={async () =>
                   setStatus(

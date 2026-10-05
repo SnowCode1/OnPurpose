@@ -80,6 +80,8 @@ and uncertainty about whether something was saved.
   shifting the document, and let pasting a URL onto selected words create a link.
   Show current highlight colour, offer explicit link Open/Edit/Remove inspection,
   and provide description Versions beside Edit with undoable text-only restore.
+  Clear formatting preserves links. Remember matching-text editing positions,
+  including recoverable drafts, and highlight changed passages in Before/After.
 - Give each habit an editable start date, initially Today, to support old records.
   Statistics use each habit's own continuous calendar period since its start;
   another habit's activity must not affect its denominator. Numeric averages divide

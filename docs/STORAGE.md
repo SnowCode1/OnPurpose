@@ -155,7 +155,10 @@ SQL schema stays at version 1; previous logs are never rewritten or reseeded.
 
 Recoverable description drafts are separate from applied habit state. A separate
 native draft database/browser key keeps unfinished text outside the canonical log,
-History and backups; sample drafts remain memory-only. Draft failures do not reset
+History and backups; sample drafts remain memory-only. Local v2 draft JSON adds
+optional bounded selection/scroll positions; v1 records remain readable. Clean,
+text-matched bookmarks use separate keys in that same store. Main SQL schema,
+v7 log/export and canonical Undo/Redo remain unchanged. Draft failures do not reset
 any database. See [DESCRIPTIONS.md](DESCRIPTIONS.md) for recovery/Done semantics and
 the one-time, undoable placeholder-note update requested by the founder.
 
