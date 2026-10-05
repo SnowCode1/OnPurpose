@@ -88,18 +88,15 @@ export function descriptionPreview(text: string, expanded: boolean) {
       (tokens[index].nesting === -1 || tokens[index].nesting === 0)
     ) {
       blocks++;
-      if (blocks <= 2) end = index + 1;
+      if (blocks <= 4) end = index + 1;
       else break;
     }
   }
   const selected = tokens.slice(0, end || tokens.length);
-  const contentLength = selected.reduce(
-    (sum, token) => sum + token.content.length,
-    0,
-  );
-  // A long single paragraph/list must also stay bounded on the stats page.
+  // A long single paragraph/list is bounded by measured height in the card.
+  // Character count alone would show Read more even when every line fits.
   return {
     tokens: selected,
-    truncated: end < tokens.length || contentLength > 360,
+    truncated: end < tokens.length,
   };
 }

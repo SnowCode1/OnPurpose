@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
 import { Editor } from '@tiptap/core';
+import { act, createElement } from 'react';
+import { createRoot } from 'react-dom/client';
+import { useEditorReady } from '../src/richText/useEditorReady.ts';
 import {
   descriptionExtensions,
   descriptionSnapshot,
@@ -18,6 +21,7 @@ import { presetDescriptions } from '../src/presetDescriptions.ts';
 const browser = new JSDOM('<html><body></body></html>', {
   pretendToBeVisual: true,
 });
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 for (const key of [
   'window',
   'document',
@@ -70,6 +74,55 @@ test('bold and italic are reversible marks and each toolbar action is independen
   assert.ok(editor.commands.undo());
   assert.ok(editor.isActive('bold'));
   assert.equal(editor.isActive('italic'), false);
+});
+test('formatting retains the selected range for repeated bold, italic and highlight actions', (t) => {
+  const { editor } = fixture(t, 'Focus on one thing');
+  const range = { from: 1, to: 6 };
+  editor.commands.setTextSelection(range);
+  for (const action of [
+    () => editor.commands.toggleBold(),
+    () => editor.commands.toggleBold(),
+    () => editor.commands.toggleItalic(),
+    () => editor.commands.setHighlight({ color: 'pink' }),
+    () => editor.commands.setHighlight({ color: 'blue' }),
+    () => editor.commands.unsetHighlight(),
+  ]) {
+    formatDescription(editor, action);
+    assert.equal(editor.state.selection.from, range.from);
+    assert.equal(editor.state.selection.to, range.to);
+  }
+});
+test('native callback proxy replacements never rerun editor initialization or collapse a selection', async (t) => {
+  const { editor } = fixture(t, 'Focus on one thing');
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  t.after(async () => {
+    await act(async () => root.unmount());
+    host.remove();
+  });
+  let ready = 0;
+  function Probe({ onReady }) {
+    useEditorReady(editor, onReady);
+    return null;
+  }
+  const render = () =>
+    act(async () => {
+      root.render(createElement(Probe, { onReady: async () => ready++ }));
+    });
+  await render();
+  assert.equal(ready, 1);
+  assert.equal(editor.state.selection.from, editor.state.doc.content.size - 1);
+  editor.commands.setTextSelection({ from: 1, to: 6 });
+  formatDescription(editor, () => editor.commands.toggleBold());
+  await render();
+  formatDescription(editor, () =>
+    editor.commands.setHighlight({ color: 'green' }),
+  );
+  await render();
+  assert.equal(ready, 1);
+  assert.equal(editor.state.selection.from, 1);
+  assert.equal(editor.state.selection.to, 6);
 });
 test('new typing after local Undo clears only the editor redo branch', (t) => {
   const { editor, snapshot } = fixture(t, 'Hello');

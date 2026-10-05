@@ -139,7 +139,7 @@ test('rendering supports Markdown and explicit app links without executing HTML 
 });
 test('stats previews retain complete Markdown blocks and expose long notes for expansion', () => {
   const text =
-    'A short purpose.\n\n- first\n- second\n\n[More](https://example.com)';
+    '# Purpose\n\nA short purpose.\n\n[Notes](https://example.com)\n\n- first\n- second\n\nA fifth block.';
   const preview = descriptionPreview(text, false);
   assert.equal(preview.truncated, true);
   assert.equal(preview.tokens.at(-1).type, 'bullet_list_close');
@@ -148,7 +148,12 @@ test('stats previews retain complete Markdown blocks and expose long notes for e
     parseDescription(text).length,
   );
   assert.equal(descriptionPreview('Short', false).truncated, false);
-  assert.equal(descriptionPreview('x'.repeat(500), false).truncated, true);
+  assert.equal(
+    descriptionPreview('One\n\nTwo\n\nThree\n\nFour', false).truncated,
+    false,
+  );
+  // A single block's cutoff is based on actual rendered height in the card.
+  assert.equal(descriptionPreview('x'.repeat(500), false).truncated, false);
 });
 test('v7 rejects malformed descriptions and older definitions reject the new field', async () => {
   const { store } = await fixture();

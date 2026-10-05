@@ -683,3 +683,20 @@ browser element, used about 54 GiB, and caused a host OOM. The assertion now che
 a boolean instead. Test commands bound per-process heap, file duration and parallel
 files; memory diagnostics also use a Linux cgroup. These safeguards are development
 controls and do not imply measured native app memory usage. See TESTING.md.
+
+## 5 October 2026 — Description interaction polish
+
+The founder requested a better-placed link form with more action padding,
+formatting that retains its text selection, and more description content before
+Read more. The link form is now a compact bottom sheet with scrollable fields and
+a separate padded action footer. Cancel and Apply retain meaningful selections.
+Formatting taps preserve focus. Initial editor readiness uses an Effect Event so
+Expo DOM's changing callback proxies do not rerun end-of-document focus after
+each native update. Regression tests simulate that callback churn.
+
+The collapsed description budget is four complete blocks and 220 points scaled
+with system text, replacing two blocks/150 points. Actual rendered height still
+bounds a long paragraph or list. Character count no longer produces a redundant
+Read more on text that fits. These sizes are implementation tuning, with phone
+layout acceptance pending. The founder subsequently confirmed that formatting
+selection and bottom-link-sheet spacing are improved on the phone.

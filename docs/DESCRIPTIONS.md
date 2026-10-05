@@ -1,7 +1,9 @@
 # Habit descriptions
 
 Date: 5 October 2026. Status: requested by the founder and implemented;
-phone layout, keyboard and recovery acceptance are pending.
+the founder confirmed improved formatting selection and bottom-link-sheet spacing
+on the iPhone on 5 October 2026. Broader keyboard, accessibility and recovery
+acceptance remains pending.
 
 ## Reading and editing
 
@@ -12,8 +14,11 @@ compact rounded card requested by the founder to distinguish notes from statisti
 The dark surface, subtle outline and inset text define the note's boundary;
 Edit and Read more stay within it. The collapsed fade matches the card surface.
 Long notes
-show a bounded preview and Read more/Show less, so a note does not force a long
-scroll to reach the statistics. Empty descriptions show one small Add description
+show up to four complete blocks in a 220-point preview (scaled with system text),
+with Read more/Show less when more content remains or the measured height exceeds
+that limit. This expands the earlier two-block/150-point preview at the founder's
+request. Character count alone does not trigger Read more. A note still does not
+force a long scroll to reach the statistics. Empty descriptions show one small Add description
 action, with no empty card or instructional block.
 
 Creation and Edit have one compact Description control, showing a two-line text
@@ -28,6 +33,15 @@ options are None, Yellow, Green, Blue, Purple and Pink; choosing the same colour
 again removes it. Additional controls appear only when opened. The toolbar wraps
 if text scaling or available width requires it. Writing has most of the screen;
 the keyboard does not push Done into scrollable content.
+
+Link entry uses a compact bottom sheet within the editor, above the keyboard.
+Its address field receives focus and its Cancel/Apply/Remove actions have a separate
+padded footer that stays visible while fields scroll if space is tight. Cancel,
+tapping outside or Escape return to the original text selection. New links remain
+selected after Apply. Touch/pointer taps on formatting tools do not take focus
+from the editor. Readiness and initial focus happen once per editor instance;
+Expo DOM callback-proxy replacements during native updates must not refocus at
+the end of the document. `richText/useEditorReady.ts` owns this boundary.
 
 The editor has its own temporary Undo/Redo history, separate from app History.
 Typing groups after 500 ms of inactivity; toolbar formatting actions are separate

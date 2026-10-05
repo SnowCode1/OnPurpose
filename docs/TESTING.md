@@ -22,7 +22,9 @@ an unexpected element can make assertion output traverse a huge browser graph.
 
 ## Live description editor and statistics checks
 
-Phone acceptance pending (5 October 2026):
+On 5 October 2026 the founder confirmed improvements to repeated formatting
+selection and bottom-link-sheet spacing on the iPhone. Broader keyboard,
+landscape, larger text, VoiceOver and draft recovery checks remain pending:
 
 - Open a description from statistics and creation/Edit. Formatted text is directly
   editable without Write/Preview. Select words, apply Bold twice, and try local
@@ -31,6 +33,14 @@ Phone acceptance pending (5 October 2026):
 - Try headings, lists, quotes, links and all highlight colours. Change/remove a
   highlight; remove a link while preserving its text. Reopen, reload, use app
   Undo/Redo and export/restore: native reading and History comparisons must agree.
+- Keep a phrase selected while applying Bold, then a highlight and another colour.
+  Repeated native draft/status updates must not move the selection to the end.
+  Open the bottom link sheet: address focus, Cancel/Apply padding and accessible
+  actions must remain usable above the keyboard, including landscape/larger text.
+  Cancel/outside-tap must restore the selection; Apply must keep the link selected.
+- The note card now previews four complete blocks within a taller 220-point
+  height limit. Short notes that fit need no Read more. Long paragraphs/lists
+  remain bounded and expanded notes still offer Show less.
 - Test keyboard selection, typing/scrolling, toolbar hit targets, link entry, Close
   discard, recoverable drafts, portrait/landscape, larger text and VoiceOver.
   Done/Close must stay reachable and text must not disappear behind the keyboard.

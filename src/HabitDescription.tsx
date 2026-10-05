@@ -30,7 +30,7 @@ export function HabitDescription({
     () => descriptionPreview(description ?? '', expanded),
     [description, expanded],
   );
-  const limit = 150 * Math.max(1, fontScale);
+  const limit = 220 * Math.max(1, fontScale);
   const truncated = !expanded && (preview.truncated || height > limit + 1);
   return (
     <View style={[styles.container, description && styles.card]}>

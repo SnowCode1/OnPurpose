@@ -16,6 +16,7 @@ import { markdownDocument } from './richText/markdownDocument';
 import { highlightColours, type HighlightColour } from './richText/highlights';
 import { descriptionLink } from './description';
 import { contrastOnBlack } from './colors';
+import { useEditorReady } from './richText/useEditorReady';
 import './richText/editor.css';
 
 export interface RichDescriptionRef extends DOMImperativeFactory {
@@ -112,12 +113,7 @@ export default function RichDescription({
   useEffect(() => {
     editor?.setEditable(editable);
   }, [editor, editable]);
-  useEffect(() => {
-    if (editor)
-      void onReady().then(() => {
-        if (editor.isEditable) editor.commands.focus('end');
-      });
-  }, [editor, onReady]);
+  useEditorReady(editor, onReady);
   if (!editor) return null;
   function tool(
     label: string,
@@ -133,7 +129,7 @@ export default function RichDescription({
         aria-pressed={active}
         disabled={!editable || disabled}
         className="tool"
-        onMouseDown={(event) => event.preventDefault()}
+        onPointerDown={(event) => event.preventDefault()}
         onClick={action}
       >
         {symbol}
@@ -158,6 +154,14 @@ export default function RichDescription({
     setLinkError('');
     setMenu(menu === 'link' ? null : 'link');
   }
+  function cancelLink() {
+    setMenu(null);
+    editor
+      ?.chain()
+      .setTextSelection({ from: link.from, to: link.to })
+      .focus(null, { scrollIntoView: false })
+      .run();
+  }
   function saveLink() {
     if (!editor) return;
     const href = descriptionLink(link.href);
@@ -166,18 +170,20 @@ export default function RichDescription({
       return;
     }
     formatDescription(editor, () => {
-      if (link.from === link.to)
+      if (link.from === link.to) {
+        const label = link.label.trim() || href;
         editor
           .chain()
           .focus()
           .setTextSelection({ from: link.from, to: link.to })
           .insertContent({
             type: 'text',
-            text: link.label.trim() || href,
+            text: label,
             marks: [{ type: 'link', attrs: { href } }],
           })
+          .setTextSelection({ from: link.from, to: link.from + label.length })
           .run();
-      else
+      } else
         editor
           .chain()
           .focus()
@@ -200,6 +206,7 @@ export default function RichDescription({
     >
       <div
         className="toolbar"
+        inert={menu === 'link'}
         role="toolbar"
         aria-label="Description formatting"
       >
@@ -309,7 +316,8 @@ export default function RichDescription({
               type="button"
               key={String(label)}
               aria-pressed={!!active}
-              onMouseDown={(event) => event.preventDefault()}
+              disabled={!editable}
+              onPointerDown={(event) => event.preventDefault()}
               onClick={() => textAction(action as () => void)}
             >
               {String(label)}
@@ -325,7 +333,8 @@ export default function RichDescription({
         >
           <button
             type="button"
-            onMouseDown={(event) => event.preventDefault()}
+            disabled={!editable}
+            onPointerDown={(event) => event.preventDefault()}
             onClick={() =>
               textAction(() => editor.chain().focus().unsetHighlight().run())
             }
@@ -338,7 +347,8 @@ export default function RichDescription({
               key={id}
               aria-label={`${highlightColours[id].label} highlight`}
               aria-pressed={state?.highlight === id}
-              onMouseDown={(event) => event.preventDefault()}
+              disabled={!editable}
+              onPointerDown={(event) => event.preventDefault()}
               onClick={() =>
                 textAction(() => {
                   if (editor.isActive('highlight', { color: id }))
@@ -360,77 +370,102 @@ export default function RichDescription({
           ))}
         </div>
       )}
-      {menu === 'link' && (
-        <div className="popover link-panel" role="group" aria-label="Edit link">
-          {link.from === link.to && (
-            <input
-              aria-label="Link title"
-              placeholder="Link title · optional"
-              value={link.label}
-              onChange={(event) =>
-                setLink({ ...link, label: event.target.value })
-              }
-            />
-          )}
-          <input
-            aria-label="Link address"
-            placeholder="https://… or an app link"
-            inputMode="url"
-            autoCapitalize="none"
-            autoCorrect="off"
-            value={link.href}
-            onChange={(event) => setLink({ ...link, href: event.target.value })}
-          />
-          {linkError && (
-            <p className="link-error" role="alert">
-              {linkError}
-            </p>
-          )}
-          <div className="link-actions">
-            <button
-              type="button"
-              onClick={() => {
-                setMenu(null);
-                editor
-                  .chain()
-                  .focus()
-                  .setTextSelection({ from: link.from, to: link.to })
-                  .run();
-              }}
-            >
-              Cancel
-            </button>
-            {link.existing && (
-              <button
-                type="button"
-                onClick={() =>
-                  textAction(() =>
-                    editor
-                      .chain()
-                      .focus()
-                      .setTextSelection({ from: link.from, to: link.to })
-                      .unsetLink()
-                      .run(),
-                  )
-                }
-              >
-                Remove link
-              </button>
-            )}
-            <button type="button" onClick={saveLink}>
-              Apply
-            </button>
-          </div>
-        </div>
-      )}
       <div
         className="writing-area"
+        inert={menu === 'link'}
         onClick={() => {
           if (menu !== 'link') setMenu(null);
         }}
       >
         <EditorContent editor={editor} />
       </div>
+      {menu === 'link' && (
+        <div className="link-overlay">
+          <button
+            type="button"
+            className="link-backdrop"
+            aria-label="Cancel link editing"
+            onClick={cancelLink}
+          />
+          <form
+            className="link-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="link-title"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (editable) saveLink();
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.preventDefault();
+                cancelLink();
+              }
+            }}
+          >
+            <div className="link-fields">
+              <h2 id="link-title">
+                {link.existing ? 'Edit link' : 'Add link'}
+              </h2>
+              {link.from === link.to && (
+                <input
+                  aria-label="Link title"
+                  placeholder="Link title · optional"
+                  disabled={!editable}
+                  value={link.label}
+                  onChange={(event) =>
+                    setLink({ ...link, label: event.target.value })
+                  }
+                />
+              )}
+              <input
+                aria-label="Link address"
+                placeholder="https://… or an app link"
+                inputMode="url"
+                autoCapitalize="none"
+                autoCorrect="off"
+                autoFocus
+                disabled={!editable}
+                value={link.href}
+                onChange={(event) =>
+                  setLink({ ...link, href: event.target.value })
+                }
+              />
+              {linkError && (
+                <p className="link-error" role="alert">
+                  {linkError}
+                </p>
+              )}
+            </div>
+            <div className="link-actions">
+              <button type="button" onClick={cancelLink}>
+                Cancel
+              </button>
+              {link.existing && (
+                <button
+                  type="button"
+                  disabled={!editable}
+                  onClick={() =>
+                    textAction(() =>
+                      editor
+                        .chain()
+                        .focus()
+                        .setTextSelection({ from: link.from, to: link.to })
+                        .unsetLink()
+                        .run(),
+                    )
+                  }
+                >
+                  Remove link
+                </button>
+              )}
+              <button type="submit" className="link-apply" disabled={!editable}>
+                Apply
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

@@ -200,11 +200,48 @@ input:focus-visible {
   font-size: 16px;
   font-weight: 600;
 }
+.link-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  padding: 12px;
+}
+.link-backdrop {
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+  background: #0007;
+  cursor: default;
+}
 .link-panel {
+  position: relative;
+  width: 100%;
+  max-height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  border: 1px solid #333;
+  border-radius: 16px;
+  background: #171717;
+  overflow: hidden;
   font-size: 0.9em;
+}
+.link-fields {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 16px 16px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.link-panel h2 {
+  margin: 0 0 2px;
+  color: #ddd;
+  font-size: 1em;
+  font-weight: 600;
 }
 .link-panel input {
   width: 100%;
@@ -221,6 +258,13 @@ input:focus-visible {
   justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
+  flex-shrink: 0;
+  padding: 8px 16px calc(20px + env(safe-area-inset-bottom));
+}
+.link-apply {
+  background: color-mix(in srgb, var(--note-colour) 18%, #252525);
+  color: var(--note-link);
+  min-width: 72px;
 }
 .link-error {
   margin: 0;
