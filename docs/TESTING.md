@@ -1193,4 +1193,5 @@ switching and rotation after reloading Expo Go.
 
 Validation after the fix: `npm run check` passed without warnings, all 220 tests
 passed, and the single-worker iOS export succeeded under the existing 2 GiB
-memory/no-swap scope. Physical-device reopening confirmation is pending.
+memory/no-swap scope. The founder confirmed the panel-opening fix on the iPhone
+("All good now"). This does not establish the wider gesture/accessibility matrix.

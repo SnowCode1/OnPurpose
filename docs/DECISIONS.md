@@ -919,5 +919,6 @@ A focused regression executes both actual panel layout callbacks, releases their
 synthetic events, then runs queued state updates across initial/rotated/scaled
 measurements. It fails on the prior code with the same null-layout error and
 passes after the fix. GitNexus had no OnPurpose index; source inspection and the
-connected runtime supplied the trace. Reopening on the iPhone remains the final
-confirmation; browser-only opening checks do not establish native event safety.
+connected runtime supplied the trace. The founder confirmed the fix on the
+iPhone ("All good now"). The wider swipe/rotation/accessibility matrix remains
+separate; browser-only opening checks do not establish native event safety.
