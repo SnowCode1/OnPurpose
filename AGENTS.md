@@ -184,7 +184,9 @@ fixed viewport geometry/scroll/range state. Native directional locking handles
 gesture arbitration, shared values animate the island pill, and React receives
 only discrete aligned-page changes. Reserve bottom content padding from measured
 island height, preserve font scaling, rotation and reduced motion; inactive panels
-must not accept input or appear in accessibility. The compact-card experiment is superseded. `descriptionReading.ts` bounds excerpts and
+must not accept input or appear in accessibility. Copy native layout dimensions
+synchronously before functional state updates; React Native pools the event.
+The compact-card experiment is superseded. `descriptionReading.ts` bounds excerpts and
 virtualizes top-level list items with intact nesting/numbering. Keep its disposable
 cache capped at five documents/100,000 characters. `sampleDescriptions.ts` owns
 long fictional notes on Walk/Read/Meditate only in the isolated sample store;

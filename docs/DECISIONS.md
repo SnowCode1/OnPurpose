@@ -904,3 +904,20 @@ rotation realigns the settled page. Haptics occur once for an actual page change
 never for routine vertical scrolling. A non-interactive fade makes the floating
 control legible. New gesture feel, thumb reach and native sheet interaction still
 need phone acceptance; this is an implementation choice, not approved device QA.
+
+## 5 October 2026 — Native panel-opening layout crash
+
+The founder reported errors opening habit details after the floating-switch
+change. The connected iPhone Hermes runtime's console reported `TypeError:
+Cannot read property 'layout' of null`, pointing to the switch-height state
+updater. It retained the native layout event, which React Native releases before
+React may execute a deferred update. The handler now copies the numeric height
+synchronously and closes over that primitive, as the page-width handler already
+does. This corrects the implementation without changing the navigation design.
+
+A focused regression executes both actual panel layout callbacks, releases their
+synthetic events, then runs queued state updates across initial/rotated/scaled
+measurements. It fails on the prior code with the same null-layout error and
+passes after the fix. GitNexus had no OnPurpose index; source inspection and the
+connected runtime supplied the trace. Reopening on the iPhone remains the final
+confirmation; browser-only opening checks do not establish native event safety.

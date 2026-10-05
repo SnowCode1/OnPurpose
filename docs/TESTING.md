@@ -1178,3 +1178,19 @@ Validation: `npm run check` passed without warnings, `npm test` passed all 219
 tests, and single-worker iOS and web exports succeeded. Checks/exports ran
 sequentially in a 2 GiB memory/no-swap scope; the isolated Chrome review used a
 1 GiB memory/no-swap scope. No dependencies or storage formats changed.
+
+## Native habit-panel layout event regression
+
+Opening the floating-switch habit panel produced a null-layout exception in the
+connected iPhone Hermes console. `scripts/habit-panel-layout.test.mjs` extracts
+and executes the actual two panel layout callbacks under bounded VM evaluation,
+clears each native event, then applies deferred state updates. It covers initial
+measurements, rotation, increased switch height and unchanged measurements. The
+previous committed code fails with the same error; copying height during the
+handler fixes it. The test compares primitive dimensions only, with no DOM graph
+or native data. Verify opening Notes-first and Statistics-first habits, tab
+switching and rotation after reloading Expo Go.
+
+Validation after the fix: `npm run check` passed without warnings, all 220 tests
+passed, and the single-worker iOS export succeeded under the existing 2 GiB
+memory/no-swap scope. Physical-device reopening confirmation is pending.

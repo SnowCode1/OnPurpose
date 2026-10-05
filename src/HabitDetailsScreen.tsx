@@ -192,13 +192,13 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
                 accessibilityRole="tablist"
                 accessibilityLabel="Habit views"
                 style={[styles.tabs, { width: islandWidth }]}
-                onLayout={(event) =>
+                onLayout={(event) => {
+                  // Native events are pooled; deferred updates retain only the value.
+                  const height = event.nativeEvent.layout.height;
                   setIslandHeight((previous) =>
-                    previous === event.nativeEvent.layout.height
-                      ? previous
-                      : event.nativeEvent.layout.height,
-                  )
-                }
+                    previous === height ? previous : height,
+                  );
+                }}
               >
                 <Animated.View
                   pointerEvents="none"
