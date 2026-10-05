@@ -882,4 +882,6 @@ interaction, and the writing area owns scrolling within clipped DOM roots.
 Native startup feedback covers readiness and stops on load error. The full reader
 is accepted as responsive. The founder subsequently confirmed first editor opens
 now start correctly without the black jump on the iPhone. The tab arrangement
-and broader bookmark/keyboard matrix still need phone review.
+and broader bookmark/keyboard matrix still need phone review. The founder then
+reported that access or tab switching needs refinement; the specific problem is
+awaiting clarification. Do not treat the tab trial as accepted.

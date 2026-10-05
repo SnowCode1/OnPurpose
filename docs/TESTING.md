@@ -1133,5 +1133,6 @@ selected views were visually inspected. Tab selection and inactive-panel hiding
 also have explicit ARIA properties for web alongside native accessibility state.
 These results do not reproduce an iPhone keyboard or establish native startup
 latency. The founder confirmed first editor opens now start correctly without
-the black jump; the tab-layout judgement and wider phone matrix remain pending. Temporary
+the black jump. They reported that tab access/switching needs refinement;
+specifics and the wider phone matrix remain pending. Temporary
 browser profiles were removed and captures/logs/synthetic data remain ignored.
