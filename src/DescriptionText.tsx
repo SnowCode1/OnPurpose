@@ -1,5 +1,6 @@
 import { memo, type ReactNode } from 'react';
 import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
+import { highlightColours, isHighlightColour } from './richText/highlights';
 import { contrastOnBlack } from './colors';
 import {
   parseDescription,
@@ -56,6 +57,18 @@ export const DescriptionText = memo(function DescriptionText({
             {token.content}
           </Text>
         );
+      if (token.type === 'highlight_open') {
+        const id = token.attrGet('colour');
+        const colour = highlightColours[isHighlightColour(id) ? id : 'yellow'];
+        return (
+          <Text
+            key={index}
+            style={{ backgroundColor: colour.background, color: colour.text }}
+          >
+            {inline(children)}
+          </Text>
+        );
+      }
       if (token.type === 'link_open') {
         const url = String(token.attrGet('href') ?? '');
         return (

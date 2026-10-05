@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type ComponentType } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+} from 'react';
 import {
   Alert,
   AppState,
@@ -7,20 +13,15 @@ import {
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
+  useWindowDimensions,
   type TextProps,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import {
-  MAX_DESCRIPTION_LENGTH,
-  insertDescriptionMarkup,
-  normalizeDescription,
-} from './description';
-import { DescriptionText } from './DescriptionText';
+import { MAX_DESCRIPTION_LENGTH, normalizeDescription } from './description';
+import RichDescription, { type RichDescriptionRef } from './RichDescription';
 import { draftsFor } from './descriptionDrafts';
 
 export function DescriptionEditor({
@@ -49,11 +50,15 @@ export function DescriptionEditor({
   onClose: () => void;
 }) {
   const [text, setText] = useState(initialValue),
-    [preview, setPreview] = useState(false),
+    [editorInitial, setEditorInitial] = useState(initialValue),
+    [ready, setReady] = useState(false),
+    [requesting, setRequesting] = useState(false),
     [loading, setLoading] = useState(true),
     [status, setStatus] = useState('');
-  const [selection, setSelection] = useState({ start: 0, end: 0 });
-  const input = useRef<TextInput>(null);
+  const editor = useRef<RichDescriptionRef>(null);
+  const { fontScale } = useWindowDimensions();
+  const requestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleReady = useCallback(async () => setReady(true), []);
   const latest = useRef(initialValue),
     finished = useRef(false),
     timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -71,6 +76,8 @@ export function DescriptionEditor({
           if (!active) return;
           latest.current = saved.text;
           setText(saved.text);
+          setEditorInitial(saved.text);
+          setReady(false);
           setStatus('Recovered unsaved draft');
         };
         if (saved.base !== baseValue)
@@ -117,16 +124,15 @@ export function DescriptionEditor({
       active = false;
       subscription.remove();
       if (timer.current) clearTimeout(timer.current);
+      if (requestTimer.current) clearTimeout(requestTimer.current);
       if (!finished.current && latest.current !== initialValue)
         void drafts
           .put(draftKey, { version: 1, base: baseValue, text: latest.current })
           .catch(() => {});
     };
   }, [drafts, draftKey, initialValue, baseValue]);
-  useEffect(() => {
-    if (!loading && !preview && editable) input.current?.focus();
-  }, [loading, preview, editable]);
   function update(value: string) {
+    if (finished.current) return;
     latest.current = value;
     setText(value);
     if (timer.current) clearTimeout(timer.current);
@@ -138,18 +144,18 @@ export function DescriptionEditor({
         );
     }, 350);
   }
-  function finish(discard: boolean) {
+  function finish(discard: boolean, value: string) {
     Keyboard.dismiss();
     finished.current = true;
     if (timer.current) clearTimeout(timer.current);
     if (discard || !keepDraftOnApply)
       void drafts.remove(draftKey).catch(() => {});
-    else void persist(text).catch(() => {});
+    else void persist(value).catch(() => {});
     onClose();
   }
-  function close() {
-    if (text === initialValue) {
-      finish(false);
+  function close(value: string) {
+    if (value === initialValue) {
+      finish(false, value);
       return;
     }
     Alert.alert(
@@ -160,10 +166,40 @@ export function DescriptionEditor({
         {
           text: 'Discard changes',
           style: 'destructive',
-          onPress: () => finish(true),
+          onPress: () => finish(true, value),
         },
       ],
     );
+  }
+  function requestSnapshot(action: 'close' | 'done') {
+    if (requesting) return;
+    if (!ready) {
+      if (action === 'close') close(latest.current);
+      return;
+    }
+    setRequesting(true);
+    requestTimer.current = setTimeout(() => {
+      setRequesting(false);
+      setStatus('The editor didn’t respond. Please try again.');
+    }, 5000);
+    editor.current?.requestSnapshot(action);
+  }
+  async function snapshot(action: string, value: string) {
+    if (requestTimer.current) clearTimeout(requestTimer.current);
+    setRequesting(false);
+    if (finished.current) return;
+    if (value.length > MAX_DESCRIPTION_LENGTH) {
+      setStatus('The description is too long to apply.');
+      return;
+    }
+    update(value);
+    if (action === 'close') close(value);
+    else if (
+      action === 'done' &&
+      editable &&
+      onApply(normalizeDescription(value))
+    )
+      finish(false, value);
   }
   return (
     <Modal
@@ -171,10 +207,7 @@ export function DescriptionEditor({
       animationType="slide"
       presentationStyle="fullScreen"
       supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}
-      onRequestClose={close}
-      onShow={() => {
-        if (!loading && !preview && editable) input.current?.focus();
-      }}
+      onRequestClose={() => requestSnapshot('close')}
     >
       <SafeAreaProvider>
         <SafeAreaView style={styles.screen}>
@@ -183,7 +216,12 @@ export function DescriptionEditor({
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           >
             <View style={styles.header}>
-              <EditorAction label="Close" onPress={close} colour={colour} />
+              <EditorAction
+                label="Close"
+                onPress={() => requestSnapshot('close')}
+                colour={colour}
+                disabled={requesting}
+              />
               <View
                 style={{ flex: 1, alignItems: 'center', paddingHorizontal: 8 }}
               >
@@ -195,103 +233,44 @@ export function DescriptionEditor({
               <EditorAction
                 label="Done"
                 colour={colour}
-                disabled={!editable || loading}
-                onPress={() => {
-                  if (onApply(normalizeDescription(text))) finish(false);
-                }}
+                disabled={!editable || loading || !ready || requesting}
+                onPress={() => requestSnapshot('done')}
               />
-            </View>
-            <View style={styles.tools}>
-              <View style={styles.tabs}>
-                {['Write', 'Preview'].map((label, index) => (
-                  <Pressable
-                    key={label}
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected: preview === !!index }}
-                    onPress={() => {
-                      Keyboard.dismiss();
-                      setPreview(!!index);
-                    }}
-                    style={[
-                      styles.tab,
-                      preview === !!index && { backgroundColor: '#292929' },
-                    ]}
-                  >
-                    <Text style={styles.toolText}>{label}</Text>
-                  </Pressable>
-                ))}
-              </View>
-              {!preview && (
-                <View style={{ flexDirection: 'row' }}>
-                  {(['bold', 'list', 'link'] as const).map((kind) => (
-                    <Pressable
-                      key={kind}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Insert ${kind}`}
-                      disabled={loading || !editable}
-                      onPress={() => {
-                        const result = insertDescriptionMarkup(
-                          text,
-                          selection,
-                          kind,
-                        );
-                        if (result.text.length <= MAX_DESCRIPTION_LENGTH) {
-                          update(result.text);
-                          setSelection(result.selection);
-                          input.current?.focus();
-                        }
-                      }}
-                      style={styles.tool}
-                    >
-                      <Text
-                        style={[
-                          styles.toolText,
-                          kind === 'bold' && { fontWeight: '700' },
-                        ]}
-                      >
-                        {kind === 'bold' ? 'B' : kind === 'list' ? '•' : 'Link'}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              )}
             </View>
             {status ? (
               <Text accessibilityLiveRegion="polite" style={styles.status}>
                 {status}
               </Text>
             ) : null}
-            {preview ? (
-              <ScrollView
-                contentContainerStyle={styles.preview}
-                keyboardShouldPersistTaps="handled"
-              >
-                {text.trim() ? (
-                  <DescriptionText text={text} colour={colour} />
-                ) : (
-                  <Text style={styles.subtitle}>
-                    Your description preview will appear here.
-                  </Text>
-                )}
-              </ScrollView>
-            ) : (
-              <TextInput
-                ref={input}
-                accessibilityLabel="Habit description, Markdown or plain text"
-                multiline
-                editable={!loading && editable}
-                value={text}
-                onChangeText={update}
-                onSelectionChange={(event) =>
-                  setSelection(event.nativeEvent.selection)
+            {!loading && (
+              <RichDescription
+                key={editorInitial}
+                ref={editor}
+                initialValue={editorInitial}
+                colour={colour}
+                fontScale={fontScale}
+                editable={editable}
+                onReady={handleReady}
+                onChange={async (value) => update(value)}
+                onSnapshot={snapshot}
+                onLimit={async () =>
+                  setStatus(
+                    '20,000 character limit reached. Undo or shorten the note to keep writing.',
+                  )
                 }
-                selection={selection}
-                maxLength={MAX_DESCRIPTION_LENGTH}
-                selectionColor={colour}
-                placeholder="Why this matters, a simple starting point, or a link to my notes…"
-                placeholderTextColor="#666666"
-                textAlignVertical="top"
-                style={styles.input}
+                dom={{
+                  style: { flex: 1 },
+                  containerStyle: { flex: 1 },
+                  scrollEnabled: false,
+                  keyboardDisplayRequiresUserAction: false,
+                  hideKeyboardAccessoryView: false,
+                  onError: () => {
+                    setReady(false);
+                    setStatus(
+                      'The editor could not load. Close and reopen to recover your draft.',
+                    );
+                  },
+                }}
               />
             )}
             {text.length >= MAX_DESCRIPTION_LENGTH - 500 && (
@@ -354,47 +333,6 @@ const styles = StyleSheet.create({
   actionText: { color: '#BBBBBB', fontSize: 15, fontWeight: '500' },
   title: { color: '#DADADA', fontSize: 15, fontWeight: '600' },
   subtitle: { color: '#777777', fontSize: 12, marginTop: 3 },
-  tools: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 10,
-    gap: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#252525',
-  },
-  tabs: {
-    flexDirection: 'row',
-    backgroundColor: '#151515',
-    borderRadius: 10,
-    padding: 3,
-  },
-  tab: {
-    minHeight: 44,
-    paddingHorizontal: 14,
-    justifyContent: 'center',
-    borderRadius: 8,
-  },
-  tool: {
-    minWidth: 44,
-    minHeight: 44,
-    paddingHorizontal: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  toolText: { color: '#BBBBBB', fontSize: 13 },
-  input: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 24,
-    color: '#DDDDDD',
-    fontSize: 17,
-    lineHeight: 26,
-  },
-  preview: { padding: 24, flexGrow: 1 },
   status: {
     color: '#AFAFAF',
     fontSize: 12,

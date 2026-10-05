@@ -1,0 +1,232 @@
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: #000;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #ddd;
+  -webkit-text-size-adjust: 100%;
+}
+.description-editor {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: #000;
+  font-size: var(--note-size);
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 0 12px 6px;
+  gap: 2px;
+  border-bottom: 1px solid #252525;
+  flex-shrink: 0;
+}
+button {
+  font: inherit;
+  color: #bbb;
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 44px;
+  padding: 8px;
+  -webkit-tap-highlight-color: transparent;
+}
+button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+button[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--note-colour) 18%, #171717);
+  color: var(--note-link);
+}
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--note-colour);
+  outline-offset: -2px;
+}
+.tool {
+  min-width: 44px;
+  flex: 1;
+  font-size: max(18px, var(--note-size));
+  font-weight: 500;
+}
+.tool[aria-label='Bold'] {
+  font-weight: 700;
+}
+.separator {
+  height: 18px;
+  width: 1px;
+  background: #303030;
+  margin: 0 3px;
+}
+.writing-area {
+  flex: 1;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 18px 24px 40px;
+}
+.tiptap {
+  outline: none;
+  min-height: 160px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  caret-color: var(--note-colour);
+}
+.tiptap p {
+  margin: 0 0 0.75em;
+}
+.tiptap strong {
+  font-weight: 700;
+  color: #eee;
+}
+.tiptap h1 {
+  font-size: 1.7em;
+  margin: 0.3em 0 0.5em;
+}
+.tiptap h2 {
+  font-size: 1.35em;
+  margin: 0.3em 0 0.5em;
+}
+.tiptap h3,
+.tiptap h4,
+.tiptap h5,
+.tiptap h6 {
+  font-size: 1.1em;
+  margin: 0.3em 0 0.5em;
+}
+.tiptap ul,
+.tiptap ol {
+  padding-left: 1.4em;
+  margin: 0.5em 0 1em;
+}
+.tiptap li {
+  margin: 0.2em 0;
+}
+.tiptap li p {
+  margin: 0.15em 0;
+}
+.tiptap blockquote {
+  border-left: 2px solid #505050;
+  margin: 0.75em 0;
+  padding-left: 12px;
+  color: #c5c5c5;
+}
+.tiptap a {
+  color: var(--note-link);
+  text-decoration: underline;
+}
+.tiptap code {
+  font:
+    0.85em ui-monospace,
+    monospace;
+  background: #202020;
+  border-radius: 3px;
+  padding: 0.1em 0.2em;
+}
+.tiptap pre {
+  padding: 12px;
+  background: #151515;
+  border-radius: 8px;
+  overflow: auto;
+}
+.tiptap pre code {
+  background: none;
+  padding: 0;
+}
+.tiptap mark {
+  padding: 0.04em 0.1em;
+  border-radius: 3px;
+}
+.tiptap hr {
+  border: 0;
+  border-top: 1px solid #303030;
+  margin: 1em 0;
+}
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #666;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+.popover {
+  background: #171717;
+  padding: 8px;
+  margin: 6px 12px 0;
+  border: 1px solid #303030;
+  border-radius: 12px;
+  flex-shrink: 0;
+  max-height: 42vh;
+  overflow: auto;
+}
+.choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  font-size: 0.85em;
+}
+.choices button {
+  text-align: left;
+}
+.colours {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+.colours button {
+  min-width: 44px;
+  flex: 1;
+  font-size: 0.8em;
+}
+.swatch {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.link-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.9em;
+}
+.link-panel input {
+  width: 100%;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background: #080808;
+  color: #ddd;
+  padding: 12px;
+  font: inherit;
+  min-height: 44px;
+}
+.link-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.link-error {
+  margin: 0;
+  color: #dfae82;
+  font-size: 0.85em;
+}
+.image-note {
+  color: #aaa;
+}

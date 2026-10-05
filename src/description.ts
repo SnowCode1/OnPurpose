@@ -1,4 +1,5 @@
 import MarkdownIt from 'markdown-it/browser';
+import { readHighlight } from './richText/highlights.ts';
 
 export const MAX_DESCRIPTION_LENGTH = 20000;
 export function normalizeDescription(value: string): string | undefined {
@@ -37,6 +38,20 @@ export function descriptionLink(value: string): string | null {
 const parser = new MarkdownIt({ html: false, linkify: true, breaks: true });
 parser.validateLink = (value: string) => descriptionLink(value) !== null;
 parser.disable(['table']);
+parser.inline.ruler.before('emphasis', 'habit_highlight', (state, silent) => {
+  const match = readHighlight(state.src, state.pos);
+  if (!match) return false;
+  if (!silent) {
+    const opening = state.push('highlight_open', 'mark', 1);
+    opening.attrSet('colour', match.colour);
+    const children: DescriptionToken[] = [];
+    state.md.inline.parse(match.content, state.md, state.env, children);
+    state.tokens.push(...children);
+    state.push('highlight_close', 'mark', -1);
+  }
+  state.pos = match.end;
+  return true;
+});
 export const parseDescription = (text: string) => parser.parse(text, {});
 export type DescriptionToken = ReturnType<typeof parseDescription>[number];
 export function descriptionSummary(text: string): string {
@@ -86,34 +101,5 @@ export function descriptionPreview(text: string, expanded: boolean) {
   return {
     tokens: selected,
     truncated: end < tokens.length || contentLength > 360,
-  };
-}
-export function insertDescriptionMarkup(
-  text: string,
-  selection: { start: number; end: number },
-  kind: 'bold' | 'list' | 'link',
-) {
-  const start = Math.max(0, Math.min(text.length, selection.start));
-  const end = Math.max(start, Math.min(text.length, selection.end));
-  const selected = text.slice(start, end);
-  const insertion =
-    kind === 'bold'
-      ? `**${selected || 'text'}**`
-      : kind === 'list'
-        ? `${start > 0 && text[start - 1] !== '\n' ? '\n' : ''}- ${selected || 'item'}`
-        : `[${selected || 'link title'}](https://)`;
-  const cursorStart =
-    kind === 'bold'
-      ? start + 2
-      : kind === 'link'
-        ? start + (selected || 'link title').length + 3
-        : start + insertion.length - (selected || 'item').length;
-  const cursorEnd =
-    kind === 'link'
-      ? cursorStart + 8
-      : cursorStart + (selected || (kind === 'bold' ? 'text' : 'item')).length;
-  return {
-    text: text.slice(0, start) + insertion + text.slice(end),
-    selection: { start: cursorStart, end: cursorEnd },
   };
 }

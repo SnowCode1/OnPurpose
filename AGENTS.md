@@ -56,7 +56,10 @@ The requested preset icon update uses normal undoable edits in
   calculations in `src/statistics.ts`. Read HABIT_MANAGEMENT.md and STATISTICS.md.
   `src/HabitDescription.tsx`, `src/DescriptionEditor.tsx` and `src/DescriptionHistory.tsx`
   own description reading, full-screen draft editing and Before/After restore. Read
-  `docs/DESCRIPTIONS.md`. Applied descriptions use ordinary v7 habit changes;
+  `docs/DESCRIPTIONS.md`. `src/RichDescription.tsx` is the offline Expo DOM/Tiptap
+  editing surface; `src/richText/` owns safe document mapping, formatting, local
+  Undo/Redo and bounded highlights. Preserve native readers and request a current
+  DOM snapshot before applying. Applied descriptions use ordinary v7 habit changes;
   recoverable drafts stay outside History/backups in a separate local store. Keep
   `storage/descriptionDraftModel.ts` distinct from native/web adapters for Metro.
   `src/dev/sampleData.ts` owns isolated mock history for statistics testing. Keep
@@ -112,6 +115,8 @@ Run `npm run check` and relevant `npm test` suites after code changes, and `npm 
 native-facing imports or Expo config. Web preview helps layout checks but is not
 evidence that iOS runs correctly. Report actual checks and any unverified device
 behaviour. Follow `docs/TESTING.md` for phone and release testing.
+Keep the npm test heap/concurrency/time limits. Diagnose runaway tests under a
+hard memory limit; avoid DOM assertions that print entire jsdom browser graphs.
 Add focused tests when persistence, date logic, event replay/export, or other consequential behaviour
 arrives; avoid tests that merely duplicate trivial markup.
 

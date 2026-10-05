@@ -73,10 +73,13 @@ and uncertainty about whether something was saved.
   show the next Undo target. Start with two minutes of inactivity between groups.
 - Give each habit an optional Markdown/plain-text description with links, available
   during creation and editing. Show it first in statistics in a distinct compact
-  rounded card, with a full-screen editor,
-  and retain applied changes in incremental storage and Undo/Redo. Populate existing
+  rounded card, with a full-screen live formatted editor, local temporary Undo/Redo,
+  reversible formatting controls and optional highlight colours. Retain applied changes in incremental storage and Undo/Redo. Populate existing
   habits with editable placeholder notes while preserving any user-written text.
 - Give each habit an editable start date, initially Today, to support old records.
+  Statistics use each habit's own continuous calendar period since its start;
+  another habit's activity must not affect its denominator. Numeric averages divide
+  by all calendar days in the selected period since the start, including blanks.
 - Allow pulling down from the top of statistics to return to the grid.
 - Offer saved row- and column-spacing settings.
 - Develop without owning a Mac; use the physical iPhone for actual testing.

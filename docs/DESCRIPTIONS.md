@@ -18,9 +18,23 @@ action, with no empty card or instructional block.
 
 Creation and Edit have one compact Description control, showing a two-line text
 summary or an optional-note hint. It opens a full-screen editor with fixed Close
-and Done controls, Write/Preview tabs and bold/list/link insertion shortcuts.
-The toolbar wraps if text scaling or available width requires it. Writing has
-most of the screen; the keyboard does not push Done into scrollable content.
+and Done controls. The founder requested live formatted editing, replacing
+Write/Preview tabs. Bold and italic toggle the selected formatting rather than
+nesting Markdown markers. One compact toolbar provides local Undo/Redo, Bold,
+Italic, text/list options, links and highlight colours. Text options group headings,
+lists, quotes, strikethrough, inline code and Clear formatting in a compact panel.
+Links can be added, changed or removed while retaining the selected text. Highlight
+options are None, Yellow, Green, Blue, Purple and Pink; choosing the same colour
+again removes it. Additional controls appear only when opened. The toolbar wraps
+if text scaling or available width requires it. Writing has most of the screen;
+the keyboard does not push Done into scrollable content.
+
+The editor has its own temporary Undo/Redo history, separate from app History.
+Typing groups after 500 ms of inactivity; toolbar formatting actions are separate
+steps. Editing after Undo clears the editor's Redo branch. This session history
+holds at most 100 steps and is not recovered with a draft or exported. Done still
+applies one normal habit change. Opening and closing without edits, or undoing
+back to the initial document, retains the original Markdown bytes.
 
 Done from a creation/edit dialog updates that dialog's draft. The habit is only
 saved when the outer Done is used; outer Close discards it. Done from statistics
@@ -34,7 +48,12 @@ These preview/size choices are implementation decisions, not new product goals.
 
 `markdown-it` 15.0.2's browser build parses text into tokens; `DescriptionText.tsx`
 renders native text/views. Supported content includes headings, bold/italic,
-strikethrough, paragraphs, lists, quotes and code. Plain URLs become links.
+strikethrough, paragraphs, lists, quotes, code and optional highlights.
+Yellow highlights use `==text==`; other named colours use `=={green}text==`
+(with blue, purple and pink also supported). This is a small OnPurpose Markdown
+extension with a fixed palette, not arbitrary HTML or styles. Native readers,
+History comparisons and the editor use the same syntax. Other Markdown apps may
+show the highlight delimiters literally. Plain URLs become links.
 Raw HTML is displayed as text. Tables are not enabled. Image syntax displays its
 alt text, without fetching remote images when a note is opened.
 
@@ -44,6 +63,25 @@ URLs, malformed addresses and executable/local-resource schemes are rejected.
 If the target app cannot open a link, the user sees an error. Link text is
 underlined and uses the habit colour when readable, with a contrast fallback.
 Markdown itself requires no account, network connection or external editor.
+
+The live editor uses Tiptap/ProseMirror in a local Expo DOM component. Only the
+full-screen writing surface uses this embedded web editor; the grid, statistics,
+notes reader and saved data remain native. Expo SDK 57 includes its DOM WebView in
+Expo Go. `@expo/metro-runtime` supports the embedded bundle. JavaScript, CSS and
+HTML are bundled with the app; no CDN, server or account is required. The safe
+reader parser feeds a limited editor schema; HTML stays literal, and image metadata
+is retained with an alt-text placeholder rather than a fetched image. Done/Close
+request a current document snapshot across the DOM bridge before applying or
+confirming a discard, so the last keystroke need not wait for draft autosave.
+Serialized formatting also counts toward the 20,000-character limit; an oversized
+paste is rejected as a whole, with existing text and Undo retained.
+
+The editor's MIT notices are retained in
+[TIPTAP_LICENSE.txt](licenses/TIPTAP_LICENSE.txt),
+[PROSEMIRROR_LICENSES.txt](licenses/PROSEMIRROR_LICENSES.txt) and
+[MARKED_LICENSE.txt](licenses/MARKED_LICENSE.txt).
+References: [Expo DOM components](https://docs.expo.dev/guides/dom-components/),
+[Tiptap Markdown](https://tiptap.dev/docs/editor/markdown/getting-started/basic-usage).
 
 The parser is MIT licensed; retain [its notice](licenses/MARKDOWN_IT_LICENSE.txt).
 Upstream: [markdown-it](https://github.com/markdown-it/markdown-it).

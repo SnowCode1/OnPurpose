@@ -10,7 +10,6 @@ import {
   parseDescription,
   descriptionSummary,
   descriptionPreview,
-  insertDescriptionMarkup,
 } from '../src/description.ts';
 import { demoHabits } from '../src/habits.ts';
 import {
@@ -150,34 +149,6 @@ test('stats previews retain complete Markdown blocks and expose long notes for e
   );
   assert.equal(descriptionPreview('Short', false).truncated, false);
   assert.equal(descriptionPreview('x'.repeat(500), false).truncated, true);
-});
-test('editor shortcuts preserve surrounding text and select the intended edit target', () => {
-  const bold = insertDescriptionMarkup(
-    'before note after',
-    { start: 7, end: 11 },
-    'bold',
-  );
-  assert.equal(bold.text, 'before **note** after');
-  assert.equal(
-    bold.text.slice(bold.selection.start, bold.selection.end),
-    'note',
-  );
-  const link = insertDescriptionMarkup('notes', { start: 0, end: 5 }, 'link');
-  assert.equal(link.text, '[notes](https://)');
-  assert.equal(
-    link.text.slice(link.selection.start, link.selection.end),
-    'https://',
-  );
-  const list = insertDescriptionMarkup('hello', { start: 5, end: 5 }, 'list');
-  assert.equal(list.text, 'hello\n- item');
-  assert.equal(
-    list.text.slice(list.selection.start, list.selection.end),
-    'item',
-  );
-  assert.equal(
-    insertDescriptionMarkup('', { start: -2, end: 99 }, 'bold').text,
-    '**text**',
-  );
 });
 test('v7 rejects malformed descriptions and older definitions reject the new field', async () => {
   const { store } = await fixture();

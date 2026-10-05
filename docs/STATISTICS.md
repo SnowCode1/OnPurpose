@@ -27,9 +27,10 @@ not change statistical calculations.
 
 Choose 30 days, 90 days, one year (365 days), or All. Ranges include today. Checkbox
 cards show completion rate, current streak, all-time best streak, completions,
-and tracking-day count. An equal-length previous-period comparison is shown when
+and calendar-day count. An equal-length previous-period comparison is shown when
 both periods have a denominator. Numeric cards show total, average, highest daily
-total, logging streak, and recorded-day count.
+total, logging streak, and recorded-day count. Numeric averages are labelled
+Average / calendar day.
 
 Charts show checkbox completion percentages or numeric totals. Numeric 30-day
 charts use daily bars; longer ranges aggregate into labelled multi-day buckets.
@@ -73,24 +74,29 @@ to VoiceOver; numeric days announce the full date and recorded value.
   elapsed days before app creation without needing a fabricated first entry.
   Moving the start forward excludes older records from all metrics, charts,
   comparisons and streaks, but never deletes values or events. Moving it back
-  includes them again. Archive pauses still apply. Future start dates show “Starts”
+  includes them again. Future start dates show “Starts”
   and no eligible records until that date. Calendar/grid entries remain editable;
   entries before the start date stay saved, outside statistics. This is an
-  implementation default awaiting founder review.
-- Checkbox denominator: elapsed tracking days through yesterday, plus today only
-  once completed. The numerator is the number of checked days in the range.
-  A just-created, unfinished habit has no rate, shown as a dash, rather than 0%.
-- Archive ends an active interval before its local archive day; restore starts an
-  interval on its local restore day. Unrecorded paused days are excluded. Explicit
-  records in a paused interval still count in both numerator and denominator.
-  Definition events from Undo/Redo also form these intervals; they do not rewrite
-  the times at which the habit was actually archived/restored. Sequence order wins
-  over clock rollback; lifecycle boundaries cannot go backwards or overlap.
+  implementation rule; the continuous calendar denominator is founder-confirmed.
+- Founder-confirmed denominator: every calendar day from the habit's own start
+  through today, intersected with the selected range. Activity in other habits
+  never changes its start or denominator. Checkbox rates divide checked days by
+  those calendar days. An unfinished today counts as a calendar day; a new habit
+  starting today therefore shows 0% until checked. Days before the start and future
+  days have no denominator. This supersedes the old unfinished-today grace for rates.
+- Archive controls list visibility; it does not pause the calendar denominator.
+  Restoring, Undo/Redo or timestamp rollback in archive edits cannot change the
+  period. Saved entries remain intact. This follows the continuous start-to-today
+  rule and supersedes the earlier archive-pause implementation.
 - Checkbox streaks count consecutive checked calendar dates. The current streak
   ends today if checked, otherwise yesterday, so an unfinished today has a grace
   period. A missing earlier day breaks the streak. Archive does not bridge gaps.
-- Numeric averages divide by recorded days, including zero; blank days are not
-  silently treated as zero. Numeric streaks mean consecutive days **recorded**,
+- Founder-confirmed numeric averages divide the total by all calendar days in the
+  period since the start, including blank days and today. For example, 30 minutes
+  across four days averages 7.5 minutes/day even with only three records. Blanks
+  stay blank in storage and daily charts; an explicit zero remains a recorded day.
+  A period with calendar days but no records averages zero; a period before the
+  start has no average. Numeric streaks mean consecutive days **recorded**,
   not target achievement. No numeric success rate is invented.
 - Current/best streaks use the entire history. Period totals, averages, rates,
   chart buckets, and weekday breakdowns use the selected range.
@@ -105,10 +111,12 @@ to VoiceOver; numeric days announce the full date and recorded value.
 charts, and month/range selection. Nothing is stored separately; the existing
 version-1/2/3/4/5/6/7 logs and projection remain authoritative.
 
-`node --test scripts/statistics.test.mjs` covers denominators, unfinished today,
+`node --max-old-space-size=256 --test --test-timeout=15000 scripts/statistics.test.mjs`
+covers per-habit calendar denominators, unfinished today,
 streaks, zero versus blank, future exclusion, archive/restore including Undo/Redo,
 backdating, timezone offsets, DST dates, leap years, weekday/bucket partitioning,
-previous periods, clock rollback, and unchanged legacy backup fixtures.
+previous periods, independence from other habits, clock rollback, and unchanged
+legacy backup fixtures.
 Native chart interaction, VoiceOver, larger text, landscape, and animation feel
 remain device acceptance checks in [TESTING.md](TESTING.md).
 

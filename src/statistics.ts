@@ -15,59 +15,29 @@ export type StatsBucket = {
   recorded: number;
   eligible: number;
 };
-type Interval = { start: number; end: number };
 function editDay(event: StoredEvent) {
   return Math.floor(
     (Date.parse(event.recordedAt) + event.utcOffsetMinutes * 60000) / DAY,
   );
 }
-
-// Archive periods follow the actual saved transitions, including Undo/Redo.
-// Clock rollback cannot reorder lifecycle boundaries. Explicit dated entries
-// remain evidence of tracking even if they predate creation or fall in a pause.
-function lifecycle(
+// Each habit's own start bounds a continuous calendar period. Activity in
+// another row, a blank day, and archive/restore never change its denominator.
+function habitStart(
   habit: Habit,
   events: StoredEvent[],
   today: number,
   firstEntry: number,
 ) {
-  let born: number | null = null,
-    opened: number | null = null,
-    last = -Infinity;
-  const intervals: Interval[] = [];
-  for (const event of events) {
-    const definition =
-      event.type === 'initialize'
-        ? event.habits.find((item) => item.id === habit.id)
-        : event.change.kind === 'habit' && event.change.habitId === habit.id
-          ? event.change.after
-          : undefined;
-    if (definition === undefined) continue;
-    const day = Math.max(last, editDay(event));
-    last = day;
-    if (born === null && definition) born = day;
-    const active = definition !== null && !definition.archived;
-    if (active && opened === null) opened = day;
-    if (!active && opened !== null) {
-      intervals.push({ start: opened, end: day - 1 });
-      opened = null;
-    }
-  }
-  if (opened !== null) intervals.push({ start: opened, end: today });
-  const start = habit.startDate
-    ? dayNumber(habit.startDate)
-    : Math.min(born ?? today, firstEntry);
-  if (start < (born ?? today))
-    intervals.unshift({ start, end: (born ?? today) - 1 });
-  return {
-    start,
-    intervals: intervals
-      .map((interval) => ({
-        ...interval,
-        start: Math.max(start, interval.start),
-      }))
-      .filter((interval) => interval.start <= interval.end),
-  };
+  if (habit.startDate) return dayNumber(habit.startDate);
+  const creation = events.find((event) =>
+    event.type === 'initialize'
+      ? event.habits.some((item) => item.id === habit.id)
+      : event.change.kind === 'habit' &&
+        event.change.habitId === habit.id &&
+        event.change.before === null &&
+        event.change.after !== null,
+  );
+  return Math.min(creation ? editDay(creation) : today, firstEntry);
 }
 // Legacy habits acquire a display default without rewriting their event log.
 export function habitTrackingStart(
@@ -85,9 +55,7 @@ export function habitTrackingStart(
     const day = dayNumber(key.slice(prefix.length));
     if (day <= today) firstEntry = Math.min(firstEntry, day);
   }
-  return dateKey(
-    Math.min(today, lifecycle(habit, events, today, firstEntry).start),
-  );
+  return dateKey(Math.min(today, habitStart(habit, events, today, firstEntry)));
 }
 function countWeekday(start: number, end: number, weekday?: number) {
   if (end < start) return 0;
@@ -114,7 +82,7 @@ export function habitStatistics(
     }))
     .filter((item) => item.day <= today && item.day >= explicitStart)
     .sort((a, b) => a.day - b.day);
-  const { start: trackingStart, intervals } = lifecycle(
+  const trackingStart = habitStart(
     habit,
     events,
     today,
@@ -122,8 +90,6 @@ export function habitStatistics(
   );
   const start =
     range === 'all' ? Math.min(today, trackingStart) : today - range + 1;
-  const active = (day: number) =>
-    intervals.some((interval) => day >= interval.start && day <= interval.end);
   function summarize(from: number, to: number, weekday?: number) {
     const matching = records.filter(
       (item) =>
@@ -132,20 +98,11 @@ export function habitStatistics(
         (weekday === undefined ||
           new Date(item.day * DAY).getUTCDay() === weekday),
     );
-    const pastEnd = Math.min(to, today - 1);
-    let eligible = intervals.reduce(
-      (sum, interval) =>
-        sum +
-        countWeekday(
-          Math.max(from, interval.start),
-          Math.min(pastEnd, interval.end),
-          weekday,
-        ),
-      0,
+    const eligible = countWeekday(
+      Math.max(from, trackingStart),
+      Math.min(to, today),
+      weekday,
     );
-    eligible += matching.filter(
-      (item) => item.day === today || !active(item.day),
-    ).length;
     const successes = matching.filter((item) => item.value === 1).length;
     const total = matching.reduce((sum, item) => sum + item.value, 0);
     return {
@@ -154,7 +111,7 @@ export function habitStatistics(
       successes,
       total,
       rate: eligible ? successes / eligible : null,
-      average: matching.length ? total / matching.length : null,
+      average: eligible ? total / eligible : null,
       best: matching.length
         ? matching.reduce((best, item) => Math.max(best, item.value), 0)
         : null,

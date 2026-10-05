@@ -11,6 +11,34 @@ Run `npm test` for the domain, receiver, and real SQLite storage tests. The nati
 store now persists entries, colours, preferences, and undo history. A clean lint
 result or browser test alone is not proof that an iPhone habit was saved.
 
+The npm test commands cap each Node process's JavaScript heap at 256 MB and set
+a 15-second test timeout; the full suite runs at most two files at a
+time. Keep these bounds when diagnosing a stalled test. For memory diagnostics
+on the Linux host, also run under a systemd user scope with `MemoryMax=768M`,
+`MemorySwapMax=0` and a short `timeout`, with core dumps disabled (`ulimit -c 0`).
+Heap limits do not cap every kind of native allocation. Assert booleans or small
+values for DOM checks rather than asking Node to print a complete jsdom element:
+an unexpected element can make assertion output traverse a huge browser graph.
+
+## Live description editor and statistics checks
+
+Phone acceptance pending (5 October 2026):
+
+- Open a description from statistics and creation/Edit. Formatted text is directly
+  editable without Write/Preview. Select words, apply Bold twice, and try local
+  Undo/Redo. Confirm typing after Undo clears local Redo and app History is unchanged
+  until Done. Save immediately after typing; the final keystroke must be retained.
+- Try headings, lists, quotes, links and all highlight colours. Change/remove a
+  highlight; remove a link while preserving its text. Reopen, reload, use app
+  Undo/Redo and export/restore: native reading and History comparisons must agree.
+- Test keyboard selection, typing/scrolling, toolbar hit targets, link entry, Close
+  discard, recoverable drafts, portrait/landscape, larger text and VoiceOver.
+  Done/Close must stay reachable and text must not disappear behind the keyboard.
+- Check checkbox rates and numeric averages against a short known start period.
+  Four days with totals 10, blank, 0, 20 means 7.5/day and three recorded days.
+  Editing another habit must not affect these results. Future entries and entries
+  before the start remain saved but outside statistics.
+
 ## First iPhone smoke test
 
 Fast-fling fallback checks (4 October 2026; phone acceptance pending):

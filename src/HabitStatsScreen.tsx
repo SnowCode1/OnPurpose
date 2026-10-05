@@ -402,7 +402,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
             <Text style={styles.caption}>
               {stats.numeric
                 ? `${unit ? `${unit} · ` : ''}${stats.recorded} days recorded`
-                : `${stats.successes} completed of ${stats.eligible} tracking days`}
+                : `${stats.successes} completed of ${stats.eligible} calendar days`}
             </Text>
             {!stats.numeric && range !== 'all' && difference !== null && (
               <Text style={styles.small}>
@@ -416,7 +416,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
               value={format(stats.numeric ? stats.average : stats.streak)}
               label={
                 stats.numeric
-                  ? `Average / recorded day${unit ? ` (${unit})` : ''}`
+                  ? `Average / calendar day${unit ? ` (${unit})` : ''}`
                   : 'Current streak · days'
               }
             />
@@ -441,7 +441,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
               label={
                 stats.numeric
                   ? 'Days recorded · selected period'
-                  : 'Tracking days · selected period'
+                  : 'Calendar days · selected period'
               }
             />
           </View>
@@ -472,7 +472,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
               By day of the week
             </Text>
             <Text style={styles.caption}>
-              {stats.numeric ? 'Average on recorded days' : 'Completion rate'}
+              {stats.numeric ? 'Average / calendar day' : 'Completion rate'}
               {stats.numeric && unit ? ` · ${unit}` : ''} · selected period
             </Text>
             {weekDays.map((weekday) => {
@@ -632,8 +632,8 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
           </View>
           <Text style={styles.note}>
             {stats.numeric
-              ? 'Averages use recorded days, including zero. Blank days are not treated as zero. A logging streak counts consecutive days with an entry.'
-              : 'Rates assume a daily habit. Days before tracking began and unrecorded days while archived are excluded. Today counts once completed. Streaks count consecutive calendar days; an unfinished today does not break the current streak.'}{' '}
+              ? 'Averages divide totals by calendar days since the start, including today and blank days. Blanks stay empty; zero is a recorded total. A logging streak counts consecutive days with an entry.'
+              : 'Rates use all calendar days since the start, including today. Streaks count consecutive checked days; an unfinished today does not break the current streak.'}{' '}
             Future entries and records before the start date are excluded from
             charts and statistics. Earlier records stay saved; edit the start
             date to include them.

@@ -234,7 +234,7 @@ to test storage updates. Do not downgrade to an older build after writing v7 dat
 older builds cannot interpret it and will refuse to load rather than reset.
 The web preview uses separate browser localStorage, not the iPhone SQLite file.
 
-Run `node --test scripts/storage.test.mjs` for focused storage/recovery tests, and
+Run `node --max-old-space-size=256 --test --test-timeout=15000 scripts/storage.test.mjs` for focused storage/recovery tests, and
 `npm test` for the full suite. These tests use Node 24's SQLite binding against the
 production SQL/replay logic. Native bridge and Files UI still need phone testing.
 
@@ -243,7 +243,13 @@ name to edit its name/unit/colour, reorder, or archive. Settings → Archived ha
 restores rows with their entries and retained slots; History can undo these changes.
 Tap a name for a full-screen statistics view. See [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md)
 for gestures and [STATISTICS.md](STATISTICS.md) for calculation rules. Run
-`node --test scripts/statistics.test.mjs` for focused statistics coverage.
+`node --max-old-space-size=256 --test --test-timeout=15000 scripts/statistics.test.mjs` for focused statistics coverage.
+
+The full-screen description editor now uses a bundled Expo DOM/Tiptap surface
+for live formatting and local Undo/Redo. Fully reload after installing these
+dependencies; see [DESCRIPTIONS.md](DESCRIPTIONS.md). Grid and statistics remain
+native. Test commands limit heap, concurrency and runtime; retain those safeguards
+for diagnostics as described in [TESTING.md](TESTING.md).
 
 Habit icons are optional editor drafts (None, Icons, Emoji). See
 [HABIT_ICONS.md](HABIT_ICONS.md) for the bundled Phosphor/Tabler catalogues, licences, and

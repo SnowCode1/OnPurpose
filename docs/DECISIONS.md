@@ -661,3 +661,25 @@ Open source is confirmed; a particular licence is not. Preserve the generated
 Expo template notice separately. Choose a project licence and copyright holder
 before publishing the repository. Do not present Expo's copyright as ownership
 of the new application.
+
+## 5 October 2026 — Live description editing and calendar statistics
+
+**Founder decisions:** replace Write/Preview with live formatted editing; add
+editor-local Undo/Redo, reversible formatting and optional highlight colours.
+Retain the compact description entry controls and full-screen editor. Statistics
+must use each habit's own start period, independent of other habits; numeric
+averages divide by all calendar days since the start, not just recorded days.
+
+**Implementation:** Tiptap/ProseMirror lives in an offline Expo DOM component with
+its own temporary history. Native screens, description readers and the v7 string
+storage contract stay unchanged. Bundled editor assets require no external service.
+A fixed highlight palette has a small documented Markdown extension. Applied notes
+use existing habit edits; draft text recovery remains separate. Calendar ranges
+include today and do not pause during archival. Blanks contribute no total but
+remain distinguishable from explicit zero in entries and daily charts.
+
+**Test resource incident:** a failed DOM assertion tried to inspect an entire jsdom
+browser element, used about 54 GiB, and caused a host OOM. The assertion now checks
+a boolean instead. Test commands bound per-process heap, file duration and parallel
+files; memory diagnostics also use a Linux cgroup. These safeguards are development
+controls and do not imply measured native app memory usage. See TESTING.md.

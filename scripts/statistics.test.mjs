@@ -40,7 +40,7 @@ const stats = (
   definition = habit,
 ) => habitStatistics(definition, values, events, today, range);
 
-test('rates start at creation, exclude unfinished today, and include a checked today', () => {
+test('rates use every calendar day from creation, including unfinished today', () => {
   const values = {
     'walk:2026-10-01': 1,
     'walk:2026-10-03': 1,
@@ -48,9 +48,9 @@ test('rates start at creation, exclude unfinished today, and include a checked t
     'another:2026-10-02': 1,
   };
   const result = stats(values);
-  assert.equal(result.eligible, 3);
+  assert.equal(result.eligible, 4);
   assert.equal(result.successes, 2);
-  assert.equal(result.rate, 2 / 3);
+  assert.equal(result.rate, 2 / 4);
   assert.equal(result.streak, 1);
   const checked = stats({ ...values, 'walk:2026-10-04': 1 });
   assert.equal(checked.eligible, 4);
@@ -59,20 +59,22 @@ test('rates start at creation, exclude unfinished today, and include a checked t
   assert.equal(checked.bestStreak, 2);
   assert.equal(checked.allRecorded, 3);
 });
-test('new and empty habits have no fabricated completion rate', () => {
+test('new habits have one calendar day and days before creation stay outside the rate', () => {
   const result = stats({}, [seed('2026-10-04')]);
-  assert.equal(result.rate, null);
-  assert.equal(result.eligible, 0);
+  assert.equal(result.rate, 0);
+  assert.equal(result.eligible, 1);
   assert.equal(result.streak, 0);
   assert.equal(
-    result.buckets.every((bucket) => bucket.value === null),
+    result.buckets
+      .filter((bucket) => bucket.eligible === 0)
+      .every((bucket) => bucket.value === null),
     true,
   );
   const older = stats();
   assert.equal(older.rate, 0);
-  assert.equal(older.eligible, 3);
+  assert.equal(older.eligible, 4);
 });
-test('numeric zero is a record, missing days are not zero, and future totals are excluded', () => {
+test('numeric average uses calendar days while zero stays recorded and blanks stay empty', () => {
   const result = stats(
     {
       'walk:2026-10-01': 10,
@@ -86,7 +88,7 @@ test('numeric zero is a record, missing days are not zero, and future totals are
     number,
   );
   assert.equal(result.total, 30);
-  assert.equal(result.average, 10);
+  assert.equal(result.average, 7.5);
   assert.equal(result.best, 20);
   assert.equal(result.recorded, 3);
   assert.equal(result.streak, 2);
@@ -100,7 +102,7 @@ test('numeric zero is a record, missing days are not zero, and future totals are
   );
   assert.equal(result.weekday.find((day) => day.day === 6).value, 0);
 });
-test('archive pauses exclude missing days, preserve entries, and resume on restore', () => {
+test('archiving hides habits without pausing their calendar period or losing entries', () => {
   const archived = { ...habit, archived: true };
   const events = [
     seed(),
@@ -114,16 +116,16 @@ test('archive pauses exclude missing days, preserve entries, and resume on resto
     '2026-10-08',
     'all',
   );
-  assert.equal(result.eligible, 5); // Oct 1,2,6,7 + explicit Oct 4
+  assert.equal(result.eligible, 8); // Oct 1 through Oct 8, inclusive
   assert.equal(result.successes, 3);
-  assert.equal(result.rate, 3 / 5);
+  assert.equal(result.rate, 3 / 8);
   assert.equal(result.streak, 0);
   assert.equal(
     result.weekday.reduce((sum, day) => sum + day.eligible, 0),
-    5,
+    8,
   );
 });
-test('undo and redo lifecycle transitions use saved local dates and do not erase recorded days', () => {
+test('archive Undo and Redo do not change denominators or erase recorded days', () => {
   const archived = { ...habit, archived: true };
   const events = [
     seed(),
@@ -139,8 +141,8 @@ test('undo and redo lifecycle transitions use saved local dates and do not erase
     'all',
     archived,
   );
-  assert.equal(result.eligible, 4); // active 1,2,4 and explicit 3
-  assert.equal(result.rate, 1 / 4);
+  assert.equal(result.eligible, 8);
+  assert.equal(result.rate, 1 / 8);
 });
 test('backdated records extend tracking, and month/day calculations survive DST and leap years', () => {
   const event = {
@@ -149,10 +151,10 @@ test('backdated records extend tracking, and month/day calculations survive DST 
     utcOffsetMinutes: 660,
     timeZone: 'Australia/Melbourne',
   };
-  assert.equal(stats({}, [event], '2026-10-05').eligible, 1); // local creation Oct 4
+  assert.equal(stats({}, [event], '2026-10-05').eligible, 2); // local creation Oct 4
   const result = stats({ 'walk:2026-09-30': 1 }, [event], '2026-10-05', 'all');
   assert.equal(result.trackingStart, '2026-09-30');
-  assert.equal(result.eligible, 5);
+  assert.equal(result.eligible, 6);
   assert.equal(monthDays('2024-02').days.length, 29);
   assert.equal(monthDays('2026-02').days.length, 28);
   assert.equal(monthDays('2026-10').padding, 3);
@@ -195,7 +197,7 @@ test('bucket and weekday totals partition the selected period and previous compa
     numeric.total,
   );
 });
-test('clock rollback cannot create overlapping archive intervals', () => {
+test('archive timestamp rollback does not change the calendar denominator', () => {
   const archived = { ...habit, archived: true };
   const events = [
     seed(),
@@ -203,7 +205,7 @@ test('clock rollback cannot create overlapping archive intervals', () => {
     definitionEvent(3, '2026-10-03', archived, habit),
   ];
   const result = stats({}, events, '2026-10-08', 'all');
-  assert.equal(result.eligible, 7);
+  assert.equal(result.eligible, 8);
 });
 test('statistics can derive from unchanged v1/v2/v3/v4 backup fixtures', () => {
   for (const version of [1, 2, 3, 4]) {
@@ -232,11 +234,11 @@ test('explicit start dates backfill the eligible period without requiring an ent
   const definition = { ...habit, startDate: '2026-09-28' };
   const result = stats({}, [seed()], '2026-10-04', 'all', definition);
   assert.equal(result.trackingStart, '2026-09-28');
-  assert.equal(result.eligible, 6);
+  assert.equal(result.eligible, 7);
   assert.equal(result.recorded, 0);
   assert.equal(result.rate, 0);
 });
-test('moving the start date excludes older records without removing them and respects archive pauses', () => {
+test('moving the start date bounds a continuous period without deleting older entries', () => {
   const archived = { ...habit, archived: true };
   const events = [
     seed(),
@@ -253,7 +255,7 @@ test('moving the start date excludes older records without removing them and res
     ...habit,
     startDate: '2026-10-02',
   });
-  assert.equal(result.eligible, 4); // Oct 2, 6, 7 + recorded Oct 4 during archive
+  assert.equal(result.eligible, 7); // Oct 2 through Oct 8
   assert.equal(result.successes, 3);
   assert.equal(result.bestStreak, 1);
   assert.equal(Object.keys(values).length, 4);
@@ -261,7 +263,7 @@ test('moving the start date excludes older records without removing them and res
     ...habit,
     startDate: '2026-09-30',
   });
-  assert.equal(backdated.eligible, 6);
+  assert.equal(backdated.eligible, 9);
   assert.equal(backdated.successes, 4);
   assert.equal(backdated.bestStreak, 2);
 });
@@ -324,4 +326,73 @@ test('legacy start-date defaults reflect captured local creation or older entrie
     '2026-10-06',
   );
   assert.deepEqual(events, original);
+});
+
+test('other habits entries and edits cannot change this habits rates, averages or inferred start', () => {
+  const values = { 'walk:2026-10-02': 1 };
+  const other = { ...habit, id: 'read', name: 'Read' };
+  const events = [
+    seed(),
+    {
+      ...definitionEvent(2, '2026-10-03', null, other),
+      change: {
+        kind: 'habit',
+        habitId: other.id,
+        index: 1,
+        before: null,
+        after: other,
+      },
+    },
+  ];
+  const before = stats(values, events, '2026-10-04', 'all');
+  const after = stats(
+    { ...values, 'read:2020-01-01': 1, 'read:2026-10-04': 1 },
+    events,
+    '2026-10-04',
+    'all',
+  );
+  assert.deepEqual(after, before);
+  const numericBefore = stats(
+    { 'walk:2026-10-02': 20 },
+    events,
+    '2026-10-04',
+    'all',
+    number,
+  );
+  const numericAfter = stats(
+    { 'walk:2026-10-02': 20, 'read:2026-10-04': 100 },
+    events,
+    '2026-10-04',
+    'all',
+    number,
+  );
+  assert.deepEqual(numericAfter, numericBefore);
+  assert.equal(numericAfter.average, 5);
+});
+test('each habits own explicit start and selected range determine its average denominator', () => {
+  const values = { 'walk:2026-10-01': 100, 'walk:2026-10-03': 12 };
+  const early = stats(values, [seed()], '2026-10-04', 'all', {
+    ...number,
+    startDate: '2026-10-01',
+  });
+  const later = stats(values, [seed()], '2026-10-04', 'all', {
+    ...number,
+    startDate: '2026-10-03',
+  });
+  assert.equal(early.average, 28);
+  assert.equal(later.average, 6);
+  assert.equal(later.recorded, 1);
+  const long = stats(
+    { 'walk:2026-10-03': 30 },
+    [seed('2026-01-01', number)],
+    '2026-10-04',
+    30,
+    number,
+  );
+  assert.equal(long.eligible, 30);
+  assert.equal(long.average, 1);
+  assert.equal(
+    long.weekday.reduce((sum, day) => sum + day.eligible, 0),
+    30,
+  );
 });
