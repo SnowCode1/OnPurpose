@@ -265,7 +265,7 @@ and version-3 definition/order events, with unchanged v1/v2 replay.
 
 ## Habit descriptions
 
-`HabitDescription.tsx` adds a bounded reader before statistics; `DescriptionEditor.tsx`
+`HabitDetailsScreen.tsx` presents Notes/Statistics tabs; `DescriptionEditor.tsx`
 owns full-screen live rich-text writing, and `DescriptionHistory.tsx` compares active
 before/after versions. `description.ts` parses Markdown and supplies validation,
 summary/preview and insertion helpers. `DescriptionText.tsx` renders native blocks
@@ -308,14 +308,16 @@ cell selectors and the fallback backdrop remain in place.
 
 ## Description performance and reader trial
 
-`HabitDescription.tsx` renders a bounded three-line text excerpt and direct Open
-note/Edit/Versions controls. `descriptionReading.ts` supplies bounded summaries,
-full balanced passages, top-level list-item virtualization and a five-document/
-100,000-character disposable read cache. `DescriptionReader.tsx` presents those
-passages in a full-screen native FlatList. App owns reading ID and nests editor/
-version dialogs and save-failure/retry inside the active reader presentation.
-The compact card/full reader arrangement is explicitly a founder-approved trial.
-
+`HabitDetailsScreen.tsx` owns the current Notes/Statistics tab trial. It opens
+full Notes if present, otherwise Statistics. Panels mount lazily and then retain
+layout/state underneath the selected panel, with touch/accessibility exclusion.
+`descriptionReading.ts` supplies bounded edit/version summaries and full balanced
+passages, top-level list-item virtualization and a five-document/100,000-character
+read cache. `DescriptionReader.tsx` renders the Notes FlatList without another
+Modal/header. `HabitStatsScreen.tsx` owns the Statistics scrolling content and
+range/month/chart state. App presents their common native page sheet and nested
+editor/version/numeric dialogs, with save failure/retry visible. The previous
+compact card and extra reader presentation are superseded.
 The DOM editor memoizes initial content and prepares original-byte snapshots.
 Per-editor weak caches share serialization for immutable ProseMirror documents;
 length validation remains synchronous on each changed document. A pure update

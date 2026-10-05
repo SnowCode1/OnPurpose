@@ -36,7 +36,7 @@ export function useEditorPosition(
   initial: DescriptionPosition | undefined,
   onPosition: (position: DescriptionPosition) => void,
 ) {
-  const target = useRef<number | null>(initial?.scrollTop ?? null);
+  const target = useRef<number | null>(initial?.scrollTop ?? 0);
   const notify = useEffectEvent(onPosition);
   useEffect(() => {
     const element = writing.current;
@@ -55,10 +55,12 @@ export function useEditorPosition(
     };
     const observer = new ResizeObserver(resize);
     observer.observe(element);
+    observer.observe(editor.view.dom);
     editor.on('selectionUpdate', queue);
     element.addEventListener('scroll', queue, { passive: true });
     element.addEventListener('pointerdown', interact);
     element.addEventListener('keydown', interact);
+    element.addEventListener('beforeinput', interact);
     element.addEventListener('wheel', interact, { passive: true });
     return () => {
       if (timer) clearTimeout(timer);
@@ -67,17 +69,24 @@ export function useEditorPosition(
       element.removeEventListener('scroll', queue);
       element.removeEventListener('pointerdown', interact);
       element.removeEventListener('keydown', interact);
+      element.removeEventListener('beforeinput', interact);
       element.removeEventListener('wheel', interact);
     };
   }, [editor, writing]);
   return (readyEditor: Editor) => {
-    restoreEditorSelection(readyEditor, initial);
+    // First opens show the beginning, with the caret in the same place. An end
+    // caret in a top-scrolled long note makes keyboard focus pull WebKit away
+    // from the visible content. Matching saved positions still resume normally.
+    restoreEditorSelection(
+      readyEditor,
+      initial ?? { anchor: 1, head: 1, scrollTop: 0 },
+    );
     if (readyEditor.isEditable)
-      readyEditor.commands.focus(initial ? null : 'end', {
+      readyEditor.commands.focus(null, {
         scrollIntoView: false,
       });
     const element = writing.current;
-    if (initial && element)
-      element.scrollTo({ top: initial.scrollTop, behavior: 'auto' });
+    if (element)
+      element.scrollTo({ top: initial?.scrollTop ?? 0, behavior: 'auto' });
   };
 }

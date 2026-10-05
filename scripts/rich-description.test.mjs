@@ -617,3 +617,64 @@ test('prepared editor content keeps original Markdown spelling through first edi
   editor.commands.undo();
   assert.equal(snapshot(), original);
 });
+
+test('first opening a long note puts the caret and viewport at the start and retains that target through keyboard resizing', async (t) => {
+  const original =
+    'A first reminder.\n\n' + 'A longer paragraph for editing.\n\n'.repeat(500);
+  const { editor, snapshot } = fixture(t, original);
+  const observers = [];
+  const previousObserver = globalThis.ResizeObserver;
+  const previousScrollTo = window.HTMLElement.prototype.scrollTo;
+  window.HTMLElement.prototype.scrollTo = function ({ top }) {
+    this.scrollTop = top;
+  };
+  globalThis.ResizeObserver = class {
+    constructor(callback) {
+      this.callback = callback;
+      this.targets = [];
+      observers.push(this);
+    }
+    observe(element) {
+      this.targets.push(element);
+    }
+    disconnect() {}
+  };
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  t.after(async () => {
+    await act(async () => root.unmount());
+    host.remove();
+    if (previousScrollTo)
+      window.HTMLElement.prototype.scrollTo = previousScrollTo;
+    else delete window.HTMLElement.prototype.scrollTo;
+    if (previousObserver) globalThis.ResizeObserver = previousObserver;
+    else delete globalThis.ResizeObserver;
+  });
+  let ready = 0;
+  function Probe() {
+    const writing = useRef(null);
+    const initialize = useEditorPosition(editor, writing, undefined, () => {});
+    useEditorReady(editor, async () => ready++, initialize);
+    return createElement('div', { ref: writing });
+  }
+  // Start with the exact mismatch seen previously: a distant caret.
+  editor.commands.setTextSelection(editor.state.doc.content.size - 1);
+  await act(async () => root.render(createElement(Probe)));
+  const writing = host.firstChild;
+  assert.equal(ready, 1);
+  assert.equal(editor.state.selection.anchor, 1);
+  assert.equal(editor.state.selection.head, 1);
+  assert.equal(writing.scrollTop, 0);
+  assert.equal(observers[0].targets.includes(editor.view.dom), true);
+  writing.scrollTop = 5000;
+  observers[0].callback();
+  assert.equal(writing.scrollTop, 0);
+  // Touch keyboards/dictation can send beforeinput without a physical keydown.
+  writing.dispatchEvent(new window.Event('beforeinput'));
+  writing.scrollTop = 6000;
+  observers[0].callback();
+  assert.equal(writing.scrollTop, 6000);
+  assert.equal(snapshot(), original);
+  assert.equal(editor.can().undo(), false);
+});

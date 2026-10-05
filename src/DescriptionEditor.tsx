@@ -8,6 +8,7 @@ import {
 } from 'react';
 import {
   Alert,
+  ActivityIndicator,
   AppState,
   Keyboard,
   KeyboardAvoidingView,
@@ -61,6 +62,7 @@ export function DescriptionEditor({
   const [text, setText] = useState(initialValue),
     [editorInitial, setEditorInitial] = useState(initialValue),
     [ready, setReady] = useState(false),
+    [failed, setFailed] = useState(false),
     [requesting, setRequesting] = useState(false),
     [loading, setLoading] = useState(true),
     [status, setStatus] = useState('');
@@ -370,12 +372,24 @@ export function DescriptionEditor({
                   hideKeyboardAccessoryView: false,
                   onError: () => {
                     setReady(false);
+                    setFailed(true);
                     setStatus(
                       'The editor could not load. Close and reopen to recover your draft.',
                     );
                   },
                 }}
               />
+            )}
+            {!failed && (loading || !ready) && (
+              <View style={styles.loading} pointerEvents="none">
+                <ActivityIndicator color="#929292" />
+                <Text
+                  accessibilityLiveRegion="polite"
+                  style={styles.loadingText}
+                >
+                  Opening editor…
+                </Text>
+              </View>
             )}
             {text.length >= MAX_DESCRIPTION_LENGTH - 500 && (
               <Text style={styles.status}>
@@ -444,4 +458,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 8,
   },
+  loading: {
+    position: 'absolute',
+    top: 80,
+    left: 24,
+    right: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  loadingText: { color: '#929292', fontSize: 13 },
 });

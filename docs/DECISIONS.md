@@ -861,3 +861,25 @@ Done/Close remain exact and background paths request current text. Position-only
 updates no longer retransmit unchanged Markdown. Full per-document limit
 validation and local Undo remain immediate. A local diagnostic counted 75 → 25
 serializations at each note size; it is not native frame-rate evidence.
+
+## 5 October 2026 — Notes-first tabs and first-open editor position
+
+The founder reported that the long-note reader feels instant at all three test
+sizes, but the preview is too small and Notes is high priority for one-tap access
+from the grid. They authorised a Notes/Statistics tab trial in one habit sheet,
+opening Notes first when a description exists and Statistics otherwise. This
+supersedes the compact-card/second-reader step without changing saved notes or
+statistics calculations. Panels mount on first visit, then retain scroll/range/
+chart state while excluding inactive content from touch and accessibility.
+
+They also reported slower editor startup for Meditate and a first-open black
+scroll position on Meditate/Read. Source inspection found a first-open end caret
+while the writing viewport starts at zero. That mismatch can invite keyboard
+scrolling towards distant content; it is a plausible cause, not a device trace.
+First opens now align caret/viewport at the beginning, existing matching-text
+bookmarks still resume, viewport/content resizing retains the target until user
+interaction, and the writing area owns scrolling within clipped DOM roots.
+Native startup feedback covers readiness and stops on load error. The full reader
+is accepted as responsive. The founder subsequently confirmed first editor opens
+now start correctly without the black jump on the iPhone. The tab arrangement
+and broader bookmark/keyboard matrix still need phone review.

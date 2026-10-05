@@ -53,8 +53,9 @@ and uncertainty about whether something was saved.
 - Design for muscle memory; the aspiration is opening the app and recording five
   checkbox habits in about three seconds.
 - Plan for approximately 10–20 habits. The primary test phone is an iPhone 16 Pro.
-- Tapping a habit opens full-screen statistics, including streaks, completion-rate
-  charts for checkboxes and numerical charts for daily totals.
+- Tapping a habit opens its full-screen details sheet. The authorised Notes /
+  Statistics trial opens full Notes first when present, Statistics otherwise;
+  statistics retains streaks, completion charts and numeric charts.
 - Tap days in the statistics calendar to toggle checkboxes or edit numeric totals
   using the same entry behaviour as the grid. Today navigation scrolls back quickly.
 - Hold the habit name for a compact Colour/Edit/Reorder/Archive overlay. Continue
@@ -72,8 +73,8 @@ and uncertainty about whether something was saved.
   restores them. Group rapid corrections to one entry and hide net-zero groups;
   show the next Undo target. Start with two minutes of inactivity between groups.
 - Give each habit an optional Markdown/plain-text description with links, available
-  during creation and editing. Show it first in statistics in a distinct compact
-  rounded card, with a full-screen live formatted editor, local temporary Undo/Redo,
+  during creation and editing. Keep the full note one name tap away through the Notes/Statistics tab trial,
+  with a full-screen live formatted editor, local temporary Undo/Redo,
   reversible formatting controls and optional highlight colours. Retain applied changes in incremental storage and Undo/Redo. Populate existing
   habits with editable placeholder notes while preserving any user-written text.
   Keep formatting controls above the keyboard, float text/colour menus without
@@ -97,7 +98,7 @@ and uncertainty about whether something was saved.
 1. Launch directly into the current grid after initial setup.
 2. Tap a checkbox date cell once to toggle it; show the result immediately.
 3. Tap a numeric date cell to enter/edit that day's total.
-4. Tap the habit name to open statistics. Names and date cells have distinct hit
+4. Tap the habit name to open notes/statistics. Names and date cells have distinct hit
    targets, so recording a value cannot accidentally open statistics.
 5. Keep today at the right edge of the initial view. Scroll toward
    earlier dates while names stay fixed; offer a direct return to Today. Reveal
@@ -260,3 +261,9 @@ this is an experiment, not a final placement decision. Notes retain direct Edit,
 full Markdown/links and the existing saved history/draft behaviour. Device tests
 must evaluate opening, long scrolling, typing/formatting and immediate Done at
 approximately 1,900 / 7,700 / 17,700 characters.
+
+The founder confirmed the full long-note reader is instant on all three samples,
+but prioritises one-tap access to the complete note over a compact preview. They
+authorised a Notes / Statistics tab trial, opening Notes first when present and
+Statistics for empty descriptions. This supersedes the compact-card experiment;
+keep both panels' positions when switching and preserve native sheet dismissal.

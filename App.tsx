@@ -2,7 +2,6 @@ import { TypographyProvider, TextInput, Text } from './src/Typography';
 import { DescriptionVersions } from './src/DescriptionVersions';
 import { descriptionVersions } from './src/descriptionVersions';
 import { DescriptionEditor } from './src/DescriptionEditor';
-import { DescriptionReader } from './src/DescriptionReader';
 import { descriptionDraftKey } from './src/descriptionDrafts';
 import { applyPlaceholderDescriptions } from './src/storage/presetDescriptions';
 import { displayDefaults } from './src/displayPreferences';
@@ -33,7 +32,7 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { type EntryDay } from './src/calendar';
 import { PerformanceBoundary } from './src/PerformanceBoundary';
-import { HabitStatsScreen } from './src/HabitStatsScreen';
+import { HabitDetailsScreen } from './src/HabitDetailsScreen';
 import { HabitGrid } from './src/HabitGrid';
 import { isNumericHabit, type Habit } from './src/habits';
 import { randomUUID } from 'expo-crypto';
@@ -196,8 +195,6 @@ function PersistentApp({
   const [newHabit, setNewHabit] = useState<Habit | null>(null);
   const [descriptionId, setDescriptionId] = useState<string | null>(null);
   const descriptionHabit = habits.find((habit) => habit.id === descriptionId);
-  const [readingId, setReadingId] = useState<string | null>(null);
-  const readingHabit = habits.find((habit) => habit.id === readingId);
   const [versionsId, setVersionsId] = useState<string | null>(null);
   const versionsHabit = habits.find((habit) => habit.id === versionsId);
   const [statsId, setStatsId] = useState<string | null>(null);
@@ -408,10 +405,7 @@ function PersistentApp({
     setHabitMode('create');
   }, [store, today]);
 
-  const closeStats = useCallback(() => {
-    setReadingId(null);
-    setStatsId(null);
-  }, [setReadingId, setStatsId]);
+  const closeStats = useCallback(() => setStatsId(null), []);
   const editStats = useCallback(() => {
     if (statsHabit) habitAction(statsHabit, 'edit');
   }, [statsHabit, habitAction]);
@@ -512,7 +506,7 @@ function PersistentApp({
       />
     ) : null;
 
-  const dialogs = (
+  const overlays = (
     <>
       {descriptionHabit && (
         <DescriptionEditor
@@ -750,22 +744,6 @@ function PersistentApp({
     </View>
   );
 
-  const overlays = readingHabit ? (
-    <DescriptionReader
-      key={readingHabit.id}
-      habit={readingHabit}
-      Heading={PreviewHeading}
-      editable={editable}
-      onClose={() => setReadingId(null)}
-      onEdit={() => setDescriptionId(readingHabit.id)}
-    >
-      {saveError}
-      {dialogs}
-    </DescriptionReader>
-  ) : (
-    dialogs
-  );
-
   return (
     <TypographyProvider scale={textScale}>
       <SafeAreaProvider>
@@ -823,7 +801,7 @@ function PersistentApp({
                   <SafeAreaView style={styles.screen}>
                     {saveError}
                     <PerformanceBoundary name="statistics">
-                      <HabitStatsScreen
+                      <HabitDetailsScreen
                         weekStart={weekStart}
                         key={statsHabit.id}
                         habit={statsHabit}
@@ -837,7 +815,6 @@ function PersistentApp({
                         onDescriptionEdit={() =>
                           setDescriptionId(statsHabit.id)
                         }
-                        onDescriptionOpen={() => setReadingId(statsHabit.id)}
                         onDescriptionVersions={
                           versions.length
                             ? () => setVersionsId(statsHabit.id)

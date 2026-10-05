@@ -9,21 +9,25 @@ acceptance remains pending.
 
 A habit can have an optional description containing plain text or Markdown.
 Its purpose is to keep motivation, reminders and links one habit-name tap away.
-The founder agreed to **try**, rather than settle on, a compact Notes card before
-statistics. It shows three lines of opening text, with Open note, Edit and Versions
-when available. Excerpts parse at most 600 source characters; they do not build a
-full rich-text document hidden behind a height cutoff. The previous four-block,
-220-point expandable card is superseded for this experiment. Short notes use the
-same clear access. Empty descriptions keep Add description and any Versions.
+The founder confirmed the long-note reader feels instant at all three sample
+sizes, but wants the full note one tap from the grid. The compact-card experiment
+is superseded by a **Notes / Statistics tab trial** in the same habit page sheet.
+Name taps open Notes when a description exists and Statistics otherwise. Notes
+shows the full formatted reader immediately; there is no preview or second Open
+note step. Empty Notes offers Add a note. The common header shows the habit and
+Close, with Edit description on Notes and Edit habit on Statistics. Versions
+remains available within Notes when history exists.
 
-Open note presents a full-screen native reader above statistics. Full Markdown,
-highlights and intentional link taps remain available there. Its FlatList mounts
-nearby passages and splits top-level lists into individual reading rows, retaining
-nested lists and ordered numbering. A bounded disposable cache retains at most
-five documents/100,000 source characters. Reader text is never another saved
-projection. Edit opens above the reader and returns to it; the statistics screen
-and reader stay mounted underneath. Save failure/retry stays visible in the
-reader. This placement is a phone experiment awaiting acceptance.
+The first selected panel mounts alone. Each panel remains mounted after its
+first visit, preserving reading/statistics scroll, chart selections and ranges
+when switching tabs. Inactive panels retain their layout but accept no touches
+and are hidden from accessibility. The reader FlatList mounts nearby passages
+and splits top-level lists into individual rows, retaining nesting and numbering.
+Its disposable cache is capped at five documents/100,000 source characters.
+Edit/version/numeric dialogs still present inside the same native sheet;
+save failure/retry is visible there. This is an authorised phone trial, not a
+final navigation decision. Edit and version-list summaries still parse at most
+600 source characters.
 
 Creation and Edit have one compact Description control, showing a two-line text
 summary or an optional-note hint. It opens a full-screen editor with fixed Close
@@ -71,8 +75,15 @@ Expo DOM callback-proxy replacements during native updates must not refocus or
 repeat position restoration. Reopening restores the saved cursor/selection and
 scroll position only for matching text, including recovered drafts. Selection
 orientation is retained; stale offsets are bounded to valid document positions.
-Initial keyboard resizing reapplies the scroll target until the user interacts,
-then normal typing/scrolling takes over. `richText/useEditorReady.ts` owns this boundary.
+First opens put the caret and viewport at the beginning, rather than an end
+caret with a top-scrolled long note. Keyboard/content resizing reapplies that
+initial or matching saved scroll target until the user interacts, then normal
+typing/scrolling takes over. Both the writing viewport and editor content are
+observed. The DOM root does not scroll; the writing area owns document scrolling.
+A native Opening editor indicator covers startup and stops on readiness or a
+load error. The end-caret mismatch is a plausible source of the reported first-open
+blank jump. The founder confirmed Read/Meditate now start correctly without
+a black jump on the iPhone. Wider bookmark/keyboard/orientation checks remain. `richText/useEditorReady.ts` owns this boundary.
 
 Select words and paste a full web or app URL to turn the words into a link,
 retaining their other formatting and selection. Pasting onto an existing linked

@@ -1091,3 +1091,47 @@ The physical-device checks above and the founder's judgement of the trial
 layout remain pending. Checks used the existing 2 GB Linux scope, Chrome a
 separate 1 GB scope; the temporary browser profile was removed. Logs, captures
 and synthetic runtime data stay ignored.
+
+## Notes-first tab trial and first editor opening
+
+The founder confirmed long-note reading feels instant on all three samples, but
+reported a black scroll position on the first Read/Meditate editor open. They
+authorised Notes/Statistics tabs to keep the full note one habit-name tap away.
+This supersedes the previous compact-card access test.
+
+- Fully reload Sample data to clear its temporary bookmarks. Tap Walk, Read and
+  Meditate: full Notes must appear directly with the common Close/Edit header.
+  Open a habit without a description: Statistics is selected initially; Notes
+  offers Add a note. Close or native downward dismissal returns to the grid.
+- Scroll deeply in Notes, switch to Statistics, select a range/chart/month and
+  scroll. Switching both ways must preserve each panel's position and selections.
+  Inactive content must be absent to VoiceOver and never capture taps.
+- On the first Edit after reload, caret and viewport should both start at the
+  beginning, with no black region or jump when the keyboard appears. Brief
+  startup shows Opening editor. Existing matching-text bookmarks should resume
+  on later opens, including a deep editing position. Deliberate scrolling must
+  cancel initial resize restoration. Check keyboard closing/rotation/large text.
+- Type and immediately Done; check the final keystroke, note history/Versions and
+  undoable restore. Check numeric calendar editing from Statistics and editor
+  overlays from Notes still open above the same sheet and return correctly.
+
+A focused long-document regression test covers first-open caret/viewport alignment,
+keyboard/content resize restoration, cancellation after user input, unchanged
+Markdown and absence of a spurious Undo step. Existing tests retain matching
+bookmark initialization across changing native callback proxies. The founder confirmed the first editor opening now starts correctly without a
+black jump on the iPhone. Perceived startup time and the wider resume/keyboard
+matrix remain physical-device checks.
+
+Verification: `npm run check`, all 219 tests, one-worker iOS and web exports
+passed with the existing process memory caps. An isolated Chrome session exercised
+all three sizes: Notes selected initially, note scroll and Statistics range
+retained across switches, first editor caret/viewport at zero, no outer-page
+scroll, immediately typed text retained by Done, and a 900-pixel editor bookmark
+restored on reopening. An empty-description habit opened Statistics and offered
+Add a note in Notes. Portrait, landscape and 150% text captures were generated;
+selected views were visually inspected. Tab selection and inactive-panel hiding
+also have explicit ARIA properties for web alongside native accessibility state.
+These results do not reproduce an iPhone keyboard or establish native startup
+latency. The founder confirmed first editor opens now start correctly without
+the black jump; the tab-layout judgement and wider phone matrix remain pending. Temporary
+browser profiles were removed and captures/logs/synthetic data remain ignored.

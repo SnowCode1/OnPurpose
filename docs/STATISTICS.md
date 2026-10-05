@@ -115,8 +115,10 @@ to VoiceOver; numeric days announce the full date and recorded value.
 
 ## Ownership and verification
 
-`src/statistics.ts` is pure derived logic. `src/HabitStatsScreen.tsx` owns the screen,
-charts, and month/range selection. Nothing is stored separately; the existing
+`src/statistics.ts` is pure derived logic. `src/HabitDetailsScreen.tsx` owns the Notes/Statistics tab trial and common header.
+`src/HabitStatsScreen.tsx` owns Statistics content, charts and month/range selection.
+Habits with notes open the full reader directly, others open Statistics. Panels
+mount lazily, then retain their scroll/range/chart state across switches. Nothing is stored separately; the existing
 version-1–9 logs and projection remain authoritative.
 
 `node --max-old-space-size=256 --test --test-timeout=15000 scripts/statistics.test.mjs`

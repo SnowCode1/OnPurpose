@@ -146,9 +146,10 @@ stay fixed when the displayed subset is reordered.
 
 ## Large descriptions
 
-Stats Notes cards now render only a three-line, bounded-source excerpt. Opening
-statistics does not parse/render the entire note and clip it. Habit edit and
-Versions excerpts use the same bound; the edit form memoizes it. Full note reading
+The compact-card experiment is superseded by Notes/Statistics tabs. The initial
+panel alone mounts; each visited panel then retains layout/state, hidden from
+touch/accessibility when inactive. Statistics does not render notes. Habit edit
+and Versions use bounded excerpts; the edit form memoizes them. Full note reading
 uses native FlatList passages with top-level list items split into individual
 rows, preserving nested contents and numbering. Its disposable cache is capped
 at five documents/100,000 characters.
@@ -168,5 +169,12 @@ The synthetic phone fixtures are Go for a walk (1,874), Read (7,723), Meditate
 75 → 25 serializations for 25 edits plus 25 unchanged snapshot reads at every
 size. Node timings do not establish iPhone responsiveness. Opening stats, the
 reader and editor, rapid typing, selecting/formatting, immediate Done, background
-recovery and long scrolling must be checked on the device. The compact card/full
-reader is founder-approved as an experiment, not a final navigation decision.
+recovery and long scrolling must be checked on the device. The founder confirmed the long-note reader feels instant on the iPhone; they
+subsequently authorised a Notes-first tab trial to avoid a second navigation tap.
+The founder confirmed the corrected first editor opening starts at the beginning
+without a black jump. The tab layout and wider resume/keyboard matrix still need
+device review.
+First editor opens align caret/viewport at the start, with viewport/content resize
+restoration until deliberate interaction. Existing matching bookmarks remain.
+The writing area owns scrolling, with DOM roots clipped to prevent outer scrolling;
+startup feedback does not imply the WebView/editor initialization cost is gone.

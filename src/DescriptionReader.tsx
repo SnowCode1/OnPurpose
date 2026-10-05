@@ -1,134 +1,93 @@
-import {
-  memo,
-  useCallback,
-  useMemo,
-  type ComponentType,
-  type ReactNode,
-} from 'react';
-import {
-  FlatList,
-  Modal,
-  Pressable,
-  StyleSheet,
-  View,
-  type TextProps,
-} from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { memo, useCallback, useMemo } from 'react';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from './Typography';
 import { DescriptionText } from './DescriptionText';
 import {
   descriptionReadingPassages,
   type ReadingPassage,
 } from './descriptionReading';
-import type { Habit } from './habits';
 
+// Reading content lives in the habit sheet, without another presentation step.
 export const DescriptionReader = memo(function DescriptionReader({
-  habit,
-  Heading,
+  description,
+  colour,
   editable,
   onEdit,
-  onClose,
-  children,
+  onVersions,
 }: {
-  habit: Habit;
-  Heading: ComponentType<TextProps>;
+  description?: string;
+  colour: string;
   editable: boolean;
   onEdit: () => void;
-  onClose: () => void;
-  children?: ReactNode;
+  onVersions?: () => void;
 }) {
   const passages = useMemo(
-    () => descriptionReadingPassages(habit.description ?? ''),
-    [habit.description],
+    () => descriptionReadingPassages(description ?? ''),
+    [description],
   );
   const render = useCallback(
     ({ item }: { item: ReadingPassage }) => (
-      <DescriptionText tokens={item.tokens} colour={habit.color} />
+      <DescriptionText tokens={item.tokens} colour={colour} />
     ),
-    [habit.color],
+    [colour],
   );
   return (
-    <Modal
-      visible
-      presentationStyle="fullScreen"
-      animationType="slide"
-      supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}
-      onRequestClose={onClose}
-    >
-      <SafeAreaProvider>
-        <SafeAreaView style={styles.screen}>
-          <View style={styles.header}>
+    <FlatList
+      testID="habit-notes"
+      data={passages}
+      keyExtractor={(item) => item.key}
+      renderItem={render}
+      initialNumToRender={8}
+      maxToRenderPerBatch={6}
+      updateCellsBatchingPeriod={16}
+      windowSize={7}
+      alwaysBounceVertical
+      contentInsetAdjustmentBehavior="never"
+      contentContainerStyle={styles.body}
+      showsVerticalScrollIndicator={false}
+      ListHeaderComponent={
+        onVersions ? (
+          <View style={styles.history}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Close note and return to statistics"
-              onPress={onClose}
+              accessibilityLabel="Previous description versions"
+              onPress={onVersions}
               style={styles.action}
             >
-              <Text style={styles.actionText}>Close</Text>
-            </Pressable>
-            <View
-              style={{ flex: 1, alignItems: 'center', paddingHorizontal: 8 }}
-            >
-              <Heading
-                accessibilityRole="header"
-                numberOfLines={1}
-                style={styles.title}
-              >
-                {habit.name}
-              </Heading>
-              <Text style={styles.subtitle}>Notes</Text>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Edit description"
-              accessibilityState={{ disabled: !editable }}
-              disabled={!editable}
-              onPress={onEdit}
-              style={[
-                styles.action,
-                { alignItems: 'flex-end', opacity: editable ? 1 : 0.35 },
-              ]}
-            >
-              <Text style={styles.actionText}>Edit</Text>
+              <Text style={styles.actionText}>Versions</Text>
             </Pressable>
           </View>
-          <FlatList
-            data={passages}
-            keyExtractor={(item) => item.key}
-            renderItem={render}
-            initialNumToRender={8}
-            maxToRenderPerBatch={6}
-            updateCellsBatchingPeriod={16}
-            windowSize={7}
-            contentContainerStyle={styles.body}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={<Text style={styles.empty}>No note yet.</Text>}
-          />
-          {children}
-        </SafeAreaView>
-      </SafeAreaProvider>
-    </Modal>
+        ) : null
+      }
+      ListEmptyComponent={
+        <View style={{ gap: 8 }}>
+          <Text style={styles.empty}>No note yet.</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Add description"
+            accessibilityState={{ disabled: !editable }}
+            disabled={!editable}
+            onPress={onEdit}
+            style={[styles.action, { opacity: editable ? 1 : 0.35 }]}
+          >
+            <Text style={styles.actionText}>Add a note</Text>
+          </Pressable>
+        </View>
+      }
+    />
   );
 });
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#000000' },
-  header: {
-    minHeight: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 18,
-    gap: 8,
-  },
-  action: { minHeight: 44, minWidth: 60, justifyContent: 'center' },
-  actionText: { color: '#BBBBBB', fontSize: 15 },
-  title: { color: '#DDDDDD', fontSize: 15, fontWeight: '600' },
-  subtitle: { color: '#777777', fontSize: 12, marginTop: 3 },
   body: {
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingTop: 12,
     paddingBottom: 40,
     width: '100%',
     maxWidth: 720,
     alignSelf: 'center',
   },
+  history: { alignItems: 'flex-end', marginTop: -8, marginBottom: 4 },
+  action: { minHeight: 44, justifyContent: 'center' },
+  actionText: { color: '#BBBBBB', fontSize: 13 },
   empty: { color: '#929292', fontSize: 15 },
 });

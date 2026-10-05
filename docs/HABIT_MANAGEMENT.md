@@ -5,7 +5,8 @@ acceptance remains pending on the iPhone 16 Pro.
 
 ## Main grid
 
-Tap a habit name to open a full-screen statistics view. Back returns to the same
+Tap a habit name to open its Notes/Statistics sheet: Notes first when present,
+Statistics otherwise. Close returns to the same
 mounted grid and date position. Checkbox rates and streaks, numerical totals and
 averages, time-range charts, weekday patterns, and a calendar are described in
 [STATISTICS.md](STATISTICS.md). Editors remain compact dialogs; descriptions use

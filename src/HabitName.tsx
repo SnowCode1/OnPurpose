@@ -122,10 +122,10 @@ export function HabitName({
         disabled={disabled}
         delayLongPress={380}
         accessibilityRole="button"
-        accessibilityLabel={`${habit.name}, statistics`}
+        accessibilityLabel={`${habit.name}, details`}
         accessibilityHint="Hold for habit actions, then drag to reorder"
         accessibilityActions={[
-          { name: 'activate', label: 'Open statistics' },
+          { name: 'activate', label: 'Open notes and statistics' },
           { name: 'edit', label: 'Edit habit' },
           { name: 'colour', label: 'Change colour' },
           { name: 'reorder', label: 'Reorder habits' },
