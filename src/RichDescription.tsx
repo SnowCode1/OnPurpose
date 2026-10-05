@@ -1,6 +1,12 @@
 'use dom';
 
-import { useEffect, useState, type Ref, type CSSProperties } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Ref,
+  type CSSProperties,
+} from 'react';
 import {
   useDOMImperativeHandle,
   type DOMImperativeFactory,
@@ -17,6 +23,7 @@ import { highlightColours, type HighlightColour } from './richText/highlights';
 import { descriptionLink } from './description';
 import { contrastOnBlack } from './colors';
 import { useEditorReady } from './richText/useEditorReady';
+import { useFloatingMenuSpace } from './richText/useFloatingMenuSpace';
 import './richText/editor.css';
 
 export interface RichDescriptionRef extends DOMImperativeFactory {
@@ -45,6 +52,8 @@ export default function RichDescription({
   dom?: DOMProps;
 }) {
   const [menu, setMenu] = useState<'text' | 'colour' | 'link' | null>(null);
+  const container = useRef<HTMLDivElement>(null),
+    controls = useRef<HTMLDivElement>(null);
   const [link, setLink] = useState({
     from: 1,
     to: 1,
@@ -114,6 +123,7 @@ export default function RichDescription({
     editor?.setEditable(editable);
   }, [editor, editable]);
   useEditorReady(editor, onReady);
+  useFloatingMenuSpace(container, controls, !!editor);
   if (!editor) return null;
   function tool(
     label: string,
@@ -121,12 +131,15 @@ export default function RichDescription({
     action: () => void,
     active = false,
     disabled = false,
+    popup?: { id: string; open: boolean },
   ) {
     return (
       <button
         type="button"
         aria-label={label}
         aria-pressed={active}
+        aria-controls={popup?.id}
+        aria-expanded={popup?.open}
         disabled={!editable || disabled}
         className="tool"
         onPointerDown={(event) => event.preventDefault()}
@@ -195,7 +208,15 @@ export default function RichDescription({
   }
   return (
     <div
+      ref={container}
       className="description-editor"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && (menu === 'text' || menu === 'colour')) {
+          event.preventDefault();
+          setMenu(null);
+          editor.commands.focus(null, { scrollIntoView: false });
+        }
+      }}
       style={
         {
           '--note-size': `${17 * Math.max(1, fontScale)}px`,
@@ -205,172 +226,6 @@ export default function RichDescription({
       }
     >
       <div
-        className="toolbar"
-        inert={menu === 'link'}
-        role="toolbar"
-        aria-label="Description formatting"
-      >
-        {tool(
-          'Undo description edit',
-          '↶',
-          () => {
-            setMenu(null);
-            editor.chain().focus().undo().run();
-          },
-          false,
-          !state?.undo,
-        )}
-        {tool(
-          'Redo description edit',
-          '↷',
-          () => {
-            setMenu(null);
-            editor.chain().focus().redo().run();
-          },
-          false,
-          !state?.redo,
-        )}
-        <span className="separator" />
-        {tool(
-          'Bold',
-          'B',
-          () =>
-            formatDescription(editor, () => {
-              editor.chain().focus().toggleBold().run();
-            }),
-          state?.bold,
-        )}
-        {tool(
-          'Italic',
-          '𝘐',
-          () =>
-            formatDescription(editor, () => {
-              editor.chain().focus().toggleItalic().run();
-            }),
-          state?.italic,
-        )}
-        {tool(
-          'Text and list options',
-          'Aa',
-          () => setMenu(menu === 'text' ? null : 'text'),
-          menu === 'text',
-        )}
-        {tool(
-          'Add or edit link',
-          '↗',
-          openLink,
-          state?.link || menu === 'link',
-        )}
-        {tool(
-          'Highlight colours',
-          '◒',
-          () => setMenu(menu === 'colour' ? null : 'colour'),
-          !!state?.highlight || menu === 'colour',
-        )}
-      </div>
-      {menu === 'text' && (
-        <div className="popover choices" role="group" aria-label="Text styles">
-          {[
-            [
-              'Text',
-              () => editor.chain().focus().setParagraph().run(),
-              !state?.heading,
-            ],
-            [
-              'Heading',
-              () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
-              state?.heading === 2,
-            ],
-            [
-              'Bullets',
-              () => editor.chain().focus().toggleBulletList().run(),
-              state?.bullet,
-            ],
-            [
-              'Numbered list',
-              () => editor.chain().focus().toggleOrderedList().run(),
-              state?.ordered,
-            ],
-            [
-              'Quote',
-              () => editor.chain().focus().toggleBlockquote().run(),
-              state?.quote,
-            ],
-            [
-              'Strikethrough',
-              () => editor.chain().focus().toggleStrike().run(),
-              state?.strike,
-            ],
-            [
-              'Code',
-              () => editor.chain().focus().toggleCode().run(),
-              state?.code,
-            ],
-            [
-              'Clear formatting',
-              () => editor.chain().focus().unsetAllMarks().clearNodes().run(),
-              false,
-            ],
-          ].map(([label, action, active]) => (
-            <button
-              type="button"
-              key={String(label)}
-              aria-pressed={!!active}
-              disabled={!editable}
-              onPointerDown={(event) => event.preventDefault()}
-              onClick={() => textAction(action as () => void)}
-            >
-              {String(label)}
-            </button>
-          ))}
-        </div>
-      )}
-      {menu === 'colour' && (
-        <div
-          className="popover colours"
-          role="group"
-          aria-label="Highlight colour"
-        >
-          <button
-            type="button"
-            disabled={!editable}
-            onPointerDown={(event) => event.preventDefault()}
-            onClick={() =>
-              textAction(() => editor.chain().focus().unsetHighlight().run())
-            }
-          >
-            None
-          </button>
-          {(Object.keys(highlightColours) as HighlightColour[]).map((id) => (
-            <button
-              type="button"
-              key={id}
-              aria-label={`${highlightColours[id].label} highlight`}
-              aria-pressed={state?.highlight === id}
-              disabled={!editable}
-              onPointerDown={(event) => event.preventDefault()}
-              onClick={() =>
-                textAction(() => {
-                  if (editor.isActive('highlight', { color: id }))
-                    editor.chain().focus().unsetHighlight().run();
-                  else editor.chain().focus().setHighlight({ color: id }).run();
-                })
-              }
-            >
-              <span
-                className="swatch"
-                style={{
-                  background: highlightColours[id].background,
-                  color: highlightColours[id].text,
-                }}
-              >
-                A
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
-      <div
         className="writing-area"
         inert={menu === 'link'}
         onClick={() => {
@@ -378,6 +233,184 @@ export default function RichDescription({
         }}
       >
         <EditorContent editor={editor} />
+      </div>
+      <div className="editor-controls" ref={controls} inert={menu === 'link'}>
+        <div
+          className="toolbar"
+          role="toolbar"
+          aria-label="Description formatting"
+        >
+          {tool(
+            'Undo description edit',
+            '↶',
+            () => {
+              setMenu(null);
+              editor.chain().focus().undo().run();
+            },
+            false,
+            !state?.undo,
+          )}
+          {tool(
+            'Redo description edit',
+            '↷',
+            () => {
+              setMenu(null);
+              editor.chain().focus().redo().run();
+            },
+            false,
+            !state?.redo,
+          )}
+          <span className="separator" />
+          {tool(
+            'Bold',
+            'B',
+            () =>
+              formatDescription(editor, () => {
+                editor.chain().focus().toggleBold().run();
+              }),
+            state?.bold,
+          )}
+          {tool(
+            'Italic',
+            '𝘐',
+            () =>
+              formatDescription(editor, () => {
+                editor.chain().focus().toggleItalic().run();
+              }),
+            state?.italic,
+          )}
+          {tool(
+            'Text and list options',
+            'Aa',
+            () => setMenu(menu === 'text' ? null : 'text'),
+            menu === 'text',
+            false,
+            { id: 'text-options', open: menu === 'text' },
+          )}
+          {tool(
+            'Add or edit link',
+            '↗',
+            openLink,
+            state?.link || menu === 'link',
+          )}
+          {tool(
+            'Highlight colours',
+            '◒',
+            () => setMenu(menu === 'colour' ? null : 'colour'),
+            !!state?.highlight || menu === 'colour',
+            false,
+            { id: 'highlight-options', open: menu === 'colour' },
+          )}
+        </div>
+        {menu === 'text' && (
+          <div
+            id="text-options"
+            className="popover choices"
+            role="group"
+            aria-label="Text styles"
+          >
+            {[
+              [
+                'Text',
+                () => editor.chain().focus().setParagraph().run(),
+                !state?.heading,
+              ],
+              [
+                'Heading',
+                () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
+                state?.heading === 2,
+              ],
+              [
+                'Bullets',
+                () => editor.chain().focus().toggleBulletList().run(),
+                state?.bullet,
+              ],
+              [
+                'Numbered list',
+                () => editor.chain().focus().toggleOrderedList().run(),
+                state?.ordered,
+              ],
+              [
+                'Quote',
+                () => editor.chain().focus().toggleBlockquote().run(),
+                state?.quote,
+              ],
+              [
+                'Strikethrough',
+                () => editor.chain().focus().toggleStrike().run(),
+                state?.strike,
+              ],
+              [
+                'Code',
+                () => editor.chain().focus().toggleCode().run(),
+                state?.code,
+              ],
+              [
+                'Clear formatting',
+                () => editor.chain().focus().unsetAllMarks().clearNodes().run(),
+                false,
+              ],
+            ].map(([label, action, active]) => (
+              <button
+                type="button"
+                key={String(label)}
+                aria-pressed={!!active}
+                disabled={!editable}
+                onPointerDown={(event) => event.preventDefault()}
+                onClick={() => textAction(action as () => void)}
+              >
+                {String(label)}
+              </button>
+            ))}
+          </div>
+        )}
+        {menu === 'colour' && (
+          <div
+            id="highlight-options"
+            className="popover colours"
+            role="group"
+            aria-label="Highlight colour"
+          >
+            <button
+              type="button"
+              disabled={!editable}
+              onPointerDown={(event) => event.preventDefault()}
+              onClick={() =>
+                textAction(() => editor.chain().focus().unsetHighlight().run())
+              }
+            >
+              None
+            </button>
+            {(Object.keys(highlightColours) as HighlightColour[]).map((id) => (
+              <button
+                type="button"
+                key={id}
+                aria-label={`${highlightColours[id].label} highlight`}
+                aria-pressed={state?.highlight === id}
+                disabled={!editable}
+                onPointerDown={(event) => event.preventDefault()}
+                onClick={() =>
+                  textAction(() => {
+                    if (editor.isActive('highlight', { color: id }))
+                      editor.chain().focus().unsetHighlight().run();
+                    else
+                      editor.chain().focus().setHighlight({ color: id }).run();
+                  })
+                }
+              >
+                <span
+                  className="swatch"
+                  style={{
+                    background: highlightColours[id].background,
+                    color: highlightColours[id].text,
+                  }}
+                >
+                  A
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       {menu === 'link' && (
         <div className="link-overlay">

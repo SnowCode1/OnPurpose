@@ -31,8 +31,13 @@ lists, quotes, strikethrough, inline code and Clear formatting in a compact pane
 Links can be added, changed or removed while retaining the selected text. Highlight
 options are None, Yellow, Green, Blue, Purple and Pink; choosing the same colour
 again removes it. Additional controls appear only when opened. The toolbar wraps
-if text scaling or available width requires it. Writing has most of the screen;
-the keyboard does not push Done into scrollable content.
+if text scaling or available width requires it. The toolbar stays at the bottom
+of the editor, immediately above the keyboard while typing; native Close/Done
+stay at the top. Writing has most of the screen. Text and highlight menus float
+above the toolbar without changing the writing area's size or scroll position.
+They fit the remaining editor height after keyboard/orientation/text-size changes
+and scroll when necessary. A 140 ms opening transition respects Reduce Motion.
+Tap the menu button again, tap the document or use Escape to dismiss a menu.
 
 Link entry uses a compact bottom sheet within the editor, above the keyboard.
 Its address field receives focus and its Cancel/Apply/Remove actions have a separate
@@ -42,6 +47,15 @@ selected after Apply. Touch/pointer taps on formatting tools do not take focus
 from the editor. Readiness and initial focus happen once per editor instance;
 Expo DOM callback-proxy replacements during native updates must not refocus at
 the end of the document. `richText/useEditorReady.ts` owns this boundary.
+
+Select words and paste a full web or app URL to turn the words into a link,
+retaining their other formatting and selection. Pasting onto an existing linked
+phrase changes its destination. This is one local Undo/Redo step, separate from
+adjacent typing. It works through the normal paste event, with no background
+clipboard reading. The explicit link sheet remains available. Ordinary text,
+bare domains, empty cursors, code and multi-block selections follow the normal
+paste path. Executable/local-resource URLs are not made into links. Oversized
+link formatting is rejected by the same atomic description limit.
 
 The editor has its own temporary Undo/Redo history, separate from app History.
 Typing groups after 500 ms of inactivity; toolbar formatting actions are separate
@@ -89,6 +103,10 @@ request a current document snapshot across the DOM bridge before applying or
 confirming a discard, so the last keystroke need not wait for draft autosave.
 Serialized formatting also counts toward the 20,000-character limit; an oversized
 paste is rejected as a whole, with existing text and Undo retained.
+
+`richText/selectionLinkPaste.ts` owns the selected-text paste shortcut;
+`richText/useFloatingMenuSpace.ts` sizes overlay menus locally without sending
+per-frame layout through the native bridge. No storage schema changes are needed.
 
 The editor's MIT notices are retained in
 [TIPTAP_LICENSE.txt](licenses/TIPTAP_LICENSE.txt),

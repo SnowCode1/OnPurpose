@@ -12,6 +12,7 @@ import {
   isHighlightColour,
 } from './highlights.ts';
 import { markdownDocument } from './markdownDocument.ts';
+import { selectionLinkPaste } from './selectionLinkPaste.ts';
 
 const ColouredHighlight = Highlight.extend({
   addAttributes() {
@@ -70,6 +71,7 @@ export function descriptionExtensions(onLimit: () => void = () => {}) {
       link: {
         openOnClick: false,
         autolink: true,
+        linkOnPaste: false,
         enableClickSelection: true,
         isAllowedUri: (value) => descriptionLink(value) !== null,
       },
@@ -77,6 +79,12 @@ export function descriptionExtensions(onLimit: () => void = () => {}) {
     Markdown,
     ColouredHighlight,
     ImageNote,
+    Extension.create({
+      name: 'selectionLinkPaste',
+      addProseMirrorPlugins() {
+        return [selectionLinkPaste(this.editor)];
+      },
+    }),
     Placeholder.configure({
       placeholder:
         'Why this matters, a simple starting point, or a link to my notes…',

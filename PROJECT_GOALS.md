@@ -76,6 +76,8 @@ and uncertainty about whether something was saved.
   rounded card, with a full-screen live formatted editor, local temporary Undo/Redo,
   reversible formatting controls and optional highlight colours. Retain applied changes in incremental storage and Undo/Redo. Populate existing
   habits with editable placeholder notes while preserving any user-written text.
+  Keep formatting controls above the keyboard, float text/colour menus without
+  shifting the document, and let pasting a URL onto selected words create a link.
 - Give each habit an editable start date, initially Today, to support old records.
   Statistics use each habit's own continuous calendar period since its start;
   another habit's activity must not affect its denominator. Numeric averages divide

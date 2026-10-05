@@ -700,3 +700,23 @@ bounds a long paragraph or list. Character count no longer produces a redundant
 Read more on text that fits. These sizes are implementation tuning, with phone
 layout acceptance pending. The founder subsequently confirmed that formatting
 selection and bottom-link-sheet spacing are improved on the phone.
+
+## 5 October 2026 — Keyboard toolbar, floating menus and URL paste
+
+The founder approved the three proposed editor improvements: bottom formatting
+controls above the keyboard, floating text/highlight menus that do not shift the
+writing area, and pasting a URL onto selected words to create a link.
+
+Controls follow the native keyboard-resized editor surface. Menu overlays size to
+the remaining container height, scroll in tight layouts and use a short opening
+transition unless Reduce Motion is enabled. Measurements stay within the DOM;
+native props and initial-focus behaviour remain stable during ordinary editing.
+
+The selected-text paste plugin accepts explicit allowed web/app URLs, retains
+existing text/marks and selection, and closes local history groups around one
+link action. Normal prose, bare domains, empty cursors, code and multi-block
+selections keep normal pasting. Stock Tiptap selected-link paste is replaced so
+validation, app-note schemes, Undo grouping and length-limit handling agree with
+the editor. It uses only the paste event, not background clipboard access.
+Regression tests cover preservation, destination changes, Undo/Redo, exclusions
+and atomic rejection. Phone keyboard/layout and iOS Paste acceptance are pending.

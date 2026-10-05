@@ -22,13 +22,19 @@ body {
   background: #000;
   font-size: var(--note-size);
 }
+.editor-controls {
+  position: relative;
+  flex-shrink: 0;
+  z-index: 2;
+}
 .toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  padding: 0 12px 6px;
+  padding: 6px 12px calc(6px + env(safe-area-inset-bottom));
   gap: 2px;
-  border-bottom: 1px solid #252525;
+  border-top: 1px solid #252525;
+  background: #000;
   flex-shrink: 0;
 }
 button {
@@ -72,6 +78,7 @@ input:focus-visible {
 }
 .writing-area {
   flex: 1;
+  min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
   padding: 18px 24px 40px;
@@ -161,14 +168,35 @@ input:focus-visible {
   pointer-events: none;
 }
 .popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 12px;
+  right: 12px;
   background: #171717;
   padding: 8px;
-  margin: 6px 12px 0;
   border: 1px solid #303030;
   border-radius: 12px;
   flex-shrink: 0;
-  max-height: 42vh;
+  max-height: var(--menu-height, max(0px, calc(100dvh - 88px)));
   overflow: auto;
+  overscroll-behavior: contain;
+  box-shadow: 0 4px 20px #0005;
+  animation: menu-appear 140ms ease-out;
+}
+@keyframes menu-appear {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .popover {
+    animation: none;
+  }
 }
 .choices {
   display: grid;

@@ -38,6 +38,15 @@ landscape, larger text, VoiceOver and draft recovery checks remain pending:
   Open the bottom link sheet: address focus, Cancel/Apply padding and accessible
   actions must remain usable above the keyboard, including landscape/larger text.
   Cancel/outside-tap must restore the selection; Apply must keep the link selected.
+- The formatting strip sits at the bottom, above the keyboard during typing.
+  Open text/highlight menus at different scroll positions: the document must not
+  jump or resize. Rotate and increase text size with a menu open; its options
+  must stay reachable by scrolling. Try Reduce Motion, menu toggle and Escape.
+- Select a phrase, use iOS Paste with a copied HTTPS or app-note URL, and check
+  that the phrase and formatting stay intact while becoming a link. Local Undo
+  should remove just that link change; Redo restores it. Try changing an existing
+  link by pasting another URL. Pasting normal prose, into code or at an empty
+  cursor must retain normal paste behaviour. The link sheet still works.
 - The note card now previews four complete blocks within a taller 220-point
   height limit. Short notes that fit need no Read more. Long paragraphs/lists
   remain bounded and expanded notes still offer Show less.

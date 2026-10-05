@@ -4,6 +4,7 @@ import { JSDOM } from 'jsdom';
 import { Editor } from '@tiptap/core';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
+import { Slice } from '@tiptap/pm/model';
 import { useEditorReady } from '../src/richText/useEditorReady.ts';
 import {
   descriptionExtensions,
@@ -54,6 +55,99 @@ function highlightIds(markdown) {
     .filter((token) => token.type === 'highlight_open')
     .map((token) => token.attrGet('colour'));
 }
+function pasteLink(editor, text) {
+  const event = {
+    clipboardData: { getData: (type) => (type === 'text/plain' ? text : '') },
+  };
+  return !!editor.view.someProp('handlePaste', (handle) =>
+    handle(editor.view, event, Slice.empty),
+  );
+}
+
+test('pasting a web or app URL links selected words, retains formatting and selection, and supports Undo/Redo', (t) => {
+  for (const href of [
+    'https://example.com/notes?q=habit#purpose',
+    'obsidian://open?vault=Personal&file=Motivation',
+    'mailto:hello@example.com',
+  ]) {
+    const { editor, snapshot } = fixture(t, '**My motivation**');
+    editor.commands.setTextSelection({ from: 1, to: 14 });
+    formatDescription(editor, () =>
+      editor.commands.setHighlight({ color: 'blue' }),
+    );
+    const before = snapshot();
+    assert.equal(pasteLink(editor, href), true);
+    assert.equal(editor.getText(), 'My motivation');
+    assert.equal(editor.getAttributes('link').href, href);
+    assert.equal(editor.isActive('bold'), true);
+    assert.equal(editor.isActive('highlight', { color: 'blue' }), true);
+    assert.equal(editor.state.selection.from, 1);
+    assert.equal(editor.state.selection.to, 14);
+    assert.equal(editor.commands.undo(), true);
+    assert.equal(snapshot(), before);
+    assert.equal(editor.commands.redo(), true);
+    assert.equal(editor.getAttributes('link').href, href);
+    assert.ok(snapshot().includes(href));
+  }
+});
+test('a pasted URL replaces a links destination without replacing its label or joining adjacent typing in Undo', (t) => {
+  const { editor, snapshot } = fixture(t, '[Notes](https://example.com/old)');
+  editor.commands.insertContentAt(6, ' today');
+  const before = snapshot();
+  editor.commands.setTextSelection({ from: 1, to: 6 });
+  assert.equal(pasteLink(editor, ' \nhttps://example.com/new\n '), true);
+  assert.equal(editor.getAttributes('link').href, 'https://example.com/new');
+  assert.equal(editor.getText(), 'Notes today');
+  editor.commands.undo();
+  assert.equal(snapshot(), before);
+  editor.commands.undo();
+  assert.equal(snapshot(), '[Notes](https://example.com/old)');
+});
+test('ordinary text, unsafe URLs, empty cursors, code and multi-block selections keep the normal paste path', (t) => {
+  const { editor, snapshot } = fixture(t, 'My motivation');
+  editor.commands.setTextSelection({ from: 1, to: 14 });
+  for (const text of [
+    'Some normal text',
+    'www.example.com',
+    'https://example.com and some words',
+    'https://example.com\nhttps://another.example.com',
+    'Note:motivation',
+    'javascript://alert(1)',
+    'data:text/html,hello',
+    'file:///private/notes',
+    'https:/bad',
+    '',
+  ]) {
+    assert.equal(pasteLink(editor, text), false);
+    assert.equal(snapshot(), 'My motivation');
+  }
+  editor.commands.setTextSelection(1);
+  assert.equal(pasteLink(editor, 'https://example.com'), false);
+  const code = fixture(t, '`literal`').editor;
+  code.commands.setTextSelection({ from: 1, to: 8 });
+  assert.equal(pasteLink(code, 'https://example.com'), false);
+  const block = fixture(t, '```\nliteral\n```').editor;
+  block.commands.setTextSelection({ from: 1, to: 8 });
+  assert.equal(pasteLink(block, 'https://example.com'), false);
+  const multiple = fixture(t, 'First\n\nSecond').editor;
+  multiple.commands.selectAll();
+  assert.equal(pasteLink(multiple, 'https://example.com'), false);
+  editor.setEditable(false);
+  editor.commands.setTextSelection({ from: 1, to: 14 });
+  assert.equal(pasteLink(editor, 'https://example.com'), false);
+});
+test('an oversized link paste is rejected without replacing selected text or changing the existing Undo history', (t) => {
+  let limited = 0;
+  const { editor, snapshot } = fixture(t, 'My motivation', () => limited++);
+  editor.commands.setTextSelection({ from: 1, to: 14 });
+  assert.equal(
+    pasteLink(editor, `https://example.com/${'a'.repeat(20000)}`),
+    true,
+  );
+  assert.equal(snapshot(), 'My motivation');
+  assert.ok(limited > 0);
+  assert.equal(editor.can().undo(), false);
+});
 
 test('bold and italic are reversible marks and each toolbar action is independently undoable', (t) => {
   const { editor, snapshot } = fixture(t, 'Focus');
