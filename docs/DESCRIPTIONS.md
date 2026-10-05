@@ -230,3 +230,24 @@ history prevents repeating the update after Undo or reload. New v7 custom habits
 start with an optional empty description and receive no automatic placeholder.
 No store is reset or reseeded. Older backups may receive the one-time update on
 next opening; a restore itself still reproduces the validated archive exactly.
+
+## Change navigation and editing icons
+
+Before/After includes Next change beside the Changes switch. It moves to the next
+changed passage after the viewed position, cycles through targets and wraps to
+the first; it enables highlighting if necessary. With no changes it is disabled.
+Each version has its own scroll list. Long, variable-height notes can require
+measurement: an estimated offset brings the region into view, followed by a
+bounded exact-position retry. Manual scrolling, a newer request or closing cancels
+old retries. Reduce Motion disables animated navigation. Pure navigation tests
+cover cycling, cancellation and unmeasured targets; native feel needs phone QA.
+
+The editing toolbar and text/list menu use consistent Tabler outline SVGs from
+the existing installed catalogue, preserving accessible labels, active states and
+the highlight-colour indicator. A generated fourteen-icon subset avoids importing
+the complete catalogue into the DOM editor. Regenerate it with
+`node scripts/generate-editor-icons.mjs`; the existing Tabler MIT notice applies.
+
+Descriptions and all editor controls follow Settings → Text size and the iPhone
+text-size multiplier. There is no separate description-size preference. The
+keyboard toolbar and menus wrap or scroll while keeping minimum touch targets.

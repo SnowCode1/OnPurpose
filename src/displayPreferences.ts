@@ -16,6 +16,7 @@ export function isWeekStart(value: unknown): value is WeekStart {
   return value === 'monday' || value === 'sunday';
 }
 export const displayDefaults = {
+  textScale: 1,
   columnSpacing: 'compact',
   weekStart: 'monday',
   dateFading: true,

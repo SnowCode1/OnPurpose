@@ -1,3 +1,4 @@
+import { Text } from '../Typography';
 import { useEffect, useRef } from 'react';
 import * as Haptics from 'expo-haptics';
 import {
@@ -6,7 +7,6 @@ import {
   Platform,
   Pressable,
   type PressableProps,
-  Text,
   type TextProps,
 } from 'react-native';
 import { captureScreen } from 'react-native-view-shot';

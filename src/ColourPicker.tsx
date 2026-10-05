@@ -1,14 +1,8 @@
+import { TextInput, Text } from './Typography';
 import Slider from '@react-native-community/slider';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
-import {
-  Keyboard,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import {
   checkmarkColor,
   contrastOnBlack,

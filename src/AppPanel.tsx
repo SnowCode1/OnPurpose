@@ -1,3 +1,4 @@
+import { Text, useAppWindowDimensions } from './Typography';
 import {
   columnSpacingOptions,
   weekStartOptions,
@@ -8,6 +9,7 @@ import { rowSpacingOptions, type RowSpacing } from './rowSpacing';
 import { type ComponentType, type ReactNode } from 'react';
 import type { Habit } from './habits';
 import { ArchivedHabits } from './ArchivedHabits';
+import { TextSizeSetting } from './TextSizeSetting';
 import Animated from 'react-native-reanimated';
 import { appear } from './motion';
 import {
@@ -16,7 +18,6 @@ import {
   ScrollView,
   StyleSheet,
   Switch,
-  Text,
   type TextProps,
   View,
 } from 'react-native';
@@ -64,6 +65,7 @@ function ChoiceSetting<T extends string>({
   onChange: (value: T) => void;
   disabled: boolean;
 }) {
+  const { fontScale } = useAppWindowDimensions();
   return (
     <View style={{ gap: 8 }}>
       <Text style={styles.label}>{label}</Text>
@@ -79,7 +81,7 @@ function ChoiceSetting<T extends string>({
             onPress={() => onChange(option.value)}
             style={({ pressed }) => ({
               flexGrow: 1,
-              flexBasis: 90,
+              flexBasis: 90 * Math.max(1, fontScale),
               minHeight: 48,
               padding: 12,
               borderRadius: 12,
@@ -116,6 +118,8 @@ export function AppPanel({
   onWeekStartChange,
   dateFading,
   onDateFadingChange,
+  textScale,
+  onTextScaleChange,
   rowSpacing,
   onRowSpacingChange,
   hapticsEnabled,
@@ -148,6 +152,8 @@ export function AppPanel({
   onWeekStartChange: (value: WeekStart) => void;
   dateFading: boolean;
   onDateFadingChange: (value: boolean) => void;
+  textScale: number;
+  onTextScaleChange: (value: number) => void;
   rowSpacing: RowSpacing;
   onRowSpacingChange: (value: RowSpacing) => void;
   hapticsEnabled: boolean;
@@ -256,8 +262,16 @@ export function AppPanel({
                     label={`Archived habits · ${snapshot.replay.state.habits.filter((habit) => habit.archived).length}`}
                     onPress={onArchive}
                   />
-                  <Text style={[styles.section, { marginTop: 28 }]}>GRID</Text>
+                  <Text style={[styles.section, { marginTop: 28 }]}>
+                    DISPLAY
+                  </Text>
                   <View style={{ gap: 24 }}>
+                    <TextSizeSetting
+                      key={textScale}
+                      value={textScale}
+                      editable={editable}
+                      onChange={onTextScaleChange}
+                    />
                     <ChoiceSetting
                       label="Row spacing"
                       description="Fit more habits, or give each one more room. Larger text still has space to grow."

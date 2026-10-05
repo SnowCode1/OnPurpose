@@ -1,5 +1,6 @@
+import { Text } from './Typography';
 import { memo, useMemo, useSyncExternalStore } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import type { GridDay } from './calendar';
 import { isNumericHabit, type Habit } from './habits';
 import { ReorderRow, type RowMotion } from './ReorderRow';

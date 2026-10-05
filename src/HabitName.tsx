@@ -1,8 +1,8 @@
+import { Text } from './Typography';
 import { useRef, useState, useLayoutEffect } from 'react';
 import {
   PanResponder,
   Pressable,
-  Text,
   View,
   type LayoutChangeEvent,
 } from 'react-native';

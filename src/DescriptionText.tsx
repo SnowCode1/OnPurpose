@@ -1,5 +1,6 @@
+import { Text } from './Typography';
 import { memo, type ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { highlightColours, isHighlightColour } from './richText/highlights';
 import { contrastOnBlack } from './colors';
 import { openDescriptionLink } from './descriptionLinks';

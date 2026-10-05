@@ -1,4 +1,5 @@
-import { Text, View } from 'react-native';
+import { Text } from './Typography';
+import { View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import type { HabitIcon } from './habitIcons';
 import { phosphorPaths } from './phosphorPaths';

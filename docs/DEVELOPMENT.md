@@ -227,10 +227,10 @@ Metro with `npm run start:clear` if it cannot resolve an installed module).
 Settings → Export backup opens the share sheet; choose Save to Files. Restore
 backup validates first and asks before replacing data, retaining a local copy.
 
-New habit edits use version-7 events with grouped actions; global preferences save
-outside visible History/Undo. Exports use container version 7; existing version-1/2/3/4/5/6
+New habit edits use version-8 events with grouped actions; global preferences save
+outside visible History/Undo. Exports use container version 8; existing version-1/2/3/4/5/6/7
 backups remain importable and old log records stay unchanged. Fully reload Expo Go
-to test storage updates. Do not downgrade to an older build after writing v7 data;
+to test storage updates. Do not downgrade to an older build after writing v8 data;
 older builds cannot interpret it and will refuse to load rather than reset.
 The web preview uses separate browser localStorage, not the iPhone SQLite file.
 
@@ -296,5 +296,14 @@ Markdown/plain-text notes are available during creation/editing and appear befor
 statistics. The full-screen editor uses the pure-JavaScript markdown-it browser
 build; no additional native build is required. Fully reload Expo Go to populate
 placeholder notes in the current sample and existing real store. Applied notes use
-v7 events, with v1–v6 replay retained. See [DESCRIPTIONS.md](DESCRIPTIONS.md) for
+v8 events, with v1–v7 replay retained. See [DESCRIPTIONS.md](DESCRIPTIONS.md) for
 editor drafts, links, history comparison and recovery, and TESTING.md for phone QA.
+
+## Shared text sizing
+
+Use `Text`/`TextInput` from `src/Typography.tsx` for app text, and
+`useAppWindowDimensions` where layout depends on font scale. The provider applies
+only the app multiplier; native controls retain OS font scaling. The layout hook
+combines both scales, as does the DOM editor. `textSize.ts` owns validated bounds
+and pure style calculations. Do not independently scale nested text or override
+native `defaultProps`. Fixed icons/checkbox glyphs remain decorative.

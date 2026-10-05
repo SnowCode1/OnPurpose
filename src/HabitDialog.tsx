@@ -1,3 +1,4 @@
+import { TextInput, Text, useAppWindowDimensions } from './Typography';
 import { completeDescriptionDraft } from './storage/descriptionBookmarks';
 import { DescriptionEditor } from './DescriptionEditor';
 import { descriptionSummary } from './description';
@@ -12,11 +13,8 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
   type TextProps,
-  useWindowDimensions,
 } from 'react-native';
 import { ColourPicker } from './ColourPicker';
 import { isNumericHabit, type Habit } from './habits';
@@ -59,7 +57,7 @@ export function HabitDialog({
         .catch(() => {});
     onClose();
   }
-  const { fontScale } = useWindowDimensions();
+  const { fontScale } = useAppWindowDimensions();
   const [startDate, setStartDate] = useState(
     habit.startDate ?? initialStartDate,
   );

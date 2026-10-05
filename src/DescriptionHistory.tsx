@@ -1,15 +1,27 @@
-import { useMemo, useState, type ComponentType } from 'react';
+import { Text } from './Typography';
+import {
+  useMemo,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  type ComponentType,
+} from 'react';
 import {
   Modal,
   Pressable,
   FlatList,
   Switch,
-  Text,
   View,
   type TextProps,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { descriptionDiff } from './descriptionDiff';
+import { useReducedMotion } from 'react-native-reanimated';
+import {
+  descriptionChangeNavigator,
+  type DescriptionScrollPort,
+} from './descriptionChangeNavigation';
+import { descriptionDiff, type DescriptionPassage } from './descriptionDiff';
 import { DescriptionText } from './DescriptionText';
 import type { HistoryAction, StoredState } from './storage/model';
 
@@ -39,6 +51,28 @@ export function DescriptionHistory({
       ),
     [change],
   );
+  const list = useRef<FlatList<DescriptionPassage>>(null);
+  const reducedMotion = useReducedMotion();
+  const scroll: DescriptionScrollPort = {
+    scrollToIndex: (options) => list.current?.scrollToIndex(options),
+    scrollToOffset: (options) => list.current?.scrollToOffset(options),
+  };
+  const navigator = useMemo(
+    () => descriptionChangeNavigator(diff[version], reducedMotion),
+    [diff, version, reducedMotion],
+  );
+  useEffect(() => {
+    navigator.activate();
+    return () => navigator.dispose();
+  }, [navigator]);
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: { index: number | null }[] }) => {
+      const index = viewableItems.find((item) => item.index !== null)?.index;
+      if (index !== undefined && index !== null) navigator.visible(index);
+    },
+    [navigator],
+  );
+  const hasChanges = diff[version].some((passage) => passage.changed);
   if (change.kind !== 'habit') return null;
   const habit = change.after ?? change.before!;
   const text = change[version]?.description;
@@ -141,11 +175,19 @@ export function DescriptionHistory({
               paddingTop: 10,
             }}
           >
-            <Text style={{ color: '#888888', fontSize: 12, flexShrink: 1 }}>
+            <Text
+              style={{ color: '#888888', fontSize: 12, flex: 1, minWidth: 90 }}
+            >
               {new Date(action.recordedAt).toLocaleString()}
             </Text>
             <View
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                gap: 8,
+                flexShrink: 1,
+              }}
             >
               <Text style={{ color: '#AAAAAA', fontSize: 12 }}>Changes</Text>
               <Switch
@@ -155,10 +197,36 @@ export function DescriptionHistory({
                 trackColor={{ false: '#292929', true: '#365A4B' }}
                 thumbColor="#DDDDDD"
               />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Next changed passage"
+                accessibilityHint="Scrolls to the next change, then wraps to the first"
+                disabled={!hasChanges}
+                onPress={() => {
+                  setShowChanges(true);
+                  navigator.next(scroll);
+                }}
+                style={{
+                  minHeight: 44,
+                  paddingHorizontal: 8,
+                  justifyContent: 'center',
+                  opacity: hasChanges ? 1 : 0.35,
+                }}
+              >
+                <Text style={{ color: '#BBBBBB', fontSize: 12 }}>
+                  Next change
+                </Text>
+              </Pressable>
             </View>
           </View>
           <FlatList
             key={version}
+            ref={list}
+            onViewableItemsChanged={onViewableItemsChanged}
+            onScrollBeginDrag={() => navigator.manual()}
+            onScrollToIndexFailed={(failure) =>
+              navigator.failed(failure, scroll)
+            }
             data={diff[version]}
             keyExtractor={(_passage, index) => String(index)}
             contentContainerStyle={{

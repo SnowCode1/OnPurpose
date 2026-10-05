@@ -69,7 +69,7 @@ The requested preset icon update uses normal undoable edits in
   `docs/DESCRIPTIONS.md`. `src/RichDescription.tsx` is the offline Expo DOM/Tiptap
   editing surface; `src/richText/` owns safe document mapping, formatting, local
   Undo/Redo and bounded highlights. Preserve native readers and request a current
-  DOM snapshot before applying. Applied descriptions use ordinary v7 habit changes;
+  DOM snapshot before applying. Applied descriptions use ordinary habit changes (v8 for new writes);
   recoverable drafts stay outside History/backups in a separate local store. Keep
   `storage/descriptionDraftModel.ts` distinct from native/web adapters for Metro.
   `src/dev/sampleData.ts` owns isolated mock history for statistics testing. Keep
@@ -87,7 +87,7 @@ The requested preset icon update uses normal undoable edits in
   date-cell layout timing aligned.
 - `src/displayPreferences.ts` owns column spacing, week start and date fading defaults; keep absent-field defaults compatible with old logs and all preferences outside History/Undo. Read docs/SETTINGS.md.
 - `src/rowSpacing.ts` owns saved Compact/Standard/Roomy geometry; preserve font scaling and measured row heights.
-- `src/StartDateField.tsx` owns the native draft date picker; existing dates remain inferred until edited. Explicit start dates bound statistics without deleting entries. New edits/exports use v7, retaining v1–v6 replay.
+- `src/StartDateField.tsx` owns the native draft date picker; existing dates remain inferred until edited. Explicit start dates bound statistics without deleting entries. New edits/exports use v8, retaining v1–v7 replay.
 - `src/useStatsDismissal.ts` owns UI-thread pull dismissal; only a drag starting at the top qualifies. Keep an accessible Back button.
 - `src/gridLayout.ts` calculates adaptive column geometry for both orientations.
 - `src/useGridScroll.ts` synchronizes native scrolling on the UI thread; never
@@ -111,6 +111,15 @@ The requested preset icon update uses normal undoable edits in
   groups disappear. Keep legacy v1 replay semantics and fixtures unchanged.
 - Restores validate fully, require a concrete native confirmation, and retain a
   pre-restore copy atomically. Never delete a database to recover silently.
+
+- `src/Typography.tsx` shares app-wide Text/TextInput scaling and combined layout
+  font scale; `textSize.ts` owns validated 85–150% steps. Use these wrappers for
+  app text and preserve OS scaling/nested-span inheritance. Preferences remain
+  outside History/Undo. The DOM editor uses the same combined font scale.
+- `descriptionChangeNavigation.ts` owns cancellable Next change navigation; retain
+  bounded retries for unmeasured passages and respect reduced motion. Editor
+  outline SVGs use the generated small `editorIconPaths.ts` subset; regenerate with
+  `scripts/generate-editor-icons.mjs`, not a full catalogue import into the DOM.
 
 ## UI and accessibility
 

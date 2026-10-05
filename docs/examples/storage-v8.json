@@ -1,0 +1,164 @@
+{
+  "format": "onpurpose.changes",
+  "version": 8,
+  "exportedAt": "2026-10-05T03:00:00.000Z",
+  "eventCount": 9,
+  "sha256": "275f416c2deda1650c1bcf2032f7235259ac38646d64b958f95f62f96c0e8c41",
+  "events": [
+    {
+      "version": 6,
+      "id": "v6-seed",
+      "sequence": 1,
+      "recordedAt": "2026-10-04T08:00:00.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "initialize",
+      "habits": [
+        {
+          "id": "walk",
+          "name": "Walk",
+          "color": "#82E6BC",
+          "type": "checkbox",
+          "startDate": "2026-10-01"
+        }
+      ]
+    },
+    {
+      "version": 6,
+      "id": "v6-check",
+      "sequence": 2,
+      "recordedAt": "2026-10-04T08:00:00.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "change",
+      "groupId": "v6-check",
+      "change": {
+        "kind": "entry",
+        "habitId": "walk",
+        "date": "2026-10-04",
+        "before": null,
+        "after": 1
+      }
+    },
+    {
+      "version": 6,
+      "id": "v6-undo",
+      "sequence": 3,
+      "recordedAt": "2026-10-04T08:00:00.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "undo",
+      "targetId": "v6-check",
+      "change": {
+        "kind": "entry",
+        "habitId": "walk",
+        "date": "2026-10-04",
+        "before": 1,
+        "after": null
+      }
+    },
+    {
+      "version": 6,
+      "id": "v6-columnSpacing",
+      "sequence": 4,
+      "recordedAt": "2026-10-04T08:00:00.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "preference",
+      "change": {
+        "kind": "columnSpacing",
+        "before": "compact",
+        "after": "roomy"
+      }
+    },
+    {
+      "version": 6,
+      "id": "v6-weekStart",
+      "sequence": 5,
+      "recordedAt": "2026-10-04T08:00:00.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "preference",
+      "change": {
+        "kind": "weekStart",
+        "before": "monday",
+        "after": "sunday"
+      }
+    },
+    {
+      "version": 6,
+      "id": "v6-dateFading",
+      "sequence": 6,
+      "recordedAt": "2026-10-04T08:00:00.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "preference",
+      "change": {
+        "kind": "dateFading",
+        "before": true,
+        "after": false
+      }
+    },
+    {
+      "version": 6,
+      "id": "v6-redo",
+      "sequence": 7,
+      "recordedAt": "2026-10-04T08:00:00.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "redo",
+      "targetId": "v6-undo",
+      "change": {
+        "kind": "entry",
+        "habitId": "walk",
+        "date": "2026-10-04",
+        "before": null,
+        "after": 1
+      }
+    },
+    {
+      "version": 7,
+      "id": "v7-description",
+      "sequence": 8,
+      "recordedAt": "2026-10-05T02:00:00.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "change",
+      "groupId": "v7-description",
+      "change": {
+        "kind": "habit",
+        "habitId": "walk",
+        "index": 0,
+        "before": {
+          "id": "walk",
+          "name": "Walk",
+          "color": "#82E6BC",
+          "type": "checkbox",
+          "startDate": "2026-10-01"
+        },
+        "after": {
+          "id": "walk",
+          "name": "Walk",
+          "color": "#82E6BC",
+          "type": "checkbox",
+          "startDate": "2026-10-01",
+          "description": "A small daily walk helps me make space in the day.\n\n**A simple start:** walk around the block.\n\n[My notes](https://example.com/#walking)"
+        }
+      }
+    },
+    {
+      "version": 8,
+      "id": "v8-textScale",
+      "sequence": 9,
+      "recordedAt": "2026-10-05T03:00:00.000Z",
+      "timeZone": "Australia/Melbourne",
+      "utcOffsetMinutes": 660,
+      "type": "preference",
+      "change": {
+        "kind": "textScale",
+        "before": 1,
+        "after": 1.2
+      }
+    }
+  ]
+}

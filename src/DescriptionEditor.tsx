@@ -1,3 +1,4 @@
+import { Text, useAppWindowDimensions } from './Typography';
 import {
   useCallback,
   useEffect,
@@ -14,9 +15,7 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  Text,
   View,
-  useWindowDimensions,
   type TextProps,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -68,7 +67,7 @@ export function DescriptionEditor({
   const [initialPosition, setInitialPosition] = useState<DescriptionPosition>();
   const position = useRef<DescriptionPosition | undefined>(undefined);
   const editor = useRef<RichDescriptionRef>(null);
-  const { fontScale } = useWindowDimensions();
+  const { fontScale } = useAppWindowDimensions();
   const requestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleReady = useCallback(async () => setReady(true), []);
   const latest = useRef(initialValue),

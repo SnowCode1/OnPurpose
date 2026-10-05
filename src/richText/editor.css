@@ -62,7 +62,10 @@ input:focus-visible {
   outline-offset: -2px;
 }
 .tool {
-  min-width: 44px;
+  min-width: max(44px, calc(var(--note-size) * 2.5));
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex: 1;
   font-size: max(18px, var(--note-size));
   font-weight: 500;
@@ -225,7 +228,7 @@ input:focus-visible {
   align-items: center;
   justify-content: center;
   border-radius: 7px;
-  font-size: 16px;
+  font-size: 0.94em;
   font-weight: 600;
 }
 .link-overlay {
@@ -331,7 +334,7 @@ input:focus-visible {
   padding: 8px 10px 4px;
 }
 .link-destination {
-  font-size: 13px;
+  font-size: 0.77em;
   color: #bdbdbd;
   overflow-wrap: anywhere;
   display: -webkit-box;
@@ -348,4 +351,15 @@ input:focus-visible {
   flex: 1;
   min-width: 64px;
   min-height: 44px;
+}
+
+.editor-icon {
+  width: 1.2em;
+  height: 1.2em;
+  flex-shrink: 0;
+}
+.choices button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }

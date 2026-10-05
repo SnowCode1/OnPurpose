@@ -10,12 +10,12 @@ backup/share-sheet acceptance remain under evaluation.
 
 Checkbox entries, numeric daily totals, applied habit colours, and the haptic
 preference now survive a reload. The existing 12 sample habits are initialized
-once, not on every launch. Habit creation, renaming, units, icons, start dates, descriptions, ordering, and archival now persist as well. Row/column spacing, week start and date fading are saved global preferences.
+once, not on every launch. Habit creation, renaming, units, icons, start dates, descriptions, ordering, and archival now persist as well. Row/column spacing, app-wide text size, week start and date fading are saved global preferences.
 Full-screen statistics are derived from saved values; comments and targets remain
 later work. See [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md).
 
-`src/storage/model.ts` defines version-7 events and deterministic replay, with
-backward-compatible interpretation of existing version-1/2/3/4/5/6 records.
+`src/storage/model.ts` defines version-8 events and deterministic replay, with
+backward-compatible interpretation of existing version-1/2/3/4/5/6/7 records.
 `repository.ts` implements the native database operations against a small SQL
 interface; `native.ts` connects it to Expo SQLite and native UUID/SHA-256 support.
 `store.ts` owns loading, immediate UI state, the serialized write queue, undo,
@@ -99,7 +99,7 @@ Redo targets its latest undo event ID and restores the original action.
 Existing version-1 logs retain their original interpretation, including historical
 preference undo/redo and abandoned redo branches. Their habit edits remain
 individual undo steps, with settings and undo/redo rows filtered from the view.
-New events use version 7. A log can progress from versions 1 → 2 → 3 → 4 → 5 → 6 → 7, skipping
+New events use version 8. A log can progress from versions 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8, skipping
 versions if needed, but never downgrade. New habit-definition changes record
 `habitId`, `index`, and `before`/`after` definitions (null for creation/removal).
 Order changes record exact before/after ID arrays. Definitions may include an
@@ -152,6 +152,13 @@ Descriptions use ordinary before/after habit changes, with atomic writes,
 Undo/Redo, archive/restore and full export. Logs cannot downgrade after v7.
 The documented v7 fixture extends the unchanged v6 prefix with a Markdown edit.
 SQL schema stays at version 1; previous logs are never rewritten or reseeded.
+
+Version 8 adds `textScale`, a global preference from 0.85 to 1.50 in 0.05
+steps, defaulting to 1 when absent. It validates effective before-values, persists
+through the ordinary atomic queue, and is excluded from History/Undo. It preserves
+Redo and does not close habit correction groups. Versions 1–7 reject this field;
+logs cannot downgrade after v8. The v8 fixture extends the unchanged v7 prefix.
+The SQL schema remains version 1 and older records are never rewritten.
 
 Recoverable description drafts are separate from applied habit state. A separate
 native draft database/browser key keeps unfinished text outside the canonical log,
@@ -252,12 +259,13 @@ Undo is not permanent erasure. There is no deletion or erasure UI. Decide
 privacy/erasure rules before implementing comments; do not assume append-only
 history makes erasure impossible or unwanted.
 
-## Portable backup version 7
+## Portable backup version 8
 
 Settings → Export backup opens the iOS share sheet; save the JSON to Files or
 another destination. The app first waits for pending saves and captures a stable
 log. The export is a readable JSON container of **changes**, not a replacement
-snapshot of habit/day values. See [the version-7 synthetic example](examples/storage-v7.json),
+snapshot of habit/day values. See [the version-8 synthetic example](examples/storage-v8.json),
+[the version-7 synthetic example](examples/storage-v7.json),
 [the version-6 synthetic example](examples/storage-v6.json),
 [the version-5 synthetic example](examples/storage-v5.json),
 [the version-4 synthetic example](examples/storage-v4.json),
@@ -265,13 +273,13 @@ snapshot of habit/day values. See [the version-7 synthetic example](examples/sto
 [version-2 fixture](examples/storage-v2.json), and
 [the unchanged version-1 fixture](examples/storage-v1.json).
 
-The container has `format: "onpurpose.changes"`, `version: 7`, `exportedAt`,
+The container has `format: "onpurpose.changes"`, `version: 8`, `exportedAt`,
 `eventCount`, `sha256`, and `events`. The digest is SHA-256 of UTF-8
 `JSON.stringify(events)` with its existing property order. It detects accidental
 modification/incompleteness; it is not an authenticated signature. Exports are not
 encrypted and may reveal habit names, descriptions, dated values, colours, and preference/edit
 metadata. Pre-restore copies are not bundled into the active export. The exporter
-always writes container version 7. The importer accepts versions 1, 2, 3, 4, 5, 6, and 7;
+always writes container version 8. The importer accepts versions 1–8;
 a container cannot contain events newer than its own version. New containers can
 retain legacy prefixes, including full raw edits and undo/redo operations that
 are omitted from the active History view.

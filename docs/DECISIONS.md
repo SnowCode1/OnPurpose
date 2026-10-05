@@ -759,3 +759,20 @@ validation, app-note schemes, Undo grouping and length-limit handling agree with
 the editor. It uses only the paste event, not background clipboard access.
 Regression tests cover preservation, destination changes, Undo/Redo, exclusions
 and atomic rejection. Phone keyboard/layout and iOS Paste acceptance are pending.
+
+## 5 October 2026 — Shared text size, comparison navigation and outline controls
+
+The founder approved Next change and consistent outline editor controls, and
+requested a single app-wide text-size setting including notes. The assistant chose
+85–150% in 5% steps, a Reset action, application on slider release, and multiplication
+with system accessibility scaling. Shared native Text/TextInput wrappers retain
+span inheritance; the grid and DOM editor consume combined scale. Tight layouts
+wrap or grow, with existing touch minima preserved. Physical-device sizing is
+still awaiting acceptance.
+
+Text size is a v8 preference, included in backups but excluded from History/Undo.
+Legacy v1–v7 logs and fixtures remain unchanged; SQL schema stays at version 1.
+Next change cycles through altered passages with bounded measurement retries and
+manual-scroll cancellation. Editor icons use a fourteen-icon subset generated
+from the existing Tabler paths, adding no dependency and keeping the full icon
+catalogue out of the editor bundle.

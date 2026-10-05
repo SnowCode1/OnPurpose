@@ -1,10 +1,10 @@
+import { Text } from '../Typography';
 import { useEffect, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
   Switch,
-  Text,
   View,
 } from 'react-native';
 import { localDateKey } from '../calendar';

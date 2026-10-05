@@ -1,10 +1,10 @@
+import { Text } from './Typography';
 import { DescriptionHistory } from './DescriptionHistory';
 import { memo, useState, type ComponentType } from 'react';
 import {
   Pressable,
   SectionList,
   StyleSheet,
-  Text,
   View,
   type TextProps,
 } from 'react-native';

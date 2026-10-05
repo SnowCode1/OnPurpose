@@ -1,4 +1,5 @@
-import { Text, TextInput, View } from 'react-native';
+import { TextInput, Text } from './Typography';
+import { View } from 'react-native';
 import { validDate } from './storage/model';
 import type { StartDateFieldProps } from './StartDateField';
 

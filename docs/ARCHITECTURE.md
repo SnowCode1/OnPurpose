@@ -266,13 +266,26 @@ and version-3 definition/order events, with unchanged v1/v2 replay.
 ## Habit descriptions
 
 `HabitDescription.tsx` adds a bounded reader before statistics; `DescriptionEditor.tsx`
-owns full-screen writing/preview, and `DescriptionHistory.tsx` compares active
+owns full-screen live rich-text writing, and `DescriptionHistory.tsx` compares active
 before/after versions. `description.ts` parses Markdown and supplies validation,
 summary/preview and insertion helpers. `DescriptionText.tsx` renders native blocks
 and intentional OS links without HTML execution or remote image requests.
 
-Applied descriptions use v7 ordinary habit events, with unchanged SQL schema and
-v1–v6 replay. `storage/descriptionDraftModel.ts` supplies the separate serialized
+Descriptions were introduced in v7; new ordinary habit events use v8, with
+unchanged SQL schema and v1–v7 replay. `storage/descriptionDraftModel.ts` supplies the separate serialized
 draft adapters; platform modules select SQLite/browser storage and sample mode
 selects memory. Keep the pure model's name distinct from platform adapters so Metro
 cannot resolve it recursively. See DESCRIPTIONS.md and STORAGE.md.
+
+## App-wide typography and change navigation
+
+`Typography.tsx` supplies Text/TextInput wrappers and the app-size provider. Native
+font styles get the app multiplier once, with nested spans inheriting and OS
+scaling preserved. `useAppWindowDimensions` combines both multipliers for grid
+geometry and the DOM description editor. `textSize.ts` owns pure validation and
+style calculations; the global preference uses v8 and stays outside History/Undo.
+
+`descriptionChangeNavigation.ts` owns Next change cycling and bounded retries for
+unmeasured Before/After passages; manual scrolling and closure cancel pending
+work. `editorIconPaths.ts` contains a generated fourteen-icon Tabler subset used
+by the DOM SVG `richText/EditorIcon.tsx`, avoiding a full catalogue import.

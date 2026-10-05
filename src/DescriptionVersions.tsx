@@ -1,10 +1,10 @@
+import { Text } from './Typography';
 import { useState, type ComponentType } from 'react';
 import {
   FlatList,
   Modal,
   Pressable,
   StyleSheet,
-  Text,
   View,
   type TextProps,
 } from 'react-native';

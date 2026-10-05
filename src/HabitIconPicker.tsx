@@ -1,10 +1,9 @@
+import { TextInput, Text } from './Typography';
 import { useMemo, useState } from 'react';
 import {
   FlatList,
   Pressable,
   StyleSheet,
-  Text,
-  TextInput,
   View,
   useWindowDimensions,
 } from 'react-native';

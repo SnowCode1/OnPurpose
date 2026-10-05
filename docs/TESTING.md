@@ -917,7 +917,7 @@ nested full-screen modal presentation, Markdown touch targets or screen-reader f
   to statistics. Try portrait, landscape and large text. Links open only when
   tapped and invalid/unavailable app links report errors. No remote images load.
 - From statistics use Edit/Add description. Try typing, selecting text, toolbar
-  shortcuts, Write/Preview and scrolling with the keyboard. Close/Done stay visible.
+  shortcuts and scrolling with the keyboard. Formatting stays live. Close/Done stay visible.
   Close changed text asks before discard; Done saves one undoable action. Blank text
   clears the field. Try a long note near the character limit.
 - Apply a note, force quit/reopen, then Undo/Redo. History shows Description edited
@@ -929,7 +929,7 @@ nested full-screen modal presentation, Markdown touch targets or screen-reader f
   opening an older draft: choose between current saved text and recovery. Discard
   should not return after reload; applied text must remain separate from unfinished
   writing. Abrupt termination before a debounce write can lose recent keystrokes.
-- In the real store export a v7 backup, edit descriptions and restore with the
+- In the real store export a v8 backup, edit descriptions and restore with the
   existing confirmation. Applied notes and History survive; unfinished drafts are
   excluded, and a pre-restore copy remains. A retained conflicting draft prompts
   instead of silently replacing restored text. Sample mode cannot change real notes
@@ -939,3 +939,24 @@ Automated tests cover Markdown/token/link rules, preview boundaries, selection
 shortcuts, strict v7 validation, legacy v1–v6 imports without mutation, native SQL
 reload/Undo/Redo/archive/clear/backup, failure rollback/retry, placeholder protection,
 serialized draft writes/discard, draft validation and separate memory sample drafts.
+
+## App-wide text size and comparison navigation
+
+- In Settings → Text size try 85%, 100% and 150% in portrait/landscape, and combine
+  with iPhone Larger Text. Check the home heading, row names/numbers, date columns,
+  statistics calendar/charts, history, habit/icon/colour menus and text inputs.
+  Rows/columns should gain space; buttons must remain readable and tappable.
+- Open a description with the keyboard visible. Text, outline toolbar icons, link
+  fields and floating menus should scale consistently, wrap/scroll when needed
+  and keep Done/Close available. Reset restores 100% without changing OS settings.
+- Reload real data and export/restore a v8 backup. Text size persists without
+  appearing in History, consuming Undo or clearing Redo. Sample preferences remain
+  isolated and session-only. Older v1–v7 backups resolve absent text size to 100%.
+- Make separated edits in a long note and open Before/After. Next change should
+  navigate through changed passages and wrap. Try both tabs, repeated taps, a
+  manual drag during navigation and a distant unmeasured passage. Closing must
+  cancel retries. Reduce Motion should navigate without animated scrolling.
+
+Automated coverage includes scale validation/nested styles and grid geometry,
+v8 replay/reload/backups/rollback/retry, legacy-prefix preservation and navigation
+cycling/cancellation. These checks do not establish native clipping or frame rates.

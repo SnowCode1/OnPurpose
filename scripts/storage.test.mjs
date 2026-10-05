@@ -638,7 +638,7 @@ test('v5 start dates and spacing survive SQLite reload, undo/redo and backup rou
     '2026-10-04T06:00:00.000Z',
     digest,
   );
-  assert.equal(JSON.parse(text).version, 7);
+  assert.equal(JSON.parse(text).version, 8);
   const decoded = await decodeArchive(text, digest);
   assert.deepEqual(decoded.replay, reopened.getSnapshot().replay);
   const archive = JSON.parse(text);
@@ -813,7 +813,7 @@ test('v6 display settings persist through SQLite, preserve Redo and round-trip w
     '2026-10-04T08:00:00.000Z',
     digest,
   );
-  assert.equal(JSON.parse(archive).version, 7);
+  assert.equal(JSON.parse(archive).version, 8);
   const decoded = await decodeArchive(archive, digest);
   assert.deepEqual(decoded.replay, reopened.getSnapshot().replay);
   assert.equal(decoded.replay.state.values['walk:2026-10-04'], 1);
@@ -1059,4 +1059,145 @@ test('failed description save rolls back event and projection together, then ret
     reopened.getSnapshot().replay.state.habits[0].description,
     'My unfinished thought, now applied.',
   );
+});
+
+test('v8 text size persists across reload and backup without breaking habit grouping or Redo', async (t) => {
+  const { store, repository } = await fixture(t);
+  assert.equal(store.getSnapshot().replay.state.textScale, undefined);
+  store.change(entry(null, 10, 'read'));
+  store.change({ kind: 'textScale', before: 1, after: 1.1 });
+  store.change(entry(10, 20, 'read'));
+  assert.equal(store.getSnapshot().replay.undo.length, 1);
+  assert.equal(store.getSnapshot().replay.undo[0].editCount, 2);
+  assert.ok(store.undo());
+  store.change({ kind: 'textScale', before: 1.1, after: 1.5 });
+  assert.equal(store.getSnapshot().replay.redo.length, 1);
+  assert.ok(store.redo());
+  await store.flush();
+  const reopened = new ChangeStore(repository, metadata);
+  await reopened.load();
+  const snapshot = reopened.getSnapshot();
+  assert.equal(snapshot.replay.state.textScale, 1.5);
+  assert.equal(snapshot.replay.state.values['read:2026-10-04'], 20);
+  assert.equal(snapshot.replay.undo.length, 1);
+  const text = await encodeArchive(
+    snapshot.events,
+    '2026-10-05T03:00:00.000Z',
+    digest,
+  );
+  assert.equal(JSON.parse(text).version, 8);
+  const decoded = await decodeArchive(text, digest);
+  assert.deepEqual(decoded.events, snapshot.events);
+  assert.deepEqual(decoded.replay, snapshot.replay);
+});
+
+test('text-size event and projection roll back atomically; retry saves once', async (t) => {
+  let fail = false;
+  const { store, repository, raw } = await fixture(t, (sql) => {
+    if (fail && sql.startsWith('INSERT INTO current_state')) {
+      fail = false;
+      throw new Error('Unavailable');
+    }
+  });
+  fail = true;
+  store.change({ kind: 'textScale', before: 1, after: 0.85 });
+  await assert.rejects(store.flush());
+  assert.equal(
+    raw.prepare('SELECT COUNT(*) AS count FROM changes').get().count,
+    1,
+  );
+  assert.equal((await repository.load()).replay.state.textScale, undefined);
+  assert.ok(store.getSnapshot().error);
+  await store.retry();
+  await store.flush();
+  const saved = await repository.load();
+  assert.equal(saved.events.length, 2);
+  assert.equal(saved.replay.state.textScale, 0.85);
+});
+
+test('text size requires v8 preference events, valid steps and before-values; logs cannot downgrade', () => {
+  const initial = initialize();
+  const event = {
+    ...metadata(2),
+    version: 8,
+    type: 'preference',
+    change: { kind: 'textScale', before: 1, after: 1.2 },
+  };
+  assert.equal(replayEvents([initial, event]).replay.state.textScale, 1.2);
+  for (let version = 1; version <= 7; version++) {
+    assert.throws(() => replayEvents([initial, { ...event, version }]));
+  }
+  for (const after of [0, 0.8, 1.025, 1.55, NaN, Infinity, '1.2', null]) {
+    assert.throws(() =>
+      replayEvents([initial, { ...event, change: { ...event.change, after } }]),
+    );
+  }
+  assert.throws(() =>
+    replayEvents([
+      initial,
+      { ...event, change: { ...event.change, before: 1.1 } },
+    ]),
+  );
+  assert.throws(() =>
+    replayEvents([initial, { ...event, type: 'change', groupId: event.id }]),
+  );
+  assert.throws(() =>
+    replayEvents([
+      initial,
+      event,
+      {
+        ...metadata(3),
+        version: 7,
+        type: 'preference',
+        change: { kind: 'haptics', before: true, after: false },
+      },
+    ]),
+  );
+});
+
+test('v1–v7 backups accept v8 text size without rewriting their events, entries or Undo/Redo', async () => {
+  const { readFileSync } = await import('node:fs');
+  for (let version = 1; version <= 7; version++) {
+    const { events, replay } = await decodeArchive(
+      readFileSync(
+        new URL(`../docs/examples/storage-v${version}.json`, import.meta.url),
+        'utf8',
+      ),
+      digest,
+    );
+    const updated = [
+      ...events,
+      {
+        ...metadata(events.length + 1),
+        version: 8,
+        type: 'preference',
+        change: { kind: 'textScale', before: 1, after: 0.9 },
+      },
+    ];
+    const decoded = await decodeArchive(
+      await encodeArchive(updated, '2026-10-05T03:00:00.000Z', digest),
+      digest,
+    );
+    assert.deepEqual(decoded.events.slice(0, -1), events);
+    assert.deepEqual(decoded.replay.state, { ...replay.state, textScale: 0.9 });
+    assert.deepEqual(decoded.replay.undo, replay.undo);
+    assert.deepEqual(decoded.replay.redo, replay.redo);
+  }
+  const documented = await decodeArchive(
+    readFileSync(
+      new URL('../docs/examples/storage-v8.json', import.meta.url),
+      'utf8',
+    ),
+    digest,
+  );
+  const v7 = await decodeArchive(
+    readFileSync(
+      new URL('../docs/examples/storage-v7.json', import.meta.url),
+      'utf8',
+    ),
+    digest,
+  );
+  assert.deepEqual(documented.events.slice(0, -1), v7.events);
+  assert.equal(documented.replay.state.textScale, 1.2);
+  assert.deepEqual(documented.replay.undo, v7.replay.undo);
 });

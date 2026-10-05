@@ -13,6 +13,8 @@ import {
   type DOMImperativeFactory,
   type DOMProps,
 } from 'expo/dom';
+import { EditorIcon } from './richText/EditorIcon';
+import type { EditorIconName } from './editorIconPaths';
 import { TextSelection } from '@tiptap/pm/state';
 import { selectedHighlight, selectedLink } from './richText/selection';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
@@ -288,7 +290,7 @@ export default function RichDescription({
       }}
       style={
         {
-          '--note-size': `${17 * Math.max(1, fontScale)}px`,
+          '--note-size': `${17 * fontScale}px`,
           '--note-colour': colour,
           '--note-link': contrastOnBlack(colour) >= 4.5 ? colour : '#B7DCCF',
         } as CSSProperties
@@ -312,7 +314,7 @@ export default function RichDescription({
         >
           {tool(
             'Undo description edit',
-            '↶',
+            <EditorIcon name="undo" />,
             () => {
               setMenu(null);
               editor.chain().focus().undo().run();
@@ -322,7 +324,7 @@ export default function RichDescription({
           )}
           {tool(
             'Redo description edit',
-            '↷',
+            <EditorIcon name="redo" />,
             () => {
               setMenu(null);
               editor.chain().focus().redo().run();
@@ -333,7 +335,7 @@ export default function RichDescription({
           <span className="separator" />
           {tool(
             'Bold',
-            'B',
+            <EditorIcon name="bold" />,
             () =>
               formatDescription(editor, () => {
                 editor.chain().focus().toggleBold().run();
@@ -342,7 +344,7 @@ export default function RichDescription({
           )}
           {tool(
             'Italic',
-            '𝘐',
+            <EditorIcon name="italic" />,
             () =>
               formatDescription(editor, () => {
                 editor.chain().focus().toggleItalic().run();
@@ -351,7 +353,7 @@ export default function RichDescription({
           )}
           {tool(
             'Text and list options',
-            'Aa',
+            <EditorIcon name="text" />,
             () => setMenu(menu === 'text' ? null : 'text'),
             menu === 'text',
             false,
@@ -359,14 +361,14 @@ export default function RichDescription({
           )}
           {tool(
             'Add or edit link',
-            '↗',
+            <EditorIcon name="link" />,
             openLink,
             state?.link || menu === 'link',
           )}
           {tool(
             `Highlight colours, ${highlightLabel}`,
             <span className="highlight-symbol" aria-hidden="true">
-              ◒
+              <EditorIcon name="highlight" />
               <span
                 className={`highlight-indicator${highlight?.mixed ? ' mixed' : ''}`}
                 style={{
@@ -501,6 +503,22 @@ export default function RichDescription({
                 onPointerDown={(event) => event.preventDefault()}
                 onClick={() => textAction(action as () => void)}
               >
+                <EditorIcon
+                  name={
+                    (
+                      {
+                        Text: 'text',
+                        Heading: 'heading',
+                        Bullets: 'bullets',
+                        'Numbered list': 'numbered',
+                        Quote: 'quote',
+                        Strikethrough: 'strike',
+                        Code: 'code',
+                        'Clear formatting': 'clear',
+                      } as Record<string, EditorIconName>
+                    )[String(label)]
+                  }
+                />
                 {String(label)}
               </button>
             ))}

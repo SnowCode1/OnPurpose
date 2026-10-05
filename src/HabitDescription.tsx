@@ -1,11 +1,6 @@
+import { Text, useAppWindowDimensions } from './Typography';
 import { useMemo, useState } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { DescriptionText } from './DescriptionText';
 import { descriptionPreview } from './description';
@@ -27,7 +22,7 @@ export function HabitDescription({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [height, setHeight] = useState(0);
-  const { fontScale } = useWindowDimensions();
+  const { fontScale } = useAppWindowDimensions();
   const preview = useMemo(
     () => descriptionPreview(description ?? '', expanded),
     [description, expanded],

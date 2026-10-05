@@ -195,7 +195,7 @@ and incremental history are desired scope, not excluded candidates.
 | Midnight cutoff, late-night logging, backdating, and travel?           | Local midnight implemented; later cutoff/travel policy pending     |
 | Comments on a habit, a day, a particular entry, or multiple kinds?     | Comments desired; attachment semantics open                        |
 | Which app changes enter the history; how do deletion and undo work?    | Active habit actions; preferences excluded; deletion/erasure open  |
-| Export/import format, backup location, and cross-device sync?          | Version-6 JSON backup; v1–v5 import retained; sync deferred        |
+| Export/import format, backup location, and cross-device sync?          | Version-8 JSON backup; v1–v7 import retained; sync deferred        |
 | Any reminders or widgets required for version one?                     | Open                                                               |
 | Free, paid, donations, or another model?                               | Open                                                               |
 | Licence and copyright holder?                                          | Open; choose before public release                                 |
@@ -223,6 +223,13 @@ and incremental history are desired scope, not excluded candidates.
 
 Items 3–5 are suggestions, not approved product requirements. Keep further ideas
 connected to reducing cognitive friction rather than adding screen clutter.
+
+## Additional confirmed refinements
+
+- One Settings text-size control applies throughout the app, including descriptions
+  and their editor. Keep system accessibility scaling and adapt spacing accordingly.
+- Before/After comparisons provide Next change to find changed passages quickly.
+- Description editing uses consistent outline controls from an existing icon pack.
 
 ## Decision discipline
 

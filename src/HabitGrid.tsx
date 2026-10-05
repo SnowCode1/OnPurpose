@@ -1,3 +1,4 @@
+import { Text, useAppWindowDimensions } from './Typography';
 import type { ColumnSpacing } from './displayPreferences';
 import { gridRowHeight, type RowSpacing } from './rowSpacing';
 import {
@@ -18,8 +19,6 @@ import {
   type PressableProps,
   ScrollView,
   StyleSheet,
-  Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { type GridDay, createGridDayCache, calendarDay } from './calendar';
@@ -92,7 +91,7 @@ export const HabitGrid = memo(function HabitGrid({
   onAddHabit,
 }: Props) {
   recordPerformance('grid.container.render');
-  const { fontScale } = useWindowDimensions();
+  const { fontScale } = useAppWindowDimensions();
   const [width, setWidth] = useState(0);
   const [dayCount, setDayCount] = useState(90);
   const [futureCount, setFutureCount] = useState(0);

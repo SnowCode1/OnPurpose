@@ -1,3 +1,4 @@
+import { Text, useAppWindowDimensions } from './Typography';
 import { HabitDescription } from './HabitDescription';
 import { weekDayOrder, type WeekStart } from './displayPreferences';
 import { useStatsDismissal } from './useStatsDismissal';
@@ -6,7 +7,6 @@ import {
   BackHandler,
   Pressable,
   StyleSheet,
-  Text,
   View,
   type TextProps,
 } from 'react-native';
@@ -261,6 +261,8 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   onCellPress: (habit: Habit, day: EntryDay) => void;
   editable: boolean;
 }) {
+  const { fontScale } = useAppWindowDimensions();
+  const calendarHeight = Math.max(44, Math.ceil(44 * fontScale));
   const dismissal = useStatsDismissal(onBack);
   const [range, setRange] = useState<StatsRange>(30);
   const [month, setMonth] = useState(today.slice(0, 7));
@@ -395,7 +397,12 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
             <Text style={styles.eyebrow}>
               {stats.numeric ? 'TOTAL RECORDED' : 'COMPLETION RATE'}
             </Text>
-            <Text style={[styles.hero, { color: habit.color }]}>
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.65}
+              style={[styles.hero, { color: habit.color }]}
+            >
               {stats.numeric
                 ? format(stats.recorded ? stats.total : null)
                 : stats.rate === null
@@ -493,7 +500,14 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
                   accessibilityLabel={`${label}, ${day.value === null ? 'no records' : `${format(day.value)}${stats.numeric ? ` ${unit}` : '%'}`}`}
                   style={styles.weekday}
                 >
-                  <Text style={[styles.small, { width: 34 }]}>{label}</Text>
+                  <Text
+                    style={[
+                      styles.small,
+                      { width: 34 * Math.max(1, fontScale) },
+                    ]}
+                  >
+                    {label}
+                  </Text>
                   <View style={styles.track}>
                     <View
                       style={{
@@ -562,12 +576,21 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
             </View>
             <View style={styles.calendar}>
               {weekDays.map((day) => (
-                <Text key={day} style={styles.calendarHeading}>
+                <Text
+                  key={day}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.65}
+                  style={styles.calendarHeading}
+                >
                   {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][day]}
                 </Text>
               ))}
               {Array.from({ length: calendar.padding }, (_, index) => (
-                <View key={`blank-${index}`} style={styles.day} />
+                <View
+                  key={`blank-${index}`}
+                  style={[styles.day, { height: calendarHeight }]}
+                />
               ))}
               {calendar.days.map((day) => {
                 const value = values[`${habit.id}:${day}`];
@@ -599,7 +622,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
                     onPress={() => onCellPress(habit, date)}
                     style={({ pressed }) => [
                       styles.day,
-                      { opacity: pressed ? 0.6 : 1 },
+                      { minHeight: calendarHeight, opacity: pressed ? 0.6 : 1 },
                     ]}
                   >
                     <View
@@ -611,6 +634,9 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
                       ]}
                     >
                       <Text
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.65}
                         style={{
                           color: recorded
                             ? checkmarkColor(background)
