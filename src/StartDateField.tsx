@@ -1,4 +1,4 @@
-import { Text } from './Typography';
+import { Text, TextInput } from './Typography';
 import { useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -8,11 +8,15 @@ export type StartDateFieldProps = {
   value: string;
   onChange: (value: string) => void;
   colour: string;
+  label?: string;
+  help?: string;
 };
 export function StartDateField({
   value,
   onChange,
   colour,
+  label = 'Start date',
+  help = 'Choose an earlier date to fill in old records. Statistics begin here.',
 }: StartDateFieldProps) {
   const [open, setOpen] = useState(false);
   const date = new Date(`${value}T12:00:00`);
@@ -27,10 +31,28 @@ export function StartDateField({
           gap: 8,
         }}
       >
-        <Text style={{ color: '#AAAAAA', fontSize: 12 }}>Start date</Text>
-        {Platform.OS === 'ios' || open ? (
+        <Text style={{ color: '#AAAAAA', fontSize: 12 }}>{label}</Text>
+        {Platform.OS === 'web' ? (
+          <TextInput
+            accessibilityLabel={label}
+            value={value}
+            onChangeText={onChange}
+            maxLength={10}
+            placeholder="YYYY-MM-DD"
+            style={{
+              color: colour,
+              minHeight: 44,
+              paddingHorizontal: 12,
+              fontSize: 15,
+              backgroundColor: '#1C1C1C',
+              borderRadius: 10,
+            }}
+          />
+        ) : Platform.OS === 'ios' || open ? (
           <DateTimePicker
-            accessibilityLabel="Habit start date"
+            accessibilityLabel={
+              label === 'Start date' ? 'Habit start date' : label
+            }
             value={date}
             mode="date"
             display={Platform.OS === 'ios' ? 'compact' : 'default'}
@@ -46,7 +68,7 @@ export function StartDateField({
         ) : (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Start date, ${date.toLocaleDateString()}`}
+            accessibilityLabel={`${label}, ${date.toLocaleDateString()}`}
             onPress={() => setOpen(true)}
             style={{
               minHeight: 44,
@@ -66,9 +88,11 @@ export function StartDateField({
           </Pressable>
         )}
       </View>
-      <Text style={{ color: '#999999', fontSize: 12, lineHeight: 18 }}>
-        Choose an earlier date to fill in old records. Statistics begin here.
-      </Text>
+      {!!help && (
+        <Text style={{ color: '#999999', fontSize: 12, lineHeight: 18 }}>
+          {help}
+        </Text>
+      )}
     </View>
   );
 }

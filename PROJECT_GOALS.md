@@ -1,6 +1,6 @@
 # OnPurpose — project goals
 
-Status: living product brief. Last updated: 5 October 2026.
+Status: living product brief. Last updated: 6 October 2026.
 “OnPurpose” is a working name, not a final brand or reserved App Store name.
 
 ## Primary goal
@@ -91,6 +91,12 @@ and uncertainty about whether something was saved.
   by all calendar days in the selected period since the start, including blanks.
 - Statistics comes up from the bottom and dismisses with the same native downward
   swipe as History/Settings. Preserve a direct Close button and full statistics content.
+- Define per-habit success conditions for all four types, separate from recording.
+  Support numeric comparisons, category Any/All/count/exclusion rules, literal text
+  matching and selected weekdays. Use an editable effective-dated goal timeline: new
+  goals default to Today, preserving earlier goals and results; backdated corrections
+  are explicit and undoable. Share evaluation across grid, statistics and Hide completed
+  today. Keep numeric averages based on all calendar days. See [GOALS.md](docs/GOALS.md).
 - Offer saved row- and column-spacing settings.
 - Develop without owning a Mac; use the physical iPhone for actual testing.
 - Maintain project goals, agent guidance including CLAUDE.md, and a docs folder.

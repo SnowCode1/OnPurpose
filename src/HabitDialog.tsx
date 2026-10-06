@@ -1,4 +1,7 @@
 import { CategoryEditor } from './CategoryEditor';
+import { HabitGoalsEditor } from './HabitGoalsEditor';
+import { GoalSummary } from './GoalSummary';
+import { validGoalTimeline, type HabitGoal } from './habitGoals';
 import { TextInput, Text, useAppWindowDimensions } from './Typography';
 import { completeDescriptionDraft } from './storage/descriptionBookmarks';
 import { DescriptionEditor } from './DescriptionEditor';
@@ -34,6 +37,7 @@ export function HabitDialog({
   temporary,
   habit,
   initialStartDate,
+  today,
   mode,
   Heading,
   onClose,
@@ -44,6 +48,7 @@ export function HabitDialog({
   temporary: boolean;
   habit: Habit;
   initialStartDate: string;
+  today: string;
   mode: HabitDialogMode;
   Heading: ComponentType<TextProps>;
   onClose: () => void;
@@ -77,6 +82,8 @@ export function HabitDialog({
   const numeric = type === 'number';
   const [categories, setCategories] = useState(habit.categories ?? []);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [goals, setGoals] = useState<HabitGoal[] | undefined>(habit.goals);
+  const [goalsOpen, setGoalsOpen] = useState(false);
   const [colour, setColour] = useState(habit.color),
     [picker, setPicker] = useState(false),
     [pickerDraft, setPickerDraft] = useState(habit.color);
@@ -85,11 +92,23 @@ export function HabitDialog({
   const [iconDraft, setIconDraft] = useState<HabitIcon | undefined | null>(
     habit.icon,
   );
+  const goalHabit: Habit = {
+    ...habit,
+    name: name.trim() || 'New habit',
+    color: colour,
+    icon,
+    startDate,
+    type,
+    unit: numeric ? unit : undefined,
+    categories: type === 'categorical' ? categories : undefined,
+    goals,
+  };
   const valid =
     validDate(startDate) &&
     !!name.trim() &&
     name.trim().length <= 200 &&
     unit.trim().length <= 80 &&
+    (!goals || validGoalTimeline(goals, goalHabit)) &&
     (type !== 'categorical' ||
       (categories.length > 0 && categories.some((option) => !option.archived)));
   const editing = mode === 'edit' || mode === 'create';
@@ -99,6 +118,7 @@ export function HabitDialog({
       icon: _icon,
       description: _description,
       categories: _categories,
+      goals: _goals,
       ...base
     } = habit;
     const after: Habit = {
@@ -113,6 +133,7 @@ export function HabitDialog({
       ...(numeric && unit.trim() ? { unit: unit.trim() } : {}),
       type,
       ...(type === 'categorical' ? { categories } : {}),
+      ...(goals ? { goals } : {}),
     };
     if (onSave(after)) {
       void completeDescriptionDraft(
@@ -227,7 +248,11 @@ export function HabitDialog({
                             accessibilityState={{
                               selected: type === value,
                             }}
-                            onPress={() => setType(value)}
+                            onPress={() => {
+                              if (value === type) return;
+                              setType(value);
+                              setGoals(undefined);
+                            }}
                             style={[
                               styles.type,
                               {
@@ -300,6 +325,15 @@ export function HabitDialog({
                       />
                     </View>
                   )}
+                  <GoalSummary
+                    habit={goalHabit}
+                    date={mode === 'create' ? startDate : today}
+                    disabled={
+                      !editable ||
+                      (type === 'categorical' && !categories.length)
+                    }
+                    onPress={() => setGoalsOpen(true)}
+                  />
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={
@@ -415,6 +449,20 @@ export function HabitDialog({
             onApply={(next) => {
               setCategories(next);
               setCategoriesOpen(false);
+            }}
+          />
+        )}
+        {goalsOpen && (
+          <HabitGoalsEditor
+            habit={goalHabit}
+            today={today}
+            initialDate={mode === 'create' ? startDate : today}
+            editable={editable}
+            Heading={Heading}
+            onClose={() => setGoalsOpen(false)}
+            onApply={(next) => {
+              setGoals(next);
+              return true;
             }}
           />
         )}

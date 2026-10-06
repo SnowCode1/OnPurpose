@@ -1,6 +1,10 @@
 import type { EntryValues } from './entries.ts';
 import type { WeekStart } from './displayPreferences.ts';
 import { isNumericHabit, type Habit } from './habits.ts';
+import {
+  completionStatistics,
+  summarizeCompletion,
+} from './completionStatistics.ts';
 import type { StoredEvent } from './storage/model.ts';
 
 const DAY = 86400000;
@@ -94,6 +98,13 @@ export function habitStatistics(
   );
   const start =
     range === 'all' ? Math.min(today, trackingStart) : today - range + 1;
+  const completion = completionStatistics(
+    habit,
+    values,
+    dateKey(trackingStart),
+    todayKey,
+    dateKey(start),
+  );
   function summarize(from: number, to: number, weekday?: number) {
     const matching = records.filter(
       (item) =>
@@ -107,14 +118,26 @@ export function habitStatistics(
       Math.min(to, today),
       weekday,
     );
-    const successes = matching.filter((item) => item.value === 1).length;
+    const goalSummary = summarizeCompletion(
+      completion,
+      dateKey(from),
+      dateKey(to),
+      weekday,
+    );
+    const successes = numeric
+      ? matching.filter((item) => item.value === 1).length
+      : goalSummary.successes;
     const total = matching.reduce((sum, item) => sum + item.value, 0);
     return {
       recorded: matching.length,
-      eligible,
+      eligible: numeric ? eligible : goalSummary.eligible,
       successes,
       total,
-      rate: eligible ? successes / eligible : null,
+      rate: numeric
+        ? eligible
+          ? successes / eligible
+          : null
+        : goalSummary.rate,
       average: eligible ? total / eligible : null,
       best: matching.length
         ? matching.reduce((best, item) => Math.max(best, item.value), 0)
@@ -184,6 +207,7 @@ export function habitStatistics(
     streak++;
   return {
     numeric,
+    completion,
     start: dateKey(start),
     today: todayKey,
     trackingStart: dateKey(
@@ -194,8 +218,9 @@ export function habitStatistics(
     buckets,
     bucketDays,
     weekday,
-    streak,
-    bestStreak,
+    streak: numeric && !completion.active ? streak : completion.streak,
+    bestStreak:
+      numeric && !completion.active ? bestStreak : completion.bestStreak,
     allRecorded: records.length,
     lastRecorded: records.length ? dateKey(records.at(-1)!.day) : null,
   };

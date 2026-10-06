@@ -93,7 +93,7 @@ The requested preset icon update uses normal undoable edits in
   Do not defer durable writes, unmount the grid, or rebuild hidden day lists on
   every spacing/text-size choice.
 - `src/rowSpacing.ts` owns saved Compact/Standard/Roomy geometry; preserve font scaling and measured row heights.
-- `src/StartDateField.tsx` owns the native draft date picker; existing dates remain inferred until edited. Explicit start dates bound statistics without deleting entries. New edits/exports use v12, retaining v1–v10 replay.
+- `src/StartDateField.tsx` owns the native draft date picker; existing dates remain inferred until edited. Explicit start dates bound statistics without deleting entries. New edits/exports use v12, retaining v1–v11 replay.
 - Statistics uses the same native pageSheet/slide/swipe dismissal as History and
   Settings; UIKit owns its gesture. `App.tsx` nests numeric, habit, description
   and version dialogs inside the statistics presentation and preserves visible
@@ -133,7 +133,7 @@ The requested preset icon update uses normal undoable edits in
 
 ## UI and accessibility
 
-Keep completed rows in place by default. Optional Hide completed today filters checkbox-complete rows at Today; numeric completion conditions are deferred. Preserve Show completed and full rows when browsing other dates. Avoid gesture-only essential actions. Expose
+Keep completed rows in place by default. Optional Hide completed today filters rows meeting their effective-dated goals at Today. Preserve Show completed and full rows when browsing other dates. Avoid gesture-only essential actions. Expose
 checkbox state and meaningful labels to accessibility services. Permit font
 scaling, respect safe areas, and allow scrolling when content needs it.
 Do not trade reliability or readable controls for the three-second aspiration.
@@ -174,10 +174,10 @@ up. Do not claim App Store readiness from a successful JavaScript bundle export.
 Preserve the Expo template notice in `docs/licenses/EXPO_TEMPLATE_LICENSE.txt`.
 Project licence, pricing, final bundle identifier, and final brand remain open.
 
-`src/habitCompletion.ts` centralizes completion rules; do not infer numeric
-completion from a recorded total before per-habit conditions are defined.
+`src/habitCompletion.ts` centralizes completion rules; do not infer completion
+from a record without an explicit rule; use its effective date and keep blank distinct from zero.
 `completedHabitsSelection` uses a primitive today mask; disabled filtering,
-numeric edits and save acknowledgements must not rerender the grid container.
+non-crossing numeric edits and save acknowledgements must not rerender the grid container.
 `displayedHabitOrder` fills only displayed slots and preserves hidden/archived
 positions while saving a full undoable permutation. `hideCompleted` is a v9
 preference outside History/Undo, defaulting to false for older logs.
@@ -213,22 +213,35 @@ stable category IDs/labels/short labels and archives options without erasing
 records. `DailyRecordDialog.tsx` applies text/multiple selections only on Done;
 Close cancels. `RecordStatsScreen.tsx` and pure `recordStatistics.ts` show logging
 counts/streaks, category frequency, editable calendar and virtualized entries,
-without claiming completion. `habitCompletion.ts` still completes only checked
-checkboxes until per-habit conditions are defined. `sampleRecords.ts` appends
+without claiming completion. `habitCompletion.ts` delegates all four types to effective-dated conditions in
+`habitGoals.ts`; absent non-checkbox goals remain Track only. `sampleRecords.ts` appends
 fictional Workout/Highlight examples only to the isolated sample store, leaving
 the original v7 sample fixture and real presets untouched. Main log/export v12
-retains unchanged v1–v10 prefixes; array preconditions/grouping/inverses compare
+retains unchanged v1–v11 prefixes; array preconditions/grouping/inverses compare
 values rather than references. SQL stays at schema 1. Grid text/category cells
 use readable 12-point text with app/OS scaling, native tail truncation and
 geometry-based 1–3 lines from `gridEntryText.ts`. Only numeric cells may autosize;
 our iOS renderer ignores the advertised `minimumFontScale` floor.
 Do not infer native text fitting from browser captures. Comments remain deferred.
 
+`HabitGoalsEditor.tsx` owns the native Goal sheet, timeline and draft navigation;
+`GoalVersionForm.tsx` owns grouped condition/repeat/date inputs and local tests.
+`goalEditing.ts` validates incomplete drafts without weakening storage validation.
+`GoalSummary.tsx` is the shared Goal entry point. Open the form directly, preserve
+drafts while browsing the timeline, confirm before replacing dirty drafts, and do
+not persist unchanged default goals. Checkbox cells use the same completion tint
+as the other types. The enclosing habit editor passes its draft identity and start date. Read `docs/GOALS.md` before
+changing completion/statistics. Preserve dated rules/schedules, stable version and
+category IDs, earlier-period confirmation, ordinary undoable definition edits,
+unchanged values and v1–v10 prefixes. `completionStatistics.ts` counts scheduled
+opportunities without allocating lifetime calendars; numeric averages still use
+all calendar days. `dev/sampleGoals.ts` adds fictional goals only to the isolated
+sample log. Weekly quotas, skipping and manual overrides remain deferred.
+
 Archived habit Delete requires a named native confirmation and uses the v12
 `deleteHabit` snapshot action through `ChangeStore.deleteArchivedHabit`.
 Undo restores the full definition, every daily record and archived position in
 one atomic write. Preserve append-only events, local note drafts/bookmarks,
-legacy v1–v10 replay and schema 1. This is recoverable deletion, not permanent
+legacy v1–v11 replay and schema 1. This is recoverable deletion, not permanent
 erasure. `historyDisplayState` supplies deleted names/types only for History
-labels; description restore still requires the real current habit. Version 11
-is reserved for separate work and is not implemented in this change.
+labels; description restore still requires the real current habit.

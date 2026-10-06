@@ -1296,12 +1296,12 @@ shows Retry and blocks changes appropriately. Preferences remain outside Undo.
 
 ## Archived-habit deletion (6 October 2026)
 
-- Archive a habit with several recorded days, notes. In Settings →
+- Archive a habit with several recorded days, notes and goals. In Settings →
   Archived habits, check separate Restore/Delete buttons. Delete must name that
   habit and count in the native confirmation. Cancel keeps the row and values.
 - Confirm Delete: that row disappears, other rows retain order, and saving remains
   visible. History shows a named Habit deleted action and earlier named entries.
-  Undo returns the habit with its full notes/entries to its archived slot;
+  Undo returns the habit with its full notes/goals/entries to its archived slot;
   Restore returns it to the grid. Redo deletion removes it again.
 - Reload after Delete and after Undo, then repeat. Test checkbox, numeric zero,
   multiple categories, free text, no recorded days, and the last remaining habit.
@@ -1329,3 +1329,69 @@ unfinished goal feature; see the commit validation reported with this change.
 Temporary browser/profile/layout server were cleaned up. The phone preview receiver
 remains running in the founder's VS Code terminal. The new phone capture had not
 arrived; native confirmation, layout and accessibility remain phone checks.
+
+## Success goals and timeline (6 October 2026)
+
+The goal suite exercises numerical boundaries/zero versus absence, categorical
+multi-selection/exclusions, normalized literal text, dates and policy changes,
+weekday opportunities/streak grace, numeric calendar averages, category identity,
+strict malformed timeline validation and threshold-only grid notification. Real
+Node SQLite tests cover serialized changes, reopening, Undo/Redo, export/restore
+and an atomic pre-restore copy. The v11 fixture extends the exact unchanged v10
+prefix; memory sample goals preserve original preset events.
+
+Browser interaction checks cover Statistics → Success, new target from Today,
+retained old versions, canceled version drafts, reload persistence, category
+All/exclusion/weekday controls and test values, phrase matching, staged creation
+and parent Close cancellation. Portrait and landscape layouts are inspected.
+These checks do not prove iPhone gesture, keyboard or performance behaviour.
+
+Final automated pass: `npm run check`, all 259 tests, iOS bundle export and web
+export passed under bounded memory scopes. Extended browser checks also covered
+rejecting/accepting earlier-result confirmation, a future version retaining the
+current Today version, and 150% text size. Release bundle inspection found no
+sample-goal identifiers/helper or DevPreviewCapture module. Phone acceptance below
+remains pending; these are not App Store or native interaction acceptance claims.
+
+Phone acceptance remains pending:
+
+- Read's sample timeline starts with 15 minutes, changes to 30 fourteen days ago;
+  add 35 from Today and confirm older results/values remain intact.
+- Undo/Redo the goal after reloading real data; export/restore retains every
+  goal version and weekday schedule without altering dated values.
+- Edit an earlier version, cancel its confirmation, then accept a correction;
+  only that policy period changes evaluation. Remove/Undo restores it.
+- Compare at-most/exactly-zero with a blank day, and test category All/count/
+  exclusions, case/whitespace in text, and Track only.
+- Off-day records remain editable; off-days bridge success streaks. Hide completed
+  today respects explicit success goals and Show completed allows corrections.
+- Test nested sheets, Apply from date picker, Done with keyboard visible,
+  VoiceOver labels, portrait/landscape and 150% plus system text scaling.
+
+## Checkbox feedback and goal editor refinement (6 October 2026)
+
+The two phone previews exposed inconsistent completion feedback: checked checkbox
+cells lacked the tint already used by other completed habits, and the goal test
+looked like static text. All four types now share completion tint; the optional
+Try a value panel has a real, labelled checkbox and a separate result.
+
+`npm run check`, all 262 tests, and single-worker iOS/web exports pass within a
+2 GiB memory/no-swap scope. New focused coverage exercises numeric draft parsing
+and specific validation messages, plus checkbox scheduling through SQLite reopen,
+Undo/Redo, completion filtering and statistics. Old log prefixes remain unchanged.
+
+An isolated browser with synthetic data verifies check/uncheck tint, the test
+checkbox, unchanged Done without a new event, schedule edits/Undo, Hide completed
+and Show completed, direct editing, timeline draft retention and discard
+confirmation, numeric range errors, category count/exclusions, text matching,
+reload, historical correction confirmation and preserving Today when scheduling
+a future version. Portrait, landscape and 150% text layouts were captured; the
+final checkbox, category and large-text views were visually inspected. A separate
+creation flow verifies draft habit identity, staged goals, parent Close cancellation,
+parent Done persistence and retaining goals when tapping the already-selected type.
+These checks do not establish native iPhone presentation, keyboard or VoiceOver behaviour.
+
+Phone follow-up: reload, toggle a checkbox, then open its Goal and Try a value.
+Confirm both feedback paths are clear. Change repeat days, visit Goal timeline
+and Back, then save and Undo. Check the numeric/category editors and the native
+Apply from date picker with the keyboard visible. Close must cancel drafts.

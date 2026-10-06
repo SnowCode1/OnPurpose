@@ -1,0 +1,100 @@
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text } from './Typography';
+import type { Habit } from './habits';
+import {
+  allWeekdays,
+  defaultSuccessRule,
+  goalAt,
+  ruleSummary,
+  scheduleSummary,
+} from './habitGoals';
+import { Icon } from './Icon';
+import { habitType } from './habits';
+import { colorOnBlack } from './colors';
+
+export function GoalSummary({
+  habit,
+  date,
+  onPress,
+  disabled = false,
+}: {
+  habit: Habit;
+  date: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  const goal = goalAt(habit, date),
+    summary = ruleSummary(habit, goal?.rule ?? defaultSuccessRule(habit));
+  const schedule = scheduleSummary(goal?.weekdays ?? allWeekdays);
+  const next = habit.goals?.find((version) => version.from > date);
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Success goal, ${summary}, ${schedule}`}
+      accessibilityHint="Edit the goal, repeat days or starting date; the timeline is available inside"
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.row,
+        { opacity: disabled ? 0.4 : pressed ? 0.6 : 1 },
+      ]}
+    >
+      <View
+        style={[
+          styles.symbol,
+          { backgroundColor: colorOnBlack(habit.color, 0.12) },
+        ]}
+      >
+        <Icon
+          name={
+            habitType(habit) === 'checkbox'
+              ? 'checked'
+              : habitType(habit) === 'number'
+                ? 'number'
+                : habitType(habit) === 'categorical'
+                  ? 'categories'
+                  : 'text'
+          }
+          color={habit.color}
+          size={20}
+        />
+      </View>
+      <View style={{ flex: 1, gap: 3 }}>
+        <Text style={styles.label}>Goal</Text>
+        <Text numberOfLines={2} style={styles.value}>
+          {summary}
+        </Text>
+        <Text style={styles.note}>
+          {schedule}
+          {next
+            ? ` · changes ${new Date(`${next.from}T12:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short', ...(next.from.slice(0, 4) !== date.slice(0, 4) ? { year: 'numeric' } : {}) })}`
+            : ''}
+        </Text>
+      </View>
+      <View style={{ transform: [{ rotate: '-90deg' }] }}>
+        <Icon name="chevron" size={16} color="#777777" />
+      </View>
+    </Pressable>
+  );
+}
+const styles = StyleSheet.create({
+  row: {
+    minHeight: 60,
+    padding: 12,
+    backgroundColor: '#151515',
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  label: { fontSize: 12, color: '#999999' },
+  symbol: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  value: { fontSize: 15, color: '#DDDDDD' },
+  note: { fontSize: 12, color: '#888888' },
+});

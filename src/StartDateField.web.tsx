@@ -7,15 +7,19 @@ export function StartDateField({
   value,
   onChange,
   colour,
+  label = 'Start date',
+  help = 'Choose an earlier date to fill in old records. Statistics begin here.',
 }: StartDateFieldProps) {
   const valid = validDate(value);
   return (
     <View style={{ gap: 8 }}>
       <Text style={{ color: '#AAAAAA', fontSize: 12 }}>
-        Start date · YYYY-MM-DD
+        {label} · YYYY-MM-DD
       </Text>
       <TextInput
-        accessibilityLabel="Habit start date, YYYY-MM-DD"
+        accessibilityLabel={
+          label === 'Start date' ? 'Habit start date, YYYY-MM-DD' : label
+        }
         value={value}
         onChangeText={onChange}
         maxLength={10}
@@ -30,17 +34,17 @@ export function StartDateField({
           fontSize: 17,
         }}
       />
-      <Text
-        style={{
-          color: valid ? '#999999' : '#F0A798',
-          fontSize: 12,
-          lineHeight: 18,
-        }}
-      >
-        {valid
-          ? 'Choose an earlier date to fill in old records. Statistics begin here.'
-          : 'Enter a valid date, for example 2026-10-04.'}
-      </Text>
+      {(!valid || !!help) && (
+        <Text
+          style={{
+            color: valid ? '#999999' : '#F0A798',
+            fontSize: 12,
+            lineHeight: 18,
+          }}
+        >
+          {valid ? help : 'Enter a valid date, for example 2026-10-04.'}
+        </Text>
+      )}
     </View>
   );
 }

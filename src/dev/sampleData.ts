@@ -1,4 +1,5 @@
 import { withSampleRecords } from './sampleRecords.ts';
+import { withSampleGoals } from './sampleGoals.ts';
 import { sampleDescriptions } from './sampleDescriptions.ts';
 import { calendarDay, localDateKey } from '../calendar.ts';
 import { demoHabits, isNumericHabit } from '../habits.ts';
@@ -114,7 +115,7 @@ export function createSampleEvents(today: string): StoredEvent[] {
 // stats and Undo/Redo code. No SQLite, files, localStorage or backup replacement.
 export async function createSampleStore(today: string): Promise<ChangeStore> {
   let { events, replay } = replayEvents(
-    withSampleRecords(createSampleEvents(today), today),
+    withSampleGoals(withSampleRecords(createSampleEvents(today), today), today),
   );
   const repository: Repository = {
     async load() {

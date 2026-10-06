@@ -57,6 +57,7 @@ export async function decodeArchive(text: string, digest: Digest) {
       archive.version !== 8 &&
       archive.version !== 9 &&
       archive.version !== 10 &&
+      archive.version !== 11 &&
       archive.version !== 12)
   )
     throw new Error('Unsupported backup format or version.');

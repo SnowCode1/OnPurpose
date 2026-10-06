@@ -302,7 +302,7 @@ export function SettingsScreen(p: Props) {
           </Group>
           <InfoNote
             label="About daily tracking"
-            text="Hidden habits can be shown again on the grid. Past and future dates show the full list. For now, only checked habits count as complete; number habits will use their own completion conditions."
+            text="Hidden habits can be shown again on the grid. Past and future dates show the full list. Completion uses each habit’s goal for Today; habits set to Track only stay visible."
           />
         </>
       )}

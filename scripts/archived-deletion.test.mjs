@@ -41,6 +41,14 @@ const habits = [
     type: 'number',
     unit: 'minutes',
     archived: true,
+    goals: [
+      {
+        id: 'goal',
+        from: date,
+        weekdays: [1, 2, 3],
+        rule: { kind: 'number', operator: 'atLeast', target: 20 },
+      },
+    ],
   },
   {
     id: 'workout',
@@ -71,7 +79,7 @@ const records = [
 ];
 let counter = 0;
 const meta = (sequence) => ({
-  version: 10,
+  version: 11,
   id: `delete-test-${++counter}`,
   sequence,
   recordedAt: '2026-10-06T08:00:00.000Z',
@@ -253,7 +261,7 @@ test('backup round trip retains deletion and exact undo data; restore keeps a re
   assert.deepEqual(f.store.getSnapshot().replay.state, before);
   await f.store.flush();
   const disguised = JSON.parse(encoded);
-  disguised.version = 10;
+  disguised.version = 11;
   await assert.rejects(
     decodeArchive(JSON.stringify(disguised), digest),
     /version does not support/,
@@ -326,7 +334,7 @@ test('deletion validates full records, exact position/definition, archived state
         ...f.store.getSnapshot().events,
         {
           ...meta(event.sequence + 1),
-          version: 10,
+          version: 11,
           type: 'preference',
           change: { kind: 'haptics', before: true, after: false },
         },
@@ -560,9 +568,8 @@ test('web confirmation cancellation keeps records, and acceptance calls deletion
   assert.equal(deleted, 1);
 });
 
-test('v12 portable fixture extends the exact v10 prefix, and all legacy archives remain readable', async () => {
+test('v12 portable fixture extends the exact v11 prefix, and all legacy archives remain readable', async () => {
   for (let version = 1; version <= 12; version++) {
-    if (version === 11) continue;
     const source = readFileSync(
       new URL(`../docs/examples/storage-v${version}.json`, import.meta.url),
       'utf8',
@@ -572,7 +579,7 @@ test('v12 portable fixture extends the exact v10 prefix, and all legacy archives
   }
   const prefix = JSON.parse(
     readFileSync(
-      new URL('../docs/examples/storage-v10.json', import.meta.url),
+      new URL('../docs/examples/storage-v11.json', import.meta.url),
       'utf8',
     ),
   ).events;

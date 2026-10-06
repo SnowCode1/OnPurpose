@@ -982,6 +982,23 @@ grid mounted to retain range/scroll state, with live entry subscriptions and
 save failure/retry. This is the assistant's performance correction within the
 founder's request; no storage schema, new dependency or backend is needed.
 
+## 6 October 2026 — Effective-dated success goals
+
+The founder accepted the proposed coherent rule system for all four habit types,
+especially preserving past goals when targets change. Numeric comparisons,
+category Any/All/count/exclusions, literal text matching, Every day/selected
+weekdays and Track only are confirmed. Blanks never succeed; numeric averages
+continue across all calendar days. Share evaluation across grid, Statistics and
+Hide completed today. Weekly quotas, skips and manual overrides remain deferred.
+
+The founder suggested a goal timeline viewer/editor, possibly as the main editor.
+The assistant chose the timeline as the main entry point: Change goal defaults to
+Today, earlier/upcoming versions remain accessible, corrections/removal explicitly
+confirm changed periods. Goal versions live in ordinary v11 undoable definitions;
+no daily values or legacy log prefixes are rewritten. The editor remains a
+compact scrollable native sheet with fixed actions and an optional test-value
+disclosure. See [GOALS.md](GOALS.md) for rules and ownership.
+
 ## 6 October 2026 — Recoverable deletion of archived habits
 
 The founder requested Delete on archived habits and explicitly chose Delete with
@@ -994,7 +1011,7 @@ records, then Restore returns it to the grid.
 A v12 structural snapshot action removes/restores the definition and all daily
 values in one atomic transaction and one Undo step. Recheck archived state on
 confirmation, keep visible failure/retry, and preserve append-only history,
-local description drafts/bookmarks, schema 1 and unchanged v1–v10 prefixes.
+local description drafts/bookmarks, schema 1 and unchanged v1–v11 prefixes.
 Earlier History rows retain deleted habit names/types using display-only metadata.
 Permanent erasure, active-grid deletion and bulk deletion remain separate scope.
 Native confirmation, larger-text layout and VoiceOver need phone review.
@@ -1017,5 +1034,21 @@ no persistence or deletion semantics changed. Browser layouts were inspected;
 the founder's new phone capture had not arrived during this pass, so native visual
 acceptance remains pending.
 
-Version 12 is used to avoid colliding with separate in-progress storage work
-reserved for version 11. That other feature is not part of this change.
+## 6 October 2026 — Checkbox completion and goal editor refinement
+
+The founder reported checkbox success appearing broken and shared the goal editor
+and grid. Source tracing found the grid explicitly excluded checkbox cells from
+the completion tint; the checkbox evaluator itself already returned success.
+Use the same cached row-colour completion background for all types. Tests cover
+checkbox entry changes, dated schedules, statistics, filtering, Undo/Redo and
+SQLite reopening; browser interaction additionally checks actual cell backgrounds.
+
+The founder requested a substantial menu makeover. The assistant chose a direct
+Goal form with compact condition/repeat/date groups and fixed Close/Done actions.
+This supersedes the timeline-first landing screen and duplicated current-goal card.
+The timeline remains in the same sheet, preserves the form draft on Back and asks
+before replacing a dirty draft. Earlier periods remain explicit, confirmed edits.
+Checkbox completion is a statement, and the optional test uses a real checkbox.
+Opening an unchanged default goal adds no version. Category exclusions collapse,
+include/exclude membership stays mutually exclusive, and errors name the specific
+problem. The goal sheet reflects the enclosing habit draft's identity and dates.

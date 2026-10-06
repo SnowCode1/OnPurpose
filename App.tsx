@@ -1,5 +1,6 @@
 import { sameValue } from './src/storage/model';
 import { DailyRecordDialog } from './src/DailyRecordDialog';
+import { HabitGoalsEditor } from './src/HabitGoalsEditor';
 import { sameEntry, type EntryValue } from './src/entries';
 import { TypographyProvider, TextInput, Text } from './src/Typography';
 import { DescriptionVersions } from './src/DescriptionVersions';
@@ -212,6 +213,8 @@ function PersistentApp({
   const [versionsId, setVersionsId] = useState<string | null>(null);
   const versionsHabit = habits.find((habit) => habit.id === versionsId);
   const [statsId, setStatsId] = useState<string | null>(null);
+  const [goalsId, setGoalsId] = useState<string | null>(null);
+  const goalHabit = habits.find((habit) => habit.id === goalsId);
   const statsHabit = habits.find(
     (habit) => habit.id === statsId && !habit.archived,
   );
@@ -348,6 +351,7 @@ function PersistentApp({
         before.unit === after.unit &&
         habitType(before) === habitType(after) &&
         sameValue(before.categories, after.categories) &&
+        sameValue(before.goals, after.goals) &&
         before.archived === after.archived &&
         before.icon === after.icon &&
         before.startDate === after.startDate &&
@@ -522,6 +526,7 @@ function PersistentApp({
   const habitDialog =
     detail || newHabit ? (
       <HabitDialog
+        today={today}
         key={detail?.id ?? newHabit?.id}
         habit={(detail ?? newHabit)!}
         initialStartDate={habitTrackingStart(
@@ -673,6 +678,23 @@ function PersistentApp({
         />
       )}
       {habitDialog}
+      {goalHabit && (
+        <HabitGoalsEditor
+          habit={goalHabit}
+          today={today}
+          editable={editable}
+          Heading={PreviewHeading}
+          onClose={() => setGoalsId(null)}
+          onApply={(goals) => {
+            const current = store
+              .getSnapshot()
+              .replay.state.habits.find((habit) => habit.id === goalHabit.id);
+            if (!current) return false;
+            const { goals: _goals, ...base } = current;
+            return saveHabit({ ...base, ...(goals ? { goals } : {}) });
+          }}
+        />
+      )}
       <AppPanel
         sampleData={sampleData}
         developmentControls={
@@ -883,6 +905,7 @@ function PersistentApp({
                             : undefined
                         }
                         onEdit={editStats}
+                        onGoalEdit={() => setGoalsId(statsHabit.id)}
                       />
                     </PerformanceBoundary>
                     {overlays}

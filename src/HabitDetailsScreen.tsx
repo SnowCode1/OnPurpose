@@ -27,6 +27,7 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
   onDescriptionEdit,
   onDescriptionVersions,
   onEdit,
+  onGoalEdit,
   onCellPress,
   editable,
 }: {
@@ -40,6 +41,7 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
   onDescriptionEdit: () => void;
   onDescriptionVersions?: () => void;
   onEdit: () => void;
+  onGoalEdit: () => void;
   onCellPress: (habit: Habit, day: EntryDay) => void;
   editable: boolean;
 }) {
@@ -178,6 +180,7 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
                     today={today}
                     editable={editable}
                     onCellPress={onCellPress}
+                    onGoalEdit={onGoalEdit}
                     bottomInset={bottomInset}
                   />
                 )}

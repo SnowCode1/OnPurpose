@@ -11,7 +11,7 @@ fading are the assistant's choices within that scope, awaiting phone review.
 | Column spacing       | Compact  | Target widths of 48 / 64 / 80 points before font scaling. Compact preserves the previous layout. Fit whole days; the actual width fills available space. |
 | Fade distant dates   | On       | Existing grid fading for empty older/future dates. Off gives every age the recent-day tone. Recorded values remain fully coloured in either mode.        |
 | Week starts on       | Monday   | Monday or Sunday ordering in the statistics calendar and weekday breakdown. Does not change recording dates, streaks or chart bucket totals.             |
-| Hide completed today | Off      | Filter checked checkbox rows at Today, with Show completed for corrections. Numeric completion rules are deferred.                                       |
+| Hide completed today | Off      | Filter rows meeting their dated success goal at Today, with Show completed for corrections.                                                              |
 | Haptic feedback      | On       | Enable or disable existing action feedback.                                                                                                              |
 
 Spacing shares geometry with date headings, cells, loading placeholders and
@@ -30,7 +30,7 @@ History and Undo/Redo. Corrections can still group across a preference change, a
 settings do not clear Redo. Sample-mode preferences are session-only in its isolated
 store; use real data to test persistence.
 
-Absent fields preserve previous behaviour without rewriting old logs. New writes and exports use v10; imports retain v1–v9 compatibility. Text size was introduced in v8.
+Absent fields preserve previous behaviour without rewriting old logs. New writes and exports use v12; imports retain v1–v11 compatibility. Text size was introduced in v8.
 The original display preferences were introduced in v6. Invalid settings or
 new settings disguised as old events/habit actions are rejected. See STORAGE.md.
 Settings continue to expose save failure/retry and disable edits when saving is
@@ -70,20 +70,20 @@ choices replace the long flat list. Save errors and Retry remain visible on ever
 settings page. Backup validation, confirmation and recovery are unchanged.
 
 **Hide completed today** is off by default, preserving stable row positions. When
-on, checked checkbox rows hide while the grid is at Today. A Show completed count
+on, rows meeting their success goal hide while the grid is at Today. A Show completed count
 below the rows reveals them for corrections and statistics; Hide completed
 returns to filtering. Past/future browsing shows the full list. This temporary
 reveal is not stored, and the next local day starts a fresh view.
 
-The founder deferred per-habit completion conditions. Numeric totals therefore
-stay visible, including explicit zero: a record is not yet a completion rule.
-`habitCompletion.ts` centralizes the current checkbox rule so future conditions
-can extend one predicate. No numeric target or new definition attribute is
-invented. Entries, history and statistics are never deleted or filtered.
+`habitCompletion.ts` uses the effective-dated rule for each habit. Numeric,
+category and text habits remain visible unless an explicit goal is met; a
+record alone does not imply success. Explicit zero can meet an explicit numeric
+rule. Entries, history and statistics are never deleted or filtered.
+See [GOALS.md](GOALS.md) for off-day and goal-change semantics.
 
 `completedHabitsSelection` subscribes to a primitive mask of today's completion
-states only when filtering is enabled. Numeric edits, other dates and save
-acknowledgements leave the mask unchanged. Filtering does not add per-frame JS
+states only when filtering is enabled. Numeric edits notify the grid container only when crossing the goal threshold;
+other dates and save acknowledgements leave the mask unchanged. Filtering does not add per-frame JS
 scroll synchronization. Reordering displayed rows fills only their saved slots;
 hidden and archived habits retain theirs. It persists a normal full order event
 and remains undoable.

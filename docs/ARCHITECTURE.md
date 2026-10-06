@@ -298,8 +298,7 @@ backup/development detail pages. New events/exports use v9; `hideCompleted` is a
 preference outside Undo with a compatible false default. Existing v1–v8 records
 and SQL schema 1 remain unchanged.
 
-`habitCompletion.ts` defines completion separately from recorded totals. Checkbox
-checks qualify now; per-habit numeric conditions are deferred. HabitGrid selects
+`habitCompletion.ts` defines completion separately from recorded totals. It delegates to `habitGoals.ts` for typed dated rules on all four habit types. HabitGrid selects
 a primitive completion mask only when hiding is enabled, ignoring unrelated
 writes. At Today it filters displayed rows, offers Show completed, and restores
 all rows when browsing other dates. `displayedHabitOrder` persists a full
@@ -345,6 +344,19 @@ is nested in the existing App overlays for grid and statistics recording.
 entry rows; `recordStatistics` shares calendar/start rules without interpreting
 text or categories as numbers. The old numerical/checkbox statistics stay in
 `HabitStatsScreen`; its Chart has an explicit recording-label mode.
+
+## Effective-dated completion goals
+
+`habitGoals.ts` owns strict timeline validation, binary-search policy selection,
+rule summaries and evaluation. `completionStatistics.ts` counts applicable dates
+by policy intervals/weeks and derives success streaks independently of calendar
+recording metrics. `HabitGoalsEditor.tsx` hosts the native sheet and timeline; `GoalVersionForm.tsx`
+retains the form while browsing that timeline. `goalEditing.ts` parses numeric
+drafts and explains invalid conditions/dates. `GoalSummary.tsx` shares the compact
+Goal entry point in habit editing and Statistics.
+Definitions carry optional v11 goals; old log prefixes and SQL schema 1 remain
+unchanged. Shared completion filtering changes only when the Today mask changes.
+Sample goals are memory-only in `dev/sampleGoals.ts`. See [GOALS.md](GOALS.md).
 
 Archived-habit display facts live in `archivedHabitDetails.ts`: one pass over
 record keys derives per-habit counts and first/last dates, retaining saved archived

@@ -65,7 +65,7 @@ outside Undo.
 
 ## Storage compatibility
 
-New events and backup containers use version 12 (undoable deletion); version 10 added categorical/text records; version 9 added optional hiding of completed rows; version 8 added app-wide text size; version 7 added descriptions; version 6 added display settings; version 5 added editable start dates and row spacing; version 3 introduced definitions
+New events and backup containers use version 12 (undoable deletion); version 11 added effective-dated goals; version 10 added categorical/text records; version 9 added optional hiding of completed rows; version 8 added app-wide text size; version 7 added descriptions; version 6 added display settings; version 5 added editable start dates and row spacing; version 3 introduced definitions
 and ordering, and version 4 adds optional icons. A habit change captures its stable
 ID, position, and before/after definition; creation uses a null before-definition.
 Undoing creation can remove it only after its entries have been undone. This is
@@ -168,7 +168,7 @@ Archived categories already selected on that day remain visible for removal.
 Text days open a plain multiline input in the same sheet, with a 10,000-character
 limit. Done applies, Close cancels, Clear entry edits the draft until Done. These
 sheets also work from the statistics calendar/entry list and nest above habit
-details. Comments and completion rules remain deferred.
+details. Comments remain deferred. Success rules now use the effective-dated goal timeline.
 
 Grid category/text cells use a consistent 12-point font before app/system
 scaling, with native wrapping and tail ellipsis. Compact/Standard rows normally
@@ -180,6 +180,15 @@ Unrecorded cells show a dash, recorded cells use the habit colour; recording is
 not completion. Only numeric cells use native autosizing. The first fitting
 trial was rejected on the iPhone: the current iOS renderer ignores the proposed
 `minimumFontScale` limit. Revised readability needs device acceptance.
+
+## Success goals
+
+Create/Edit includes a compact Goal row opening the condition/repeat/date form,
+with Goal timeline one tap away; changes stay in the enclosing habit draft until Done. Statistics exposes
+the same row for a direct undoable edit. Default new versions start Today (or the
+start date during creation); earlier versions remain intact. Back cancels a version
+draft, and removing/correcting earlier goals requires confirmation. Changing goals
+never changes recorded daily values. See [GOALS.md](GOALS.md).
 
 ## Delete archived habits
 
@@ -199,5 +208,5 @@ History and backups; this does not permanently erase the change log or recovery
 copies. Save failures remain visible with Retry. Both row actions disable while
 saving is blocked or backup work is exclusive, and the store rechecks archived
 state when a delayed confirmation is accepted. No active-habit Delete or bulk
-selection flow is added. Current writes/exports use v12, with unchanged v1–v10
+selection flow is added. Current writes/exports use v12, with unchanged v1–v11
 replay and SQL schema 1.

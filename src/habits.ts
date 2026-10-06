@@ -1,4 +1,5 @@
 import type { HabitIcon } from './habitIcons.ts';
+import type { HabitGoal } from './habitGoals.ts';
 export type HabitType = 'checkbox' | 'number' | 'categorical' | 'text';
 export type HabitCategory = {
   id: string;
@@ -15,6 +16,7 @@ export type Habit = {
   unit?: string;
   type?: HabitType;
   categories?: HabitCategory[];
+  goals?: HabitGoal[];
   archived?: boolean;
   icon?: HabitIcon;
 };

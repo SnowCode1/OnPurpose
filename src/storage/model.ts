@@ -1,3 +1,4 @@
+import { validGoalTimeline } from '../habitGoals.ts';
 import {
   entryLabel,
   sameEntry,
@@ -93,7 +94,7 @@ export function isPreference(change: Change): change is PreferenceChange {
 }
 export type HabitChange = Exclude<Change, PreferenceChange>;
 export type EventMeta = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 12;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
   id: string;
   sequence: number;
   recordedAt: string;
@@ -105,7 +106,7 @@ export type LegacyChangeEvent = EventMeta & { version: 1 } & (
     | { type: 'undo' | 'redo'; targetId: string; change: Change }
   );
 export type CurrentChangeEvent = EventMeta & {
-  version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 12;
+  version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 } & (
     | { type: 'change'; groupId: string; change: HabitChange }
     | { type: 'undo' | 'redo'; targetId: string; change: HabitChange }
@@ -139,6 +140,7 @@ export type Replay = {
   hasV8: boolean;
   hasV9: boolean;
   hasV10: boolean;
+  hasV11: boolean;
   hasV12: boolean;
 };
 export const emptyReplay = (): Replay => ({
@@ -157,6 +159,7 @@ export const emptyReplay = (): Replay => ({
   hasV8: false,
   hasV9: false,
   hasV10: false,
+  hasV11: false,
   hasV12: false,
 });
 export const GROUP_INACTIVITY_MS = 2 * 60 * 1000;
@@ -236,9 +239,15 @@ function validateHabit(
       ...(version >= 5 ? ['startDate'] : []),
       ...(version >= 7 ? ['description'] : []),
       ...(version >= 10 ? ['categories'] : []),
+      ...(version >= 11 ? ['goals'] : []),
     ].filter((key) => Object.hasOwn(value, key)),
   ]);
   id(value.id);
+  if (Object.hasOwn(value, 'goals'))
+    insist(
+      validGoalTimeline(value.goals, value as Habit),
+      'Invalid goal timeline or rule.',
+    );
   colour(value.color);
   insist(
     typeof value.name === 'string' &&
@@ -503,6 +512,7 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
       value.version === 8 ||
       value.version === 9 ||
       value.version === 10 ||
+      value.version === 11 ||
       value.version === 12,
     'Unsupported event version.',
   );
@@ -691,6 +701,7 @@ function reduceEvent(
       hasV8: event.version >= 8,
       hasV9: event.version >= 9,
       hasV10: event.version >= 10,
+      hasV11: event.version >= 11,
       hasV12: event.version >= 12,
     };
   }
@@ -733,6 +744,10 @@ function reduceEvent(
   insist(
     !previous.hasV10 || event.version >= 10,
     'Older events cannot follow version-10 events.',
+  );
+  insist(
+    !previous.hasV11 || event.version >= 11,
+    'Older events cannot follow version-11 events.',
   );
   insist(
     !previous.hasV12 || event.version >= 12,
@@ -881,6 +896,7 @@ function reduceEvent(
     hasV8: previous.hasV8 || event.version >= 8,
     hasV9: previous.hasV9 || event.version >= 9,
     hasV10: previous.hasV10 || event.version >= 10,
+    hasV11: previous.hasV11 || event.version >= 11,
     hasV12: previous.hasV12 || event.version >= 12,
   };
 }

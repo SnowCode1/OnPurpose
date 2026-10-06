@@ -1,3 +1,4 @@
+import { summarizeCompletion } from './completionStatistics';
 import { memo, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Text, useAppWindowDimensions } from './Typography';
@@ -12,6 +13,8 @@ import { Chart } from './HabitStatsScreen';
 import { weekDayOrder, type WeekStart } from './displayPreferences';
 import { colorOnBlack } from './colors';
 import { InfoNote } from './InfoNote';
+import { GoalSummary } from './GoalSummary';
+import { evaluateGoal } from './habitGoals';
 
 export const RecordStatsScreen = memo(function RecordStatsScreen({
   habit,
@@ -22,6 +25,7 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
   editable,
   onCellPress,
   bottomInset,
+  onGoalEdit,
 }: {
   habit: Habit;
   values: EntryValues;
@@ -31,6 +35,7 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
   editable: boolean;
   onCellPress: (habit: Habit, day: EntryDay) => void;
   bottomInset: number;
+  onGoalEdit: () => void;
 }) {
   const [range, setRange] = useState<StatsRange>(30);
   const [month, setMonth] = useState(today.slice(0, 7));
@@ -55,6 +60,12 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
     });
   const header = (
     <View style={styles.header}>
+      <GoalSummary
+        habit={habit}
+        date={today}
+        onPress={onGoalEdit}
+        disabled={!editable}
+      />
       <Text style={styles.caption}>
         {habitTypeLabel(habit)} · since {dateLabel(stats.trackingStart)}
       </Text>
@@ -87,6 +98,20 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
         ))}
       </View>
       <View style={styles.section}>
+        {(stats.completion.active || stats.completion.eligible > 0) && (
+          <>
+            <Text style={styles.summary}>
+              {stats.completion.successes} of {stats.completion.eligible} days
+              meeting the goal
+            </Text>
+            <View style={styles.metric}>
+              <Text style={styles.caption}>Success streak · longest</Text>
+              <Text style={styles.metricValue}>
+                {stats.completion.streak} · {stats.completion.bestStreak}
+              </Text>
+            </View>
+          </>
+        )}
         <Text style={styles.summary}>
           {stats.recorded} of {stats.eligible} days recorded
         </Text>
@@ -141,15 +166,34 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
       )}
       <View style={styles.section}>
         <Text accessibilityRole="header" style={styles.heading}>
-          Days recorded
+          {stats.completion.active || stats.completion.eligible > 0
+            ? 'Days meeting the goal'
+            : 'Days recorded'}
         </Text>
         <Chart
           key={`${habit.id}:${range}:${today}`}
-          buckets={stats.buckets}
+          buckets={
+            stats.completion.active || stats.completion.eligible > 0
+              ? stats.buckets.map((bucket) => {
+                  const goal = summarizeCompletion(
+                    stats.completion,
+                    bucket.start,
+                    bucket.end,
+                  );
+                  return {
+                    ...bucket,
+                    eligible: goal.eligible,
+                    value: goal.rate === null ? null : goal.rate * 100,
+                  };
+                })
+              : stats.buckets
+          }
           colour={habit.color}
           numeric={false}
           unit=""
-          recording
+          recording={
+            !stats.completion.active && stats.completion.eligible === 0
+          }
         />
       </View>
       <View style={styles.section}>
@@ -200,12 +244,13 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
             const value = values[`${habit.id}:${date}`],
               day = entryDay(date),
               recorded = value !== undefined;
+            const goal = evaluateGoal(habit, value, date);
             return (
               <Pressable
                 key={date}
                 testID={`record-day-${habit.id}-${date}`}
                 accessibilityRole="button"
-                accessibilityLabel={`${habit.name}, ${day.fullLabel}, ${recorded ? entryLabel(habit, value) : 'not recorded'}`}
+                accessibilityLabel={`${habit.name}, ${day.fullLabel}, ${recorded ? entryLabel(habit, value) : 'not recorded'}, ${goal.active ? (goal.met ? 'goal met' : 'goal not met') : 'tracking only'}${goal.active && !goal.scheduled ? ', not scheduled' : ''}`}
                 accessibilityHint="Read or edit this day's entry"
                 accessibilityState={{ disabled: !editable }}
                 disabled={!editable}
@@ -217,7 +262,7 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
                     styles.face,
                     {
                       backgroundColor: recorded
-                        ? colorOnBlack(habit.color, 0.13)
+                        ? colorOnBlack(habit.color, goal.met ? 0.3 : 0.13)
                         : '#151515',
                     },
                   ]}
@@ -286,7 +331,7 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
       ListFooterComponent={
         <InfoNote
           label="How recording statistics work"
-          text="These are recording counts, not completion scores. Logging streaks count consecutive days with an entry; an unrecorded today does not break the streak. Future entries and records before the habit's start date are kept, but excluded from these statistics."
+          text="Recording counts use all calendar days since the start. Success counts use scheduled days and the goal effective on each date. Off-days leave success streaks intact; logging streaks require consecutive calendar entries. An unfinished today has a streak grace period. Future and pre-start entries are kept, but excluded from statistics."
         />
       }
     />

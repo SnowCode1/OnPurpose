@@ -1,4 +1,7 @@
+import { summarizeCompletion } from './completionStatistics';
 import type { EntryValues } from './entries';
+import { GoalSummary } from './GoalSummary';
+import { evaluateGoal } from './habitGoals';
 import { Text, useAppWindowDimensions } from './Typography';
 import { weekDayOrder, type WeekStart } from './displayPreferences';
 import { memo, useMemo, useState } from 'react';
@@ -33,8 +36,10 @@ export function Chart({
   numeric,
   unit,
   recording = false,
+  targets,
 }: {
   recording?: boolean;
+  targets?: number[][];
   buckets: StatsBucket[];
   colour: string;
   numeric: boolean;
@@ -50,7 +55,11 @@ export function Chart({
   );
   const current = buckets[selectedIndex];
   const max = numeric
-    ? Math.max(1, ...buckets.map((bucket) => bucket.value ?? 0))
+    ? Math.max(
+        1,
+        ...buckets.map((bucket) => bucket.value ?? 0),
+        ...(targets?.flat() ?? []),
+      )
     : 100;
   const step = width / Math.max(1, buckets.length);
   const showYear =
@@ -152,6 +161,22 @@ export function Chart({
                   opacity={0.08}
                 />
               )}
+              {numeric &&
+                targets?.flatMap((levels, index) =>
+                  levels.map((target, level) => (
+                    <Line
+                      key={`target-${index}-${level}`}
+                      x1={index * step + step * 0.08}
+                      x2={(index + 1) * step - step * 0.08}
+                      y1={150 - (target / max) * 148}
+                      y2={150 - (target / max) * 148}
+                      stroke={colour}
+                      strokeWidth={1}
+                      strokeDasharray="3 3"
+                      opacity={0.6}
+                    />
+                  )),
+                )}
               {buckets.map(
                 (bucket, index) =>
                   bucket.value !== null && (
@@ -234,6 +259,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   onCellPress,
   editable,
   bottomInset = 40,
+  onGoalEdit,
 }: {
   habit: Habit;
   weekStart: WeekStart;
@@ -243,6 +269,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   onCellPress: (habit: Habit, day: EntryDay) => void;
   editable: boolean;
   bottomInset?: number;
+  onGoalEdit: () => void;
 }) {
   const { fontScale } = useAppWindowDimensions();
   const calendarHeight = Math.max(44, Math.ceil(44 * fontScale));
@@ -279,6 +306,12 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
       contentContainerStyle={[styles.body, { paddingBottom: bottomInset }]}
       showsVerticalScrollIndicator={false}
     >
+      <GoalSummary
+        habit={habit}
+        date={today}
+        onPress={onGoalEdit}
+        disabled={!editable}
+      />
       <Text style={styles.caption}>
         {stats.numeric
           ? `Daily total${unit ? ` · ${unit}` : ''}`
@@ -357,6 +390,16 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
       <View style={styles.metrics}>
         {stats.numeric && (
           <>
+            {(stats.completion.active || stats.completion.eligible > 0) && (
+              <Metric
+                value={
+                  stats.completion.eligible
+                    ? `${stats.completion.successes} of ${stats.completion.eligible} days`
+                    : '—'
+                }
+                label="Goal met"
+              />
+            )}
             <Metric
               value={`${format(stats.average)}${unit ? ` ${unit}` : ''}`}
               label="Average per day"
@@ -369,13 +412,40 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
         )}
         <Metric
           value={`${stats.streak} ${stats.streak === 1 ? 'day' : 'days'}`}
-          label={stats.numeric ? 'Days recorded in a row' : 'Current streak'}
+          label={
+            stats.numeric && !stats.completion.active
+              ? 'Days recorded in a row'
+              : 'Current success streak'
+          }
         />
         <Metric
           value={`${stats.bestStreak} ${stats.bestStreak === 1 ? 'day' : 'days'}`}
           label="Longest streak · all time"
         />
       </View>
+      {stats.numeric &&
+        (stats.completion.active || stats.completion.eligible > 0) && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Days meeting the goal</Text>
+            <Chart
+              buckets={stats.buckets.map((bucket) => {
+                const goal = summarizeCompletion(
+                  stats.completion,
+                  bucket.start,
+                  bucket.end,
+                );
+                return {
+                  ...bucket,
+                  eligible: goal.eligible,
+                  value: goal.rate === null ? null : goal.rate * 100,
+                };
+              })}
+              colour={habit.color}
+              numeric={false}
+              unit=""
+            />
+          </View>
+        )}
       <View style={styles.section}>
         <Text accessibilityRole="header" style={styles.sectionTitle}>
           {stats.numeric ? 'Daily totals' : 'Days checked'}
@@ -391,7 +461,26 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
           colour={habit.color}
           numeric={stats.numeric}
           unit={unit}
+          targets={
+            stats.numeric && stats.bucketDays === 1
+              ? stats.buckets.map((bucket) => {
+                  const goal = evaluateGoal(habit, undefined, bucket.start);
+                  return goal.scheduled && goal.rule.kind === 'number'
+                    ? goal.rule.operator === 'between'
+                      ? [goal.rule.target, goal.rule.upper!]
+                      : [goal.rule.target]
+                    : [];
+                })
+              : undefined
+          }
         />
+        {stats.numeric &&
+          stats.bucketDays === 1 &&
+          habit.goals?.some((goal) => goal.rule.kind === 'number') && (
+            <Text style={styles.caption}>
+              Dashed marks show the goal for each scheduled day.
+            </Text>
+          )}
         {!stats.recorded && (
           <Text style={styles.caption}>Nothing recorded in this period.</Text>
         )}
@@ -508,11 +597,16 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
             const entry = values[`${habit.id}:${day}`];
             const value = typeof entry === 'number' ? entry : undefined;
             const recorded = stats.numeric ? value !== undefined : value === 1;
+            const goal = evaluateGoal(habit, value, day);
             const date = entryDay(day);
             const background = recorded
               ? colorOnBlack(
                   habit.color,
-                  stats.numeric ? 0.35 + (0.65 * (value ?? 0)) / monthMax : 1,
+                  stats.numeric
+                    ? goal.met
+                      ? 0.75
+                      : 0.2 + (0.3 * (value ?? 0)) / monthMax
+                    : 1,
                 )
               : day > today
                 ? '#0C0C0C'
@@ -525,7 +619,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
                   disabled: !editable,
                   ...(stats.numeric ? {} : { checked: recorded }),
                 }}
-                accessibilityLabel={`${habit.name}, ${date.fullLabel}${day === today ? ', today' : ''}${day > today ? ', future date' : ''}, ${recorded ? (stats.numeric ? `${format(value ?? null)} ${unit}` : 'completed') : 'not recorded'}`}
+                accessibilityLabel={`${habit.name}, ${date.fullLabel}${day === today ? ', today' : ''}${day > today ? ', future date' : ''}, ${recorded ? (stats.numeric ? `${format(value ?? null)} ${unit}` : 'checked') : 'not recorded'}, ${goal.active ? (goal.met ? 'goal met' : recorded ? 'goal not met' : 'not recorded') : 'tracking only'}${!goal.scheduled && goal.active ? ', not scheduled' : ''}`}
                 accessibilityHint={
                   stats.numeric ? 'Edit daily total' : 'Toggle completion'
                 }
@@ -568,7 +662,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
           label="About the calendar"
           text={
             stats.numeric
-              ? 'Tap a day to edit its total. Brighter days have higher totals; zero still has colour.'
+              ? 'Tap a day to edit its total. Days meeting their goal are brighter; without a goal, brightness follows the total. Zero is still a recorded value.'
               : 'Tap a day to check or uncheck it. Coloured days are completed.'
           }
         />
@@ -578,8 +672,8 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
         text={`${
           stats.numeric
             ? 'Averages divide totals by calendar days since the start, including today and blank days. Blanks stay empty; zero is a recorded total. A logging streak counts consecutive days with an entry.'
-            : 'Rates use all calendar days since the start, including today. Streaks count consecutive checked days; an unfinished today does not break the current streak.'
-        } Future entries and records before the start date are excluded from charts and statistics. Earlier records stay saved; edit the start date to include them.`}
+            : 'Success rates use scheduled days since the start, including today. Off-days do not break a success streak; an unfinished today has a grace period.'
+        } Success uses each day’s effective goal and schedule, with blank days never successful. Numeric averages still include every calendar day. Future entries and records before the start date are excluded from charts and statistics. Earlier records stay saved; edit the start date to include them.`}
       />
     </ScrollView>
   );

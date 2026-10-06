@@ -1,4 +1,5 @@
 import { cellEntryLabel, entryLabel } from './entries';
+import { evaluateGoal } from './habitGoals';
 import { Text } from './Typography';
 import { memo, useMemo, useSyncExternalStore } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -50,6 +51,7 @@ const GridCell = memo(function GridCell({
   const checkbox = habitType(habit) === 'checkbox';
   const checked = value === 1;
   const recorded = value !== undefined;
+  const goal = evaluateGoal(habit, value, day.key);
   const tone = palette.tones[dayTone(day.daysAgo)];
   return (
     <ReorderRow motion={motion}>
@@ -58,7 +60,7 @@ const GridCell = memo(function GridCell({
         disabled={disabled}
         accessibilityRole={checkbox ? 'checkbox' : 'button'}
         accessibilityState={checkbox ? { checked, disabled } : { disabled }}
-        accessibilityLabel={`${habit.name}, ${day.fullLabel}${checkbox ? '' : `, ${value === undefined ? 'not recorded' : entryLabel(habit, value) + (habit.unit ? ` ${habit.unit}` : '')}`}`}
+        accessibilityLabel={`${habit.name}, ${day.fullLabel}${checkbox ? '' : `, ${value === undefined ? 'not recorded' : entryLabel(habit, value) + (habit.unit ? ` ${habit.unit}` : '')}`}, ${goal.active ? (goal.met ? 'goal met' : recorded ? 'goal not met' : 'not recorded') : 'tracking only'}${goal.active && !goal.scheduled ? ', not scheduled' : ''}`}
         accessibilityHint={
           checkbox
             ? 'Toggle this day’s completion'
@@ -76,9 +78,11 @@ const GridCell = memo(function GridCell({
             borderBottomColor: tone.rule,
             backgroundColor: pressed
               ? `${habit.color}20`
-              : day.daysAgo === 0
-                ? '#090909'
-                : '#000000',
+              : goal.met
+                ? palette.completedBackground
+                : day.daysAgo === 0
+                  ? '#090909'
+                  : '#000000',
           },
         ]}
       >

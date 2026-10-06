@@ -258,7 +258,7 @@ Settings → Backups → Export backup opens the share sheet; choose Save to Fil
 backup validates first and asks before replacing data, retaining a local copy.
 
 New habit edits use version-12 events with grouped actions; global preferences save
-outside visible History/Undo. Exports use container version 12; existing version-1/2/3/4/5/6/7/8/9/10
+outside visible History/Undo. Exports use container version 12; existing version-1/2/3/4/5/6/7/8/9/10/11
 backups remain importable and old log records stay unchanged. Fully reload Expo Go
 to test storage updates. Do not downgrade to an older build after writing v12 data;
 older builds cannot interpret it and will refuse to load rather than reset.
@@ -360,3 +360,11 @@ remains unchanged; `sampleRecords.ts` appends v10 examples only to the in-memory
 sample store. Reload/reset sample mode to see them. Real lists are not populated
 with these examples. Create either type through Add habit. See
 HABIT_MANAGEMENT.md and STORAGE.md for entry/option drafts and backup compatibility.
+
+## Sample success goals
+
+Sample data now adds explicit goals only to its isolated memory log. Read changes
+from 15 to 30 minutes fourteen days ago; Drink water targets eight glasses;
+Workout matches Run/Strength on Monday/Wednesday/Friday; Daily highlight completes
+with nonblank text. Open Statistics → Success to review/edit each timeline.
+Real habits receive no automatic targets. See [GOALS.md](GOALS.md).

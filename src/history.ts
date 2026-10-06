@@ -99,30 +99,40 @@ export function historyPresentation(event: HistoryAction, state: StoredState) {
       change.before &&
       change.after &&
       change.before.description !== change.after.description;
-    const summary = descriptionChanged
-      ? change.after?.description
-        ? 'Description edited'
-        : 'Description cleared'
-      : !change.before
-        ? 'Habit added'
-        : !change.after
-          ? 'Habit removed'
-          : change.before.archived !== change.after.archived
-            ? change.after.archived
-              ? 'Archived'
-              : 'Restored'
-            : change.before.icon !== change.after.icon &&
-                change.before.name === change.after.name &&
-                change.before.color === change.after.color &&
-                change.before.unit === change.after.unit &&
-                change.before.startDate === change.after.startDate &&
-                change.before.description === change.after.description &&
-                habitType(change.before) === habitType(change.after) &&
-                sameValue(change.before.categories, change.after.categories)
-              ? change.after.icon
-                ? 'Icon changed'
-                : 'Icon removed'
-              : 'Habit edited';
+    const goalChanged =
+      change.before &&
+      change.after &&
+      !sameValue(change.before.goals, change.after.goals);
+    const summary = goalChanged
+      ? 'Goals edited'
+      : descriptionChanged
+        ? change.after?.description
+          ? 'Description edited'
+          : 'Description cleared'
+        : !change.before
+          ? 'Habit added'
+          : !change.after
+            ? 'Habit removed'
+            : change.before.archived !== change.after.archived
+              ? change.after.archived
+                ? 'Archived'
+                : 'Restored'
+              : change.before.icon !== change.after.icon &&
+                  change.before.name === change.after.name &&
+                  change.before.color === change.after.color &&
+                  change.before.unit === change.after.unit &&
+                  change.before.startDate === change.after.startDate &&
+                  change.before.description === change.after.description &&
+                  habitType(change.before) === habitType(change.after) &&
+                  sameValue(
+                    change.before.categories,
+                    change.after.categories,
+                  ) &&
+                  sameValue(change.before.goals, change.after.goals)
+                ? change.after.icon
+                  ? 'Icon changed'
+                  : 'Icon removed'
+                : 'Habit edited';
     return {
       title: habit.name,
       summary,

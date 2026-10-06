@@ -1,9 +1,14 @@
 import type { EntryValue, EntryValues } from './entries.ts';
-import { habitType, type Habit } from './habits.ts';
-// One place for completion conditions. Checkbox checks are defined today;
-// numeric totals are records, not completion, until per-habit rules are designed.
-export function habitIsComplete(habit: Habit, value: EntryValue | undefined) {
-  return habitType(habit) === 'checkbox' && value === 1;
+import type { Habit } from './habits.ts';
+import { evaluateGoal } from './habitGoals.ts';
+// Completion depends on the rule effective on the entry's date. A recorded
+// numeric/text/category value is not success unless its habit defines that rule.
+export function habitIsComplete(
+  habit: Habit,
+  value: EntryValue | undefined,
+  date = '9999-12-31',
+) {
+  return evaluateGoal(habit, value, date).met;
 }
 export function completionMask(
   habits: readonly Habit[],
@@ -12,7 +17,7 @@ export function completionMask(
 ) {
   return habits
     .map((habit) =>
-      habitIsComplete(habit, values[`${habit.id}:${day}`]) ? '1' : '0',
+      habitIsComplete(habit, values[`${habit.id}:${day}`], day) ? '1' : '0',
     )
     .join('');
 }

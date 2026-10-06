@@ -1,6 +1,7 @@
 import type { EntryValue, EntryValues } from './entries.ts';
 import type { Habit } from './habits.ts';
 import type { StoredEvent } from './storage/model.ts';
+import { completionStatistics } from './completionStatistics.ts';
 import {
   dayNumber,
   dateKey,
@@ -20,6 +21,13 @@ export function recordStatistics(
   const first = dayNumber(trackingStart),
     end = dayNumber(today);
   const start = range === 'all' ? Math.min(first, end) : end - range + 1;
+  const completion = completionStatistics(
+    habit,
+    values,
+    trackingStart,
+    today,
+    dateKey(start),
+  );
   const all = Object.entries(values)
     .filter(([key]) => key.startsWith(`${habit.id}:`))
     .map(([key, value]) => ({ date: key.slice(habit.id.length + 1), value }))
@@ -70,6 +78,7 @@ export function recordStatistics(
     })) ?? [];
   return {
     trackingStart,
+    completion,
     start: dateKey(start),
     eligible,
     recorded: records.length,

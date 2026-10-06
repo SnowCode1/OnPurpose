@@ -3,7 +3,8 @@
 Implemented 4 October 2026. The founder requested full-screen statistics with
 streaks, success-rate charts, and numeric charts. The calculations below are
 implementation choices for the current daily habit model, awaiting phone feedback.
-They do not establish frequency targets, scheduled weekdays, or numeric goals.
+Effective-dated success conditions and weekday schedules are now supported; see
+[GOALS.md](GOALS.md). Weekly frequency quotas remain deferred.
 
 ## Screen
 
@@ -88,15 +89,15 @@ to VoiceOver; numeric days announce the full date and recorded value.
   implementation rule; the continuous calendar denominator is founder-confirmed.
 - Founder-confirmed denominator: every calendar day from the habit's own start
   through today, intersected with the selected range. Activity in other habits
-  never changes its start or denominator. Checkbox rates divide checked days by
-  those calendar days. An unfinished today counts as a calendar day; a new habit
+  never changes its start or denominator. Checkbox rates divide checked scheduled days by
+  applicable scheduled days; the default remains every day. An unfinished today counts as a calendar day; a new habit
   starting today therefore shows 0% until checked. Days before the start and future
   days have no denominator. This supersedes the old unfinished-today grace for rates.
 - Archive controls list visibility; it does not pause the calendar denominator.
   Restoring, Undo/Redo or timestamp rollback in archive edits cannot change the
   period. Saved entries remain intact. This follows the continuous start-to-today
   rule and supersedes the earlier archive-pause implementation.
-- Checkbox streaks count consecutive checked calendar dates. The current streak
+- Checkbox streaks count consecutive successful scheduled dates; off-days are neutral. The current streak
   ends today if checked, otherwise yesterday, so an unfinished today has a grace
   period. A missing earlier day breaks the streak. Archive does not bridge gaps.
 - Founder-confirmed numeric averages divide the total by all calendar days in the
@@ -104,8 +105,8 @@ to VoiceOver; numeric days announce the full date and recorded value.
   across four days averages 7.5 minutes/day even with only three records. Blanks
   stay blank in storage and daily charts; an explicit zero remains a recorded day.
   A period with calendar days but no records averages zero; a period before the
-  start has no average. Numeric streaks mean consecutive days **recorded**,
-  not target achievement. No numeric success rate is invented.
+  start has no average. Without an explicit goal, numeric streaks mean consecutive days **recorded**.
+  Explicit goals add a separate scheduled-day success rate and success streak.
 - Current/best streaks use the entire history. Period totals, averages, rates,
   chart buckets, and weekday breakdowns use the selected range.
 - Date arithmetic uses calendar-day ordinals rather than elapsed local hours,
@@ -122,7 +123,7 @@ floating bottom Notes/Statistics island and horizontal swipes share native
 paging through `useHabitPages.ts`. Panels retain their scroll/range/chart state;
 measured island height keeps final chart/calendar/info controls reachable. The
 outer page sheet still enters upward and dismisses downward through UIKit.
-Nothing is stored separately; the existing version-1–10 logs and projection remain authoritative.
+Nothing is stored separately; the existing version-1–12 logs and projection remain authoritative.
 
 `node --max-old-space-size=256 --test --test-timeout=15000 scripts/statistics.test.mjs`
 covers per-habit calendar denominators, unfinished today,
@@ -165,7 +166,7 @@ large-text comfort remains a device check.
 chart in recording mode. Both types show recorded days out of all eligible
 calendar days since the habit start, logging streaks, recording-rate bars, an
 editable month calendar and a virtualized dated entry list. These are recording
-metrics, with no completion/success score until per-habit rules exist. Streaks
+metrics; explicit goals add separate scheduled-day success counts/rates/streaks. Streaks
 exclude pre-start/future entries and allow an unfinished Today as other types do.
 
 Categories show days each stable option was selected, including archived options
@@ -176,3 +177,15 @@ bounded to three lines and open the same daily editor as the grid. Corrections
 update all derived views and use normal Undo/Redo. Month/range/scroll state stays
 within the existing floating Notes/Statistics sheet. Sample mode adds Workout
 and Daily highlight with sixty days of fictional records, isolated from real data.
+
+## Effective-dated goals
+
+Goal opens the condition/repeat/date form from Statistics, with its timeline one tap away. Each date uses its effective
+rule/schedule, retaining historical results when a new goal starts Today. Success
+charts and weekday rates use applicable-day denominators; Track only and off-days
+contribute no failure. Today counts toward rates with the existing streak grace.
+Numerical totals/averages and category frequency/recording metrics remain separate.
+Numeric daily charts show dashed target marks for each scheduled day and both
+bounds for range rules. Calendar/grid accessibility announces dated goal state.
+Editing an earlier goal is explicit and undoable without replacing any entries.
+See [GOALS.md](GOALS.md) for full semantics and tests.
