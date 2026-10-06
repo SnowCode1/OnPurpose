@@ -56,6 +56,7 @@ export function AppPanel({
   onArchive,
   onBack,
   onRestoreHabit,
+  onDeleteHabit,
 }: {
   sampleData?: boolean;
   developmentControls?: ReactNode;
@@ -63,6 +64,7 @@ export function AppPanel({
   onArchive: () => void;
   onBack: () => void;
   onRestoreHabit: (habit: Habit) => void;
+  onDeleteHabit: (habit: Habit) => void;
   visible: boolean;
   HeadingComponent: ComponentType<TextProps>;
   columnSpacing: ColumnSpacing;
@@ -174,6 +176,7 @@ export function AppPanel({
                   habits={snapshot.replay.state.habits}
                   editable={editable}
                   onRestore={onRestoreHabit}
+                  onDelete={onDeleteHabit}
                   values={snapshot.replay.state.values}
                   pending={snapshot.pending}
                   error={snapshot.error}

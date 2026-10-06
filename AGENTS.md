@@ -69,7 +69,7 @@ The requested preset icon update uses normal undoable edits in
   `docs/DESCRIPTIONS.md`. `src/RichDescription.tsx` is the offline Expo DOM/Tiptap
   editing surface; `src/richText/` owns safe document mapping, formatting, local
   Undo/Redo and bounded highlights. Preserve native readers and request a current
-  DOM snapshot before applying. Applied descriptions use ordinary habit changes (v10 for new writes);
+  DOM snapshot before applying. Applied descriptions use ordinary habit changes (v12 for new writes);
   recoverable drafts stay outside History/backups in a separate local store. Keep
   `storage/descriptionDraftModel.ts` distinct from native/web adapters for Metro.
   `src/dev/sampleData.ts` owns isolated mock history for statistics testing. Keep
@@ -93,7 +93,7 @@ The requested preset icon update uses normal undoable edits in
   Do not defer durable writes, unmount the grid, or rebuild hidden day lists on
   every spacing/text-size choice.
 - `src/rowSpacing.ts` owns saved Compact/Standard/Roomy geometry; preserve font scaling and measured row heights.
-- `src/StartDateField.tsx` owns the native draft date picker; existing dates remain inferred until edited. Explicit start dates bound statistics without deleting entries. New edits/exports use v10, retaining v1–v9 replay.
+- `src/StartDateField.tsx` owns the native draft date picker; existing dates remain inferred until edited. Explicit start dates bound statistics without deleting entries. New edits/exports use v12, retaining v1–v10 replay.
 - Statistics uses the same native pageSheet/slide/swipe dismissal as History and
   Settings; UIKit owns its gesture. `App.tsx` nests numeric, habit, description
   and version dialogs inside the statistics presentation and preserves visible
@@ -216,10 +216,19 @@ counts/streaks, category frequency, editable calendar and virtualized entries,
 without claiming completion. `habitCompletion.ts` still completes only checked
 checkboxes until per-habit conditions are defined. `sampleRecords.ts` appends
 fictional Workout/Highlight examples only to the isolated sample store, leaving
-the original v7 sample fixture and real presets untouched. Main log/export v10
-retains unchanged v1–v9 prefixes; array preconditions/grouping/inverses compare
+the original v7 sample fixture and real presets untouched. Main log/export v12
+retains unchanged v1–v10 prefixes; array preconditions/grouping/inverses compare
 values rather than references. SQL stays at schema 1. Grid text/category cells
 use readable 12-point text with app/OS scaling, native tail truncation and
 geometry-based 1–3 lines from `gridEntryText.ts`. Only numeric cells may autosize;
 our iOS renderer ignores the advertised `minimumFontScale` floor.
 Do not infer native text fitting from browser captures. Comments remain deferred.
+
+Archived habit Delete requires a named native confirmation and uses the v12
+`deleteHabit` snapshot action through `ChangeStore.deleteArchivedHabit`.
+Undo restores the full definition, every daily record and archived position in
+one atomic write. Preserve append-only events, local note drafts/bookmarks,
+legacy v1–v10 replay and schema 1. This is recoverable deletion, not permanent
+erasure. `historyDisplayState` supplies deleted names/types only for History
+labels; description restore still requires the real current habit. Version 11
+is reserved for separate work and is not implemented in this change.

@@ -1,6 +1,6 @@
 import { Text } from './Typography';
 import { DescriptionHistory } from './DescriptionHistory';
-import { memo, useState, type ComponentType } from 'react';
+import { memo, useMemo, useState, type ComponentType } from 'react';
 import {
   Pressable,
   SectionList,
@@ -11,6 +11,7 @@ import {
 import { Icon } from './Icon';
 import {
   historyDayLabel,
+  historyDisplayState,
   historyPresentation,
   historySections,
 } from './history';
@@ -157,10 +158,14 @@ export function HistoryView({
   const today = useLocalToday();
   const [limit, setLimit] = useState(100);
   const sections = historySections(snapshot.replay.undo, limit);
+  const displayState = useMemo(
+    () => historyDisplayState(snapshot.replay.state, snapshot.replay.undo),
+    [snapshot.replay.state, snapshot.replay.undo],
+  );
   const editable = !snapshot.error && !snapshot.busy && !backupBusy;
   const undoTarget = snapshot.replay.undo.at(-1);
   const targetRow = undoTarget
-    ? historyPresentation(undoTarget, snapshot.replay.state)
+    ? historyPresentation(undoTarget, displayState)
     : null;
   const targetDate =
     undoTarget?.change.kind === 'entry' && undoTarget.change.date !== today
@@ -262,7 +267,7 @@ export function HistoryView({
         renderItem={({ item }) => (
           <HistoryRow
             event={item}
-            state={snapshot.replay.state}
+            state={displayState}
             onDescriptionPress={setDescriptionAction}
             pending={item.lastChangedSequence > savedCount}
           />

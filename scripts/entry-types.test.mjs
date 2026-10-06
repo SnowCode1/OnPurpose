@@ -167,7 +167,7 @@ test('text and multiple categories survive SQLite reload, serialized corrections
     '2026-10-05T09:00:00.000Z',
     digest,
   );
-  assert.equal(JSON.parse(encoded).version, 10);
+  assert.equal(JSON.parse(encoded).version, 12);
   const decoded = await decodeArchive(encoded, digest);
   assert.deepEqual(
     decoded.replay.state.values,

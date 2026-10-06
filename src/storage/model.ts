@@ -32,6 +32,10 @@ export type StoredState = {
   textScale?: number;
   hideCompleted?: boolean;
 };
+export type DeletedHabit = {
+  habit: Habit;
+  entries: Record<string, EntryValue>;
+};
 export type Change =
   | {
       kind: 'entry';
@@ -47,6 +51,13 @@ export type Change =
       index: number;
       before: Habit | null;
       after: Habit | null;
+    }
+  | {
+      kind: 'deleteHabit';
+      habitId: string;
+      index: number;
+      before: DeletedHabit | null;
+      after: DeletedHabit | null;
     }
   | { kind: 'order'; before: string[]; after: string[] }
   | { kind: 'haptics'; before: boolean; after: boolean }
@@ -82,7 +93,7 @@ export function isPreference(change: Change): change is PreferenceChange {
 }
 export type HabitChange = Exclude<Change, PreferenceChange>;
 export type EventMeta = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 12;
   id: string;
   sequence: number;
   recordedAt: string;
@@ -94,7 +105,7 @@ export type LegacyChangeEvent = EventMeta & { version: 1 } & (
     | { type: 'undo' | 'redo'; targetId: string; change: Change }
   );
 export type CurrentChangeEvent = EventMeta & {
-  version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+  version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 12;
 } & (
     | { type: 'change'; groupId: string; change: HabitChange }
     | { type: 'undo' | 'redo'; targetId: string; change: HabitChange }
@@ -128,6 +139,7 @@ export type Replay = {
   hasV8: boolean;
   hasV9: boolean;
   hasV10: boolean;
+  hasV12: boolean;
 };
 export const emptyReplay = (): Replay => ({
   state: { habits: [], values: {}, hapticsEnabled: true },
@@ -145,6 +157,7 @@ export const emptyReplay = (): Replay => ({
   hasV8: false,
   hasV9: false,
   hasV10: false,
+  hasV12: false,
 });
 export const GROUP_INACTIVITY_MS = 2 * 60 * 1000;
 
@@ -349,7 +362,7 @@ function entryFits(habit: Habit, value: EntryValue | null) {
 }
 export function validateChange(
   value: unknown,
-  version = 10,
+  version = 12,
 ): asserts value is Change {
   object(value);
   if (value.kind === 'entry') {
@@ -379,6 +392,35 @@ export function validateChange(
         validateHabit(habit, version);
         insist(habit.id === value.habitId, 'Habit identity cannot change.');
       }
+  } else if (value.kind === 'deleteHabit') {
+    insist(version >= 12, 'Habit deletion requires version 12.');
+    keys(value, ['kind', 'habitId', 'index', 'before', 'after']);
+    id(value.habitId);
+    insist(
+      Number.isSafeInteger(value.index) && Number(value.index) >= 0,
+      'Invalid habit position.',
+    );
+    insist(
+      (value.before === null) !== (value.after === null),
+      'Deletion needs exactly one habit snapshot.',
+    );
+    const snapshot = value.before ?? value.after;
+    object(snapshot);
+    keys(snapshot, ['habit', 'entries']);
+    validateHabit(snapshot.habit, version);
+    insist(
+      snapshot.habit.id === value.habitId && snapshot.habit.archived === true,
+      'Only archived habits can be deleted.',
+    );
+    object(snapshot.entries);
+    for (const [date, entry] of Object.entries(snapshot.entries)) {
+      insist(validDate(date), 'Invalid calendar date.');
+      dailyValue(entry, version);
+      insist(
+        entry !== null && entryFits(snapshot.habit, entry as EntryValue),
+        'Invalid deleted habit entry.',
+      );
+    }
   } else if (value.kind === 'order') {
     keys(value, ['kind', 'before', 'after']);
     for (const order of [value.before, value.after]) {
@@ -460,7 +502,8 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
       value.version === 7 ||
       value.version === 8 ||
       value.version === 9 ||
-      value.version === 10,
+      value.version === 10 ||
+      value.version === 12,
     'Unsupported event version.',
   );
   id(value.id);
@@ -540,9 +583,9 @@ function sameChange(left: Change, right: Change): boolean {
       sameValue(left.before, right.before) &&
       sameValue(left.after, right.after)
     );
-  if (left.kind === 'habit')
+  if (left.kind === 'habit' || left.kind === 'deleteHabit')
     return (
-      right.kind === 'habit' &&
+      right.kind === left.kind &&
       left.habitId === right.habitId &&
       left.index === right.index &&
       sameValue(left.before, right.before) &&
@@ -563,8 +606,10 @@ export function applyEvent(previous: Replay, event: StoredEvent): Replay {
 }
 function sameField(left: Change, right: Change) {
   if (
+    left.kind === 'deleteHabit' ||
     left.kind === 'habit' ||
     left.kind === 'order' ||
+    right.kind === 'deleteHabit' ||
     right.kind === 'habit' ||
     right.kind === 'order'
   )
@@ -587,7 +632,12 @@ export function canCoalesce(
   meta: EventMeta,
   change: HabitChange,
 ): boolean {
-  if (!group || change.kind === 'habit' || change.kind === 'order')
+  if (
+    !group ||
+    change.kind === 'habit' ||
+    change.kind === 'deleteHabit' ||
+    change.kind === 'order'
+  )
     return false;
   const elapsed = Date.parse(meta.recordedAt) - Date.parse(group.recordedAt);
   return (
@@ -641,6 +691,7 @@ function reduceEvent(
       hasV8: event.version >= 8,
       hasV9: event.version >= 9,
       hasV10: event.version >= 10,
+      hasV12: event.version >= 12,
     };
   }
   insist(
@@ -682,6 +733,10 @@ function reduceEvent(
   insist(
     !previous.hasV10 || event.version >= 10,
     'Older events cannot follow version-10 events.',
+  );
+  insist(
+    !previous.hasV12 || event.version >= 12,
+    'Older events cannot follow version-12 events.',
   );
   const undo = mutable ? previous.undo : [...previous.undo];
   const redo = mutable ? previous.redo : [...previous.redo];
@@ -780,7 +835,9 @@ function reduceEvent(
         undo.push(action);
       redo.length = 0;
       lastGroup =
-        action.change.kind === 'habit' || action.change.kind === 'order'
+        action.change.kind === 'habit' ||
+        action.change.kind === 'deleteHabit' ||
+        action.change.kind === 'order'
           ? null
           : action;
     } else if (event.type === 'undo') {
@@ -824,6 +881,7 @@ function reduceEvent(
     hasV8: previous.hasV8 || event.version >= 8,
     hasV9: previous.hasV9 || event.version >= 9,
     hasV10: previous.hasV10 || event.version >= 10,
+    hasV12: previous.hasV12 || event.version >= 12,
   };
 }
 export function applyChange(state: StoredState, change: Change): StoredState {
@@ -876,6 +934,37 @@ function reduceChange(
     );
     const byId = new Map(state.habits.map((habit) => [habit.id, habit]));
     next = { ...state, habits: change.after.map((id) => byId.get(id)!) };
+  } else if (change.kind === 'deleteHabit') {
+    const prefix = `${change.habitId}:`;
+    const entries = Object.fromEntries(
+      Object.entries(state.values)
+        .filter(([key]) => key.startsWith(prefix))
+        .map(([key, value]) => [key.slice(prefix.length), value]),
+    );
+    const habits = [...state.habits];
+    const values = { ...state.values };
+    if (change.before) {
+      insist(
+        sameValue(habits[change.index], change.before.habit) &&
+          sameValue(entries, change.before.entries),
+        'Deleted habit precondition failed.',
+      );
+      habits.splice(change.index, 1);
+      for (const date of Object.keys(entries))
+        delete values[`${prefix}${date}`];
+    } else {
+      insist(
+        change.index <= habits.length &&
+          habits.length < 1000 &&
+          !habits.some((habit) => habit.id === change.habitId) &&
+          !Object.keys(entries).length,
+        'Deleted habit restore precondition failed.',
+      );
+      habits.splice(change.index, 0, { ...change.after!.habit });
+      for (const [date, entry] of Object.entries(change.after!.entries))
+        values[`${prefix}${date}`] = entry;
+    }
+    next = { ...state, habits, values };
   } else if (change.kind === 'habit') {
     const current = state.habits[change.index] ?? null;
     if (change.before === null) {
@@ -990,6 +1079,8 @@ export function describeChange(change: Change, state: StoredState): string {
     return `Date fading ${change.after ? 'on' : 'off'}`;
   if (change.kind === 'rowSpacing') return `Row spacing · ${change.after}`;
   if (change.kind === 'order') return 'Habit order changed';
+  if (change.kind === 'deleteHabit')
+    return `${(change.before ?? change.after)!.habit.name} · ${change.after ? 'Deletion undone' : 'Deleted'}`;
   if (change.kind === 'habit')
     return `${change.after?.name ?? change.before?.name} · Habit changed`;
   if (change.kind === 'haptics')

@@ -36,7 +36,7 @@ No essential operation depends on discovering a hold gesture.
 
 An Add habit row scrolls with the end of the grid, including when the list is empty.
 Active habit actions live on the grid. Settings → Archived habits lists only
-archived definitions, recorded-day counts, and Restore. Save status and retry
+archived definitions, recorded-day counts, Restore and Delete. Save status and retry
 remain visible. There is no duplicate active-management screen.
 
 Editors and colour pickers use Done to apply and Close to discard drafts; picking
@@ -65,11 +65,11 @@ outside Undo.
 
 ## Storage compatibility
 
-New events and backup containers use version 10 (categorical/text records); version 9 added optional hiding of completed rows; version 8 added app-wide text size; version 7 added descriptions; version 6 added display settings; version 5 added editable start dates and row spacing; version 3 introduced definitions
+New events and backup containers use version 12 (undoable deletion); version 10 added categorical/text records; version 9 added optional hiding of completed rows; version 8 added app-wide text size; version 7 added descriptions; version 6 added display settings; version 5 added editable start dates and row spacing; version 3 introduced definitions
 and ordering, and version 4 adds optional icons. A habit change captures its stable
 ID, position, and before/after definition; creation uses a null before-definition.
 Undoing creation can remove it only after its entries have been undone. This is
-not a permanent deletion feature. An order change carries exact before/after ID
+separate from the confirmed, undoable deletion action. An order change carries exact before/after ID
 lists, validated as a permutation of every stored habit.
 
 Old v1–v9 logs and backups remain readable, unchanged. Legacy numeric habits are
@@ -180,3 +180,24 @@ Unrecorded cells show a dash, recorded cells use the habit colour; recording is
 not completion. Only numeric cells use native autosizing. The first fitting
 trial was rejected on the iPhone: the current iOS renderer ignores the proposed
 `minimumFontScale` limit. Revised readability needs device acceptance.
+
+## Delete archived habits
+
+Settings → Archived habits has separate labelled Restore and Delete buttons below
+each habit's details, with equal widths and wrapping for larger text. Icons align
+with names; metadata shows the type/unit, recorded-day count and first/last
+recorded dates. Applied notes have a bounded, plain-text two-line excerpt. Counts
+come from daily records, including zero and multi-selections, not edit timestamps. Delete opens the native iPhone
+confirmation naming the habit and recorded-day count; Cancel preserves everything.
+The browser preview uses its standard confirmation. Confirmed Delete removes the
+habit, notes and daily records from current app state in one Undo step. History →
+Undo returns it to Archived habits with its records and original position; Restore
+then returns it to the grid. Redo deletes it again.
+
+Deletion is recoverable, as chosen by the founder. Earlier changes remain in
+History and backups; this does not permanently erase the change log or recovery
+copies. Save failures remain visible with Retry. Both row actions disable while
+saving is blocked or backup work is exclusive, and the store rechecks archived
+state when a delayed confirmation is accepted. No active-habit Delete or bulk
+selection flow is added. Current writes/exports use v12, with unchanged v1–v10
+replay and SQL schema 1.

@@ -345,3 +345,11 @@ is nested in the existing App overlays for grid and statistics recording.
 entry rows; `recordStatistics` shares calendar/start rules without interpreting
 text or categories as numbers. The old numerical/checkbox statistics stay in
 `HabitStatsScreen`; its Chart has an explicit recording-label mode.
+
+Archived-habit display facts live in `archivedHabitDetails.ts`: one pass over
+record keys derives per-habit counts and first/last dates, retaining saved archived
+order. The archive memoizes these facts and bounded note excerpts so save
+acknowledgements do not repeat derivation/parsing. `ArchivedHabits` owns native
+confirmation; `ChangeStore.deleteArchivedHabit` captures current definitions and
+records for the atomic v12 deletion action. History-only deleted metadata never
+reenters the current grid or archive.

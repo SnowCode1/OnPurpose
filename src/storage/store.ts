@@ -85,7 +85,7 @@ export class ChangeStore {
     const started = performanceEnabled ? performance.now() : 0;
     const meta = {
       ...this.metadata(this.snapshot.events.length + 1),
-      version: 10 as const,
+      version: 12 as const,
     };
     if (performanceEnabled)
       recordPerformance('store.metadata', performance.now() - started);
@@ -96,13 +96,34 @@ export class ChangeStore {
     return this.enqueue({ ...meta, type: 'change', groupId, change });
   }
 
+  deleteArchivedHabit(habitId: string): boolean {
+    if (!this.canEdit()) return false;
+    const { habits, values } = this.snapshot.replay.state;
+    const index = habits.findIndex((habit) => habit.id === habitId);
+    const habit = habits[index];
+    if (!habit?.archived) return false;
+    const prefix = `${habitId}:`;
+    const entries = Object.fromEntries(
+      Object.entries(values)
+        .filter(([key]) => key.startsWith(prefix))
+        .map(([key, value]) => [key.slice(prefix.length), value]),
+    );
+    return this.change({
+      kind: 'deleteHabit',
+      habitId,
+      index,
+      before: { habit, entries },
+      after: null,
+    });
+  }
+
   undo = (): boolean => {
     if (!this.canEdit()) return false;
     const target = this.snapshot.replay.undo.at(-1);
     if (!target) return false;
     return this.enqueue({
       ...this.metadata(this.snapshot.events.length + 1),
-      version: 10,
+      version: 12,
       type: 'undo',
       targetId: target.id,
       change: inverse(target.change) as typeof target.change,
@@ -114,7 +135,7 @@ export class ChangeStore {
     if (!target) return false;
     return this.enqueue({
       ...this.metadata(this.snapshot.events.length + 1),
-      version: 10,
+      version: 12,
       type: 'redo',
       targetId: target.undoId,
       change: target.action.change,

@@ -144,6 +144,14 @@ ignored `.dev/preview-receiver.log`. Check/stop it with
 `npm run preview:server`; if the service already owns the port, do not start a
 second receiver. The authenticated health check passed after restarting.
 
+On 6 October the old transient service was no longer present. The current receiver
+runs in a VS Code terminal using `npm run preview:server`; authenticated health
+checking passes. Keep that terminal open alongside `npm start`. A new chat alone
+does not stop either process. A terminal closure, logout or reboot may require
+restarting them. The failed-preview alert's Retry sends the retained image; another
+gesture captures a new one. Do not launch a second receiver while the first owns
+the configured port.
+
 The initial workspace has `.env.local` configured and enabled. Screenshots and
 local environment settings are ignored by Git. Dated captures are retained until
 you delete them. The native snapshot includes the visible app area; it does not
@@ -249,10 +257,10 @@ Metro with `npm run start:clear` if it cannot resolve an installed module).
 Settings → Backups → Export backup opens the share sheet; choose Save to Files. Restore
 backup validates first and asks before replacing data, retaining a local copy.
 
-New habit edits use version-10 events with grouped actions; global preferences save
-outside visible History/Undo. Exports use container version 10; existing version-1/2/3/4/5/6/7/8/9
+New habit edits use version-12 events with grouped actions; global preferences save
+outside visible History/Undo. Exports use container version 12; existing version-1/2/3/4/5/6/7/8/9/10
 backups remain importable and old log records stay unchanged. Fully reload Expo Go
-to test storage updates. Do not downgrade to an older build after writing v10 data;
+to test storage updates. Do not downgrade to an older build after writing v12 data;
 older builds cannot interpret it and will refuse to load rather than reset.
 The web preview uses separate browser localStorage, not the iPhone SQLite file.
 
@@ -262,7 +270,8 @@ production SQL/replay logic. Native bridge and Files UI still need phone testing
 
 Add a checkbox or numeric habit from the row at the bottom of the grid. Hold a
 name to edit its name/unit/colour, reorder, or archive. Settings → Archived habits
-restores rows with their entries and retained slots; History can undo these changes.
+restores rows with their entries and retained slots, or deletes them after
+confirmation. History can undo either action, including every deleted record.
 Tap a name for a full-screen statistics view. See [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md)
 for gestures and [STATISTICS.md](STATISTICS.md) for calculation rules. Run
 `node --max-old-space-size=256 --test --test-timeout=15000 scripts/statistics.test.mjs` for focused statistics coverage.

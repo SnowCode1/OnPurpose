@@ -62,7 +62,8 @@ and uncertainty about whether something was saved.
 - Hold the habit name for a compact Colour/Edit/Reorder/Archive overlay. Continue
   holding and drag to reorder; include an explicit mode and accessible move actions.
   Keep date-cell recording gestures separate. Add habits at the end of the grid;
-  Settings contains an archived-habit restore list, not duplicate active management.
+  Settings contains an archived-habit list with Restore and confirmed Delete;
+  deletion is recoverable with History Undo, including all daily records.
 
 - Store app changes incrementally. This is the underlying storage approach and
   export format, separate from the habit/day model; it also enables a separate
@@ -189,21 +190,21 @@ and incremental history are desired scope, not excluded candidates.
 
 ## Decisions to make together
 
-| Question                                                               | Current status                                                     |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| How many dates and in which direction? How do we browse history?       | Adaptive columns; deliberate future reveal; future entries allowed |
-| All habits daily, selected weekdays, or frequency targets?             | Open                                                               |
-| Do numeric habits have units, targets, and a “lower is better” option? | Daily-total input confirmed; goal rules open                       |
-| What exactly counts toward a numeric or scheduled habit's streak?      | Open                                                               |
-| Midnight cutoff, late-night logging, backdating, and travel?           | Local midnight implemented; later cutoff/travel policy pending     |
-| Comments on a habit, a day, a particular entry, or multiple kinds?     | Comments desired; attachment semantics open                        |
-| Which app changes enter the history; how do deletion and undo work?    | Active habit actions; preferences excluded; deletion/erasure open  |
-| Export/import format, backup location, and cross-device sync?          | Version-9 JSON backup; v1–v8 import retained; sync deferred        |
-| Any reminders or widgets required for version one?                     | Open                                                               |
-| Free, paid, donations, or another model?                               | Open                                                               |
-| Licence and copyright holder?                                          | Open; choose before public release                                 |
-| Final name and visual personality?                                     | Name open; black background and habit colours confirmed            |
-| iOS version, Expo account, Apple Developer membership?                 | iPhone 16 Pro confirmed; account/OS status open                    |
+| Question                                                               | Current status                                                                     |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| How many dates and in which direction? How do we browse history?       | Adaptive columns; deliberate future reveal; future entries allowed                 |
+| All habits daily, selected weekdays, or frequency targets?             | Open                                                                               |
+| Do numeric habits have units, targets, and a “lower is better” option? | Daily-total input confirmed; goal rules open                                       |
+| What exactly counts toward a numeric or scheduled habit's streak?      | Open                                                                               |
+| Midnight cutoff, late-night logging, backdating, and travel?           | Local midnight implemented; later cutoff/travel policy pending                     |
+| Comments on a habit, a day, a particular entry, or multiple kinds?     | Comments desired; attachment semantics open                                        |
+| Which app changes enter the history; how do deletion and undo work?    | Active habit actions; preferences excluded; archived Delete undoable; erasure open |
+| Export/import format, backup location, and cross-device sync?          | Version-9 JSON backup; v1–v8 import retained; sync deferred                        |
+| Any reminders or widgets required for version one?                     | Open                                                                               |
+| Free, paid, donations, or another model?                               | Open                                                                               |
+| Licence and copyright holder?                                          | Open; choose before public release                                                 |
+| Final name and visual personality?                                     | Name open; black background and habit colours confirmed                            |
+| iOS version, Expo account, Apple Developer membership?                 | iPhone 16 Pro confirmed; account/OS status open                                    |
 
 ## Milestones
 

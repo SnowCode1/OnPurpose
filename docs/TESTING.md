@@ -1293,3 +1293,39 @@ header/cell alignment and readable text. Repeat while browsing past/future days,
 with larger OS text and landscape; return should retain the viewed date/range.
 Force a save failure through the existing test harness to confirm Settings still
 shows Retry and blocks changes appropriately. Preferences remain outside Undo.
+
+## Archived-habit deletion (6 October 2026)
+
+- Archive a habit with several recorded days, notes. In Settings →
+  Archived habits, check separate Restore/Delete buttons. Delete must name that
+  habit and count in the native confirmation. Cancel keeps the row and values.
+- Confirm Delete: that row disappears, other rows retain order, and saving remains
+  visible. History shows a named Habit deleted action and earlier named entries.
+  Undo returns the habit with its full notes/entries to its archived slot;
+  Restore returns it to the grid. Redo deletion removes it again.
+- Reload after Delete and after Undo, then repeat. Test checkbox, numeric zero,
+  multiple categories, free text, no recorded days, and the last remaining habit.
+  An empty store must stay empty rather than reinitialize samples.
+- Export/restore a v12 backup containing deletion, then Undo. Every record must
+  return, and the pre-restore recovery copy must remain available. Earlier changes
+  remain in exported logs: Delete with Undo is not permanent erasure.
+- Try portrait/landscape, 150% app text, OS Larger Text, VoiceOver and Reduce Motion.
+  Actions and confirmation must be readable/reachable. Check sample-mode deletion
+  stays temporary and real data is untouched. Failed writes must show Retry and
+  block new deletes/restores; retry must save exactly once.
+
+`archived-deletion.test.mjs` covers real SQLite file reopen, all entry types,
+complete definition snapshots, Undo/Redo, empty stores, stale confirmation,
+exact record/index/inverse validation, atomic rollback, uncertain-commit retry,
+serialized structural changes, preference Redo, History labels, native/web
+confirmation callbacks, backup recovery and unchanged legacy fixture prefixes.
+Phone presentation/gesture/accessibility checks remain pending.
+
+The full working-tree integration passed 259 tests, static checks, seven preview
+receiver tests and single-worker iOS/web exports. Browser checks passed cancel,
+one-event deletion, reload, History Undo and 100%/150% portrait/landscape layouts.
+The committed change is additionally verified in isolation from the unrelated
+unfinished goal feature; see the commit validation reported with this change.
+Temporary browser/profile/layout server were cleaned up. The phone preview receiver
+remains running in the founder's VS Code terminal. The new phone capture had not
+arrived; native confirmation, layout and accessibility remain phone checks.

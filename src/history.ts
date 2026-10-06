@@ -52,6 +52,27 @@ export function historyDayLabel(date: string, today: string): string {
   });
 }
 
+// Keep names/types for older actions after deletion, without returning these
+// habits or their records to the live grid/archive/statistics state.
+export function historyDisplayState(
+  state: StoredState,
+  actions: HistoryAction[],
+): StoredState {
+  const habits = new Map(state.habits.map((habit) => [habit.id, habit]));
+  for (let index = actions.length - 1; index >= 0; index--) {
+    const change = actions[index].change;
+    if (
+      change.kind === 'deleteHabit' &&
+      change.before &&
+      !habits.has(change.habitId)
+    )
+      habits.set(change.habitId, change.before.habit);
+  }
+  return habits.size === state.habits.length
+    ? state
+    : { ...state, habits: [...habits.values()] };
+}
+
 export function historyPresentation(event: HistoryAction, state: StoredState) {
   const change = event.change;
   if (change.kind === 'order')
@@ -62,6 +83,16 @@ export function historyPresentation(event: HistoryAction, state: StoredState) {
       color: '#ACB8C5',
       effectiveDate: null,
     };
+  if (change.kind === 'deleteHabit') {
+    const habit = (change.before ?? change.after)!.habit;
+    return {
+      title: habit.name,
+      summary: 'Habit deleted',
+      icon: 'erase' as const,
+      color: habit.color,
+      effectiveDate: null,
+    };
+  }
   if (change.kind === 'habit') {
     const habit = change.after ?? change.before!;
     const descriptionChanged =

@@ -981,3 +981,41 @@ an inner TypographyProvider prevents hidden font-context invalidation. Keep the
 grid mounted to retain range/scroll state, with live entry subscriptions and
 save failure/retry. This is the assistant's performance correction within the
 founder's request; no storage schema, new dependency or backend is needed.
+
+## 6 October 2026 — Recoverable deletion of archived habits
+
+The founder requested Delete on archived habits and explicitly chose Delete with
+Undo, retaining earlier changes in the change log/backups. The assistant chose
+separate labelled Restore/Delete buttons under each archived row's details and
+the standard native confirmation, naming the habit and recorded-day count.
+Cancel saves nothing; History Undo restores the complete archived habit and its
+records, then Restore returns it to the grid.
+
+A v12 structural snapshot action removes/restores the definition and all daily
+values in one atomic transaction and one Undo step. Recheck archived state on
+confirmation, keep visible failure/retry, and preserve append-only history,
+local description drafts/bookmarks, schema 1 and unchanged v1–v10 prefixes.
+Earlier History rows retain deleted habit names/types using display-only metadata.
+Permanent erasure, active-grid deletion and bulk deletion remain separate scope.
+Native confirmation, larger-text layout and VoiceOver need phone review.
+
+## 6 October 2026 — Archive balance and preview receiver restart
+
+The founder reported that the preview gesture worked but upload could not reach
+the receiver. No transient preview user service was present in the current desktop
+session. The receiver is now running via `npm run preview:server` in the founder's
+VS Code terminal and passes authenticated health checking. An attempted duplicate
+background receiver was stopped after discovering the occupied port. Expo and the
+receiver are separate processes; a chat session itself does not stop them.
+
+The founder requested a better-balanced archive layout and suggested more useful
+details. The assistant aligned icons with names, retained count/type/unit metadata,
+added the first/last recorded-date span and a bounded two-line plain note excerpt,
+and made Restore/Delete share a consistent equal-width bottom row. Date spans use
+habit/day keys, and note parsing uses the existing 600-character excerpt helper;
+no persistence or deletion semantics changed. Browser layouts were inspected;
+the founder's new phone capture had not arrived during this pass, so native visual
+acceptance remains pending.
+
+Version 12 is used to avoid colliding with separate in-progress storage work
+reserved for version 11. That other feature is not part of this change.

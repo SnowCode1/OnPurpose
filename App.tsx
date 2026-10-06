@@ -691,6 +691,9 @@ function PersistentApp({
           setPanel({ page: 'settings', visible: true, deferGrid: true })
         }
         onRestoreHabit={(habit) => saveHabit({ ...habit, archived: false })}
+        onDeleteHabit={(habit) => {
+          if (store.deleteArchivedHabit(habit.id)) feedback('confirm');
+        }}
         visible={panel.visible}
         HeadingComponent={PreviewHeading}
         snapshot={snapshot}
