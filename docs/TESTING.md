@@ -1448,3 +1448,14 @@ requested controls are visible and easy to reach. Edit a value, switch sections,
 then return before saving. Check the separator and expanded explanation in
 Settings → Appearance and in Statistics. Native keyboard placement, VoiceOver
 focus and perceived transition smoothness still need iPhone review.
+
+### Checkbox conditions and defaults
+
+On iPhone: open Goal → Repeat/Cycle/Success condition. Each should reveal choices
+with one tap, with no repeated summary above its options. Try Unchecked success
+with defaults Off and On; toggle a day from both the grid and statistics calendar.
+Check success totals, Hide completed today and periodic progress. Set Default On
+in habit editing, cancel once, then save; check the same dated goal in the goal
+editor. Reload, Undo/Redo, and verify earlier dates retain their earlier default.
+Test at large text size and landscape. Browser review is not evidence of native
+switch feel or iPhone layout.

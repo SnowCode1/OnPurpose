@@ -23,10 +23,14 @@ export function GoalSection({
   const heading = (
     <>
       <View style={{ flex: 1, gap: 4 }}>
-        <Text style={styles.label}>{label}</Text>
-        <Text style={styles.summary} numberOfLines={2}>
-          {summary}
+        <Text style={[styles.label, expanded && styles.openLabel]}>
+          {label}
         </Text>
+        {!expanded && (
+          <Text style={styles.summary} numberOfLines={2}>
+            {summary}
+          </Text>
+        )}
       </View>
       {onPress && (
         <View style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}>
@@ -48,6 +52,7 @@ export function GoalSection({
           }}
           style={({ pressed }) => [
             styles.sectionHeading,
+            expanded && { minHeight: 44, paddingVertical: 10 },
             { opacity: pressed ? 0.65 : 1 },
           ]}
         >
@@ -74,39 +79,43 @@ export function GoalChoice({
   value,
   onChange,
   colour,
+  direct = false,
 }: {
   label: string;
   options: [string, string][];
   value: string;
   onChange: (value: string) => void;
   colour: string;
+  direct?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const selected = options.find(([id]) => id === value)?.[1] ?? 'Choose';
   return (
     <View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${label}, ${selected}`}
-        accessibilityState={{ expanded: open }}
-        onPress={() => {
-          Keyboard.dismiss();
-          setOpen((previous) => !previous);
-        }}
-        style={({ pressed }) => [
-          styles.choiceHeading,
-          { opacity: pressed ? 0.65 : 1 },
-        ]}
-      >
-        <View style={{ flex: 1, gap: 3 }}>
-          <Text style={styles.label}>{label}</Text>
-          <Text style={styles.control}>{selected}</Text>
-        </View>
-        <View style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }}>
-          <Icon name="chevron" size={14} color="#999999" />
-        </View>
-      </Pressable>
-      {open && (
+      {!direct && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${label}, ${selected}`}
+          accessibilityState={{ expanded: open }}
+          onPress={() => {
+            Keyboard.dismiss();
+            setOpen((previous) => !previous);
+          }}
+          style={({ pressed }) => [
+            styles.choiceHeading,
+            { opacity: pressed ? 0.65 : 1 },
+          ]}
+        >
+          <View style={{ flex: 1, gap: 3 }}>
+            <Text style={styles.label}>{label}</Text>
+            <Text style={styles.control}>{selected}</Text>
+          </View>
+          <View style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }}>
+            <Icon name="chevron" size={14} color="#999999" />
+          </View>
+        </Pressable>
+      )}
+      {(direct || open) && (
         <Animated.View entering={appear} style={styles.options}>
           {options.map(([id, title]) => (
             <Pressable
@@ -158,6 +167,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   label: { fontSize: 12, color: '#929292' },
+  openLabel: { fontSize: 14, color: '#DDDDDD' },
   summary: { fontSize: 16, color: '#E2E2E2' },
   control: { fontSize: 14, color: '#DDDDDD' },
   choiceHeading: {

@@ -55,7 +55,8 @@ export function entryLabel(
       })
       .join(compact ? ' · ' : ', ');
   }
-  if (habitType(habit) === 'checkbox') return value === 1 ? 'Checked' : '—';
+  if (habitType(habit) === 'checkbox')
+    return value === 1 ? 'Checked' : value === 0 ? 'Unchecked' : '—';
   return String(value);
 }
 // Bound native text measurement while retaining the full value in the editor.

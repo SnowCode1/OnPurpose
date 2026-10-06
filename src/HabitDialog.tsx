@@ -1,3 +1,6 @@
+import { CheckboxDefaultField } from './CheckboxDefaultField';
+import { checkboxChecked, withCheckboxDefault } from './habitGoals';
+import { randomUUID } from 'expo-crypto';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import type { WeekStart } from './displayPreferences';
 import { CategoryEditor } from './CategoryEditor';
@@ -367,6 +370,31 @@ export function HabitDialog({
                             placeholderTextColor="#666666"
                           />
                         </View>
+                      )}
+                      {type === 'checkbox' && (
+                        <CheckboxDefaultField
+                          checked={checkboxChecked(
+                            goalHabit,
+                            undefined,
+                            mode === 'create' ? startDate : today,
+                          )}
+                          colour={colour}
+                          detail={
+                            mode === 'create'
+                              ? 'From the start date'
+                              : 'From today'
+                          }
+                          onChange={(checked) =>
+                            setGoals(
+                              withCheckboxDefault(
+                                goalHabit,
+                                mode === 'create' ? startDate : today,
+                                checked,
+                                randomUUID(),
+                              ),
+                            )
+                          }
+                        />
                       )}
                       <GoalSummary
                         habit={goalHabit}

@@ -94,7 +94,7 @@ export function isPreference(change: Change): change is PreferenceChange {
 }
 export type HabitChange = Exclude<Change, PreferenceChange>;
 export type EventMeta = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14;
   id: string;
   sequence: number;
   recordedAt: string;
@@ -106,7 +106,7 @@ export type LegacyChangeEvent = EventMeta & { version: 1 } & (
     | { type: 'undo' | 'redo'; targetId: string; change: Change }
   );
 export type CurrentChangeEvent = EventMeta & {
-  version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
+  version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14;
 } & (
     | { type: 'change'; groupId: string; change: HabitChange }
     | { type: 'undo' | 'redo'; targetId: string; change: HabitChange }
@@ -143,6 +143,7 @@ export type Replay = {
   hasV11: boolean;
   hasV12: boolean;
   hasV13: boolean;
+  hasV14: boolean;
 };
 export const emptyReplay = (): Replay => ({
   state: { habits: [], values: {}, hapticsEnabled: true },
@@ -163,6 +164,7 @@ export const emptyReplay = (): Replay => ({
   hasV11: false,
   hasV12: false,
   hasV13: false,
+  hasV14: false,
 });
 export const GROUP_INACTIVITY_MS = 2 * 60 * 1000;
 
@@ -247,7 +249,12 @@ function validateHabit(
   id(value.id);
   if (Object.hasOwn(value, 'goals'))
     insist(
-      validGoalTimeline(value.goals, value as Habit, version >= 13),
+      validGoalTimeline(
+        value.goals,
+        value as Habit,
+        version >= 13,
+        version >= 14,
+      ),
       'Invalid goal timeline or rule.',
     );
   colour(value.color);
@@ -353,11 +360,11 @@ function dailyValue(value: unknown, version: number) {
     'Category selections must be unique and sorted.',
   );
 }
-function entryFits(habit: Habit, value: EntryValue | null) {
+function entryFits(habit: Habit, value: EntryValue | null, version = 14) {
   if (value === null) return true;
   switch (habitType(habit)) {
     case 'checkbox':
-      return value === 1;
+      return value === 1 || (version >= 14 && value === 0);
     case 'number':
       return typeof value === 'number';
     case 'text':
@@ -373,7 +380,7 @@ function entryFits(habit: Habit, value: EntryValue | null) {
 }
 export function validateChange(
   value: unknown,
-  version = 13,
+  version = 14,
 ): asserts value is Change {
   object(value);
   if (value.kind === 'entry') {
@@ -428,7 +435,8 @@ export function validateChange(
       insist(validDate(date), 'Invalid calendar date.');
       dailyValue(entry, version);
       insist(
-        entry !== null && entryFits(snapshot.habit, entry as EntryValue),
+        entry !== null &&
+          entryFits(snapshot.habit, entry as EntryValue, version),
         'Invalid deleted habit entry.',
       );
     }
@@ -516,7 +524,8 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
       value.version === 10 ||
       value.version === 11 ||
       value.version === 12 ||
-      value.version === 13,
+      value.version === 13 ||
+      value.version === 14,
     'Unsupported event version.',
   );
   id(value.id);
@@ -707,6 +716,7 @@ function reduceEvent(
       hasV11: event.version >= 11,
       hasV12: event.version >= 12,
       hasV13: event.version >= 13,
+      hasV14: event.version >= 14,
     };
   }
   insist(
@@ -752,6 +762,10 @@ function reduceEvent(
   insist(
     !previous.hasV11 || event.version >= 11,
     'Older events cannot follow version-11 events.',
+  );
+  insist(
+    !previous.hasV14 || event.version >= 14,
+    'Older events cannot follow version-14 events.',
   );
   insist(
     !previous.hasV13 || event.version >= 13,
@@ -889,7 +903,7 @@ function reduceEvent(
     // Preferences only update saved state. They leave habit undo/redo/groups intact.
   }
   return {
-    state: reduceChange(previous.state, event.change, mutable),
+    state: reduceChange(previous.state, event.change, mutable, event.version),
     undo,
     redo,
     lastGroup,
@@ -907,6 +921,7 @@ function reduceEvent(
     hasV11: previous.hasV11 || event.version >= 11,
     hasV12: previous.hasV12 || event.version >= 12,
     hasV13: previous.hasV13 || event.version >= 13,
+    hasV14: previous.hasV14 || event.version >= 14,
   };
 }
 export function applyChange(state: StoredState, change: Change): StoredState {
@@ -916,8 +931,9 @@ function reduceChange(
   state: StoredState,
   change: Change,
   mutable: boolean,
+  version = 14,
 ): StoredState {
-  validateChange(change);
+  validateChange(change, version);
   let next: StoredState;
   if (
     change.kind === 'columnSpacing' ||
@@ -1024,7 +1040,7 @@ function reduceChange(
       insist(
         Object.entries(state.values).every(
           ([key, value]) =>
-            !key.startsWith(prefix) || entryFits(change.after!, value),
+            !key.startsWith(prefix) || entryFits(change.after!, value, version),
         ),
         'Cannot remove categories referenced by entries; archive them instead.',
       );
@@ -1060,7 +1076,9 @@ function reduceChange(
         'Daily value precondition failed.',
       );
       insist(
-        [change.before, change.after].every((value) => entryFits(habit, value)),
+        [change.before, change.after].every((value) =>
+          entryFits(habit, value, version),
+        ),
         'Daily value does not match habit type or categories.',
       );
       const values = mutable ? state.values : { ...state.values };

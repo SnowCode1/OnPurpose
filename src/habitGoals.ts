@@ -14,6 +14,7 @@ import type { EntryValue } from './entries.ts';
 export type SuccessRule =
   | { kind: 'none' }
   | { kind: 'checked' }
+  | { kind: 'unchecked' }
   | { kind: 'recorded' }
   | {
       kind: 'number';
@@ -34,6 +35,7 @@ export type HabitGoal = {
   from: string;
   rule: SuccessRule;
   weekdays: number[];
+  defaultChecked?: boolean;
   period?: GoalPeriod;
   cycle?: GoalCycle;
 };
@@ -81,6 +83,7 @@ export function validSuccessRule(
   switch (value.kind) {
     case 'none':
       return type !== 'checkbox' && fields(value, ['kind']);
+    case 'unchecked':
     case 'checked':
       return type === 'checkbox' && fields(value, ['kind']);
     case 'recorded':
@@ -148,6 +151,7 @@ export function validGoalTimeline(
   value: unknown,
   habit: Habit,
   allowTiming = true,
+  allowCheckboxDefaults = true,
 ): value is HabitGoal[] {
   if (
     !Array.isArray(value) ||
@@ -165,6 +169,9 @@ export function validGoalTimeline(
         'from',
         'rule',
         'weekdays',
+        ...(allowCheckboxDefaults && Object.hasOwn(goal, 'defaultChecked')
+          ? ['defaultChecked']
+          : []),
         ...(allowTiming && Object.hasOwn(goal, 'period') ? ['period'] : []),
         ...(allowTiming && Object.hasOwn(goal, 'cycle') ? ['cycle'] : []),
       ]) ||
@@ -179,6 +186,12 @@ export function validGoalTimeline(
       !dateValid(goal.from) ||
       (index > 0 && value[index - 1].from >= goal.from) ||
       !validSuccessRule(goal.rule, habit) ||
+      (!allowCheckboxDefaults &&
+        record(goal.rule) &&
+        goal.rule.kind === 'unchecked') ||
+      (Object.hasOwn(goal, 'defaultChecked') &&
+        (habitType(habit) !== 'checkbox' ||
+          typeof goal.defaultChecked !== 'boolean')) ||
       !Array.isArray(goal.weekdays) ||
       !goal.weekdays.length ||
       goal.weekdays.length > 7 ||
@@ -219,6 +232,8 @@ export function ruleIsMet(
   switch (rule.kind) {
     case 'checked':
       return value === 1;
+    case 'unchecked':
+      return value === 0;
     case 'recorded':
       return (
         typeof value === 'number' ||
@@ -269,7 +284,14 @@ export function evaluateGoal(
     withinStart &&
     active &&
     scheduledOn(goal ?? { weekdays: allWeekdays }, ordinal(date));
-  const met = withinStart && ruleIsMet(rule, value);
+  const met =
+    withinStart &&
+    ruleIsMet(
+      rule,
+      habitType(habit) === 'checkbox'
+        ? Number(checkboxChecked(habit, value, date))
+        : value,
+    );
   return { goal, rule, active, scheduled, met, recorded: value !== undefined };
 }
 export function ruleSummary(habit: Habit, rule: SuccessRule): string {
@@ -288,6 +310,8 @@ export function ruleSummary(habit: Habit, rule: SuccessRule): string {
       return 'Track only';
     case 'checked':
       return 'Checked';
+    case 'unchecked':
+      return 'Unchecked';
     case 'recorded':
       return habitType(habit) === 'text'
         ? 'Any nonblank text'
@@ -343,4 +367,43 @@ export function timingSummary(
   ]
     .filter(Boolean)
     .join(' · ');
+}
+
+// Missing records inherit the dated default; explicit zero is an unchecked override.
+export function checkboxChecked(
+  habit: Habit,
+  value: EntryValue | undefined,
+  date: string,
+): boolean {
+  if (value === 1 || value === 0) return value === 1;
+  return (
+    (!habit.startDate || date >= habit.startDate) &&
+    (goalAt(habit, date)?.defaultChecked ?? false)
+  );
+}
+export function toggleCheckboxValue(
+  habit: Habit,
+  value: EntryValue | undefined,
+  date: string,
+): 0 | 1 | null {
+  const next = !checkboxChecked(habit, value, date);
+  return next === checkboxChecked(habit, undefined, date) ? null : next ? 1 : 0;
+}
+export function withCheckboxDefault(
+  habit: Habit,
+  from: string,
+  checked: boolean,
+  id: string,
+): HabitGoal[] {
+  const current = goalAt(habit, from);
+  const goal: HabitGoal = {
+    ...(current ?? {
+      rule: defaultSuccessRule(habit),
+      weekdays: [...allWeekdays],
+    }),
+    id,
+    from,
+    defaultChecked: checked,
+  };
+  return replaceGoal(habit.goals, resolveGoalDraft(habit.goals, goal, false));
 }

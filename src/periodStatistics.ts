@@ -1,6 +1,6 @@
-import type { Habit } from './habits.ts';
+import { habitType, type Habit } from './habits.ts';
 import type { EntryValues } from './entries.ts';
-import { ruleIsMet } from './habitGoals.ts';
+import { evaluateGoal, ruleIsMet } from './habitGoals.ts';
 import {
   cycleLengths,
   ordinal,
@@ -67,59 +67,69 @@ export function periodStatistics(
     // Today is still open, including its last day. Policy-truncated periods
     // never become failures and do not silently prorate their target.
     const final = Math.min(last, Math.floor((now - anchor) / length) - 1);
+    const baseline =
+      habitType(habit) === 'checkbox' &&
+      ruleIsMet(goal.rule, Number(goal.defaultChecked ?? false));
     const counts = new Map<number, number>();
     for (const { day, value } of records) {
-      if (
-        day < start ||
-        day > stop ||
-        !scheduledOn(goal, day) ||
-        !ruleIsMet(goal.rule, value)
-      )
-        continue;
+      if (day < start || day > stop || !scheduledOn(goal, day)) continue;
       const index = Math.floor((day - anchor) / length);
-      counts.set(index, (counts.get(index) ?? 0) + 1);
+      const delta =
+        Number(evaluateGoal(habit, value, timingDate(day)).met) -
+        Number(baseline);
+      if (delta) counts.set(index, (counts.get(index) ?? 0) + delta);
     }
     const phaseDays = goal.cycle ? cycleLengths(goal.cycle).total * 7 : 7;
     const repeat = phaseDays / gcd(phaseDays, length);
-    const prefix = [0];
-    for (let i = 0; i < repeat; i++) {
-      const a = anchor + i * length;
-      prefix.push(
-        prefix[i] + Number(scheduledCount(goal, a, a + length - 1) > 0),
-      );
-    }
-    const before = (index: number) => {
-      const whole = Math.floor(index / repeat),
-        rest = ((index % repeat) + repeat) % repeat;
-      return whole * prefix[repeat] + prefix[rest];
-    };
-    const opportunities = (a: number, b: number) =>
-      b < a ? 0 : before(b + 1) - before(a);
-    const active = (index: number) => opportunities(index, index) > 0;
-    const zeroMet = periodMet(period, 0);
+    const emptyCount = (index: number) =>
+      baseline
+        ? scheduledCount(
+            goal,
+            anchor + index * length,
+            anchor + (index + 1) * length - 1,
+          )
+        : 0;
+    const pattern = Array.from({ length: repeat }, (_, index) => {
+      const a = anchor + index * length;
+      const active = scheduledCount(goal, a, a + length - 1) > 0;
+      return runSummary(active ? periodMet(period, emptyCount(index)) : null);
+    });
+    const baselineRange = (a: number, b: number) =>
+      repeatingRuns(pattern, a, b);
+    const active = (index: number) =>
+      pattern[((index % repeat) + repeat) % repeat].eligible > 0;
     const rangeFirst = Math.max(initial, Math.ceil((range - anchor) / length));
-    eligible += opportunities(rangeFirst, final);
-    if (zeroMet) met += opportunities(rangeFirst, final);
-    for (const [index, count] of counts)
+    const rangeResult = baselineRange(rangeFirst, final);
+    eligible += rangeResult.eligible;
+    met += rangeResult.met;
+    for (const [index, delta] of counts)
       if (index >= rangeFirst && index <= final && active(index))
-        met += Number(periodMet(period, count)) - Number(zeroMet);
+        met +=
+          Number(periodMet(period, emptyCount(index) + delta)) -
+          Number(periodMet(period, emptyCount(index)));
     let cursor = initial;
-    const applyRun = (success: boolean, amount: number) => {
-      if (!amount) return;
-      streak = success ? streak + amount : 0;
-      bestStreak = Math.max(bestStreak, streak);
+    const applyRun = (summary: RunSummary) => {
+      bestStreak = Math.max(bestStreak, summary.best, streak + summary.prefix);
+      streak = summary.all ? streak + summary.eligible : summary.suffix;
     };
-    for (const [index, count] of [...counts].sort((a, b) => a[0] - b[0])) {
+    for (const [index, delta] of [...counts].sort((a, b) => a[0] - b[0])) {
       if (index < initial || index > final) continue;
-      applyRun(zeroMet, opportunities(cursor, index - 1));
-      applyRun(periodMet(period, count), Number(active(index)));
+      applyRun(baselineRange(cursor, index - 1));
+      applyRun(
+        runSummary(
+          active(index) ? periodMet(period, emptyCount(index) + delta) : null,
+        ),
+      );
       cursor = index + 1;
     }
-    applyRun(zeroMet, opportunities(cursor, final));
+    applyRun(baselineRange(cursor, final));
     const result = (index: number): PeriodResult => {
       const a = anchor + index * length,
         b = a + length - 1,
-        count = counts.get(index) ?? 0;
+        count =
+          (baseline
+            ? scheduledCount(goal, Math.max(a, start), Math.min(b, stop))
+            : 0) + (counts.get(index) ?? 0);
       const partial = a < start || (b > stop && stop < now);
       const rest =
         scheduledCount(
@@ -171,4 +181,61 @@ export function periodStatistics(
     current,
     recent: recent.sort((a, b) => b.start.localeCompare(a.start)).slice(0, 8),
   };
+}
+
+// Compose runs over a repeating eligibility pattern, skipping full cycles in O(log n).
+type RunSummary = {
+  eligible: number;
+  met: number;
+  prefix: number;
+  suffix: number;
+  best: number;
+  all: boolean;
+};
+function runSummary(met: boolean | null): RunSummary {
+  return {
+    eligible: Number(met !== null),
+    met: Number(met === true),
+    prefix: Number(met === true),
+    suffix: Number(met === true),
+    best: Number(met === true),
+    all: met !== false,
+  };
+}
+function join(a: RunSummary, b: RunSummary): RunSummary {
+  return {
+    eligible: a.eligible + b.eligible,
+    met: a.met + b.met,
+    prefix: a.all ? a.eligible + b.prefix : a.prefix,
+    suffix: b.all ? b.eligible + a.suffix : b.suffix,
+    best: Math.max(a.best, b.best, a.suffix + b.prefix),
+    all: a.all && b.all,
+  };
+}
+function repeatingRuns(
+  pattern: RunSummary[],
+  from: number,
+  to: number,
+): RunSummary {
+  let result = runSummary(null);
+  const size = pattern.length;
+  while (from <= to && ((from % size) + size) % size !== 0) {
+    result = join(result, pattern[((from % size) + size) % size]);
+    from++;
+  }
+  let cycles = Math.floor((to - from + 1) / size);
+  if (cycles > 0) {
+    from += cycles * size;
+    let block = pattern.reduce(join, runSummary(null));
+    while (cycles > 0) {
+      if (cycles % 2) result = join(result, block);
+      block = join(block, block);
+      cycles = Math.floor(cycles / 2);
+    }
+  }
+  while (from <= to) {
+    result = join(result, pattern[((from % size) + size) % size]);
+    from++;
+  }
+  return result;
 }

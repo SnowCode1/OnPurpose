@@ -1,3 +1,4 @@
+import { checkboxChecked } from './habitGoals.ts';
 import { sameValue } from './storage/model.ts';
 import { entryLabel } from './entries.ts';
 import { localDateKey } from './calendar.ts';
@@ -172,8 +173,11 @@ export function historyPresentation(event: HistoryAction, state: StoredState) {
     };
     summary = `${compact(change.before)} → ${change.after === null ? 'Cleared' : compact(change.after)}`;
   } else {
-    icon = change.after === null ? 'unchecked' : 'checked';
-    summary = change.after === null ? 'Unchecked' : 'Checked';
+    const checked = habit
+      ? checkboxChecked(habit, change.after ?? undefined, change.date)
+      : change.after === 1;
+    icon = checked ? 'checked' : 'unchecked';
+    summary = checked ? 'Checked' : 'Unchecked';
   }
   const recordedDay = localDateKey(new Date(event.recordedAt));
   const effectiveDate =

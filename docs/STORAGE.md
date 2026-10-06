@@ -423,3 +423,18 @@ Ordinary definition snapshots preserve period/cycle anchors through edits,
 Undo/Redo, archiving/deletion and backup recovery. Preferences never retroactively
 realign saved weeks. [The v13 example](examples/storage-v13.json) extends the exact
 unchanged v12 prefix. No existing store is reseeded or assigned inferred goals.
+
+## Version 14: dated checkbox defaults and unchecked success
+
+Current event/export writers use v14; unchanged v1–v13 prefixes remain readable.
+Goals allow `rule: {kind: 'unchecked'}` and optional boolean `defaultChecked`
+(checkbox habits only). Absent means Off. Checkbox entry 0 explicitly means Off,
+1 means On, and null removes an override to inherit the dated default. V1–v13
+reject the new condition, default field and checkbox zero. SQL stays schema 1;
+no migrations, reseeding or bulk synthetic entries occur.
+
+Defaults are saved in ordinary dated habit definitions so Undo/Redo, archive
+restore/deletion snapshots and atomic backup recovery preserve them. Toggling
+away from and back to the default uses normal net-zero grouping. Preferences
+remain outside History. The [v14 fixture](examples/storage-v14.json) extends the
+exact v13 prefix. Its future default does not alter earlier records.

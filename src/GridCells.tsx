@@ -1,5 +1,5 @@
 import { cellEntryLabel, entryLabel } from './entries';
-import { evaluateGoal } from './habitGoals';
+import { evaluateGoal, checkboxChecked } from './habitGoals';
 import { Text } from './Typography';
 import { memo, useMemo, useSyncExternalStore } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -49,7 +49,7 @@ const GridCell = memo(function GridCell({
   recordPerformance('grid.cell.render');
   const numeric = isNumericHabit(habit);
   const checkbox = habitType(habit) === 'checkbox';
-  const checked = value === 1;
+  const checked = checkboxChecked(habit, value, day.key);
   const recorded = value !== undefined;
   const goal = evaluateGoal(habit, value, day.key);
   const tone = palette.tones[dayTone(day.daysAgo)];

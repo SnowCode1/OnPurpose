@@ -1,3 +1,4 @@
+import { checkboxChecked, toggleCheckboxValue } from './src/habitGoals';
 import { sameValue } from './src/storage/model';
 import { DailyRecordDialog } from './src/DailyRecordDialog';
 import { HabitGoalsEditor } from './src/HabitGoalsEditor';
@@ -246,7 +247,7 @@ function PersistentApp({
         setRecording({ key, habit, day });
         feedback('selection');
       } else {
-        const after = before === 1 ? null : 1;
+        const after = toggleCheckboxValue(habit, before ?? undefined, day.key);
         if (
           store.change({
             kind: 'entry',
@@ -256,7 +257,11 @@ function PersistentApp({
             after,
           })
         )
-          feedback(after === null ? 'undo' : 'confirm');
+          feedback(
+            checkboxChecked(habit, after ?? undefined, day.key)
+              ? 'confirm'
+              : 'undo',
+          );
       }
     },
     [store, setInput, setEditing],

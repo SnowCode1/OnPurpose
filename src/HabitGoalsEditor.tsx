@@ -95,6 +95,9 @@ export function HabitGoalsEditor({
           : initialDate,
       ...(current?.period ? { period: current.period } : {}),
       ...(current?.cycle ? { cycle: current.cycle } : {}),
+      ...(current?.defaultChecked !== undefined
+        ? { defaultChecked: current.defaultChecked }
+        : {}),
       rule: current?.rule ?? defaultSuccessRule(habit),
       weekdays: [...(current?.weekdays ?? allWeekdays)],
     };
@@ -321,6 +324,7 @@ export function HabitGoalsEditor({
                           </View>
                           <Text numberOfLines={2} style={styles.rule}>
                             {ruleSummary(habit, goal.rule)}
+                            {goal.defaultChecked ? ' · default On' : ''}
                           </Text>
                           <View style={styles.dateRow}>
                             <Text style={[styles.note, { flex: 1 }]}>

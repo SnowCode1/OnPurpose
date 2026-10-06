@@ -74,6 +74,7 @@ export function GoalTimingFields({
   ) {
     return (
       <GoalChoice
+        direct={label === 'How often' || label === 'Pattern'}
         label={label}
         options={options}
         value={selected}

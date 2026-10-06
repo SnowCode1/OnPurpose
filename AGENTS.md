@@ -266,3 +266,12 @@ Goal editing now starts with four summary sections owned by
 drafts and hide inactive content from accessibility. Single-choice options open
 short lists; keep multi-select weekdays/categories direct. InfoNote owns the
 shared subtle top separator/spacing; do not add unrelated per-screen divider hacks.
+
+Checkbox goals now support `unchecked` and dated optional `defaultChecked` in
+`habitGoals.ts`. Use `checkboxChecked`/`toggleCheckboxValue` everywhere: saved 0
+is an explicit Off override, 1 is On, absent inherits the dated default. Current
+writes/exports are v14; v1–v13 keep old validation and exact prefixes. SQL stays 1.
+Default changes from habit editing use `withCheckboxDefault`; goal editing stages
+the same timeline field. Count implicit successes arithmetically through policies
+and repeating periods, never materialize lifetime daily values. Primary goal
+section choices open directly; do not nest a duplicate selected-value dropdown.

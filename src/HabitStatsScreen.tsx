@@ -2,7 +2,7 @@ import { PeriodProgress } from './PeriodProgress';
 import { summarizeCompletion } from './completionStatistics';
 import type { EntryValues } from './entries';
 import { GoalSummary } from './GoalSummary';
-import { evaluateGoal } from './habitGoals';
+import { evaluateGoal, checkboxChecked } from './habitGoals';
 import { Text, useAppWindowDimensions } from './Typography';
 import { weekDayOrder, type WeekStart } from './displayPreferences';
 import { memo, useMemo, useState } from 'react';
@@ -377,7 +377,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
               ? `${format(stats.total)}${unit ? ` ${unit}` : ''} recorded`
               : 'Nothing recorded in this period'
             : stats.eligible
-              ? `${stats.successes} of ${stats.eligible} days checked`
+              ? `${stats.successes} of ${stats.eligible} days successful`
               : 'No days in this period yet'}
         </Text>
         <Text style={styles.caption}>
@@ -456,7 +456,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
         )}
       <View style={styles.section}>
         <Text accessibilityRole="header" style={styles.sectionTitle}>
-          {stats.numeric ? 'Daily totals' : 'Days checked'}
+          {stats.numeric ? 'Daily totals' : 'Successful days'}
         </Text>
         {stats.bucketDays > 1 && (
           <Text style={styles.caption}>
@@ -489,7 +489,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
               Dashed marks show the goal for each scheduled day.
             </Text>
           )}
-        {!stats.recorded && (
+        {!stats.recorded && !stats.successes && (
           <Text style={styles.caption}>Nothing recorded in this period.</Text>
         )}
       </View>
@@ -498,7 +498,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
           By day of the week
         </Text>
         <Text style={styles.caption}>
-          {stats.numeric ? 'Average per day' : 'Days checked (%)'}
+          {stats.numeric ? 'Average per day' : 'Successful days (%)'}
           {stats.numeric && unit ? ` · ${unit}` : ''} · selected period
         </Text>
         {weekDays.map((weekday) => {
@@ -604,10 +604,13 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
           {calendar.days.map((day) => {
             const entry = values[`${habit.id}:${day}`];
             const value = typeof entry === 'number' ? entry : undefined;
-            const recorded = stats.numeric ? value !== undefined : value === 1;
+            const recorded = stats.numeric
+              ? value !== undefined
+              : checkboxChecked(habit, value, day);
             const goal = evaluateGoal(habit, value, day);
             const date = entryDay(day);
-            const background = recorded
+            const highlighted = stats.numeric ? recorded : goal.met;
+            const background = highlighted
               ? colorOnBlack(
                   habit.color,
                   stats.numeric
@@ -627,9 +630,9 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
                   disabled: !editable,
                   ...(stats.numeric ? {} : { checked: recorded }),
                 }}
-                accessibilityLabel={`${habit.name}, ${date.fullLabel}${day === today ? ', today' : ''}${day > today ? ', future date' : ''}, ${recorded ? (stats.numeric ? `${format(value ?? null)} ${unit}` : 'checked') : 'not recorded'}, ${goal.active ? (goal.met ? 'goal met' : recorded ? 'goal not met' : 'not recorded') : 'tracking only'}${!goal.scheduled && goal.active ? ', not scheduled' : ''}`}
+                accessibilityLabel={`${habit.name}, ${date.fullLabel}${day === today ? ', today' : ''}${day > today ? ', future date' : ''}, ${recorded ? (stats.numeric ? `${format(value ?? null)} ${unit}` : 'checked') : stats.numeric ? 'not recorded' : 'unchecked'}, ${goal.active ? (goal.met ? 'goal met' : recorded ? 'goal not met' : 'not recorded') : 'tracking only'}${!goal.scheduled && goal.active ? ', not scheduled' : ''}`}
                 accessibilityHint={
-                  stats.numeric ? 'Edit daily total' : 'Toggle completion'
+                  stats.numeric ? 'Edit daily total' : 'Toggle checkbox'
                 }
                 disabled={!editable}
                 onPress={() => onCellPress(habit, date)}
@@ -651,7 +654,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
                     adjustsFontSizeToFit
                     minimumFontScale={0.65}
                     style={{
-                      color: recorded
+                      color: highlighted
                         ? checkmarkColor(background)
                         : day > today
                           ? '#606060'

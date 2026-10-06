@@ -1,3 +1,4 @@
+import { CheckboxDefaultField } from './CheckboxDefaultField';
 import { GoalSection, GoalChoice as Choices } from './GoalEditorControls';
 import { useEffect, useState, type ComponentType, type ReactNode } from 'react';
 import {
@@ -126,6 +127,9 @@ export function GoalVersionForm({
   >(null);
   const toggleSection = (next: typeof section) =>
     setSection((previous) => (previous === next ? null : next));
+  const [defaultChecked, setDefaultChecked] = useState(
+    initial.defaultChecked ?? false,
+  );
   const [from, setFrom] = useState(initial.from);
   const [kind, setKind] = useState<SuccessRule['kind']>(initial.rule.kind);
   const [operator, setOperator] = useState(
@@ -194,6 +198,10 @@ export function GoalVersionForm({
       from,
       rule,
       ...timing,
+      ...(type === 'checkbox' &&
+      (defaultChecked || initial.defaultChecked !== undefined)
+        ? { defaultChecked }
+        : {}),
       weekdays: [...timing.weekdays].sort((a, b) => a - b),
     },
     existing,
@@ -357,20 +365,38 @@ export function GoalVersionForm({
           </Text>
         </View>
         <GoalSection
-          label="Counts when"
+          label="Success condition"
           summary={
             validSuccessRule(rule, habit)
-              ? ruleSummary(habit, rule)
+              ? `${ruleSummary(habit, rule)}${type === 'checkbox' && defaultChecked ? ' · default On' : ''}`
               : 'Finish this condition'
           }
           expanded={section === 'condition'}
-          onPress={
-            type === 'checkbox' ? undefined : () => toggleSection('condition')
-          }
+          onPress={() => toggleSection('condition')}
         >
-          {type !== 'checkbox' && (
+          {type === 'checkbox' ? (
+            <>
+              <Choices
+                direct
+                label="Success condition"
+                colour={habit.color}
+                value={kind}
+                onChange={(value) => setKind(value as SuccessRule['kind'])}
+                options={[
+                  ['checked', 'Checked'],
+                  ['unchecked', 'Unchecked'],
+                ]}
+              />
+              <CheckboxDefaultField
+                checked={defaultChecked}
+                onChange={setDefaultChecked}
+                colour={habit.color}
+              />
+            </>
+          ) : (
             <Choices
-              label="Counts when"
+              direct
+              label="Success condition"
               colour={habit.color}
               value={kind}
               onChange={(value) => {

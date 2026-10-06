@@ -1089,3 +1089,13 @@ Shared InfoNote rows now have a quiet hairline divider, consistent small spacing
 an expand arrow and indented explanation text. Touch targets, app/OS font scaling
 and reduced-motion-aware explanation/choice fades are retained across Settings,
 Statistics and goal screens.
+
+### 2026-10-06 — Direct goal choices and dated checkbox defaults
+
+Founder: remove nested selectors repeating the same value, rename Counts when to
+Success condition, allow unchecked success and default-On checkboxes, accessible
+from both habit and goal editing. Implemented one disclosure per primary goal
+choice. Default state is a separate control within Success condition and beside
+Goal in habit editing. Implementation choice: store defaults in the dated goal
+timeline; untouched days inherit them, explicit 0/1 records override them. This
+preserves earlier behaviour and keeps all changes undoable without daily writes.

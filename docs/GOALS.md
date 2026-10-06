@@ -8,16 +8,16 @@ than a breadcrumb trail or wizard.
 
 ## Editing
 
-Open **Goal** from Create/Edit habit or Statistics. The overview shows **Counts
-when**, **Repeat**, **Cycle**, and **Applies from**, with current values visible.
+Open **Goal** from Create/Edit habit or Statistics. The overview shows **Success
+condition**, **Repeat**, **Cycle**, and **Applies from**, with current values visible.
 One section opens at a time; single-choice fields reveal a short selection list
 on tap instead of displaying every alternative as a button. Daily number inputs
 and category multi-selection remain direct inside the open section. Checkbox
-conditions are fixed text, not a redundant edit action. Section contents stay
+conditions offer Checked or Unchecked and a separate default-state switch. Section contents stay
 mounted and hidden from accessibility while closed, preserving unfinished inputs
 and custom-cycle choices across navigation. The form contains:
 
-- **Counts when:** Checked, a numeric comparison, category condition, text condition,
+- **Success condition:** Checked or Unchecked, a numeric comparison, category condition, text condition,
   or Track only for non-checkbox habits.
 - **How often:** Every day, Selected days, or Per period. Per period supports
   At least, At most, or Between successful days in a week or 1–366-day interval.
@@ -109,7 +109,7 @@ are materialized for the UI. No period calculations enter per-cell subscriptions
 
 Goals were introduced in v11. Version 13 adds optional `period` and `cycle` objects
 to each goal; v1–v12 reject those fields and retain their original semantics.
-Current writes/exports use v13, accepting unchanged v1–v12 prefixes. SQL stays at
+Current writes/exports use v14, accepting unchanged v1–v13 prefixes. SQL stays at
 schema 1. All timing changes remain ordinary append-only, atomic, undoable habit
 edits. No reseeding, default-goal migration or entry rewriting occurs.
 
@@ -130,3 +130,29 @@ weeks) are appended only to the isolated development log in `sampleTiming.ts`.
 
 Rolling windows, multiple completions within a day, summed numeric period quotas,
 excused/skipped days, manual success overrides and comments remain deferred.
+
+## Checkbox defaults and direct section choices (October 2026)
+
+The founder requested editable **Success condition** (replacing “Counts when”):
+checkboxes can succeed when Checked or Unchecked. **Default state · On/Off** is
+independent and appears inside that section and in the habit editor. Missing
+records inherit the dated default. Explicit 1/0 records override it; toggling
+back to the default removes the override. Unchecked + default Off therefore
+succeeds without an entry, as does Checked + default On. No daily records are
+synthesized. The normal start-date, weekday, cycle and future-statistics limits
+still apply.
+
+`defaultChecked` belongs to a goal version, alongside its success rule. The habit
+editor stages a version from today (creation: the chosen start date); the goal
+editor offers its normal effective-date controls. Earlier versions and entries
+remain intact. Both routes save through normal habit History and Undo/Redo.
+
+Opening Success condition, Repeat or Cycle now reveals the primary choices
+immediately. Expanded sections hide their summary; no second dropdown repeats
+the same choice. Secondary fields retain their own labels and compact selectors.
+
+Daily statistics aggregate default successes by policy intervals and saved
+exceptions. Period statistics compose repeated schedule patterns and sparse
+exceptions, including at-most/between targets, without expanding lifetime days.
+Calendar brightness represents success; its accessible checkbox state represents
+the actual checked state.
