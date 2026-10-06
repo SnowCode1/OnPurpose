@@ -291,7 +291,7 @@ raw edits, earlier notes/values, recoverable local description drafts/bookmarks,
 backups and pre-restore copies remain. Permanent erasure still needs its own
 privacy/retention rules.
 
-## Portable backup version 12
+## Portable backup version 13
 
 Settings → Backups → Export backup opens the iOS share sheet; save the JSON to Files or
 another destination. The app first waits for pending saves and captures a stable
@@ -309,13 +309,13 @@ snapshot of habit/day values. See [the version-12 deletion example](examples/sto
 [version-2 fixture](examples/storage-v2.json), and
 [the unchanged version-1 fixture](examples/storage-v1.json).
 
-The container has `format: "onpurpose.changes"`, `version: 12`, `exportedAt`,
+The container has `format: "onpurpose.changes"`, `version: 13`, `exportedAt`,
 `eventCount`, `sha256`, and `events`. The digest is SHA-256 of UTF-8
 `JSON.stringify(events)` with its existing property order. It detects accidental
 modification/incompleteness; it is not an authenticated signature. Exports are not
 encrypted and may reveal habit names, descriptions, dated values, colours, and preference/edit
 metadata. Pre-restore copies are not bundled into the active export. The exporter
-always writes container version 12. The importer accepts versions 1–12;
+always writes container version 13. The importer accepts versions 1–13;
 a container cannot contain events newer than its own version. New containers can
 retain legacy prefixes, including full raw edits and undo/redo operations that
 are omitted from the active History view.
@@ -365,7 +365,7 @@ during initialization, and during restore. These exercise the production SQL and
 domain modules; they do not substitute for Expo's native bridge or iOS force-quit
 and Files/share-sheet testing. Follow [TESTING.md](TESTING.md) for that phone pass.
 
-Comments, permanent erasure, weekly quotas, richer statistics,
+Comments, permanent erasure, rolling quotas, richer statistics,
 snapshots for launch optimization, encryption, and sync remain later work. An
 incremental log alone is not a sync protocol.
 
@@ -409,3 +409,17 @@ these definitions/entries do not return to the grid/archive/statistics. Descript
 comparisons remain readable but note-only restore requires a currently stored
 habit. Undo deletion first to restore an old description. Local draft/bookmark
 storage is retained for that recovery and remains outside backups as before.
+
+## Version 13: fixed periods and repeating on/off cycles
+
+Goal versions may include `period` (unit week/days, days, anchor, operator,
+target, optional upper) and `cycle` (unit days/weeks, on, off, anchor). Shapes,
+integer bounds and dates are strictly validated. Periods require an active daily
+condition and all seven weekdays; cycles can narrow applicable dates. Older
+v1–v12 definitions reject these fields. Current event/backup writers use v13;
+imports retain v1–v12 and logs cannot downgrade after v13. SQL stays at schema 1.
+
+Ordinary definition snapshots preserve period/cycle anchors through edits,
+Undo/Redo, archiving/deletion and backup recovery. Preferences never retroactively
+realign saved weeks. [The v13 example](examples/storage-v13.json) extends the exact
+unchanged v12 prefix. No existing store is reseeded or assigned inferred goals.

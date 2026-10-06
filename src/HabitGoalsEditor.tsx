@@ -1,3 +1,5 @@
+import { nextPeriodStart } from './goalTiming';
+import type { WeekStart } from './displayPreferences';
 import { useCallback, useRef, useState, type ComponentType } from 'react';
 import {
   Alert,
@@ -25,7 +27,7 @@ import {
   replaceGoal,
   resolveGoalDraft,
   ruleSummary,
-  scheduleSummary,
+  timingSummary,
   validGoalTimeline,
   type HabitGoal,
 } from './habitGoals';
@@ -64,6 +66,9 @@ export function HabitGoalsEditor({
   habit,
   today,
   initialDate = today,
+  weekStart = 'monday',
+  creating = false,
+  parentLabel,
   editable,
   Heading,
   onClose,
@@ -72,6 +77,9 @@ export function HabitGoalsEditor({
   habit: Habit;
   today: string;
   initialDate?: string;
+  weekStart?: WeekStart;
+  creating?: boolean;
+  parentLabel?: string;
   editable: boolean;
   Heading: ComponentType<TextProps>;
   onClose: () => void;
@@ -81,7 +89,12 @@ export function HabitGoalsEditor({
     const current = goalAt(habit, initialDate);
     return {
       id: randomUUID(),
-      from: initialDate,
+      from:
+        current?.period && !creating
+          ? nextPeriodStart(current.period, initialDate)
+          : initialDate,
+      ...(current?.period ? { period: current.period } : {}),
+      ...(current?.cycle ? { cycle: current.cycle } : {}),
       rule: current?.rule ?? defaultSuccessRule(habit),
       weekdays: [...(current?.weekdays ?? allWeekdays)],
     };
@@ -128,7 +141,10 @@ export function HabitGoalsEditor({
     const previousDate = habit.goals?.find(
       (goal) => goal.id === originalId,
     )?.from;
-    if (next.from < today || (previousDate && previousDate < today))
+    if (
+      !creating &&
+      (next.from < today || (previousDate && previousDate < today))
+    )
       confirmAction(
         'Update earlier results?',
         'This changes the goal for its date period. Recorded values stay saved, and you can undo the change in History.',
@@ -155,8 +171,7 @@ export function HabitGoalsEditor({
     <Modal
       visible
       animationType="slide"
-      presentationStyle="pageSheet"
-      allowSwipeDismissal
+      presentationStyle="fullScreen"
       onRequestClose={onClose}
       supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}
     >
@@ -177,6 +192,9 @@ export function HabitGoalsEditor({
           >
             <GoalVersionForm
               key={`${draft.id}:${originalId ?? 'new'}`}
+              weekStart={weekStart}
+              creating={creating}
+              parentLabel={parentLabel}
               habit={habit}
               initial={draft}
               existing={!!originalId}
@@ -202,7 +220,7 @@ export function HabitGoalsEditor({
                   onPress={() => setTimeline(false)}
                   style={styles.action}
                 >
-                  <Text style={styles.control}>Back</Text>
+                  <Text style={styles.control}>‹ Goal</Text>
                 </Pressable>
                 <Heading style={styles.title}>Goal timeline</Heading>
                 <Pressable
@@ -235,10 +253,7 @@ export function HabitGoalsEditor({
                   <Text
                     style={[styles.control, { color: habit.color, flex: 1 }]}
                   >
-                    New goal from{' '}
-                    {initialDate === today
-                      ? 'Today'
-                      : dateLabel(initialDate, today)}
+                    New goal
                   </Text>
                 </Pressable>
                 <View style={styles.timeline}>
@@ -309,7 +324,7 @@ export function HabitGoalsEditor({
                           </Text>
                           <View style={styles.dateRow}>
                             <Text style={[styles.note, { flex: 1 }]}>
-                              {scheduleSummary(goal.weekdays)}
+                              {timingSummary(goal)}
                             </Text>
                             <Icon name="edit" size={15} color="#777777" />
                           </View>

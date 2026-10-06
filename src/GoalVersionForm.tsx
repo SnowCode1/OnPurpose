@@ -16,9 +16,9 @@ import { StartDateField } from './StartDateField';
 import { InfoNote } from './InfoNote';
 import { habitType, type Habit } from './habits';
 import {
-  allWeekdays,
   resolveGoalDraft,
-  ruleIsMet,
+  ruleSummary,
+  timingSummary,
   type HabitGoal,
   type SuccessRule,
 } from './habitGoals';
@@ -26,7 +26,16 @@ import { goalDraftIssue, parseGoalAmount } from './goalEditing';
 import { colorOnBlack } from './colors';
 import { sameValue } from './storage/model';
 import { appear } from './motion';
-import type { EntryValue } from './entries';
+import { GoalTimingFields } from './GoalTimingFields';
+import {
+  nextPeriodStart,
+  validPeriod,
+  periodWindow,
+  timingDate,
+  ordinal,
+  type GoalTiming,
+} from './goalTiming';
+import type { WeekStart } from './displayPreferences';
 
 function Choices({
   label,
@@ -129,7 +138,13 @@ export function GoalVersionForm({
   onRemove,
   onTimeline,
   onDirtyChange,
+  weekStart,
+  creating,
+  parentLabel,
 }: {
+  weekStart: WeekStart;
+  creating: boolean;
+  parentLabel?: string;
   habit: Habit;
   initial: HabitGoal;
   existing: boolean;
@@ -171,10 +186,12 @@ export function GoalVersionForm({
   const [terms, setTerms] = useState(
     initial.rule.kind === 'text' ? initial.rule.terms.join('\n') : '',
   );
-  const [weekdays, setWeekdays] = useState(initial.weekdays);
-  const [tryOpen, setTryOpen] = useState(false),
-    [testText, setTestText] = useState(''),
-    [testIds, setTestIds] = useState<string[]>([]);
+  const [timing, setTiming] = useState<GoalTiming>({
+    weekdays: initial.weekdays,
+    ...(initial.period ? { period: initial.period } : {}),
+    ...(initial.cycle ? { cycle: initial.cycle } : {}),
+  });
+  const [dateEdited, setDateEdited] = useState(false);
   const parse = parseGoalAmount;
   const rule: SuccessRule =
     kind === 'number'
@@ -208,7 +225,8 @@ export function GoalVersionForm({
       id: initial.id,
       from,
       rule,
-      weekdays: [...weekdays].sort((a, b) => a - b),
+      ...timing,
+      weekdays: [...timing.weekdays].sort((a, b) => a - b),
     },
     existing,
   );
@@ -291,23 +309,6 @@ export function GoalVersionForm({
       </View>
     </View>
   );
-  const testValue: EntryValue | undefined =
-    type === 'number'
-      ? Number.isFinite(parse(testText))
-        ? parse(testText)
-        : undefined
-      : type === 'categorical'
-        ? testIds.length
-          ? testIds
-          : undefined
-        : type === 'checkbox'
-          ? testText === '1'
-            ? 1
-            : undefined
-          : testText.trim()
-            ? testText
-            : undefined;
-  const testMet = valid && ruleIsMet(rule, testValue);
   const excludedLabels = habit.categories
     ?.filter((option) => exclude.includes(option.id))
     .map((option) => option.label)
@@ -331,7 +332,9 @@ export function GoalVersionForm({
           onPress={onClose}
           style={styles.action}
         >
-          <Text style={styles.control}>Close</Text>
+          <Text style={styles.control}>
+            {parentLabel ? `‹ ${parentLabel}` : 'Close'}
+          </Text>
         </Pressable>
         <Heading style={styles.title}>{title}</Heading>
         <Pressable
@@ -370,10 +373,14 @@ export function GoalVersionForm({
             </View>
           ) : (
             <Choices
-              label="Completion"
+              label="Counts when"
               colour={habit.color}
               value={kind}
-              onChange={(value) => setKind(value as SuccessRule['kind'])}
+              onChange={(value) => {
+                setKind(value as SuccessRule['kind']);
+                if (value === 'none')
+                  setTiming(({ period: _period, ...rest }) => rest);
+              }}
               options={[
                 ['none', 'Track only'],
                 [
@@ -487,81 +494,85 @@ export function GoalVersionForm({
           )}
         </View>
         <View style={styles.card}>
-          <View style={styles.inline}>
-            <Text style={[styles.label, { flex: 1 }]}>Repeat</Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Select every day"
-              onPress={() => setWeekdays([...allWeekdays])}
-              style={styles.smallAction}
-            >
-              <Text
-                style={[
-                  styles.note,
-                  { color: weekdays.length === 7 ? habit.color : '#AAAAAA' },
-                ]}
-              >
-                Every day
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Select weekdays"
-              onPress={() => setWeekdays([1, 2, 3, 4, 5])}
-              style={styles.smallAction}
-            >
-              <Text style={styles.note}>Weekdays</Text>
-            </Pressable>
-          </View>
-          <View style={styles.days}>
-            {[1, 2, 3, 4, 5, 6, 0].map((day) => (
-              <Pressable
-                key={day}
-                accessibilityRole="checkbox"
-                accessibilityLabel={`Applies on ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day]}`}
-                accessibilityState={{ checked: weekdays.includes(day) }}
-                aria-checked={weekdays.includes(day)}
-                onPress={() =>
-                  setWeekdays((previous) =>
-                    previous.includes(day)
-                      ? previous.filter((item) => item !== day)
-                      : [...previous, day],
-                  )
-                }
-                style={({ pressed }) => [
-                  styles.day,
-                  {
-                    backgroundColor: weekdays.includes(day)
-                      ? colorOnBlack(habit.color, 0.18)
-                      : '#222222',
-                    opacity: pressed ? 0.65 : 1,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.control,
-                    { color: weekdays.includes(day) ? habit.color : '#888888' },
-                  ]}
-                >
-                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'][day]}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-          {kind === 'none' && (
-            <Text style={styles.note}>
-              This schedule is kept for when you set a completion goal.
-            </Text>
-          )}
+          <GoalTimingFields
+            value={timing}
+            today={today}
+            from={from}
+            weekStart={weekStart}
+            colour={habit.color}
+            onChange={(next) => {
+              setTiming(next);
+              if (
+                next.period &&
+                validPeriod(next.period) &&
+                !existing &&
+                !creating &&
+                !dateEdited &&
+                (!timing.period ||
+                  next.period.days !== timing.period.days ||
+                  next.period.unit !== timing.period.unit)
+              )
+                setFrom(nextPeriodStart(next.period, today));
+            }}
+          />
           <View style={styles.divider} />
           <StartDateField
             label="Apply from"
             help=""
             value={from}
-            onChange={setFrom}
+            onChange={(date) => {
+              setFrom(date);
+              setDateEdited(true);
+            }}
             colour={habit.color}
           />
+          {!!timing.period && !existing && !creating && (
+            <View style={styles.wrap}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Apply at next period"
+                disabled={!validPeriod(timing.period)}
+                accessibilityState={{ disabled: !validPeriod(timing.period) }}
+                style={styles.smallAction}
+                onPress={() => {
+                  setFrom(nextPeriodStart(timing.period!, today));
+                  setDateEdited(true);
+                }}
+              >
+                <Text style={styles.note}>Next period</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Start new period today"
+                style={styles.smallAction}
+                onPress={() => {
+                  setFrom(today);
+                  setDateEdited(true);
+                  setTiming((previous) => ({
+                    ...previous,
+                    period: {
+                      ...previous.period!,
+                      unit: 'days',
+                      anchor: today,
+                    },
+                  }));
+                }}
+              >
+                <Text style={styles.note}>New period today</Text>
+              </Pressable>
+            </View>
+          )}
+          {!!timing.period &&
+            Number.isFinite(ordinal(from)) &&
+            validPeriod(timing.period) && (
+              <Text style={styles.note}>
+                First period: {from} –{' '}
+                {timingDate(periodWindow(timing.period, from).end)}
+                {periodWindow(timing.period, from).start < ordinal(from)
+                  ? ' · partial, not scored'
+                  : ''}
+              </Text>
+            )}
           {from < today && (
             <Text style={styles.note}>
               Earlier results in this period will be updated.
@@ -573,74 +584,10 @@ export function GoalVersionForm({
             {issue}
           </Text>
         )}
-        {kind !== 'none' && (
-          <View style={styles.card}>
-            <Disclosure
-              label="Try a value"
-              expanded={tryOpen}
-              onPress={() => setTryOpen((previous) => !previous)}
-            >
-              {type === 'categorical' ? (
-                categoryChoices('Test selections', testIds, (id) =>
-                  setTestIds((previous) => toggle(previous, id)),
-                )
-              ) : type === 'checkbox' ? (
-                <Pressable
-                  accessibilityRole="checkbox"
-                  accessibilityLabel="Test checkbox completion"
-                  accessibilityState={{ checked: testText === '1' }}
-                  aria-checked={testText === '1'}
-                  onPress={() =>
-                    setTestText((previous) => (previous === '1' ? '' : '1'))
-                  }
-                  style={({ pressed }) => [
-                    styles.testCheckbox,
-                    { opacity: pressed ? 0.6 : 1 },
-                  ]}
-                >
-                  <Icon
-                    name={testText === '1' ? 'checked' : 'unchecked'}
-                    size={27}
-                    color={habit.color}
-                  />
-                  <Text style={styles.control}>
-                    {testText === '1' ? 'Checked' : 'Tap to check'}
-                  </Text>
-                </Pressable>
-              ) : (
-                field('Test value', testText, setTestText, type === 'number')
-              )}
-              <View
-                accessibilityLiveRegion="polite"
-                style={[
-                  styles.result,
-                  {
-                    backgroundColor: testMet
-                      ? colorOnBlack(habit.color, 0.12)
-                      : '#202020',
-                  },
-                ]}
-              >
-                <Icon
-                  name={testMet ? 'checked' : 'unchecked'}
-                  size={18}
-                  color={testMet ? habit.color : '#999999'}
-                />
-                <Text
-                  style={[
-                    styles.control,
-                    { color: testMet ? habit.color : '#AAAAAA' },
-                  ]}
-                >
-                  {!valid
-                    ? 'Finish the condition above'
-                    : testMet
-                      ? 'Goal met'
-                      : 'Goal not met'}
-                </Text>
-              </View>
-            </Disclosure>
-          </View>
+        {valid && (
+          <Text style={styles.note} accessibilityLiveRegion="polite">
+            {ruleSummary(habit, rule)} · {timingSummary(goal)}
+          </Text>
         )}
         <Pressable
           accessibilityRole="button"
@@ -732,16 +679,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     maxWidth: '100%',
   },
-  days: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-  day: {
-    minWidth: 44,
-    minHeight: 44,
-    flexGrow: 1,
-    padding: 8,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#2A2A2A' },
   disclosure: {
     minHeight: 44,
@@ -755,22 +692,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     padding: 12,
     backgroundColor: '#242424',
-    borderRadius: 10,
-  },
-  testCheckbox: {
-    minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 10,
-    backgroundColor: '#242424',
-    borderRadius: 10,
-  },
-  result: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 10,
     borderRadius: 10,
   },
   timelineButton: {

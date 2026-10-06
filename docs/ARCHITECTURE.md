@@ -365,3 +365,11 @@ acknowledgements do not repeat derivation/parsing. `ArchivedHabits` owns native
 confirmation; `ChangeStore.deleteArchivedHabit` captures current definitions and
 records for the atomic v12 deletion action. History-only deleted metadata never
 reenters the current grid or archive.
+
+Version 13 adds saved period/cycle anchors to goal snapshots. `goalTiming.ts`
+validates and counts applicable dates by bounded repeating blocks;
+`periodStatistics.ts` aggregates recorded dates and empty windows without
+allocating lifetime calendars. `PeriodProgress.tsx` renders current/recent results
+only in Statistics. `GoalTimingFields.tsx` drafts frequency and optional cycles;
+Create/Edit and Goal are full-screen with staged subpages. The old test-value
+panel is removed. `dev/sampleTiming.ts` appends isolated v13 sample policies.

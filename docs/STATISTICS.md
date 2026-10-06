@@ -189,3 +189,14 @@ Numeric daily charts show dashed target marks for each scheduled day and both
 bounds for range rules. Calendar/grid accessibility announces dated goal state.
 Editing an earlier goal is explicit and undoable without replacing any entries.
 See [GOALS.md](GOALS.md) for full semantics and tests.
+
+## Fixed-period results and cycles
+
+`goalTiming.ts` supplies anchored on/off eligibility to daily statistics. Off dates
+are neutral; cycles may be in days or seven-day weeks. `periodStatistics.ts`
+counts distinct dates meeting the daily condition into saved fixed windows.
+`PeriodProgress.tsx` shows current progress plus expandable recent results. Open
+periods, rest periods and boundary fragments are distinct from failed finished
+periods. Only complete finished windows wholly in the selected range enter its
+period totals. Period streaks are all-time; raw logging metrics stay separate.
+Daily success streaks are hidden while a period goal is active. See GOALS.md.

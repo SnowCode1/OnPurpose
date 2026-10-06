@@ -6,7 +6,7 @@ import {
   defaultSuccessRule,
   goalAt,
   ruleSummary,
-  scheduleSummary,
+  timingSummary,
 } from './habitGoals';
 import { Icon } from './Icon';
 import { habitType } from './habits';
@@ -25,7 +25,7 @@ export function GoalSummary({
 }) {
   const goal = goalAt(habit, date),
     summary = ruleSummary(habit, goal?.rule ?? defaultSuccessRule(habit));
-  const schedule = scheduleSummary(goal?.weekdays ?? allWeekdays);
+  const schedule = timingSummary(goal ?? { weekdays: allWeekdays });
   const next = habit.goals?.find((version) => version.from > date);
   return (
     <Pressable

@@ -1,3 +1,4 @@
+import { validPeriod, validCycle } from './goalTiming.ts';
 import type { Habit } from './habits.ts';
 import type { HabitGoal } from './habitGoals.ts';
 import { normalizeText, replaceGoal, validGoalTimeline } from './habitGoals.ts';
@@ -51,6 +52,12 @@ export function goalDraftIssue(habit: Habit, goal: HabitGoal): string | null {
     if (new Set(rule.terms.map(normalizeText)).size !== rule.terms.length)
       return 'Each phrase should be different.';
   }
+  if (goal.period && rule.kind === 'none')
+    return 'Choose what counts as a successful day before adding a period goal.';
+  if (goal.period && !validPeriod(goal.period))
+    return 'Use 1–366 days per period and whole-day targets within that period. The maximum must be at least the minimum.';
+  if (goal.cycle && !validCycle(goal.cycle))
+    return 'Use 1–366 days or 1–52 weeks for each part of the cycle, with a valid start date.';
   if (!goal.weekdays.length) return 'Choose at least one day of the week.';
   if (!validDate(goal.from)) return 'Choose a valid starting date.';
   if (

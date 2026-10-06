@@ -1,3 +1,4 @@
+import { PeriodProgress } from './PeriodProgress';
 import { summarizeCompletion } from './completionStatistics';
 import type { EntryValues } from './entries';
 import { GoalSummary } from './GoalSummary';
@@ -387,6 +388,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
               : `${Math.round(stats.rate * 100)}% of days in this period`}
         </Text>
       </View>
+      <PeriodProgress data={stats.periodGoals} colour={habit.color} />
       <View style={styles.metrics}>
         {stats.numeric && (
           <>
@@ -397,7 +399,9 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
                     ? `${stats.completion.successes} of ${stats.completion.eligible} days`
                     : '—'
                 }
-                label="Goal met"
+                label={
+                  stats.periodGoals.current ? 'Daily condition met' : 'Goal met'
+                }
               />
             )}
             <Metric
@@ -410,23 +414,27 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
             />
           </>
         )}
-        <Metric
-          value={`${stats.streak} ${stats.streak === 1 ? 'day' : 'days'}`}
-          label={
-            stats.numeric && !stats.completion.active
-              ? 'Days recorded in a row'
-              : 'Current success streak'
-          }
-        />
-        <Metric
-          value={`${stats.bestStreak} ${stats.bestStreak === 1 ? 'day' : 'days'}`}
-          label="Longest streak · all time"
-        />
+        {!stats.periodGoals.current && (
+          <>
+            <Metric
+              value={`${stats.streak} ${stats.streak === 1 ? 'day' : 'days'}`}
+              label={
+                stats.numeric && !stats.completion.active
+                  ? 'Days recorded in a row'
+                  : 'Current success streak'
+              }
+            />
+            <Metric
+              value={`${stats.bestStreak} ${stats.bestStreak === 1 ? 'day' : 'days'}`}
+              label="Longest streak · all time"
+            />
+          </>
+        )}
       </View>
       {stats.numeric &&
         (stats.completion.active || stats.completion.eligible > 0) && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Days meeting the goal</Text>
+            <Text style={styles.sectionTitle}>Days meeting the condition</Text>
             <Chart
               buckets={stats.buckets.map((bucket) => {
                 const goal = summarizeCompletion(

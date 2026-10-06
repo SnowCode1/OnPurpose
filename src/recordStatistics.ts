@@ -1,3 +1,4 @@
+import { periodStatistics } from './periodStatistics.ts';
 import type { EntryValue, EntryValues } from './entries.ts';
 import type { Habit } from './habits.ts';
 import type { StoredEvent } from './storage/model.ts';
@@ -78,6 +79,13 @@ export function recordStatistics(
     })) ?? [];
   return {
     trackingStart,
+    periodGoals: periodStatistics(
+      habit,
+      values,
+      trackingStart,
+      today,
+      dateKey(start),
+    ),
     completion,
     start: dateKey(start),
     eligible,

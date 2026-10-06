@@ -1,118 +1,123 @@
-# Success goals and their timeline
+# Success goals, periods and cycles
 
-Confirmed by the founder on 6 October 2026. Each habit evaluates its own dated
-entries against an effective-dated goal and weekday schedule. The goal editor includes a timeline of earlier and scheduled goals. Changing a target today preserves earlier results; explicitly
-editing an earlier version recalculates its period without replacing any values.
+Founder-confirmed, 6 October 2026: separate what makes a day successful from how
+often it should happen. Keep effective-dated rules, fixed weekly/custom periods,
+and date-anchored on/off cycles. Remove the test-value panel. Create/Edit habit
+and Goal use full-screen editors with fixed actions and short Back labels, rather
+than a breadcrumb trail or wizard.
 
 ## Editing
 
-Open **Goal** in Create/Edit habit or the Statistics tab. The sheet opens directly
-to the condition, repeat days and **Apply from** date, with Close/Done always
-visible. It uses the habit's draft name, icon, colour and start date during creation
-and editing. Checkbox completion is shown as a fixed statement, rather than a
-single-option button. Repeat days are directly selectable; Every day and Weekdays
-are shortcuts. The optional **Try a value** panel uses a real labelled checkbox
-for checkbox habits and makes its local result distinct from recorded entries.
+Open **Goal** from Create/Edit habit or Statistics. The form contains:
 
-The default draft copies the rule effective Today and starts Today (or the habit's
-start date during creation). A version starts on its effective date and ends the
-day before the next version. Dates must be unique; applying another change on the
-same effective date edits that slot. A new future goal retains the current version,
-including a version that started Today. Opening an unchanged goal and pressing
-Done closes it without creating a redundant version or History action.
+- **Counts when:** Checked, a numeric comparison, category condition, text condition,
+  or Track only for non-checkbox habits.
+- **How often:** Every day, Selected days, or Per period. Per period supports
+  At least, At most, or Between successful days in a week or 1–366-day interval.
+- **On/off cycle:** optional, with 5 days on/2 off, 3 weeks on/1 off and alternating
+  weeks presets, plus custom 1–366-day or 1–52-week on/off lengths. The anchor is
+  the first day of an on block; a week means seven days from that saved anchor.
+- **Apply from:** effective date. The compact live summary replaces Try a value.
 
-**Goal timeline** opens a compact dated list within the same sheet. Back retains
-all unsaved rule, schedule and date inputs. Choosing another goal or starting a
-fresh draft asks before discarding actual unsaved changes. Timeline rows show
-Current/Upcoming status, date ranges, conditions and repeat days without a second
-copy of the current-goal card. Tap a dated row to edit that period explicitly.
-Applying a change to an earlier period asks for confirmation. Removing a goal also
-requires confirmation; the preceding goal extends into the gap. Before the first
-explicit goal, Checked applies to checkboxes and Track only to the other types.
-Recorded values and the raw log stay intact; History Undo/Redo reverses applied edits.
+A completion is a **successful day**, not a tap, session, or selected category.
+Several categories still give at most one successful day. A period target requires
+a daily condition; Track only cannot silently acquire a quota. Per-period goals
+use all weekdays; cycles may restrict which of those dates are applicable. Daily
+schedules can combine chosen weekdays with an on/off cycle.
 
-Numeric comparisons and text matching are grouped with their inputs. Category
-exclusions are collapsed until needed, with selected exclusions summarized when
-closed. Moving a category into Include or Exclude clears its opposite membership.
-Specific draft validation explains missing targets, reversed ranges, empty day
-sets, duplicate phrases and effective-date collisions. Storage still validates the
-complete definition before accepting it. Decimal keyboard input accepts `.5` and
-`,5`, while blanks remain different from zero.
+Common cycles show their preset and anchor; Custom reveals unit/on/off inputs.
+Full-screen editors scroll when needed, retain font scaling and safe areas, and
+keep Close/Done visible above the keyboard. Goal's Back label names the enclosing
+habit editor. Goal timeline is a separate view in the same editor; Back retains
+all unapplied fields. Choosing another version asks before discarding a dirty draft.
 
-Close or native swipe dismissal discards the current goal draft. Changes made
-inside the habit editor remain staged until the enclosing habit editor's Done;
-closing that editor discards them. From Statistics, Done applies an ordinary
-undoable definition change. Save failures retain the shared visible Retry flow;
-blocked saving disables application. Sheet motion remains native, with reduced-
-motion-aware fades for the timeline and expanded condition controls.
+Done inside a habit editor only stages the goal. The enclosing habit's Done saves
+one undoable definition edit; Close discards the draft. Goal opened directly from
+Statistics saves directly. Closing an unchanged goal writes no version/event.
+Earlier corrections/removals require confirmation and are undoable. Dates are unique;
+a new draft on an existing effective date updates that slot, while moving the date
+creates a new version. Explicit timeline edits retain the selected version ID.
 
-## Rules
+## Calendar boundaries
 
-| Habit       | Available success conditions                                                         |
-| ----------- | ------------------------------------------------------------------------------------ |
-| Checkbox    | Checked                                                                              |
-| Daily total | Track only; any recorded total; at least, at most, exactly, or an inclusive range    |
-| Categories  | Track only; any selection; any/all chosen options; at least N selections; exclusions |
-| Free text   | Track only; any nonblank text; contains any/all literal phrases                      |
+Weeks use the current Monday/Sunday preference **when created**, storing an anchor
+in the goal. Changing the app preference never realigns saved periods. Custom day
+periods are consecutive fixed intervals from their saved anchor, not rolling windows.
+Cycles also keep their original anchor across later target changes unless edited.
 
-Numeric targets accept nonnegative decimals. Explicit zero is a real value and
-can meet a zero/range/upper-bound goal. An absent entry never meets a goal,
-including “at most 0.” Clearing text or all categories leaves an absent entry.
-Category rules use stable option IDs, so renaming or archiving an option retains
-its historical meaning. Included/excluded sets cannot overlap. Exclusions reject
-a day if any forbidden option is selected; they may be used alone with Any of.
-An optional **Try a value** disclosure tests a draft without saving a daily record.
+New changes to an existing period goal default to the next period boundary (Today
+if already on it). A newly enabled period also suggests that boundary. **New period
+today** starts a fresh fixed-day interval immediately; for a weekly rule it becomes
+a seven-day interval, explicitly preserving the new anchor rather than pretending
+it is still a calendar week. Creation starts at the habit's start date.
 
-Text matching ignores case and repeated whitespace, uses literal substrings,
-and supports up to twelve phrases. It does not interpret intentions or regular
-expressions. Timelines are bounded to 128 versions per habit. Imports validate
-the complete rule shape, IDs, date ordering, weekday set and relevant bounds.
-Existing numeric/category/text habits remain Track only until explicitly edited;
-no targets are inferred from previous entries.
+A fragment cut by the habit start, effective-date change, or backdated correction
+is **partial and unscored**. Its entries are retained, with no automatic prorating.
+A full period remains open through its last day and is finalized the next local day.
+Future entries do not count toward current progress. Entirely off periods are neutral.
 
-## Schedules and statistics
+## Daily conditions
 
-Every day is the default; selected weekdays are supported. The schedule belongs
-to each goal version, so later weekday changes leave earlier schedules intact.
-Success rates divide successful scheduled days by applicable scheduled days since
-the habit's own start, intersected with the chosen period. Today counts toward
-that denominator; future dates, pre-start dates and Track only periods do not.
-Blank applicable days are unsuccessful. Off-day entries remain editable and saved
-but contribute neither success nor failure to the rate or success streak.
+| Habit      | Conditions                                                                       |
+| ---------- | -------------------------------------------------------------------------------- |
+| Checkbox   | Checked                                                                          |
+| Number     | Track only; any recorded total; at least, at most, exactly, inclusive range      |
+| Categories | Track only; any selection; any/all chosen IDs; at least N selections; exclusions |
+| Text       | Track only; nonblank text; any/all literal phrases                               |
 
-Success streaks count consecutive successful opportunities, bridging off-days.
-An unfinished Today has the existing grace period; a missed earlier scheduled
-day breaks the streak. Current/longest streaks use all history. Archive affects
-list visibility, not eligibility. Numeric averages still divide by **all calendar
-days** since the start. Category frequencies and recording counts/logging streaks
-stay separate from success, retaining the meaning of existing record statistics.
+A blank daily entry never meets its condition, including a numeric at-most-zero
+condition. Explicit numeric zero remains a real value. Category rules retain stable
+IDs through renaming/archiving; Include and Exclude cannot overlap. Text matching
+ignores case/repeated whitespace and supports up to twelve literal phrases.
 
-Grid and calendar values remain readable. Meeting a goal adds a subtle row-colour tint for all four types; accessible labels announce value, success and scheduling.
-Hide completed today uses the dated rule for all types, including numeric zero
-when it meets an explicit rule. Meeting a goal on an off-day can hide that row,
-although the extra entry does not affect success statistics. Show completed and
-full rows when browsing other dates remain available. Numeric daily charts add
-dashed per-day target marks, including both bounds for a range; raw totals remain.
+Period upper bounds are deliberately different: **at most zero successful days**
+can succeed with no successful days. At-least quotas require at least one; Between
+can start at zero. Targets are whole days bounded by the period length. Validation
+rejects unknown fields, invalid anchors, malformed cycles, incompatible daily rules,
+and timelines over 128 versions. Existing real habits receive no inferred targets.
+
+## Statistics and grid
+
+Daily conditions still control cell tint and Hide completed today. Reaching a weekly
+quota never hides a row for the rest of the week. Off-day entries stay editable;
+they may tint/hide the row for Today but are neutral in success statistics.
+
+Statistics adds compact current-period progress and an expandable list of recent
+period results. Open upper-bound/range goals say “Within limit so far”; they are
+not final successes. Finished-period totals use complete periods wholly inside the
+selected range. Current/longest period streaks count successful complete periods,
+bridge rest periods, and ignore partial fragments; they are labelled as all-time.
+Daily success streaks are hidden while a period goal is active. Raw daily charts,
+recording totals and logging streaks retain their distinct meanings. Numeric
+averages still divide by every calendar day since the habit's start.
+
+Daily opportunities use arithmetic over at most seven cycle blocks, never an
+allocated lifetime calendar. Period statistics aggregate recorded dates by window
+and count empty/rest windows through a bounded repeating schedule, so long blank
+histories do not require one object per day or period. Up to eight recent results
+are materialized for the UI. No period calculations enter per-cell subscriptions.
 
 ## Storage and ownership
 
-`Habit.goals` is an optional sorted timeline in version-11 habit definitions.
-`habitGoals.ts` validates and evaluates rules; `habitCompletion.ts` supplies the
-shared filtering predicate; `completionStatistics.ts` calculates scheduled-day
-counts by bounded policy intervals rather than allocating lifetime calendars.
-`HabitGoalsEditor.tsx` owns the native sheet, timeline and draft navigation;
-`GoalVersionForm.tsx` owns grouped condition/schedule inputs and local tests.
-`goalEditing.ts` supplies draft parsing and specific validation messages.
-`GoalSummary.tsx` is the shared compact entry point. SQL stays at schema 1. Goals were introduced in v11; current writes/exports use v12 alongside the
-archived-habit deletion work. Unchanged v1–v11 log prefixes retain their original interpretation. The
-[v11 example](examples/storage-v11.json) extends the exact v10 prefix with a goal
-change, Undo and Redo. No initialization, reseeding or automatic data migration
-adds real goals. Sample Read/Water/Workout/Highlight goals exist only in the
-isolated development sample log.
+Goals were introduced in v11. Version 13 adds optional `period` and `cycle` objects
+to each goal; v1–v12 reject those fields and retain their original semantics.
+Current writes/exports use v13, accepting unchanged v1–v12 prefixes. SQL stays at
+schema 1. All timing changes remain ordinary append-only, atomic, undoable habit
+edits. No reseeding, default-goal migration or entry rewriting occurs.
 
-`scripts/habit-goals.test.mjs` covers rules, zero/blanks, dated changes, weekdays,
-streak grace, retained numeric averages, validation, SQLite reload/Undo/Redo,
-backup/restore, legacy prefixes and completion-mask notification filtering.
-Physical iPhone checks remain necessary for nested sheets, keyboard/date-picker
-comfort, VoiceOver and actual gesture/performance behaviour. Weekly quotas,
-skipping/excused days, manual success overrides and comments remain deferred.
+- `habitGoals.ts`: daily rules, timeline validation and lookup.
+- `goalTiming.ts`: strict timing shapes, anchored dates and bounded schedule math.
+- `completionStatistics.ts`: daily scheduled opportunities and streaks.
+- `periodStatistics.ts`: fixed-window progress, results and period streaks.
+- `PeriodProgress.tsx`: compact progress and recent results.
+- `GoalVersionForm.tsx` / `GoalTimingFields.tsx`: staged rule/timing inputs.
+- `HabitGoalsEditor.tsx`: full-screen form/timeline and confirmation flow.
+- `goalEditing.ts`: draft parsing and clear validation errors.
+- `GoalSummary.tsx`: shared entry point; `habitCompletion.ts`: daily filtering.
+
+The v13 fixture extends the exact v12 prefix with a period/cycle edit and Undo/Redo.
+Sample Walk (5/2), Meditate (3 weeks/1 off), and Workout (weekly range on alternating
+weeks) are appended only to the isolated development log in `sampleTiming.ts`.
+
+Rolling windows, multiple completions within a day, summed numeric period quotas,
+excused/skipped days, manual success overrides and comments remain deferred.

@@ -245,3 +245,18 @@ one atomic write. Preserve append-only events, local note drafts/bookmarks,
 legacy v1–v11 replay and schema 1. This is recoverable deletion, not permanent
 erasure. `historyDisplayState` supplies deleted names/types only for History
 labels; description restore still requires the real current habit.
+
+## Period goals and cycles (v13)
+
+Read docs/GOALS.md. `goalTiming.ts` owns strict fixed-period/cycle shapes and
+bounded calendar arithmetic; `periodStatistics.ts` owns progress/results and
+period streaks. Do not allocate lifetime calendars, infer quotas from entries,
+count taps/categories as multiple successful days, or realign saved anchors when
+weekStart changes. Off periods and boundary fragments are neutral; Today remains
+open. `GoalTimingFields.tsx` owns compact schedule drafts; Try a value is removed.
+Create/Edit habit and Goal are full-screen editors with short parent navigation,
+fixed actions, safe areas and staged subpage edits. `PeriodProgress.tsx` keeps
+quota progress out of the grid. Hide completed remains a daily predicate.
+Current writers/exports use v13, retaining v1–v12 replay and schema 1. Older event
+versions must reject period/cycle fields. `sampleTiming.ts` appends fictional
+timing examples only in the isolated sample store.

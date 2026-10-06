@@ -1,3 +1,4 @@
+import { scheduledCount, type GoalCycle } from './goalTiming.ts';
 import type { EntryValues } from './entries.ts';
 import type { Habit } from './habits.ts';
 import {
@@ -27,6 +28,7 @@ export function completionStatistics(
     to: number;
     rule: SuccessRule;
     weekdays: number[];
+    cycle?: GoalCycle;
   }[] = [];
   const goals = habit.goals ?? [];
   policies.push({
@@ -41,6 +43,7 @@ export function completionStatistics(
       to: i + 1 < goals.length ? ordinal(goals[i + 1].from) - 1 : end,
       rule: goals[i].rule,
       weekdays: goals[i].weekdays,
+      cycle: goals[i].cycle,
     });
   function eligible(from: number, to: number, onlyWeekday?: number) {
     let count = 0;
@@ -49,11 +52,7 @@ export function completionStatistics(
       const a = Math.max(first, from, policy.from),
         b = Math.min(end, to, policy.to);
       if (b < a) continue;
-      for (const day of policy.weekdays) {
-        if (onlyWeekday !== undefined && onlyWeekday !== day) continue;
-        const next = a + ((day - weekday(a) + 7) % 7);
-        if (next <= b) count += Math.floor((b - next) / 7) + 1;
-      }
+      count += scheduledCount(policy, a, b, onlyWeekday);
     }
     return count;
   }
@@ -120,6 +119,7 @@ export function summarizeCompletion(
       to: number;
       rule: SuccessRule;
       weekdays: number[];
+      cycle?: GoalCycle;
     }[];
     successDates: Set<string>;
   },
@@ -135,11 +135,7 @@ export function summarizeCompletion(
     const lower = Math.max(data.first, a, policy.from),
       upper = Math.min(data.end, b, policy.to);
     if (upper < lower) continue;
-    for (const day of policy.weekdays) {
-      if (onlyWeekday !== undefined && onlyWeekday !== day) continue;
-      const next = lower + ((day - weekday(lower) + 7) % 7);
-      if (next <= upper) days += Math.floor((upper - next) / 7) + 1;
-    }
+    days += scheduledCount(policy, lower, upper, onlyWeekday);
   }
   let count = 0;
   for (const date of data.successDates) {

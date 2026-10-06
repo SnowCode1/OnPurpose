@@ -180,9 +180,8 @@ date rollover, deliberate future browsing/entries, and choosing preset or custom
 row colours in habit details. Habit creation, name/unit editing, manual ordering,
 and reversible archival are implemented. Tapping names opens full-screen trends,
 weekday breakdowns, a calendar, and daily checkbox/logging streaks; holding opens
-actions and supports dragging. Current daily statistics rules are implementation
-choices documented in [STATISTICS.md](docs/STATISTICS.md); targets and schedules remain
-undecided. History lists active habit actions with grouped undo/redo. Entries, colours, and the haptic preference
+actions and supports dragging. Current daily statistics rules are documented in [STATISTICS.md](docs/STATISTICS.md); dated
+success conditions, fixed periods and on/off cycles are implemented in GOALS.md. History lists active habit actions with grouped undo/redo. Entries, colours, and the haptic preference
 persist locally in SQLite; Settings supports full change-based backup/restore.
 The 12 sample habits are seeded once and can be edited or archived. Persistence is confirmed on phone; an older-undo report and
 backup acceptance testing remain pending.
@@ -199,13 +198,13 @@ and incremental history are desired scope, not excluded candidates.
 | Question                                                               | Current status                                                                     |
 | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | How many dates and in which direction? How do we browse history?       | Adaptive columns; deliberate future reveal; future entries allowed                 |
-| All habits daily, selected weekdays, or frequency targets?             | Open                                                                               |
-| Do numeric habits have units, targets, and a “lower is better” option? | Daily-total input confirmed; goal rules open                                       |
-| What exactly counts toward a numeric or scheduled habit's streak?      | Open                                                                               |
+| All habits daily, selected weekdays, or frequency targets?             | Daily/selected weekdays, fixed periods and anchored cycles confirmed               |
+| Do numeric habits have units, targets, and a “lower is better” option? | Daily totals, comparisons and period success-day quotas implemented                |
+| What exactly counts toward a numeric or scheduled habit's streak?      | Dated daily rules; neutral off periods; finished-period streaks for quotas         |
 | Midnight cutoff, late-night logging, backdating, and travel?           | Local midnight implemented; later cutoff/travel policy pending                     |
 | Comments on a habit, a day, a particular entry, or multiple kinds?     | Comments desired; attachment semantics open                                        |
 | Which app changes enter the history; how do deletion and undo work?    | Active habit actions; preferences excluded; archived Delete undoable; erasure open |
-| Export/import format, backup location, and cross-device sync?          | Version-9 JSON backup; v1–v8 import retained; sync deferred                        |
+| Export/import format, backup location, and cross-device sync?          | Version-13 JSON backup; v1–v12 import retained; sync deferred                      |
 | Any reminders or widgets required for version one?                     | Open                                                                               |
 | Free, paid, donations, or another model?                               | Open                                                                               |
 | Licence and copyright holder?                                          | Open; choose before public release                                                 |
@@ -300,3 +299,13 @@ size, app/system scaling and native truncation, showing more lines/text when row
 and column spacing permit. Full values remain one cell tap away. The founder
 confirmed multi-selection and Done/Close on the iPhone; revised text readability
 still needs device review.
+
+## Period goals and cycling — confirmed 6 October 2026
+
+Separate successful-day conditions from daily/selected-day/fixed-period frequency.
+Support At least/At most/Between days per week or custom number of days, plus
+anchored repeating on/off cycles in days or weeks (including 5/2, 3 weeks/1 off,
+and alternating weeks). Preserve earlier timing in the goal timeline, show progress
+for open periods, and avoid automatic prorating of partial periods. Saved anchors
+are independent of later week-start preferences. Remove Try a value. Create/Edit
+habit and Goal use full screens with compact Back/Close/Done navigation.

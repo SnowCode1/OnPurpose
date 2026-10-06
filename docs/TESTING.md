@@ -1395,3 +1395,39 @@ Phone follow-up: reload, toggle a checkbox, then open its Goal and Try a value.
 Confirm both feedback paths are clear. Change repeat days, visit Goal timeline
 and Back, then save and Undo. Check the numeric/category editors and the native
 Apply from date picker with the keyboard visible. Close must cancel drafts.
+
+## Period goals, cycles and full-screen editors (6 October 2026)
+
+Focused timing tests compare bounded arithmetic against day-by-day references
+for day/week on/off cycles, weekday intersections, negative anchor offsets,
+DST-adjacent dates, weekly/custom period lengths, upper/lower ranges and streaks.
+They cover open last days, future records, rest weeks, boundary fragments,
+distinct partial-row identities and a 0001–9999 blank history with eight UI rows.
+Real SQLite tests cover v13 edits, reload, Undo/Redo and atomic restore/recovery.
+The v13 fixture retains the exact v12 prefix. Older formats reject timing fields.
+
+The final automated pass runs static checks, the full 273-test suite and iOS/web
+bundle exports under a 2 GiB memory/no-swap scope. Browser checks use synthetic
+sample data in a disposable 1 GiB Chrome scope: next-period defaults, weekly
+Between, 3/1 and alternating-week presets, custom 10-day/restart and custom-cycle
+inputs, timeline draft retention, save/reload, and parent create/Close/Done. The
+removed test field stays absent. Repeated selected-option taps retain drafts, and
+a blank period length disables boundary navigation without a render exception.
+Release JS inspection found no sample-timing identifiers/helper or preview capture
+module. Portrait/landscape and 150% app text screenshots
+are inspected. These checks do not establish native keyboard or gesture behaviour.
+
+Phone acceptance:
+
+- Reload sample data: Walk uses 5 days on/2 off, Meditate 3 weeks on/1 off,
+  Workout a weekly range on alternating weeks. Off periods are neutral.
+- Create/Edit fills the screen; Close/Done stays reachable with keyboard visible.
+  Goal Back names the parent, timeline Back retains drafts, parent Close cancels.
+- Change a period goal: next boundary is suggested. New period today starts an
+  anchored custom interval. Check the displayed dates before applying.
+- Inspect current progress and expand Period results. Partial/rest/open periods
+  must be distinguishable from finished failure; calendar cells remain editable.
+- Change global week start: saved goal anchors/results must stay unchanged.
+- Save a goal on real data, reload, Undo/Redo, export and restore. Do not replace
+  irreplaceable data for a visual test; sample mode needs no restore.
+- Test native date pickers, 150% plus OS scaling, landscape, VoiceOver and Close.

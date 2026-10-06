@@ -1,3 +1,4 @@
+import { periodStatistics } from './periodStatistics.ts';
 import type { EntryValues } from './entries.ts';
 import type { WeekStart } from './displayPreferences.ts';
 import { isNumericHabit, type Habit } from './habits.ts';
@@ -207,6 +208,13 @@ export function habitStatistics(
     streak++;
   return {
     numeric,
+    periodGoals: periodStatistics(
+      habit,
+      values,
+      dateKey(trackingStart),
+      todayKey,
+      dateKey(start),
+    ),
     completion,
     start: dateKey(start),
     today: todayKey,

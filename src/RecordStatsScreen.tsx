@@ -1,3 +1,4 @@
+import { PeriodProgress } from './PeriodProgress';
 import { summarizeCompletion } from './completionStatistics';
 import { memo, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
@@ -97,19 +98,22 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
           </Pressable>
         ))}
       </View>
+      <PeriodProgress data={stats.periodGoals} colour={habit.color} />
       <View style={styles.section}>
         {(stats.completion.active || stats.completion.eligible > 0) && (
           <>
             <Text style={styles.summary}>
               {stats.completion.successes} of {stats.completion.eligible} days
-              meeting the goal
+              meeting the daily condition
             </Text>
-            <View style={styles.metric}>
-              <Text style={styles.caption}>Success streak · longest</Text>
-              <Text style={styles.metricValue}>
-                {stats.completion.streak} · {stats.completion.bestStreak}
-              </Text>
-            </View>
+            {!stats.periodGoals.current && (
+              <View style={styles.metric}>
+                <Text style={styles.caption}>Success streak · longest</Text>
+                <Text style={styles.metricValue}>
+                  {stats.completion.streak} · {stats.completion.bestStreak}
+                </Text>
+              </View>
+            )}
           </>
         )}
         <Text style={styles.summary}>

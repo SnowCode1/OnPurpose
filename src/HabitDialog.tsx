@@ -1,3 +1,5 @@
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import type { WeekStart } from './displayPreferences';
 import { CategoryEditor } from './CategoryEditor';
 import { HabitGoalsEditor } from './HabitGoalsEditor';
 import { GoalSummary } from './GoalSummary';
@@ -37,6 +39,7 @@ export function HabitDialog({
   temporary,
   habit,
   initialStartDate,
+  weekStart,
   today,
   mode,
   Heading,
@@ -48,6 +51,7 @@ export function HabitDialog({
   temporary: boolean;
   habit: Habit;
   initialStartDate: string;
+  weekStart: WeekStart;
   today: string;
   mode: HabitDialogMode;
   Heading: ComponentType<TextProps>;
@@ -153,377 +157,387 @@ export function HabitDialog({
       onPress={onPress}
       style={[styles.button, { opacity: disabled ? 0.35 : 1 }]}
     >
-      <Text style={styles.buttonText}>{label}</Text>
+      <Text style={[styles.buttonText, { color: colour, fontWeight: '600' }]}>
+        {label}
+      </Text>
     </Pressable>
   );
   return (
     <Modal
       visible
-      transparent
-      animationType="fade"
+      presentationStyle="fullScreen"
+      animationType="slide"
       supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}
       onRequestClose={discard}
     >
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View style={styles.dialog} accessibilityViewIsModal>
-          <View style={styles.header}>
-            <Heading style={styles.eyebrow}>
-              {iconPicker
-                ? 'ICON'
-                : picker
-                  ? 'COLOUR'
-                  : mode === 'colour'
-                    ? 'COLOUR'
-                    : mode === 'create'
-                      ? 'NEW HABIT'
-                      : 'EDIT HABIT'}
-            </Heading>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close without applying changes"
-              onPress={() => {
-                if (iconPicker) setIconPicker(false);
-                else if (picker) setPicker(false);
-                else discard();
-              }}
-              style={styles.close}
-            >
-              <Icon name="close" size={19} />
-            </Pressable>
-          </View>
-          {mode !== 'create' && (
-            <Heading style={[styles.title, { color: habit.color }]}>
-              {habit.name}
-            </Heading>
-          )}
-          {iconPicker ? (
-            <HabitIconPicker
-              icon={icon}
-              colour={colour}
-              onChange={setIconDraft}
-            />
-          ) : (
-            <ScrollView
-              key={picker ? 'colour' : 'form'}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              {mode === 'colour' || picker ? (
-                <ColourPicker
-                  color={picker ? colour : habit.color}
-                  onChange={(value) => {
-                    if (picker) setPickerDraft(value ?? '');
-                    else setColour(value ?? '');
+      <SafeAreaProvider>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#000000' }}>
+          <KeyboardAvoidingView
+            style={styles.overlay}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          >
+            <View style={styles.dialog} accessibilityViewIsModal>
+              <View style={styles.header}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Close without applying changes"
+                  onPress={() => {
+                    if (iconPicker) setIconPicker(false);
+                    else if (picker) setPicker(false);
+                    else discard();
                   }}
-                />
-              ) : editing ? (
-                <View style={{ gap: 18 }}>
-                  <View>
-                    <Text style={styles.label}>Name</Text>
-                    <TextInput
-                      autoFocus={mode === 'create'}
-                      accessibilityLabel="Habit name"
-                      maxLength={200}
-                      value={name}
-                      onChangeText={setName}
-                      style={styles.input}
-                      selectionColor={colour}
-                      placeholder="Read a little"
-                      placeholderTextColor="#666666"
-                    />
-                  </View>
-                  {mode === 'create' ? (
-                    <View>
-                      <Text style={styles.label}>Record as</Text>
-                      <View style={styles.types}>
-                        {(
-                          ['checkbox', 'number', 'categorical', 'text'] as const
-                        ).map((value) => (
-                          <Pressable
-                            key={value}
-                            accessibilityRole="button"
-                            accessibilityState={{
-                              selected: type === value,
-                            }}
-                            onPress={() => {
-                              if (value === type) return;
-                              setType(value);
-                              setGoals(undefined);
-                            }}
-                            style={[
-                              styles.type,
-                              {
-                                flexBasis: 130 * Math.max(1, fontScale),
-                                flexGrow: 1,
-                              },
-                              {
-                                backgroundColor:
-                                  type === value ? '#303030' : '#181818',
-                              },
-                            ]}
-                          >
-                            <Icon
-                              name={
-                                value === 'number'
-                                  ? 'number'
-                                  : value === 'checkbox'
-                                    ? 'checked'
-                                    : value === 'categorical'
-                                      ? 'categories'
-                                      : 'text'
-                              }
-                              size={18}
-                            />
-                            <Text style={styles.buttonText}>
-                              {habitTypeLabel({ ...habit, type: value })}
-                            </Text>
-                          </Pressable>
-                        ))}
-                      </View>
-                    </View>
-                  ) : (
-                    <Text style={styles.description}>
-                      {habitTypeLabel({ ...habit, type })} · Type is set when
-                      creating a habit.
-                    </Text>
-                  )}
-                  {type === 'categorical' && (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Edit categories"
-                      onPress={() => setCategoriesOpen(true)}
-                      style={styles.descriptionControl}
-                    >
-                      <View style={{ flex: 1, gap: 4 }}>
-                        <Text style={styles.buttonText}>Categories</Text>
-                        <Text numberOfLines={1} style={styles.description}>
-                          {categories.length
-                            ? categories
-                                .filter((option) => !option.archived)
-                                .map((option) => option.label)
-                                .join(' · ')
-                            : 'Add the options you want to track'}
-                        </Text>
-                      </View>
-                      <Icon name="edit" size={17} color="#888888" />
-                    </Pressable>
-                  )}
-                  {numeric && (
-                    <View>
-                      <Text style={styles.label}>Unit · optional</Text>
-                      <TextInput
-                        accessibilityLabel="Habit unit"
-                        value={unit}
-                        maxLength={80}
-                        onChangeText={setUnit}
-                        style={styles.input}
-                        placeholder="minutes, pages, glasses…"
-                        placeholderTextColor="#666666"
-                      />
-                    </View>
-                  )}
-                  <GoalSummary
-                    habit={goalHabit}
-                    date={mode === 'create' ? startDate : today}
-                    disabled={
+                  style={styles.headerAction}
+                >
+                  <Text style={styles.buttonText}>
+                    {iconPicker || picker
+                      ? `‹ ${mode === 'create' ? 'New habit' : 'Edit habit'}`
+                      : 'Close'}
+                  </Text>
+                </Pressable>
+                <Heading style={styles.eyebrow}>
+                  {iconPicker
+                    ? 'Icon'
+                    : picker || mode === 'colour'
+                      ? 'Colour'
+                      : mode === 'create'
+                        ? 'New habit'
+                        : 'Edit habit'}
+                </Heading>
+                {(editing || mode === 'colour' || picker) && (
+                  <View style={styles.headerDone}>
+                    {button(
+                      'Done',
+                      () => {
+                        if (iconPicker) {
+                          if (iconDraft !== null) {
+                            setIcon(iconDraft);
+                            setIconPicker(false);
+                          }
+                        } else if (picker) {
+                          setColour(pickerDraft);
+                          setPicker(false);
+                        } else if (mode === 'colour') {
+                          if (onColour(colour)) onClose();
+                        } else save();
+                      },
                       !editable ||
-                      (type === 'categorical' && !categories.length)
-                    }
-                    onPress={() => setGoalsOpen(true)}
-                  />
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      description ? 'Edit description' : 'Add description'
-                    }
-                    onPress={() => setDescriptionOpen(true)}
-                    style={({ pressed }) => [
-                      styles.descriptionControl,
-                      { opacity: pressed ? 0.6 : 1 },
-                    ]}
-                  >
-                    <View style={{ flex: 1, gap: 4 }}>
-                      <Text style={styles.buttonText}>Description</Text>
-                      <Text numberOfLines={2} style={styles.description}>
-                        {description
-                          ? descriptionText
-                          : 'Notes, motivation or a link · optional'}
-                      </Text>
-                    </View>
-                    <Icon name="edit" size={17} color="#888888" />
-                  </Pressable>
-                  <StartDateField
-                    value={startDate}
-                    onChange={setStartDate}
-                    colour={colour}
-                  />
-                  <View style={styles.appearance}>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Habit icon, ${habitIconLabel(icon)}`}
-                      accessibilityHint="Choose an icon or emoji"
-                      onPress={() => {
-                        setIconDraft(icon);
-                        setIconPicker(true);
+                        (iconPicker && iconDraft === null) ||
+                        ((picker || mode === 'colour') &&
+                          !/^#[0-9a-f]{6}$/i.test(
+                            picker ? pickerDraft : colour,
+                          )) ||
+                        (editing && !picker && !iconPicker && !valid),
+                    )}
+                  </View>
+                )}
+              </View>
+              {(mode === 'colour' || picker || iconPicker) && (
+                <Heading style={[styles.title, { color: habit.color }]}>
+                  {habit.name}
+                </Heading>
+              )}
+              {iconPicker ? (
+                <HabitIconPicker
+                  icon={icon}
+                  colour={colour}
+                  onChange={setIconDraft}
+                />
+              ) : (
+                <ScrollView
+                  key={picker ? 'colour' : 'form'}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={{ paddingBottom: 24 }}
+                >
+                  {mode === 'colour' || picker ? (
+                    <ColourPicker
+                      color={picker ? colour : habit.color}
+                      onChange={(value) => {
+                        if (picker) setPickerDraft(value ?? '');
+                        else setColour(value ?? '');
                       }}
-                      style={({ pressed }) => [
-                        styles.appearanceButton,
-                        { flexBasis: 120 * fontScale },
-                        pressed && styles.appearancePressed,
-                      ]}
-                    >
-                      <View style={styles.appearancePreview}>
-                        {icon ? (
-                          <HabitSymbol icon={icon} colour={colour} size={23} />
-                        ) : (
-                          <Text style={[styles.noIcon, { color: colour }]}>
-                            +
-                          </Text>
-                        )}
-                      </View>
-                      <Text style={styles.buttonText}>Icon</Text>
-                    </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Habit colour, ${colour}`}
-                      accessibilityHint="Choose a colour"
-                      onPress={() => {
-                        setPickerDraft(colour);
-                        setPicker(true);
-                      }}
-                      style={({ pressed }) => [
-                        styles.appearanceButton,
-                        { flexBasis: 120 * fontScale },
-                        pressed && styles.appearancePressed,
-                      ]}
-                    >
-                      <View style={styles.appearancePreview}>
-                        <View
-                          style={[
-                            styles.colourSwatch,
-                            { backgroundColor: colour },
-                          ]}
+                    />
+                  ) : editing ? (
+                    <View style={{ gap: 18 }}>
+                      <View>
+                        <Text style={styles.label}>Name</Text>
+                        <TextInput
+                          autoFocus={mode === 'create'}
+                          accessibilityLabel="Habit name"
+                          maxLength={200}
+                          value={name}
+                          onChangeText={setName}
+                          style={styles.input}
+                          selectionColor={colour}
+                          placeholder="Read a little"
+                          placeholderTextColor="#666666"
                         />
                       </View>
-                      <Text style={styles.buttonText}>Colour</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              ) : null}
-            </ScrollView>
-          )}
-          {(editing || mode === 'colour' || picker) && (
-            <View style={styles.footer}>
-              {button(
-                'Done',
-                () => {
-                  if (iconPicker) {
-                    if (iconDraft !== null) {
-                      setIcon(iconDraft);
-                      setIconPicker(false);
-                    }
-                  } else if (picker) {
-                    setColour(pickerDraft);
-                    setPicker(false);
-                  } else if (mode === 'colour') {
-                    if (onColour(colour)) onClose();
-                  } else save();
-                },
-                !editable ||
-                  (iconPicker && iconDraft === null) ||
-                  ((picker || mode === 'colour') &&
-                    !/^#[0-9a-f]{6}$/i.test(picker ? pickerDraft : colour)) ||
-                  (editing && !picker && !iconPicker && !valid),
+                      {mode === 'create' ? (
+                        <View>
+                          <Text style={styles.label}>Record as</Text>
+                          <View style={styles.types}>
+                            {(
+                              [
+                                'checkbox',
+                                'number',
+                                'categorical',
+                                'text',
+                              ] as const
+                            ).map((value) => (
+                              <Pressable
+                                key={value}
+                                accessibilityRole="button"
+                                accessibilityState={{
+                                  selected: type === value,
+                                }}
+                                onPress={() => {
+                                  if (value === type) return;
+                                  setType(value);
+                                  setGoals(undefined);
+                                }}
+                                style={[
+                                  styles.type,
+                                  {
+                                    flexBasis: 130 * Math.max(1, fontScale),
+                                    flexGrow: 1,
+                                  },
+                                  {
+                                    backgroundColor:
+                                      type === value ? '#303030' : '#181818',
+                                  },
+                                ]}
+                              >
+                                <Icon
+                                  name={
+                                    value === 'number'
+                                      ? 'number'
+                                      : value === 'checkbox'
+                                        ? 'checked'
+                                        : value === 'categorical'
+                                          ? 'categories'
+                                          : 'text'
+                                  }
+                                  size={18}
+                                />
+                                <Text style={styles.buttonText}>
+                                  {habitTypeLabel({ ...habit, type: value })}
+                                </Text>
+                              </Pressable>
+                            ))}
+                          </View>
+                        </View>
+                      ) : (
+                        <Text style={styles.description}>
+                          {habitTypeLabel({ ...habit, type })} · Type is set
+                          when creating a habit.
+                        </Text>
+                      )}
+                      {type === 'categorical' && (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Edit categories"
+                          onPress={() => setCategoriesOpen(true)}
+                          style={styles.descriptionControl}
+                        >
+                          <View style={{ flex: 1, gap: 4 }}>
+                            <Text style={styles.buttonText}>Categories</Text>
+                            <Text numberOfLines={1} style={styles.description}>
+                              {categories.length
+                                ? categories
+                                    .filter((option) => !option.archived)
+                                    .map((option) => option.label)
+                                    .join(' · ')
+                                : 'Add the options you want to track'}
+                            </Text>
+                          </View>
+                          <Icon name="edit" size={17} color="#888888" />
+                        </Pressable>
+                      )}
+                      {numeric && (
+                        <View>
+                          <Text style={styles.label}>Unit · optional</Text>
+                          <TextInput
+                            accessibilityLabel="Habit unit"
+                            value={unit}
+                            maxLength={80}
+                            onChangeText={setUnit}
+                            style={styles.input}
+                            placeholder="minutes, pages, glasses…"
+                            placeholderTextColor="#666666"
+                          />
+                        </View>
+                      )}
+                      <GoalSummary
+                        habit={goalHabit}
+                        date={mode === 'create' ? startDate : today}
+                        disabled={
+                          !editable ||
+                          (type === 'categorical' && !categories.length)
+                        }
+                        onPress={() => setGoalsOpen(true)}
+                      />
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={
+                          description ? 'Edit description' : 'Add description'
+                        }
+                        onPress={() => setDescriptionOpen(true)}
+                        style={({ pressed }) => [
+                          styles.descriptionControl,
+                          { opacity: pressed ? 0.6 : 1 },
+                        ]}
+                      >
+                        <View style={{ flex: 1, gap: 4 }}>
+                          <Text style={styles.buttonText}>Description</Text>
+                          <Text numberOfLines={2} style={styles.description}>
+                            {description
+                              ? descriptionText
+                              : 'Notes, motivation or a link · optional'}
+                          </Text>
+                        </View>
+                        <Icon name="edit" size={17} color="#888888" />
+                      </Pressable>
+                      <StartDateField
+                        value={startDate}
+                        onChange={setStartDate}
+                        colour={colour}
+                      />
+                      <View style={styles.appearance}>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Habit icon, ${habitIconLabel(icon)}`}
+                          accessibilityHint="Choose an icon or emoji"
+                          onPress={() => {
+                            setIconDraft(icon);
+                            setIconPicker(true);
+                          }}
+                          style={({ pressed }) => [
+                            styles.appearanceButton,
+                            { flexBasis: 120 * fontScale },
+                            pressed && styles.appearancePressed,
+                          ]}
+                        >
+                          <View style={styles.appearancePreview}>
+                            {icon ? (
+                              <HabitSymbol
+                                icon={icon}
+                                colour={colour}
+                                size={23}
+                              />
+                            ) : (
+                              <Text style={[styles.noIcon, { color: colour }]}>
+                                +
+                              </Text>
+                            )}
+                          </View>
+                          <Text style={styles.buttonText}>Icon</Text>
+                        </Pressable>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Habit colour, ${colour}`}
+                          accessibilityHint="Choose a colour"
+                          onPress={() => {
+                            setPickerDraft(colour);
+                            setPicker(true);
+                          }}
+                          style={({ pressed }) => [
+                            styles.appearanceButton,
+                            { flexBasis: 120 * fontScale },
+                            pressed && styles.appearancePressed,
+                          ]}
+                        >
+                          <View style={styles.appearancePreview}>
+                            <View
+                              style={[
+                                styles.colourSwatch,
+                                { backgroundColor: colour },
+                              ]}
+                            />
+                          </View>
+                          <Text style={styles.buttonText}>Colour</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ) : null}
+                </ScrollView>
               )}
             </View>
-          )}
-        </View>
-        {categoriesOpen && (
-          <CategoryEditor
-            categories={categories}
-            colour={colour}
-            onClose={() => setCategoriesOpen(false)}
-            onApply={(next) => {
-              setCategories(next);
-              setCategoriesOpen(false);
-            }}
-          />
-        )}
-        {goalsOpen && (
-          <HabitGoalsEditor
-            habit={goalHabit}
-            today={today}
-            initialDate={mode === 'create' ? startDate : today}
-            editable={editable}
-            Heading={Heading}
-            onClose={() => setGoalsOpen(false)}
-            onApply={(next) => {
-              setGoals(next);
-              return true;
-            }}
-          />
-        )}
-        {descriptionOpen && (
-          <DescriptionEditor
-            title={name || 'New habit'}
-            colour={colour}
-            initialValue={description ?? ''}
-            baseValue={habit.description ?? ''}
-            draftKey={draftKey}
-            temporary={temporary}
-            keepDraftOnApply
-            editable={editable}
-            Heading={Heading}
-            onApply={(value) => {
-              setDescription(value);
-              return true;
-            }}
-            onClose={() => setDescriptionOpen(false)}
-          />
-        )}
-      </KeyboardAvoidingView>
+            {categoriesOpen && (
+              <CategoryEditor
+                categories={categories}
+                colour={colour}
+                onClose={() => setCategoriesOpen(false)}
+                onApply={(next) => {
+                  setCategories(next);
+                  setCategoriesOpen(false);
+                }}
+              />
+            )}
+            {goalsOpen && (
+              <HabitGoalsEditor
+                weekStart={weekStart}
+                creating={mode === 'create'}
+                parentLabel={mode === 'create' ? 'New habit' : 'Edit habit'}
+                habit={goalHabit}
+                today={today}
+                initialDate={mode === 'create' ? startDate : today}
+                editable={editable}
+                Heading={Heading}
+                onClose={() => setGoalsOpen(false)}
+                onApply={(next) => {
+                  setGoals(next);
+                  return true;
+                }}
+              />
+            )}
+            {descriptionOpen && (
+              <DescriptionEditor
+                title={name || 'New habit'}
+                colour={colour}
+                initialValue={description ?? ''}
+                baseValue={habit.description ?? ''}
+                draftKey={draftKey}
+                temporary={temporary}
+                keepDraftOnApply
+                editable={editable}
+                Heading={Heading}
+                onApply={(value) => {
+                  setDescription(value);
+                  return true;
+                }}
+                onClose={() => setDescriptionOpen(false)}
+              />
+            )}
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: '#000000BB',
-    padding: 24,
-    justifyContent: 'center',
-  },
+  overlay: { flex: 1, backgroundColor: '#000000' },
   dialog: {
-    backgroundColor: '#101010',
-    borderColor: '#2A2A2A',
-    borderWidth: 1,
-    padding: 24,
-    borderRadius: 24,
+    flex: 1,
     width: '100%',
-    maxWidth: 440,
-    maxHeight: '90%',
+    maxWidth: 720,
     alignSelf: 'center',
+    paddingHorizontal: 16,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: -10,
+    gap: 8,
+    minHeight: 56,
   },
-  close: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: -10,
-  },
+  headerAction: { minHeight: 44, justifyContent: 'center', flexShrink: 1 },
+  headerDone: { minWidth: 55 },
   eyebrow: {
-    color: '#929292',
-    fontSize: 10,
+    color: '#EEEEEE',
+    fontSize: 17,
     fontWeight: '600',
-    letterSpacing: 1.5,
+    flexShrink: 1,
   },
   title: { fontSize: 26, fontWeight: '600', marginBottom: 18 },
   label: { color: '#AAAAAA', fontSize: 12, marginBottom: 8 },
@@ -536,10 +550,9 @@ const styles = StyleSheet.create({
     color: '#E5E5E5',
   },
   button: {
-    minHeight: 48,
+    minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#202020',
     borderRadius: 12,
     padding: 12,
   },
@@ -591,11 +604,5 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: 12,
     padding: 10,
-  },
-  footer: {
-    paddingTop: 16,
-    marginTop: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#303030',
   },
 });

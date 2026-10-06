@@ -9,7 +9,7 @@ Tap a habit name to open its Notes/Statistics sheet: Notes first when present,
 Statistics otherwise. Close returns to the same
 mounted grid and date position. Checkbox rates and streaks, numerical totals and
 averages, time-range charts, weekday patterns, and a calendar are described in
-[STATISTICS.md](STATISTICS.md). Editors remain compact dialogs; descriptions use
+[STATISTICS.md](STATISTICS.md). Create/Edit habit and Goal use full-screen editors with fixed Close/Done actions and short parent Back labels; descriptions use
 a separate full-screen editor.
 
 Hold a name for 380 ms to select its row with a haptic tick and show an anchored
@@ -65,7 +65,7 @@ outside Undo.
 
 ## Storage compatibility
 
-New events and backup containers use version 12 (undoable deletion); version 11 added effective-dated goals; version 10 added categorical/text records; version 9 added optional hiding of completed rows; version 8 added app-wide text size; version 7 added descriptions; version 6 added display settings; version 5 added editable start dates and row spacing; version 3 introduced definitions
+New events and backup containers use version 13 (periods/cycles); version 12 added undoable deletion; version 11 added effective-dated goals; version 10 added categorical/text records; version 9 added optional hiding of completed rows; version 8 added app-wide text size; version 7 added descriptions; version 6 added display settings; version 5 added editable start dates and row spacing; version 3 introduced definitions
 and ordering, and version 4 adds optional icons. A habit change captures its stable
 ID, position, and before/after definition; creation uses a null before-definition.
 Undoing creation can remove it only after its entries have been undone. This is
@@ -208,5 +208,9 @@ History and backups; this does not permanently erase the change log or recovery
 copies. Save failures remain visible with Retry. Both row actions disable while
 saving is blocked or backup work is exclusive, and the store rechecks archived
 state when a delayed confirmation is accepted. No active-habit Delete or bulk
-selection flow is added. Current writes/exports use v12, with unchanged v1–v11
+selection flow is added. Current writes/exports use v13, with unchanged v1–v12
 replay and SQL schema 1.
+
+Period/cycle rules are staged alongside other habit fields. Completing a goal subpage
+does not save the parent draft; Back/Close cancels the open subpage. Try a value
+has been removed in favour of a concise summary. See GOALS.md.

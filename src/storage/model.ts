@@ -94,7 +94,7 @@ export function isPreference(change: Change): change is PreferenceChange {
 }
 export type HabitChange = Exclude<Change, PreferenceChange>;
 export type EventMeta = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
   id: string;
   sequence: number;
   recordedAt: string;
@@ -106,7 +106,7 @@ export type LegacyChangeEvent = EventMeta & { version: 1 } & (
     | { type: 'undo' | 'redo'; targetId: string; change: Change }
   );
 export type CurrentChangeEvent = EventMeta & {
-  version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+  version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
 } & (
     | { type: 'change'; groupId: string; change: HabitChange }
     | { type: 'undo' | 'redo'; targetId: string; change: HabitChange }
@@ -142,6 +142,7 @@ export type Replay = {
   hasV10: boolean;
   hasV11: boolean;
   hasV12: boolean;
+  hasV13: boolean;
 };
 export const emptyReplay = (): Replay => ({
   state: { habits: [], values: {}, hapticsEnabled: true },
@@ -161,6 +162,7 @@ export const emptyReplay = (): Replay => ({
   hasV10: false,
   hasV11: false,
   hasV12: false,
+  hasV13: false,
 });
 export const GROUP_INACTIVITY_MS = 2 * 60 * 1000;
 
@@ -245,7 +247,7 @@ function validateHabit(
   id(value.id);
   if (Object.hasOwn(value, 'goals'))
     insist(
-      validGoalTimeline(value.goals, value as Habit),
+      validGoalTimeline(value.goals, value as Habit, version >= 13),
       'Invalid goal timeline or rule.',
     );
   colour(value.color);
@@ -371,7 +373,7 @@ function entryFits(habit: Habit, value: EntryValue | null) {
 }
 export function validateChange(
   value: unknown,
-  version = 12,
+  version = 13,
 ): asserts value is Change {
   object(value);
   if (value.kind === 'entry') {
@@ -513,7 +515,8 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
       value.version === 9 ||
       value.version === 10 ||
       value.version === 11 ||
-      value.version === 12,
+      value.version === 12 ||
+      value.version === 13,
     'Unsupported event version.',
   );
   id(value.id);
@@ -703,6 +706,7 @@ function reduceEvent(
       hasV10: event.version >= 10,
       hasV11: event.version >= 11,
       hasV12: event.version >= 12,
+      hasV13: event.version >= 13,
     };
   }
   insist(
@@ -748,6 +752,10 @@ function reduceEvent(
   insist(
     !previous.hasV11 || event.version >= 11,
     'Older events cannot follow version-11 events.',
+  );
+  insist(
+    !previous.hasV13 || event.version >= 13,
+    'Older events cannot follow version-13 events.',
   );
   insist(
     !previous.hasV12 || event.version >= 12,
@@ -898,6 +906,7 @@ function reduceEvent(
     hasV10: previous.hasV10 || event.version >= 10,
     hasV11: previous.hasV11 || event.version >= 11,
     hasV12: previous.hasV12 || event.version >= 12,
+    hasV13: previous.hasV13 || event.version >= 13,
   };
 }
 export function applyChange(state: StoredState, change: Change): StoredState {

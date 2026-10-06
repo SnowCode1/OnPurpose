@@ -1,3 +1,4 @@
+import { withSampleTiming } from './sampleTiming.ts';
 import { withSampleRecords } from './sampleRecords.ts';
 import { withSampleGoals } from './sampleGoals.ts';
 import { sampleDescriptions } from './sampleDescriptions.ts';
@@ -115,7 +116,13 @@ export function createSampleEvents(today: string): StoredEvent[] {
 // stats and Undo/Redo code. No SQLite, files, localStorage or backup replacement.
 export async function createSampleStore(today: string): Promise<ChangeStore> {
   let { events, replay } = replayEvents(
-    withSampleGoals(withSampleRecords(createSampleEvents(today), today), today),
+    withSampleTiming(
+      withSampleGoals(
+        withSampleRecords(createSampleEvents(today), today),
+        today,
+      ),
+      today,
+    ),
   );
   const repository: Repository = {
     async load() {

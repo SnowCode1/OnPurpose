@@ -526,6 +526,7 @@ function PersistentApp({
   const habitDialog =
     detail || newHabit ? (
       <HabitDialog
+        weekStart={weekStart}
         today={today}
         key={detail?.id ?? newHabit?.id}
         habit={(detail ?? newHabit)!}
@@ -680,6 +681,7 @@ function PersistentApp({
       {habitDialog}
       {goalHabit && (
         <HabitGoalsEditor
+          weekStart={weekStart}
           habit={goalHabit}
           today={today}
           editable={editable}

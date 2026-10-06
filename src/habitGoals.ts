@@ -1,3 +1,13 @@
+import {
+  scheduledOn,
+  ordinal,
+  validCycle,
+  validPeriod,
+  cycleSummary,
+  periodSummary,
+  type GoalCycle,
+  type GoalPeriod,
+} from './goalTiming.ts';
 import { habitType, type Habit } from './habits.ts';
 import type { EntryValue } from './entries.ts';
 
@@ -24,6 +34,8 @@ export type HabitGoal = {
   from: string;
   rule: SuccessRule;
   weekdays: number[];
+  period?: GoalPeriod;
+  cycle?: GoalCycle;
 };
 export const MAX_GOAL_VERSIONS = 128;
 export const allWeekdays = [0, 1, 2, 3, 4, 5, 6];
@@ -135,6 +147,7 @@ export function validSuccessRule(
 export function validGoalTimeline(
   value: unknown,
   habit: Habit,
+  allowTiming = true,
 ): value is HabitGoal[] {
   if (
     !Array.isArray(value) ||
@@ -147,7 +160,20 @@ export function validGoalTimeline(
     const goal = value[index];
     if (
       !record(goal) ||
-      !fields(goal, ['id', 'from', 'rule', 'weekdays']) ||
+      !fields(goal, [
+        'id',
+        'from',
+        'rule',
+        'weekdays',
+        ...(allowTiming && Object.hasOwn(goal, 'period') ? ['period'] : []),
+        ...(allowTiming && Object.hasOwn(goal, 'cycle') ? ['cycle'] : []),
+      ]) ||
+      (Object.hasOwn(goal, 'period') &&
+        (!validPeriod(goal.period) ||
+          !Array.isArray(goal.weekdays) ||
+          goal.weekdays.length !== 7 ||
+          (record(goal.rule) && goal.rule.kind === 'none'))) ||
+      (Object.hasOwn(goal, 'cycle') && !validCycle(goal.cycle)) ||
       !identifier(goal.id) ||
       ids.has(goal.id) ||
       !dateValid(goal.from) ||
@@ -239,9 +265,10 @@ export function evaluateGoal(
     rule = goal?.rule ?? defaultSuccessRule(habit);
   const active = rule.kind !== 'none';
   const withinStart = !habit.startDate || date >= habit.startDate;
-  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
   const scheduled =
-    withinStart && active && (goal?.weekdays ?? allWeekdays).includes(weekday);
+    withinStart &&
+    active &&
+    scheduledOn(goal ?? { weekdays: allWeekdays }, ordinal(date));
   const met = withinStart && ruleIsMet(rule, value);
   return { goal, rule, active, scheduled, met, recorded: value !== undefined };
 }
@@ -305,4 +332,15 @@ export function resolveGoalDraft(
   if (editingVersion) return draft;
   const sameDate = goals?.find((goal) => goal.from === draft.from);
   return sameDate ? { ...draft, id: sameDate.id } : draft;
+}
+
+export function timingSummary(
+  goal: Pick<HabitGoal, 'weekdays' | 'period' | 'cycle'>,
+) {
+  return [
+    goal.period ? periodSummary(goal.period) : scheduleSummary(goal.weekdays),
+    goal.cycle ? cycleSummary(goal.cycle) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }

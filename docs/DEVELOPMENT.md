@@ -260,7 +260,7 @@ backup validates first and asks before replacing data, retaining a local copy.
 New habit edits use version-12 events with grouped actions; global preferences save
 outside visible History/Undo. Exports use container version 12; existing version-1/2/3/4/5/6/7/8/9/10/11
 backups remain importable and old log records stay unchanged. Fully reload Expo Go
-to test storage updates. Do not downgrade to an older build after writing v12 data;
+to test storage updates. Do not downgrade to an older build after writing v13 data;
 older builds cannot interpret it and will refuse to load rather than reset.
 The web preview uses separate browser localStorage, not the iPhone SQLite file.
 
@@ -368,3 +368,8 @@ from 15 to 30 minutes fourteen days ago; Drink water targets eight glasses;
 Workout matches Run/Strength on Monday/Wednesday/Friday; Daily highlight completes
 with nonblank text. Open Statistics → Success to review/edit each timeline.
 Real habits receive no automatic targets. See [GOALS.md](GOALS.md).
+
+Sample Walk now has a 5-day/2-off cycle; Meditate uses 3 weeks on/1 off;
+Workout has 2–4 successful days per week on alternating weeks. These are
+fictional v13 edits appended by `sampleTiming.ts`, never changes to real habits.
+Use these to check period progress, rest periods and the full-screen editor.

@@ -1052,3 +1052,24 @@ Checkbox completion is a statement, and the optional test uses a real checkbox.
 Opening an unchanged default goal adds no version. Category exclusions collapse,
 include/exclude membership stays mutually exclusive, and errors name the specific
 problem. The goal sheet reflects the enclosing habit draft's identity and dates.
+
+## 6 October 2026 — Period goals, cycles and full-screen editing
+
+The founder approved removing Try a value, separating daily conditions from
+frequency, and adding fixed weekly/custom period targets with dated history.
+They also requested on/off cycles, including 3 weeks on/1 off and alternating
+weeks. Full-screen Create/Edit and short parent Back labels replace the bordered
+habit dialog and avoid a persistent breadcrumb trail.
+
+The assistant implemented whole successful-day quotas (At least/At most/Between),
+stored anchors independent of later week-start preferences, optional day/week
+cycles and compact progress in Statistics. New period changes suggest the next
+boundary; New period today starts an anchored custom interval. Fragments caused
+by start/policy boundaries are retained but unscored, with no silent prorating.
+Open periods are progress, fully off periods neutral, and only finished complete
+periods contribute final outcomes. Daily cell completion remains independent.
+
+Version 13 adds strict optional timing fields to the existing goal definition;
+no SQL migration or old-log rewrite. Bounded schedule/window arithmetic avoids
+lifetime day allocations. Sample timing rules are isolated fictional edits.
+See GOALS.md for bounds, semantics and deferred variants.
