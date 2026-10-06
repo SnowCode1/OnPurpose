@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { appear } from './motion';
 import { Text } from './Typography';
 import { Icon } from './Icon';
 
@@ -7,7 +9,7 @@ import { Icon } from './Icon';
 export function InfoNote({ label, text }: { label: string; text: string }) {
   const [expanded, setExpanded] = useState(false);
   return (
-    <View style={{ gap: expanded ? 4 : 0 }}>
+    <View style={styles.note}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
@@ -22,15 +24,27 @@ export function InfoNote({ label, text }: { label: string; text: string }) {
         })}
       >
         <Icon name="info" size={17} color="#929292" />
-        <Text style={{ color: '#929292', fontSize: 13, flexShrink: 1 }}>
-          {label}
-        </Text>
+        <Text style={styles.label}>{label}</Text>
+        <View style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}>
+          <Icon name="chevron" size={13} color="#777777" />
+        </View>
       </Pressable>
       {expanded && (
-        <Text style={{ color: '#929292', fontSize: 13, lineHeight: 19 }}>
-          {text}
-        </Text>
+        <Animated.View entering={appear} style={styles.explanation}>
+          <Text style={styles.text}>{text}</Text>
+        </Animated.View>
       )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  note: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#282828',
+    paddingTop: 4,
+  },
+  label: { color: '#929292', fontSize: 13, flex: 1 },
+  explanation: { paddingLeft: 25, paddingBottom: 8 },
+  text: { color: '#AAAAAA', fontSize: 13, lineHeight: 19 },
+});

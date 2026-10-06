@@ -1073,3 +1073,19 @@ Version 13 adds strict optional timing fields to the existing goal definition;
 no SQL migration or old-log rewrite. Bounded schedule/window arithmetic avoids
 lifetime day allocations. Sample timing rules are isolated fictional edits.
 See GOALS.md for bounds, semantics and deferred variants.
+
+## 6 October 2026 — Quieter goal editing and attached help
+
+The founder found the expanded goal form visually complicated and requested
+better organisation, plus a subtle separator for detached-looking info toggles.
+The assistant chose four summary rows (Counts when, Repeat, Cycle, Applies from),
+with one editing section open at a time. Selected-value lists replace permanent
+button banks; a single cycle Pattern includes None/presets/Custom. Multiple
+category/weekday selections remain direct. Hidden section content stays mounted
+to retain drafts and is excluded from accessibility. No rule/storage semantics
+change. Incomplete summaries use prompts rather than exposing NaN values.
+
+Shared InfoNote rows now have a quiet hairline divider, consistent small spacing,
+an expand arrow and indented explanation text. Touch targets, app/OS font scaling
+and reduced-motion-aware explanation/choice fades are retained across Settings,
+Statistics and goal screens.

@@ -260,3 +260,9 @@ quota progress out of the grid. Hide completed remains a daily predicate.
 Current writers/exports use v13, retaining v1–v12 replay and schema 1. Older event
 versions must reject period/cycle fields. `sampleTiming.ts` appends fictional
 timing examples only in the isolated sample store.
+
+Goal editing now starts with four summary sections owned by
+`GoalEditorControls.tsx`; only one section opens at a time. Preserve mounted
+drafts and hide inactive content from accessibility. Single-choice options open
+short lists; keep multi-select weekdays/categories direct. InfoNote owns the
+shared subtle top separator/spacing; do not add unrelated per-screen divider hacks.

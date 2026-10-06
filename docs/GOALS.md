@@ -8,7 +8,14 @@ than a breadcrumb trail or wizard.
 
 ## Editing
 
-Open **Goal** from Create/Edit habit or Statistics. The form contains:
+Open **Goal** from Create/Edit habit or Statistics. The overview shows **Counts
+when**, **Repeat**, **Cycle**, and **Applies from**, with current values visible.
+One section opens at a time; single-choice fields reveal a short selection list
+on tap instead of displaying every alternative as a button. Daily number inputs
+and category multi-selection remain direct inside the open section. Checkbox
+conditions are fixed text, not a redundant edit action. Section contents stay
+mounted and hidden from accessibility while closed, preserving unfinished inputs
+and custom-cycle choices across navigation. The form contains:
 
 - **Counts when:** Checked, a numeric comparison, category condition, text condition,
   or Track only for non-checkbox habits.
@@ -25,7 +32,8 @@ a daily condition; Track only cannot silently acquire a quota. Per-period goals
 use all weekdays; cycles may restrict which of those dates are applicable. Daily
 schedules can combine chosen weekdays with an on/off cycle.
 
-Common cycles show their preset and anchor; Custom reveals unit/on/off inputs.
+Cycle uses one Pattern selector, including None, the presets and Custom; Custom
+reveals unit/on/off inputs. The anchor appears only inside the open Cycle section.
 Full-screen editors scroll when needed, retain font scaling and safe areas, and
 keep Close/Done visible above the keyboard. Goal's Back label names the enclosing
 habit editor. Goal timeline is a separate view in the same editor; Back retains
@@ -111,6 +119,7 @@ edits. No reseeding, default-goal migration or entry rewriting occurs.
 - `periodStatistics.ts`: fixed-window progress, results and period streaks.
 - `PeriodProgress.tsx`: compact progress and recent results.
 - `GoalVersionForm.tsx` / `GoalTimingFields.tsx`: staged rule/timing inputs.
+- `GoalEditorControls.tsx`: compact overview sections and selected-value controls.
 - `HabitGoalsEditor.tsx`: full-screen form/timeline and confirmation flow.
 - `goalEditing.ts`: draft parsing and clear validation errors.
 - `GoalSummary.tsx`: shared entry point; `habitCompletion.ts`: daily filtering.

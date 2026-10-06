@@ -1431,3 +1431,20 @@ Phone acceptance:
 - Save a goal on real data, reload, Undo/Redo, export and restore. Do not replace
   irreplaceable data for a visual test; sample mode needs no restore.
 - Test native date pickers, 150% plus OS scaling, landscape, VoiceOver and Close.
+
+## Goal overview and info-row polish (6 October 2026)
+
+The goal form now opens as four readable summaries with one expanded section.
+Browser interaction checks cover selected-value lists, frequency/cycle/condition
+edits, retained inputs across sections and timeline, combined saving, numeric
+Close cancellation, shared info expansion, portrait/landscape and 150% app text.
+The overview, repeat section, large-text overview and expanded Settings info were
+visually inspected. All 273 existing tests and static checks pass; iOS/web bundle
+exports validate the native-facing shared control imports. No persistence or
+rule-evaluation logic changes in this refinement.
+
+Phone follow-up: open a goal, expand Repeat then Cycle, and check that only the
+requested controls are visible and easy to reach. Edit a value, switch sections,
+then return before saving. Check the separator and expanded explanation in
+Settings → Appearance and in Statistics. Native keyboard placement, VoiceOver
+focus and perceived transition smoothness still need iPhone review.

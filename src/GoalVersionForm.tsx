@@ -1,3 +1,4 @@
+import { GoalSection, GoalChoice as Choices } from './GoalEditorControls';
 import { useEffect, useState, type ComponentType, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
@@ -18,7 +19,8 @@ import { habitType, type Habit } from './habits';
 import {
   resolveGoalDraft,
   ruleSummary,
-  timingSummary,
+  validSuccessRule,
+  scheduleSummary,
   type HabitGoal,
   type SuccessRule,
 } from './habitGoals';
@@ -29,7 +31,11 @@ import { appear } from './motion';
 import { GoalTimingFields } from './GoalTimingFields';
 import {
   nextPeriodStart,
+  periodSummary,
+  cycleSummary,
   validPeriod,
+  validCycle,
+  validTimingDate,
   periodWindow,
   timingDate,
   ordinal,
@@ -37,49 +43,6 @@ import {
 } from './goalTiming';
 import type { WeekStart } from './displayPreferences';
 
-function Choices({
-  label,
-  options,
-  value,
-  onChange,
-  colour,
-}: {
-  label: string;
-  options: [string, string][];
-  value: string;
-  onChange: (value: string) => void;
-  colour: string;
-}) {
-  return (
-    <View style={styles.group}>
-      <Text style={styles.label}>{label}</Text>
-      <View style={styles.wrap}>
-        {options.map(([id, name]) => (
-          <Pressable
-            key={id}
-            accessibilityRole="button"
-            accessibilityLabel={`${label}, ${name}`}
-            accessibilityState={{ selected: value === id }}
-            aria-pressed={value === id}
-            onPress={() => onChange(id)}
-            style={({ pressed }) => [
-              styles.chip,
-              {
-                backgroundColor:
-                  value === id ? colorOnBlack(colour, 0.18) : '#222222',
-                opacity: pressed ? 0.65 : 1,
-              },
-            ]}
-          >
-            <Text style={[styles.control, value === id && { color: colour }]}>
-              {name}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-    </View>
-  );
-}
 function Disclosure({
   label,
   detail,
@@ -158,6 +121,11 @@ export function GoalVersionForm({
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const type = habitType(habit);
+  const [section, setSection] = useState<
+    'condition' | 'frequency' | 'cycle' | 'date' | null
+  >(null);
+  const toggleSection = (next: typeof section) =>
+    setSection((previous) => (previous === next ? null : next));
   const [from, setFrom] = useState(initial.from);
   const [kind, setKind] = useState<SuccessRule['kind']>(initial.rule.kind);
   const [operator, setOperator] = useState(
@@ -313,6 +281,31 @@ export function GoalVersionForm({
     ?.filter((option) => exclude.includes(option.id))
     .map((option) => option.label)
     .join(' · ');
+  const changeTiming = (next: GoalTiming) => {
+    setTiming(next);
+    if (
+      next.period &&
+      validPeriod(next.period) &&
+      !existing &&
+      !creating &&
+      !dateEdited &&
+      (!timing.period ||
+        next.period.days !== timing.period.days ||
+        next.period.unit !== timing.period.unit)
+    )
+      setFrom(nextPeriodStart(next.period, today));
+  };
+  const dateLabel = (date: string) =>
+    validTimingDate(date)
+      ? new Date(`${date}T12:00:00`).toLocaleDateString(undefined, {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+          ...(date.slice(0, 4) !== today.slice(0, 4)
+            ? { year: 'numeric' }
+            : {}),
+        })
+      : 'Choose a date';
   const title = existing
     ? initial.from < today
       ? 'Earlier goal'
@@ -363,15 +356,19 @@ export function GoalVersionForm({
             {habit.name}
           </Text>
         </View>
-        <View style={styles.card}>
-          {type === 'checkbox' ? (
-            <View style={styles.inline}>
-              <Icon name="checked" color={habit.color} size={23} />
-              <View style={{ flex: 1, gap: 4 }}>
-                <Text style={styles.control}>Complete when checked</Text>
-              </View>
-            </View>
-          ) : (
+        <GoalSection
+          label="Counts when"
+          summary={
+            validSuccessRule(rule, habit)
+              ? ruleSummary(habit, rule)
+              : 'Finish this condition'
+          }
+          expanded={section === 'condition'}
+          onPress={
+            type === 'checkbox' ? undefined : () => toggleSection('condition')
+          }
+        >
+          {type !== 'checkbox' && (
             <Choices
               label="Counts when"
               colour={habit.color}
@@ -492,30 +489,57 @@ export function GoalVersionForm({
               <Text style={styles.note}>Ignores case and extra spaces.</Text>
             </Animated.View>
           )}
-        </View>
-        <View style={styles.card}>
+        </GoalSection>
+        <GoalSection
+          label="Repeat"
+          summary={
+            timing.period
+              ? validPeriod(timing.period)
+                ? periodSummary(timing.period)
+                : 'Finish the period target'
+              : scheduleSummary(timing.weekdays) || 'Choose days'
+          }
+          expanded={section === 'frequency'}
+          onPress={() => toggleSection('frequency')}
+        >
           <GoalTimingFields
+            section="frequency"
             value={timing}
             today={today}
             from={from}
             weekStart={weekStart}
             colour={habit.color}
-            onChange={(next) => {
-              setTiming(next);
-              if (
-                next.period &&
-                validPeriod(next.period) &&
-                !existing &&
-                !creating &&
-                !dateEdited &&
-                (!timing.period ||
-                  next.period.days !== timing.period.days ||
-                  next.period.unit !== timing.period.unit)
-              )
-                setFrom(nextPeriodStart(next.period, today));
-            }}
+            onChange={changeTiming}
           />
-          <View style={styles.divider} />
+        </GoalSection>
+        <GoalSection
+          label="Cycle"
+          summary={
+            timing.cycle
+              ? validCycle(timing.cycle)
+                ? cycleSummary(timing.cycle)
+                : 'Finish the cycle'
+              : 'None'
+          }
+          expanded={section === 'cycle'}
+          onPress={() => toggleSection('cycle')}
+        >
+          <GoalTimingFields
+            section="cycle"
+            value={timing}
+            today={today}
+            from={from}
+            weekStart={weekStart}
+            colour={habit.color}
+            onChange={changeTiming}
+          />
+        </GoalSection>
+        <GoalSection
+          label="Applies from"
+          summary={dateLabel(from)}
+          expanded={section === 'date'}
+          onPress={() => toggleSection('date')}
+        >
           <StartDateField
             label="Apply from"
             help=""
@@ -578,15 +602,10 @@ export function GoalVersionForm({
               Earlier results in this period will be updated.
             </Text>
           )}
-        </View>
+        </GoalSection>
         {!!issue && (
           <Text accessibilityRole="alert" style={styles.error}>
             {issue}
-          </Text>
-        )}
-        {valid && (
-          <Text style={styles.note} accessibilityLiveRegion="polite">
-            {ruleSummary(habit, rule)} · {timingSummary(goal)}
           </Text>
         )}
         <Pressable
@@ -601,11 +620,6 @@ export function GoalVersionForm({
           <Icon name="history" size={20} color="#AAAAAA" />
           <View style={{ flex: 1, gap: 3 }}>
             <Text style={styles.control}>Goal timeline</Text>
-            <Text style={styles.note}>
-              {habit.goals?.length
-                ? 'Earlier and scheduled goals'
-                : 'Your goal changes will appear here'}
-            </Text>
           </View>
           <View style={{ transform: [{ rotate: '-90deg' }] }}>
             <Icon name="chevron" size={16} color="#777777" />
@@ -664,12 +678,10 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   habit: { fontSize: 16, fontWeight: '500', flexShrink: 1 },
-  card: { backgroundColor: '#161616', borderRadius: 16, padding: 14, gap: 12 },
   group: { gap: 8 },
   stack: { gap: 14 },
   label: { color: '#999999', fontSize: 12 },
   note: { color: '#999999', fontSize: 12, lineHeight: 17 },
-  inline: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: {
     minHeight: 44,
