@@ -34,6 +34,15 @@ The requested preset icon update uses normal undoable edits in
 - `src/storage/` owns versioned events, replay, native SQLite, the write queue,
   undo/redo, and backup restore. Read STORAGE.md before changing these invariants.
 - `App.tsx` owns screen state and dialogs; `src/HabitGrid.tsx` renders the grid.
+  `useDailyEntryActions.ts` owns the shared daily input/save controller and stable
+  cell callback; `NumericRecordDialog.tsx` owns numeric draft typing/validation and
+  suggestions. Keep keystrokes out of app-root state, read save preconditions from
+  the current store, and close only accepted/unchanged saves. Keep both entry
+  dialogs inside the current native statistics presentation when open.
+  `useBackupActions.ts` owns native confirmation/errors and the in-flight busy
+  guard; exclusive restore and pre-restore copies remain in ChangeStore/adapters.
+  Both statistics screens import `StatsChart.tsx`, never each other's screen for
+  shared chart controls. `statisticsFormatting.ts` owns shared display helpers.
 - `src/GridCells.tsx` selects individual entries/date-heading state from the store.
   Keep grid callbacks/definitions stable across save acknowledgements. Cache colour
   levels in `gridAppearance.ts` and retain date identities when extending history.

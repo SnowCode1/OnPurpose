@@ -1312,3 +1312,23 @@ literal release guards. This comparison is qualitative and leaves the native
 Expo Go host unchanged. EAS internal preview is prepared with explicit Release
 and no dev-client; Expo project, provisional bundle ID, paid Apple membership,
 signing and device enrolment are still prerequisites, not completed deployment.
+
+## 7 October 2026: focused responsibility cleanup
+
+- Founder requested a code-organization review after reporting no visible loading
+  during rotation/flinging in the production-JavaScript Expo Go comparison. That
+  observation used the smaller saved list, not the matched long sample fixture;
+  it remains qualitative rather than a standalone Release/FPS result.
+- Separate numeric draft state from App: keystrokes, validation and suggestions
+  belong to NumericRecordDialog; useDailyEntryActions shares accepted writes,
+  latest-store preconditions and quick Undo between the grid and statistics.
+- Separate native backup confirmation/error/busy handling into useBackupActions.
+  Store exclusivity and atomic restore remain in the existing storage boundary.
+  A synchronous ref ignores duplicate in-flight presses before React commits.
+- Give the chart its own StatsChart module instead of importing one statistics
+  screen from another. Retain selection, accessibility and plot appearance.
+- Keep the working grid scroll/rotation controller and versioned model intact in
+  this pass. Larger size alone does not justify splitting generated data or
+  tightly related compatibility rules. No dependency or storage format changes.
+- GitNexus had no OnPurpose index. The founder allowed indexing if helpful;
+  direct reference tracing and tests were sufficient for these bounded changes.

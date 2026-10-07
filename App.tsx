@@ -1,11 +1,10 @@
 import { useQuickUndo } from './src/useQuickUndo';
-import { recentNumericTotals } from './src/numericSuggestions';
-import { checkboxChecked, toggleCheckboxValue } from './src/habitGoals';
+import { useDailyEntryActions } from './src/useDailyEntryActions';
+import { NumericRecordDialog } from './src/NumericRecordDialog';
 import { sameValue } from './src/storage/model';
 import { DailyRecordDialog } from './src/DailyRecordDialog';
 import { HabitGoalsEditor } from './src/HabitGoalsEditor';
-import { sameEntry, type EntryValue } from './src/entries';
-import { TypographyProvider, TextInput, Text } from './src/Typography';
+import { TypographyProvider, Text } from './src/Typography';
 import { DescriptionVersions } from './src/DescriptionVersions';
 import { descriptionVersions } from './src/descriptionVersions';
 import { DescriptionEditor } from './src/DescriptionEditor';
@@ -30,35 +29,30 @@ import {
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   type PressableProps,
-  ScrollView,
   StyleSheet,
   type TextProps,
   View,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { type EntryDay } from './src/calendar';
 import { PerformanceBoundary } from './src/PerformanceBoundary';
 import { developmentToolsEnabled } from './src/developmentFeatures';
 import { HabitDetailsScreen } from './src/HabitDetailsScreen';
 import { HabitGrid } from './src/HabitGrid';
-import { habitType, isNumericHabit, type Habit } from './src/habits';
+import { habitType, type Habit } from './src/habits';
 import { randomUUID } from 'expo-crypto';
 import { HabitDialog, type HabitDialogMode } from './src/HabitDialog';
 import { displayedHabitOrder, moveHabit } from './src/habitOrdering';
 import type { HabitAction } from './src/HabitName';
-import { checkmarkColor } from './src/colors';
 import { useLocalToday } from './src/useLocalToday';
 import { feedback, setHapticsEnabled } from './src/haptics';
 import { AppPanel } from './src/AppPanel';
 import { usePersistentStore, useStoreOpening } from './src/usePersistentStore';
 import type { ChangeStore } from './src/storage/store';
 import { applyPresetIcons } from './src/storage/presetIcons';
-import { shareBackup, chooseBackup } from './src/storage/backups';
+import { useBackupActions } from './src/useBackupActions';
 
 // Metro removes this branch (and its module) from release JavaScript.
 const PreviewHeading: ComponentType<TextProps> =
@@ -209,7 +203,8 @@ function PersistentApp({
     () => habits.filter((habit) => !habit.archived),
     [habits],
   );
-  const [backupBusy, setBackupBusy] = useState(false);
+  const { backupBusy, exportBackup, restoreBackup, recoverPrevious } =
+    useBackupActions(store, sampleData);
   useEffect(() => {
     setHapticsEnabled(hapticsEnabled);
   }, [hapticsEnabled]);
@@ -236,16 +231,16 @@ function PersistentApp({
     },
     panel.deferGrid,
   );
-  const [editing, setEditing] = useState<{
-    key: string;
-    habit: Habit;
-    day: EntryDay;
-  } | null>(null);
-  const [recording, setRecording] = useState<{
-    key: string;
-    habit: Habit;
-    day: EntryDay;
-  } | null>(null);
+  const {
+    editing,
+    recording,
+    pressCell,
+    saveNumber,
+    saveRecord,
+    closeNumber,
+    closeRecord,
+    closeEntries,
+  } = useDailyEntryActions(store, captureQuickUndo);
   const [detailId, setDetailId] = useState<string | null>(null);
   const detail = habits.find((habit) => habit.id === detailId);
   const [habitMode, setHabitMode] = useState<HabitDialogMode>('edit');
@@ -265,57 +260,6 @@ function PersistentApp({
     return id ? descriptionVersions(snapshot.replay.undo, id) : [];
   }, [snapshot.replay.undo, versionsId, statsId]);
   const editable = store.canEdit() && !backupBusy;
-  const [input, setInput] = useState('');
-  const trimmed = input.trim().replace(',', '.');
-  const numeric = Number(trimmed);
-  const valid =
-    trimmed === '' ||
-    (/^\d+(\.\d*)?$/.test(trimmed) &&
-      Number.isFinite(numeric) &&
-      numeric <= Number.MAX_SAFE_INTEGER);
-  const suggestedTotals = useMemo(
-    () =>
-      editing
-        ? recentNumericTotals(values, editing.habit.id, editing.day.key)
-        : [],
-    [values, editing],
-  );
-  const accent = editing?.habit.color ?? detail?.color ?? '#FFFFFF';
-
-  const pressCell = useCallback(
-    (habit: Habit, day: EntryDay) => {
-      if (!store.canEdit()) return;
-      const key = `${habit.id}:${day.key}`;
-      const before = store.getSnapshot().replay.state.values[key] ?? null;
-      if (isNumericHabit(habit)) {
-        setInput(before === null ? '' : String(before));
-        setEditing({ key, habit, day });
-        feedback('selection');
-      } else if (habitType(habit) !== 'checkbox') {
-        setRecording({ key, habit, day });
-        feedback('selection');
-      } else {
-        const after = toggleCheckboxValue(habit, before ?? undefined, day.key);
-        const change = {
-          kind: 'entry' as const,
-          habitId: habit.id,
-          date: day.key,
-          before,
-          after,
-        };
-        if (store.change(change)) {
-          captureQuickUndo(change);
-          feedback(
-            checkboxChecked(habit, after ?? undefined, day.key)
-              ? 'confirm'
-              : 'undo',
-          );
-        }
-      }
-    },
-    [store, setInput, setEditing, captureQuickUndo],
-  );
-
   const openDetails = useCallback((habit: Habit) => {
     setStatsId(habit.id);
     feedback('selection');
@@ -338,45 +282,8 @@ function PersistentApp({
     }
   }
 
-  function saveNumber() {
-    if (!editing || !valid || !store.canEdit()) return;
-    const before = store.getSnapshot().replay.state.values[editing.key] ?? null;
-    const after = trimmed === '' ? null : numeric;
-    const change = {
-      kind: 'entry' as const,
-      habitId: editing.habit.id,
-      date: editing.day.key,
-      before,
-      after,
-    };
-    if (before !== after) {
-      if (!store.change(change)) return;
-      captureQuickUndo(change);
-    }
-    setEditing(null);
-    if (before !== after) feedback(after === null ? 'undo' : 'confirm');
-  }
-
-  function saveRecord(after: EntryValue | null): boolean {
-    if (!recording || !store.canEdit()) return false;
-    const before =
-      store.getSnapshot().replay.state.values[recording.key] ?? null;
-    if (sameEntry(before, after)) return true;
-    const change = {
-      kind: 'entry' as const,
-      habitId: recording.habit.id,
-      date: recording.day.key,
-      before,
-      after,
-    };
-    const accepted = store.change(change);
-    if (accepted) captureQuickUndo(change);
-    if (accepted) feedback(after === null ? 'undo' : 'confirm');
-    return accepted;
-  }
   function closeDialog() {
-    setEditing(null);
-    setRecording(null);
+    closeEntries();
     setDetailId(null);
     setNewHabit(null);
   }
@@ -515,65 +422,6 @@ function PersistentApp({
   function redo() {
     if (store.redo()) feedback('confirm');
   }
-  async function backupAction(action: () => Promise<void>) {
-    if (sampleData) return;
-    setBackupBusy(true);
-    try {
-      await action();
-    } catch (error) {
-      Alert.alert(
-        'Backup could not be completed',
-        error instanceof Error
-          ? error.message
-          : 'Your saved data has been kept. Please try again.',
-      );
-    } finally {
-      setBackupBusy(false);
-    }
-  }
-  async function restoreBackup() {
-    await backupAction(async () => {
-      const archive = await chooseBackup();
-      if (!archive) return;
-      const confirmed = await new Promise<boolean>((resolve) =>
-        Alert.alert(
-          'Restore this backup?',
-          `This backup has ${archive.replay.state.habits.length} habits and ${archive.events.length - 1} changes. It will replace your current entries, colours, and settings. A copy of the current data will be kept on this device.`,
-          [
-            { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-            {
-              text: 'Restore',
-              style: 'destructive',
-              onPress: () => resolve(true),
-            },
-          ],
-          { cancelable: false },
-        ),
-      );
-      if (confirmed) await store.exclusive(() => store.replace(archive.events));
-    });
-  }
-  async function recoverPrevious() {
-    Alert.alert(
-      'Return to the pre-restore copy?',
-      'This replaces the current data. A copy of the current data will also be kept.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Restore copy',
-          style: 'destructive',
-          onPress: () => {
-            void backupAction(() =>
-              store.exclusive(async () => {
-                await store.replace(await store.recoveryEvents());
-              }),
-            );
-          },
-        },
-      ],
-    );
-  }
-
   if (snapshot.status !== 'ready')
     return (
       <StorageGate
@@ -637,143 +485,21 @@ function PersistentApp({
           onClose={() => setVersionsId(null)}
         />
       )}
-      <Modal
-        visible={editing !== null}
-        animationType="fade"
-        supportedOrientations={[
-          'portrait',
-          'landscape-left',
-          'landscape-right',
-        ]}
-        transparent
-        onRequestClose={closeDialog}
-      >
-        <KeyboardAvoidingView
-          style={styles.overlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <View accessibilityViewIsModal style={styles.dialog}>
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              {editing && <Text style={styles.eyebrow}>DAILY TOTAL</Text>}
-              <PreviewHeading style={[styles.dialogTitle, { color: accent }]}>
-                {editing?.habit.name ?? detail?.name}
-              </PreviewHeading>
-              {editing ? (
-                <>
-                  <Text style={styles.secondary}>{editing.day.fullLabel}</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput
-                      autoFocus
-                      keyboardType="decimal-pad"
-                      accessibilityLabel={`Daily total${editing.habit.unit ? ` in ${editing.habit.unit}` : ''}`}
-                      value={input}
-                      onChangeText={setInput}
-                      onSubmitEditing={saveNumber}
-                      selectionColor={accent}
-                      placeholder="0"
-                      placeholderTextColor="#555555"
-                      style={[
-                        styles.input,
-                        { color: accent, borderColor: `${accent}66` },
-                      ]}
-                    />
-                    <Text style={[styles.inputUnit, { color: accent }]}>
-                      {editing.habit.unit}
-                    </Text>
-                  </View>
-                  {!!suggestedTotals.length && (
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        flexWrap: 'wrap',
-                        gap: 8,
-                        marginBottom: 12,
-                      }}
-                    >
-                      {suggestedTotals.map((total) => (
-                        <Pressable
-                          key={total}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Use recent total ${total}${editing.habit.unit ? ` ${editing.habit.unit}` : ''}`}
-                          accessibilityState={{
-                            selected: trimmed !== '' && numeric === total,
-                          }}
-                          onPress={() => {
-                            setInput(String(total));
-                            feedback('selection');
-                          }}
-                          style={{
-                            minHeight: 44,
-                            minWidth: 52,
-                            paddingHorizontal: 14,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            borderRadius: 10,
-                            backgroundColor:
-                              trimmed !== '' && numeric === total
-                                ? `${accent}22`
-                                : '#1C1C1C',
-                          }}
-                        >
-                          <Text
-                            style={{
-                              color: accent,
-                              fontSize: 16,
-                              fontVariant: ['tabular-nums'],
-                            }}
-                          >
-                            {total}
-                          </Text>
-                        </Pressable>
-                      ))}
-                    </View>
-                  )}
-                  <Text style={styles.secondary}>
-                    {valid
-                      ? 'Leave blank to clear this entry.'
-                      : 'Enter a number of zero or more.'}
-                  </Text>
-                  <View style={styles.actions}>
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={closeDialog}
-                      style={styles.action}
-                    >
-                      <Text style={styles.actionText}>Close</Text>
-                    </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityState={{ disabled: !valid }}
-                      disabled={!valid}
-                      onPress={saveNumber}
-                      style={[
-                        styles.action,
-                        styles.primaryAction,
-                        {
-                          backgroundColor: accent,
-                          opacity: valid ? 1 : 0.4,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.primaryActionText,
-                          { color: checkmarkColor(accent) },
-                        ]}
-                      >
-                        Done
-                      </Text>
-                    </Pressable>
-                  </View>
-                </>
-              ) : null}
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      {editing && (
+        <NumericRecordDialog
+          key={editing.key}
+          habit={editing.habit}
+          day={editing.day}
+          initialValue={
+            typeof editing.value === 'number' ? editing.value : null
+          }
+          values={values}
+          editable={editable}
+          Heading={PreviewHeading}
+          onClose={closeNumber}
+          onSave={saveNumber}
+        />
+      )}
       {recording && (
         <DailyRecordDialog
           key={recording.key}
@@ -782,7 +508,7 @@ function PersistentApp({
           value={values[recording.key]}
           editable={editable}
           Heading={PreviewHeading}
-          onClose={() => setRecording(null)}
+          onClose={closeRecord}
           onSave={saveRecord}
         />
       )}
@@ -837,7 +563,7 @@ function PersistentApp({
         onUndo={undo}
         onRedo={redo}
         onExport={() => {
-          void backupAction(() => shareBackup(store));
+          void exportBackup();
         }}
         onRestore={() => {
           void restoreBackup();
@@ -1084,42 +810,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: 18,
   },
-  overlay: {
-    flex: 1,
-    backgroundColor: '#000000BB',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  dialog: {
-    backgroundColor: '#101010',
-    borderColor: '#2A2A2A',
-    borderWidth: 1,
-    padding: 24,
-    borderRadius: 24,
-    width: '100%',
-    maxWidth: 420,
-    maxHeight: '90%',
-    alignSelf: 'center',
-  },
-  eyebrow: {
-    color: '#929292',
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 1.5,
-    marginBottom: 10,
-  },
-  dialogTitle: { fontSize: 26, fontWeight: '600', marginBottom: 12 },
   secondary: { color: '#A1A1A1', fontSize: 13, lineHeight: 20 },
-  inputRow: { marginVertical: 20 },
-  input: { borderWidth: 1, borderRadius: 14, fontSize: 36, padding: 16 },
-  inputUnit: { fontSize: 12, marginTop: 8 },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginTop: 24,
-  },
   action: {
     minHeight: 48,
     justifyContent: 'center',
@@ -1128,6 +819,4 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   actionText: { color: '#D0D0D0' },
-  primaryAction: { borderRadius: 14 },
-  primaryActionText: { color: '#000000', fontWeight: '600' },
 });

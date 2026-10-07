@@ -1672,3 +1672,22 @@ gates folded false, and no fictional sample fixture content. Both manifests have
 the same Expo Go scope key. This does not establish phone performance; comparison
 observations are pending. The prepared EAS Release profile still requires cloud
 project/signing/device setup before a standalone binary can be tested.
+
+## Responsibility cleanup
+
+`app-actions.test.mjs` executes the real daily-entry controller, numeric dialog,
+backup controller and shared chart with bounded native/browser mocks. Cases
+cover local draft commits, Close/no write, invalid numbers, explicit zero versus
+blank, latest-store preconditions, rejected-save draft retention, default-On
+checkbox overrides, grouped net-zero edits, same-value category arrays, disabled
+store actions, stable cell callback identity, native restore Cancel/confirmation,
+exclusive recovery, duplicate in-flight backup presses, errors/cancelled pickers,
+sample isolation and dated/accessibly cleared chart selection.
+
+All 326 tests, TypeScript/ESLint/format checks and a single-worker iOS export
+passed under memory limits. Native dialogs/keyboard/sheet gestures still require
+phone verification after refactoring: open a number from both the grid and
+Statistics, type, Close/reopen and Done; try a recent-total suggestion, zero and
+clear. Check a categorical entry and chart select/clear. Backup Cancel must leave
+the current store untouched; restore remains an explicitly confirmed operation.
+These mocks and the bundle export do not establish physical-iPhone behaviour.

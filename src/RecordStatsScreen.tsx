@@ -10,7 +10,7 @@ import type { StoredEvent } from './storage/model';
 import { entryDay, type EntryDay } from './calendar';
 import { monthDays, type StatsRange } from './statistics';
 import { recordStatistics, type DailyRecord } from './recordStatistics';
-import { Chart } from './HabitStatsScreen';
+import { StatsChart } from './StatsChart';
 import { weekDayOrder, type WeekStart } from './displayPreferences';
 import { colorOnBlack } from './colors';
 import { InfoNote } from './InfoNote';
@@ -174,7 +174,7 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
             ? 'Days meeting the goal'
             : 'Days recorded'}
         </Text>
-        <Chart
+        <StatsChart
           key={`${habit.id}:${range}:${today}`}
           buckets={
             stats.completion.active || stats.completion.eligible > 0

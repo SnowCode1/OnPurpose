@@ -10,7 +10,10 @@ A local-midnight timer and foreground check update the current day.
 
 ```text
 index.ts       registers the app with Expo
-App.tsx        screen, dialogs, optimistic store actions and backup confirmations
+App.tsx        screen coordination, habit actions and nested native presentations
+src/useDailyEntryActions.ts  stable grid/statistics input actions and fresh save preconditions
+src/NumericRecordDialog.tsx  local numeric draft, validation, suggestions and Done/Close
+src/useBackupActions.ts  native backup confirmations, busy guard and error handling
 src/storage/   versioned event/replay model, SQLite transactions, queue and backups
 src/usePersistentStore.ts  store subscription, opening and foreground retry
 src/AppPanel.tsx  native History/Settings sheets, keeping the grid mounted
@@ -41,7 +44,8 @@ release target. Android is not part of the committed release scope.
 
 ## Grid behaviour
 
-Two Reanimated horizontal FlatLists keep date headings and cells aligned. Their
+Two Reanimated horizontal FlashLists recycle native date headings and columns;
+web retains its FlatList layout path. Both keep date headings and cells aligned. Their
 scroll handlers run on the UI thread and synchronously move the follower list;
 only the end-of-drag/momentum date is sent back to React. This removes the old
 JavaScript per-frame scroll command and date-state loop identified while
@@ -84,8 +88,9 @@ Because inverted lists use transforms, validate the native anchoring on the
 phone, particularly while expanding a second future batch.
 
 Changing width or the future range resets scroll ownership. Returning to Today
-explicitly remounts at today, collapses future columns, and restores the pull
-boundary without deleting entries; it cancels any pending reveal. Rotation also
+animates to its column, then collapses future columns and restores the pull
+boundary without deleting entries; it cancels any pending reveal. Distant navigation
+first replaces the bounded date window rather than mounting intervening years. Rotation also
 cancels a pending transition and anchors to its logical date. Current-day changes remount the grid at today while values retain
 their habit ID/local-date keys.
 
@@ -343,7 +348,9 @@ is nested in the existing App overlays for grid and statistics recording.
 `RecordStatsScreen` retains recording range/month state and virtualizes daily
 entry rows; `recordStatistics` shares calendar/start rules without interpreting
 text or categories as numbers. The old numerical/checkbox statistics stay in
-`HabitStatsScreen`; its Chart has an explicit recording-label mode.
+`HabitStatsScreen`. Both screens import the independent `StatsChart`, which has
+an explicit recording-label mode and owns its selection/plot styles. Shared
+number/date display helpers live in `statisticsFormatting.ts`.
 
 ## Effective-dated completion goals
 
@@ -373,3 +380,35 @@ allocating lifetime calendars. `PeriodProgress.tsx` renders current/recent resul
 only in Statistics. `GoalTimingFields.tsx` drafts frequency and optional cycles;
 Create/Edit and Goal are full-screen with staged subpages. The old test-value
 panel is removed. `dev/sampleTiming.ts` appends isolated v13 sample policies.
+
+## Code organization review (7 October 2026)
+
+The root was mixing screen coordination, daily-entry drafts and native backup
+workflows. `useDailyEntryActions` now owns selected habit/day editors and stable
+cell callbacks shared by the home grid and statistics. Numeric/text/category
+saves use one fresh-store precondition path with accepted-edit feedback and quick
+Undo; checkbox taps retain their dated defaults and on/off feedback. Numeric
+validation, recent totals and keystrokes live inside the keyed
+`NumericRecordDialog`, so typing no longer updates app-root state. Done closes
+only on an accepted/unchanged save; Close discards the draft. Both daily dialogs
+remain nested inside the statistics presentation when it is open.
+
+`useBackupActions` owns native confirmation, picker/share errors and a synchronous
+busy guard for duplicate in-flight actions. It delegates durable/exclusive work
+to the existing ChangeStore and backup adapters. No persistence format, replay,
+queue, projection or restore-copy semantics changed. Sample mode cannot invoke
+these backup actions.
+
+The shared chart no longer lives inside a statistics screen imported by another
+screen. Its dated selection, accessible controls, clear action and target drawing
+are unchanged. A static local-import scan found no runtime import cycles; it does
+not inspect dynamic requires or establish native runtime behaviour.
+
+Generated icon catalogues account for the largest files and should stay generated.
+ChangeStore is a focused 224-line coordinator; model.ts is larger because it
+centralizes strict event validation and replay across versions. Splitting those
+rules warrants a separate compatibility-focused change. HabitGrid remains the
+largest handwritten UI module: its calendar-window/readiness controller is a
+potential future extraction, but must preserve UI-thread synchronization, native
+list generations, date anchoring and stable render callbacks. Do not split it
+solely to reach a line-count target. This pass adds no dependencies or framework.

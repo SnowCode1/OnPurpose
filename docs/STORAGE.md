@@ -15,8 +15,9 @@ once, not on every launch. Habit creation, renaming, units, icons, start dates, 
 Effective-dated success goals and weekday schedules also persist.
 Full-screen statistics are derived from saved values; comments remain later work. See [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md).
 
-`src/storage/model.ts` defines version-12 events and deterministic replay, with
-backward-compatible interpretation of existing version-1/2/3/4/5/6/7/8/9/10/11 records.
+`src/storage/model.ts` defines version-17 events and deterministic replay, with
+backward-compatible interpretation of existing version-1–16 records. The version
+sections below describe when each field was introduced; new writes use v17.
 `repository.ts` implements the native database operations against a small SQL
 interface; `native.ts` connects it to Expo SQLite and native UUID/SHA-256 support.
 `store.ts` owns loading, immediate UI state, the serialized write queue, undo,
@@ -81,7 +82,7 @@ Every event carries:
 
 | Field              | Meaning                                                                          |
 | ------------------ | -------------------------------------------------------------------------------- |
-| `version`          | Event schema version, currently `12`; existing `1`–`11` records remain supported |
+| `version`          | Event schema version, currently `17`; existing `1`–`16` records remain supported |
 | `id`               | Stable UUID generated once, retained on save retry                               |
 | `sequence`         | Contiguous order starting at `1`; authoritative even if the clock changes        |
 | `recordedAt`       | UTC edit instant in ISO form with milliseconds                                   |
@@ -100,7 +101,7 @@ Redo targets its latest undo event ID and restores the original action.
 Existing version-1 logs retain their original interpretation, including historical
 preference undo/redo and abandoned redo branches. Their habit edits remain
 individual undo steps, with settings and undo/redo rows filtered from the view.
-New events use version 12. A log can progress from versions 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12, skipping
+New events use version 17. A log can progress from versions 1 through 17, skipping
 versions if needed, but never downgrade. New habit-definition changes record
 `habitId`, `index`, and `before`/`after` definitions (null for creation/removal).
 Order changes record exact before/after ID arrays. Definitions may include an
@@ -291,7 +292,7 @@ raw edits, earlier notes/values, recoverable local description drafts/bookmarks,
 backups and pre-restore copies remain. Permanent erasure still needs its own
 privacy/retention rules.
 
-## Portable backup version 13
+## Portable backup version 17
 
 Settings → Backups → Export backup opens the iOS share sheet; save the JSON to Files or
 another destination. The app first waits for pending saves and captures a stable

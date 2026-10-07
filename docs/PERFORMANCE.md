@@ -542,3 +542,15 @@ measurement. No development timing report is collected during either session.
 The prepared EAS internal preview profile specifies Release, but cloud project,
 Apple signing and device registration still need setup. Read DEVELOPMENT.md and
 RELEASING.md for the distinct workflows and matching-data requirements.
+
+The founder subsequently reported no visible loading while rotating or rapidly
+swiping/scrolling in the production-JavaScript comparison. The saved list lacked
+the long sample data, so this supports development-overhead investigation but
+cannot establish matched-data release performance. No frame-rate figure follows
+from this observation.
+
+The organization pass moves numeric typing into NumericRecordDialog instead of
+App. The actual-dialog/controller test verifies that multiple keystrokes cause
+no further host commits, while Done still reads the latest entry before saving.
+This is a React ownership/work-count improvement; no new phone timing was taken.
+The date renderer and scrolling algorithms are unchanged by the refactor.
