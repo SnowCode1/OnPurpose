@@ -1593,3 +1593,30 @@ development web exports completed under bounded memory. Browser review passed
 all three modes, both rotations, report generation and unchanged stored values.
 No iPhone timing report has arrived yet. Desktop fixture results are recorded in
 PERFORMANCE.md and cannot establish native render/bridge latency.
+
+## Shared row controllers and vertical cell windows
+
+grid-render-controllers.test.mjs exercises the actual components/hooks through
+bounded React mocks: controller count depends on habits rather than date views;
+rotation/recycling retains handles, removal/restoration releases/recreates only
+that owner, and drag coordinates read current shared values. Tap tests cover lazy
+allocation, rapid restart, no animation on external updates/recycling and Reduce
+Motion. Window cases cover wrapped heights/font scaling, every visible row across
+bucket rounding, stable row identities and retention throughout reorder/removal.
+These mocks establish behaviour and work counts, not native layout/frame rate.
+
+On the phone, reload and send another Normal scroll/rotation report using the same
+sample list as the baseline. Try portrait/landscape, vertical scrolling to the last
+habit and back, then check a cell. Hold/drag past the bottom edge and cancel/drop;
+all cells must follow their name with the existing appearance. Archive/Undo and
+Hide completed/Show completed must retain smooth matching movements. Test larger
+text/wrapped names, marks/boxes, quick repeated taps, numeric/text/categories and
+Reduce Motion. Confirm no old date pulses after fast horizontal recycling.
+
+Local checks passed with 319 tests and single-worker iOS/web exports under a
+2 GiB memory scope. Browser review confirmed eight real rows of the 14-row sample
+list in landscape, bottom-row refill and return, date/cell alignment, both
+rotations, numeric draft/Close/Done, deferred appearance settings, Today, delayed
+filtering and specific-entry Undo. Screenshots retained the existing appearance.
+Browser FlatList does not establish native recycler
+latency. A fresh iPhone report and reorder/animation acceptance remain pending.

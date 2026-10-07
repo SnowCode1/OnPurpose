@@ -1274,3 +1274,15 @@ validation/serialization. Temporary modes stay outside storage/History and reset
 when stopped. Desktop tests use fictional temporary databases only; they confirm
 SQL-free entry reads and expose full-projection write costs, without establishing
 native latency. No Skia or storage migration is approved or introduced by this pass.
+
+### 2026-10-07 — Reduce repeated renderer setup and off-screen cell work
+
+Founder authorized renderer improvements without Skia after the first Normal
+iPhone run showed 8.4 seconds of accumulated React rendering and only 35 ms of
+goal evaluation. One shared animated-style owner per habit now survives column
+recycling/rotation and serves actual name/cell/fallback views. Checkbox tap state
+is allocated lazily. Real cells render around the vertical viewport, retaining
+complete rows during reordering and removal/restoration transitions. Names,
+measured heights and content geometry stay complete. Existing loading fallbacks,
+native horizontal sync, date identity and storage invariants remain. The width
+reset is retained for correctness; device timing improvement remains unverified.

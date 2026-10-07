@@ -357,3 +357,16 @@ Keep experiment state outside preferences/history and preserve native default
 checkbox policies in both comparisons. Simple cells are an experiment, not a
 product replacement. benchmark:bottlenecks uses fictional temporary Node SQLite
 files under 256 MiB; never infer iPhone performance from it. Read PERFORMANCE.md.
+
+RowPositions (in ReorderRow.tsx) owns one keyed shared animated-style controller
+per displayed habit at the grid root, outside resetting date lists. Names/cells/
+loading strips attach to that handle; ReorderRow must not recreate a mapper per
+cell. Register before paint and detach only the removed owner's ID; preserve the
+top-zero translateY anchor, stable native sibling order and the real row views.
+GridCheckboxMark allocates tap animation state lazily, starts its first pulse after
+commit and cancels pending/active feedback when the exact cell identity changes.
+useGridRowWindow/gridRowWindow render real cells near the vertical viewport using
+wrapped heights, two-row buckets and overscan. Keep all names measuring and full
+content height. Menus/reordering and the 300 ms identity-change window retain all
+rows through removal/restoration motion. Keep the UI-thread read-only fallback
+independent of this window and preserve dated subscriptions when rows remount.

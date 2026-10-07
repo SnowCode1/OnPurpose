@@ -2,6 +2,7 @@ import {
   memo,
   useEffect,
   useImperativeHandle,
+  useRef,
   useState,
   type Ref,
 } from 'react';
@@ -30,46 +31,37 @@ export const GridCheckboxMark = memo(function GridCheckboxMark({
   colour: string;
   checkmark: string;
 }) {
-  // Native Animated creates no Reanimated mapper/reaction per untouched cell.
-  // The small native graph is connected only when a tap actually animates.
-  const [progress] = useState(() => new Animated.Value(1));
+  // Untouched/recycled marks have no Animated.Value or attached scale graph.
+  // Allocate only after an accepted tap and start after the view has committed.
+  const [progress, setProgress] = useState<Animated.Value | null>(null);
+  const requested = useRef<string | null>(null);
   const reducedMotion = useReducedMotion();
   useEffect(() => {
+    if (!progress) return;
     progress.stopAnimation();
     progress.setValue(1);
+    if (requested.current === identity && !reducedMotion) pulse(progress);
+    requested.current = null;
     return () => progress.stopAnimation();
-  }, [identity, progress]);
+  }, [identity, progress, reducedMotion]);
   useImperativeHandle(
     ref,
     () => ({
       pulse() {
-        progress.stopAnimation();
-        progress.setValue(1);
         if (reducedMotion) return;
-        Animated.sequence([
-          Animated.timing(progress, {
-            toValue: 0.94,
-            duration: 45,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-            isInteraction: false,
-          }),
-          Animated.timing(progress, {
-            toValue: 1,
-            duration: 135,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: true,
-            isInteraction: false,
-          }),
-        ]).start();
+        if (progress) pulse(progress);
+        else {
+          requested.current = identity;
+          setProgress((current) => current ?? new Animated.Value(1));
+        }
       },
     }),
-    [progress, reducedMotion],
+    [identity, progress, reducedMotion],
   );
   const box = size * (22 / 28);
   return (
     <Animated.View
-      style={{ transform: [{ scale: progress }] }}
+      style={progress ? { transform: [{ scale: progress }] } : undefined}
       pointerEvents="none"
       accessible={false}
       accessibilityElementsHidden
@@ -108,3 +100,24 @@ export const GridCheckboxMark = memo(function GridCheckboxMark({
     </Animated.View>
   );
 });
+
+function pulse(progress: Animated.Value) {
+  progress.stopAnimation();
+  progress.setValue(1);
+  Animated.sequence([
+    Animated.timing(progress, {
+      toValue: 0.94,
+      duration: 45,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+      isInteraction: false,
+    }),
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: 135,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+      isInteraction: false,
+    }),
+  ]).start();
+}

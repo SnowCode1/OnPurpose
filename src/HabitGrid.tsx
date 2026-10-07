@@ -1,4 +1,5 @@
 import { useMeasuredRowHeights } from './useMeasuredRowHeights';
+import { useGridRowWindow } from './useGridRowWindow';
 import { QuickUndoActions } from './QuickUndoActions';
 import type { QuickUndo } from './quickUndo';
 import {
@@ -47,7 +48,7 @@ import { type GridDay, createGridDayCache, calendarDay } from './calendar';
 import type { Habit } from './habits';
 import { HabitName, type HabitAction } from './HabitName';
 import { habitRowPositions, moveHabit } from './habitOrdering';
-import type { RowMotion } from './ReorderRow';
+import { RowPositions, type RowMotion } from './ReorderRow';
 import { useHabitReorder } from './useHabitReorder';
 import { createGridPalette } from './gridAppearance';
 import { GridDateColumn, GridDateHeading } from './GridCells';
@@ -308,6 +309,13 @@ export const HabitGrid = memo(function HabitGrid({
       ),
     [habits, rowTops, dragId, tops, dragY, bodyTop, scrollOffset],
   );
+  const rowWindow = useGridRowWindow(
+    habits,
+    tops,
+    rowHeights,
+    baseRowHeight,
+    !!habitMenu || !!dragId || reorderMode,
+  );
   const renderHeading = useCallback(
     ({ item: day }: { item: GridDay }) => (
       <GridDateHeading
@@ -327,7 +335,7 @@ export const HabitGrid = memo(function HabitGrid({
     ({ item: day }: { item: GridDay }) => (
       <GridDateColumn
         store={store}
-        habits={habits}
+        habits={rowWindow.rows}
         day={day}
         palettes={palettes}
         motions={rowMotion}
@@ -345,7 +353,7 @@ export const HabitGrid = memo(function HabitGrid({
     ),
     [
       store,
-      habits,
+      rowWindow.rows,
       palettes,
       rowMotion,
       rowHeights,
@@ -658,7 +666,8 @@ export const HabitGrid = memo(function HabitGrid({
   };
 
   return (
-    <View
+    <RowPositions
+      motions={rowMotion}
       collapsable={false}
       ref={reorderRoot}
       style={styles.container}
@@ -848,14 +857,20 @@ export const HabitGrid = memo(function HabitGrid({
             }
             collapsable={false}
             ref={reorderViewport}
-            onLayout={measureReorder}
+            onLayout={(event) => {
+              const height = event.nativeEvent.layout.height;
+              rowWindow.setViewport(height);
+              measureReorder();
+            }}
             style={{ flex: 1 }}
           >
             <ScrollView
               ref={reorderScroll}
               onLayout={measureReorder}
               onScroll={(event) => {
-                updateVerticalOffset(event.nativeEvent.contentOffset.y);
+                const y = event.nativeEvent.contentOffset.y;
+                updateVerticalOffset(y);
+                rowWindow.updateOffset(y);
               }}
               scrollEventThrottle={16}
               scrollEnabled={!habitMenu && !dragId}
@@ -867,7 +882,11 @@ export const HabitGrid = memo(function HabitGrid({
             >
               {!habits.length && (
                 <View
-                  style={{ paddingVertical: 24, alignItems: 'center', gap: 16 }}
+                  style={{
+                    paddingVertical: 24,
+                    alignItems: 'center',
+                    gap: 16,
+                  }}
                 >
                   <Text style={{ color: '#888888', fontSize: 14 }}>
                     {sourceHabits.length
@@ -1142,7 +1161,7 @@ export const HabitGrid = memo(function HabitGrid({
           </Animated.View>
         </Animated.View>
       )}
-    </View>
+    </RowPositions>
   );
 });
 

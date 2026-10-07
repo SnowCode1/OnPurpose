@@ -153,11 +153,12 @@ test('recycled date columns keep row views while switching subscriptions, taps a
     disabled: false,
   };
   const taps = [];
-  const render = async (day, experiment = 'normal') =>
+  const render = async (day, experiment = 'normal', rows = props.habits) =>
     act(() =>
       root.render(
         React.createElement(module.exports.GridDateColumn, {
           ...props,
+          habits: rows,
           day,
           experiment,
           onPress: (habit, day) => taps.push([habit.id, day.key]),
@@ -200,6 +201,23 @@ test('recycled date columns keep row views while switching subscriptions, taps a
   );
   assert.equal(document.querySelector('button').textContent, '0');
   assert.equal(listeners.size, 1);
+  await act(() => document.querySelector('button').click());
+  assert.deepEqual(taps.at(-1), ['read', '2026-10-06']);
+  await render(days[1], 'normal', []);
+  assert.equal(
+    listeners.size,
+    0,
+    'off-screen rows release their subscriptions',
+  );
+  assert.equal(document.querySelector('button'), null);
+  await publish({ ...snapshot.replay.state.values, 'read:2026-10-06': 17 });
+  await render(days[1]);
+  assert.equal(listeners.size, 1);
+  assert.equal(
+    document.querySelector('button').textContent,
+    '17',
+    'a refilled row reads edits made while it was off-screen',
+  );
   await act(() => document.querySelector('button').click());
   assert.deepEqual(taps.at(-1), ['read', '2026-10-06']);
 });

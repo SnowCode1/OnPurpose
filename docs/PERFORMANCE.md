@@ -424,3 +424,43 @@ counts as well as elapsed totals because manual flings cover different ranges;
 goal-free rendering is unlikely to explain most of this baseline's delay. A
 report collected entirely inside Settings can contain only JS timer samples:
 absent render/ready metrics mean unmeasured, not zero-duration work.
+
+### Renderer improvements without Skia
+
+Founder requested proceeding with the existing renderer. RowPositions now owns
+one keyed animated-style controller per displayed habit outside the resetting
+date lists. The name, loading strip and every mounted date cell attach to that
+same handle. Reanimated 4 explicitly supports [sharing animated styles between
+components](https://docs.swmansion.com/react-native-reanimated/docs/core/useAnimatedStyle/),
+and the installed adapter detaches individual view descriptors on unmount.
+Controllers register in a layout effect; the brief initial fallback uses the same
+fixed top-zero/absolute translateY anchor. No mapper/animation setup runs in each
+ReorderRow. Owners survive date recycling and portrait/landscape list resets,
+retain stable IDs during preview swaps, and release removed habits. This reduces
+controller setup, not the number of native views receiving moving-row transforms.
+
+GridCheckboxMark creates its native Animated.Value/scale graph on the first
+accepted tap rather than on every checkbox mount. The first pulse starts after
+the scale prop commits; pending requests are paired with the exact cell identity.
+Recycling stops an old pulse without starting another. Rapid taps restart the
+same short native, non-interaction sequence; reduced-motion taps allocate nothing.
+The checkbox drawing, colours, dimensions and accessible cell controls remain.
+
+gridRowWindow/useGridRowWindow limit real date cells to the measured vertical
+viewport plus two base rows of overscan at each edge. Offsets update the row set
+only when crossing a two-row bucket in the existing vertical handler. Measured
+wrapped heights and absolute tops determine membership; row definitions retain
+their identities while a window is unchanged. Names still measure all habits,
+total content height and full reordering remain intact, and all rows are rendered
+while a menu/drag/reorder mode is active or for 300 ms after an identity change
+to cover the shared 220 ms removal/restoration motion. The read-only UI-thread
+date/dash backdrop remains independent of the real-cell window. Horizontal
+synchronization, width readiness, future pull and dated entry subscriptions are
+unchanged. No dependency, event version, preference or SQLite schema change.
+
+Focused tests establish controller reuse and registration/removal, dynamic drag
+coordinates, zero untouched checkbox allocations, recycling/reduced-motion
+cancellation, wrapped/scaled window coverage, bucket-only updates and full-row
+transition coverage. A synthetic four-row viewport initially renders six of 30
+rows; this is a work-count assertion, not a native speed measurement. Fresh phone
+Normal-mode timings are required before claiming an improvement over the baseline.
