@@ -337,7 +337,8 @@ Use `Text`/`TextInput` from `src/Typography.tsx` for app text, and
 only the app multiplier; native controls retain OS font scaling. The layout hook
 combines both scales, as does the DOM editor. `textSize.ts` owns validated bounds
 and pure style calculations. Do not independently scale nested text or override
-native `defaultProps`. Fixed icons/checkbox glyphs remain decorative.
+native `defaultProps`. Grid tick/cross marks use the combined scale explicitly and remain decorative;
+other fixed interface icons keep their existing sizing.
 
 The founder confirmed the global gesture works and statistics looks good on
 5 October. A new phone preview arrived and was inspected. At their request,

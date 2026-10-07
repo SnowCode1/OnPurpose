@@ -1459,3 +1459,13 @@ in habit editing, cancel once, then save; check the same dated goal in the goal
 editor. Reload, Undo/Redo, and verify earlier dates retain their earlier default.
 Test at large text size and landscape. Browser review is not evidence of native
 switch feel or iPhone layout.
+
+### Tick/cross grid trial
+
+Reload Expo Go and check/uncheck several checkbox cells quickly. Tick is On,
+cross is Off; unchecked-success goals should retain their completion tint with a
+cross. Test Default On, Undo, scrolling into history/future, and row dragging.
+In Settings → Appearance try text size 85%, 100% and 150%, with Compact/Roomy row
+and column spacing, then dismiss Settings. Marks should scale with the text,
+remain centred and retain the full cell hit area. Test OS larger text and both
+orientations on iPhone; browser layout does not establish native performance.

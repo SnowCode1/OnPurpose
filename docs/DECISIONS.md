@@ -1099,3 +1099,19 @@ choice. Default state is a separate control within Success condition and beside
 Goal in habit editing. Implementation choice: store defaults in the dated goal
 timeline; untouched days inherit them, explicit 0/1 records override them. This
 preserves earlier behaviour and keeps all changes undoable without daily writes.
+
+### 2026-10-07 — Tick/cross grid trial
+
+Founder requested trying tick/cross icons in place of checkbox outlines and sizing
+those marks with the app text slider. Assistant chose a single main-grid trial
+before adding a saved style selector. A tick means the dated checkbox state is
+On; a cross means Off, including inherited defaults. Goal success retains the
+shared row-colour background and brighter foreground, so unchecked-success goals
+can have a bright cross. Ordinary unchecked crosses stay quiet and keep the
+existing bounded history/future fade. This visual language needs phone feedback.
+
+Small outline paths use the existing Icon/SVG module, with no font loading or
+pack import. Their size uses the grid's combined app/OS text scale, capped by
+cell width and measured row height. Touch targets, subscriptions, saved values,
+Undo, default state and goal evaluation are unchanged. Settings still releases
+grid geometry only on dismissal. No per-cell animation or preference was added.

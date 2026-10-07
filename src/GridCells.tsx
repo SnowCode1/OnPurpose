@@ -1,5 +1,6 @@
 import { cellEntryLabel, entryLabel } from './entries';
 import { evaluateGoal, checkboxChecked } from './habitGoals';
+import { Icon } from './Icon';
 import { Text } from './Typography';
 import { memo, useMemo, useSyncExternalStore } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -23,6 +24,7 @@ type CellProps = {
   palette: GridPalette;
   motion: RowMotion;
   height: number;
+  width: number;
   fontScale: number;
   disabled: boolean;
   onPress: (habit: Habit, day: GridDay) => void;
@@ -34,6 +36,7 @@ const GridCell = memo(function GridCell({
   palette,
   motion,
   height,
+  width,
   fontScale,
   disabled,
   onPress,
@@ -63,7 +66,7 @@ const GridCell = memo(function GridCell({
         accessibilityLabel={`${habit.name}, ${day.fullLabel}${checkbox ? '' : `, ${value === undefined ? 'not recorded' : entryLabel(habit, value) + (habit.unit ? ` ${habit.unit}` : '')}`}, ${goal.active ? (goal.met ? 'goal met' : recorded ? 'goal not met' : 'not recorded') : 'tracking only'}${goal.active && !goal.scheduled ? ', not scheduled' : ''}`}
         accessibilityHint={
           checkbox
-            ? 'Toggle this day’s completion'
+            ? 'Toggle this day’s checkbox state'
             : numeric
               ? 'Edit this day’s total'
               : habit.type === 'categorical'
@@ -100,24 +103,15 @@ const GridCell = memo(function GridCell({
             {cellEntryLabel(habit, value)}
           </Text>
         ) : (
-          <View
-            style={[
-              styles.checkbox,
-              {
-                borderColor: checked ? habit.color : tone.checkbox,
-                backgroundColor: checked ? habit.color : 'transparent',
-              },
-            ]}
-          >
-            {checked && (
-              <Text
-                allowFontScaling={false}
-                style={[styles.checkmark, { color: palette.checkmark }]}
-              >
-                ✓
-              </Text>
+          <Icon
+            name={checked ? 'tick' : 'close'}
+            size={Math.max(
+              0,
+              Math.min(28 * fontScale, height - 16, width - 16),
             )}
-          </View>
+            strokeWidth={checked ? 2.3 : 1.8}
+            color={goal.met ? habit.color : tone.checkbox}
+          />
         )}
       </Pressable>
     </ReorderRow>
@@ -162,6 +156,7 @@ export const GridDateColumn = memo(function GridDateColumn({
           motion={motions[habit.id]}
           height={heights[habit.id] ?? baseHeight}
           fontScale={fontScale}
+          width={width}
           disabled={disabled}
           onPress={onPress}
         />
@@ -268,18 +263,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   numeric: { fontSize: 18, fontWeight: '500', fontVariant: ['tabular-nums'] },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkmark: {
-    color: '#000000',
-    fontSize: 17,
-    lineHeight: 20,
-    fontWeight: '700',
-  },
 });

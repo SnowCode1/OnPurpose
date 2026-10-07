@@ -4,6 +4,7 @@ export type IconName =
   | 'history'
   | 'settings'
   | 'close'
+  | 'tick'
   | 'chevron'
   | 'checked'
   | 'unchecked'
@@ -32,10 +33,12 @@ export function Icon({
   name,
   size = 21,
   color = '#B8B8B8',
+  strokeWidth = 1.7,
 }: {
   name: IconName;
   size?: number;
   color?: string;
+  strokeWidth?: number;
 }) {
   return (
     <Svg
@@ -44,7 +47,7 @@ export function Icon({
       viewBox="0 0 24 24"
       fill="none"
       stroke={color}
-      strokeWidth={1.7}
+      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
       accessible={false}
@@ -60,6 +63,7 @@ export function Icon({
           <Circle cx={12} cy={12} r={3.2} />
         </>
       )}
+      {name === 'tick' && <Path d="m4 12 5 5L20 6" />}
       {name === 'close' && <Path d="m6 6 12 12M18 6 6 18" />}
       {name === 'chevron' && <Path d="m7 9 5 5 5-5" />}
       {(name === 'checked' || name === 'unchecked') && (
