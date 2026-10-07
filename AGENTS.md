@@ -275,3 +275,13 @@ Default changes from habit editing use `withCheckboxDefault`; goal editing stage
 the same timeline field. Count implicit successes arithmetically through policies
 and repeating periods, never materialize lifetime daily values. Primary goal
 section choices open directly; do not nest a duplicate selected-value dropdown.
+
+Current writers/exports are v15. `checkboxStyle` is a strict boxes/marks preference
+(default boxes), outside History/Undo, retaining v1–v14 prefixes and SQL schema 1.
+`GridCheckboxMark.tsx` scales both styles and owns tap-only UI-thread feedback.
+Never animate on cell mount, store acknowledgements, Undo or scroll. Respect
+ReduceMotion.System; rapid taps cancel/restart the short non-bouncy sequence.
+`WeekDivider.tsx` overlays the saved week-start edge without changing geometry.
+Defer checkboxStyle and weekStart with other grid presentation preferences until
+Settings dismisses. A separate rest-day feature was declined; keep scheduling in
+effective-dated habit goals.

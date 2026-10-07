@@ -1,0 +1,164 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { DatabaseSync } from 'node:sqlite';
+import {
+  beginsWeek,
+  displayDefaults,
+  isCheckboxStyle,
+} from '../src/displayPreferences.ts';
+import { ChangeStore } from '../src/storage/store.ts';
+import { sqliteRepository } from '../src/storage/repository.ts';
+import { validateChange, replayEvents } from '../src/storage/model.ts';
+import { encodeArchive, decodeArchive } from '../src/storage/archive.ts';
+const digest = async (text) => createHash('sha256').update(text).digest('hex');
+let id = 0;
+const meta = (sequence) => ({
+  version: 15,
+  id: `style_${++id}`,
+  sequence,
+  recordedAt: '2026-10-07T02:00:00.000Z',
+  timeZone: 'UTC',
+  utcOffsetMinutes: 0,
+});
+const habit = { id: 'walk', name: 'Walk', color: '#82E6BC' };
+function port(raw) {
+  const db = {
+    execAsync: async (sql) => raw.exec(sql),
+    runAsync: async (sql, ...args) => raw.prepare(sql).run(...args),
+    getFirstAsync: async (sql, ...args) =>
+      raw.prepare(sql).get(...args) ?? null,
+    getAllAsync: async (sql, ...args) => raw.prepare(sql).all(...args),
+    withExclusiveTransactionAsync: async (task) => {
+      raw.exec('BEGIN IMMEDIATE');
+      try {
+        const result = await task(db);
+        raw.exec('COMMIT');
+        return result;
+      } catch (error) {
+        raw.exec('ROLLBACK');
+        throw error;
+      }
+    },
+  };
+  return db;
+}
+test('checkbox style defaults to boxes and new preference is strictly versioned', () => {
+  assert.equal(displayDefaults.checkboxStyle, 'boxes');
+  assert.equal(isCheckboxStyle('marks'), true);
+  const change = { kind: 'checkboxStyle', before: 'boxes', after: 'marks' };
+  assert.doesNotThrow(() => validateChange(change, 15));
+  for (let version = 1; version < 15; version++)
+    assert.throws(() => validateChange(change, version), /version 15/);
+  for (const value of [true, null, 0, 'checkbox', 'ticks']) {
+    assert.equal(isCheckboxStyle(value), false);
+    assert.throws(() => validateChange({ ...change, after: value }));
+  }
+});
+test('style reload/backup persist while preserving Undo, Redo and entry grouping', async (t) => {
+  const raw = new DatabaseSync(':memory:');
+  t.after(() => raw.close());
+  const repo = sqliteRepository(port(raw), () => ({
+    ...meta(1),
+    version: 14,
+    type: 'initialize',
+    habits: [habit],
+  }));
+  let store = new ChangeStore(repo, meta);
+  await store.load();
+  assert.equal(
+    store.getSnapshot().replay.state.checkboxStyle ??
+      displayDefaults.checkboxStyle,
+    'boxes',
+  );
+  const entry = (before, after) =>
+    store.change({
+      kind: 'entry',
+      habitId: 'walk',
+      date: '2026-10-07',
+      before,
+      after,
+    });
+  entry(null, 1);
+  store.undo();
+  const redo = store.getSnapshot().replay.redo.map((e) => e.id);
+  assert.equal(
+    store.change({ kind: 'checkboxStyle', before: 'boxes', after: 'marks' }),
+    true,
+  );
+  assert.deepEqual(
+    store.getSnapshot().replay.redo.map((e) => e.id),
+    redo,
+  );
+  assert.equal(store.getSnapshot().replay.undo.length, 0);
+  await store.flush();
+  store = new ChangeStore(repo, meta);
+  await store.load();
+  assert.equal(store.getSnapshot().replay.state.checkboxStyle, 'marks');
+  store.redo();
+  assert.equal(store.getSnapshot().replay.state.values['walk:2026-10-07'], 1);
+  entry(1, null);
+  store.change({ kind: 'checkboxStyle', before: 'marks', after: 'boxes' });
+  entry(null, 1);
+  assert.equal(store.getSnapshot().replay.undo.length, 1);
+  await store.flush();
+  const events = store.getSnapshot().events;
+  const backup = await encodeArchive(
+      events,
+      '2026-10-07T02:00:00.000Z',
+      digest,
+    ),
+    decoded = await decodeArchive(backup, digest);
+  assert.equal(JSON.parse(backup).version, 15);
+  await store.exclusive(() => store.replace(decoded.events));
+  assert.equal(store.getSnapshot().replay.state.checkboxStyle, 'boxes');
+  assert.deepEqual(store.getSnapshot().events, events);
+  assert.throws(
+    () =>
+      replayEvents([
+        ...events,
+        {
+          ...meta(events.length + 1),
+          version: 14,
+          type: 'preference',
+          change: { kind: 'haptics', before: true, after: false },
+        },
+      ]),
+    /version-15/,
+  );
+});
+test('week boundaries follow saved weekdays across year, leap day and DST dates', () => {
+  for (const [monday, sunday] of [
+    ['2026-10-05', '2026-10-04'],
+    ['2024-02-26', '2024-03-03'],
+    ['2025-12-29', '2026-01-04'],
+    ['2026-03-09', '2026-03-08'],
+  ]) {
+    assert.equal(beginsWeek(monday, 'monday'), true);
+    assert.equal(beginsWeek(monday, 'sunday'), false);
+    assert.equal(beginsWeek(sunday, 'sunday'), true);
+    assert.equal(beginsWeek(sunday, 'monday'), false);
+  }
+  assert.equal(beginsWeek('2024-02-29', 'monday'), false);
+});
+test('v15 example retains the exact v14 event prefix', async () => {
+  const previous = JSON.parse(
+    readFileSync(
+      new URL('../docs/examples/storage-v14.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const next = await decodeArchive(
+    readFileSync(
+      new URL('../docs/examples/storage-v15.json', import.meta.url),
+      'utf8',
+    ),
+    digest,
+  );
+  assert.deepEqual(
+    next.events.slice(0, previous.events.length),
+    previous.events,
+  );
+  assert.equal(next.replay.state.checkboxStyle, 'marks');
+});

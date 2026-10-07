@@ -1115,3 +1115,23 @@ pack import. Their size uses the grid's combined app/OS text scale, capped by
 cell width and measured row height. Touch targets, subscriptions, saved values,
 Undo, default state and goal evaluation are unchanged. Settings still releases
 grid geometry only on dismissal. No per-cell animation or preference was added.
+
+### 2026-10-07 — Saved checkbox styles, tap feedback and week boundaries
+
+Founder accepted text-size scaling as built-in behaviour, requested Checkboxes
+as the default with Ticks & crosses as an Appearance option, and approved a
+restrained tap transition plus subtle week divisions. They declined a separate
+rest-day feature; scheduling remains part of each habit's goals.
+
+`checkboxStyle` is a v15 preference outside History/Undo, defaulting to `boxes`
+for old logs. Both modes use combined app/OS scaling, capped to measured cell
+geometry. Settings applies choices immediately to persistence; grid presentation
+waits for native sheet dismissal, including the week-start preference now that
+it affects the grid. No entry or completion semantics change.
+
+An accepted local checkbox tap immediately changes its state, then gives its mark
+a shallow 6% press/release with a small opacity change over 180 ms. It uses the
+UI thread, cancels/restarts smoothly for rapid taps and respects system Reduce
+Motion. Mounting columns, save acknowledgements and Undo/Redo do not trigger it.
+The week marker is a quiet noninteractive overlay on the left edge of Monday or
+Sunday, aligned between date headings and body columns without affecting layout.

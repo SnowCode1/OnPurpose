@@ -13,6 +13,8 @@ import { isTextScale } from '../textSize.ts';
 import { validDescription } from '../description.ts';
 import {
   displayDefaults,
+  isCheckboxStyle,
+  type CheckboxStyle,
   isColumnSpacing,
   isWeekStart,
   type ColumnSpacing,
@@ -30,6 +32,7 @@ export type StoredState = {
   columnSpacing?: ColumnSpacing;
   weekStart?: WeekStart;
   dateFading?: boolean;
+  checkboxStyle?: CheckboxStyle;
   textScale?: number;
   hideCompleted?: boolean;
 };
@@ -65,6 +68,7 @@ export type Change =
   | { kind: 'rowSpacing'; before: RowSpacing; after: RowSpacing }
   | { kind: 'columnSpacing'; before: ColumnSpacing; after: ColumnSpacing }
   | { kind: 'weekStart'; before: WeekStart; after: WeekStart }
+  | { kind: 'checkboxStyle'; before: CheckboxStyle; after: CheckboxStyle }
   | { kind: 'dateFading'; before: boolean; after: boolean }
   | { kind: 'textScale'; before: number; after: number }
   | { kind: 'hideCompleted'; before: boolean; after: boolean };
@@ -76,6 +80,7 @@ export type PreferenceChange = Extract<
       | 'rowSpacing'
       | 'columnSpacing'
       | 'weekStart'
+      | 'checkboxStyle'
       | 'dateFading'
       | 'textScale'
       | 'hideCompleted';
@@ -87,6 +92,7 @@ export function isPreference(change: Change): change is PreferenceChange {
     change.kind === 'rowSpacing' ||
     change.kind === 'columnSpacing' ||
     change.kind === 'weekStart' ||
+    change.kind === 'checkboxStyle' ||
     change.kind === 'dateFading' ||
     change.kind === 'textScale' ||
     change.kind === 'hideCompleted'
@@ -94,7 +100,7 @@ export function isPreference(change: Change): change is PreferenceChange {
 }
 export type HabitChange = Exclude<Change, PreferenceChange>;
 export type EventMeta = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15;
   id: string;
   sequence: number;
   recordedAt: string;
@@ -106,7 +112,7 @@ export type LegacyChangeEvent = EventMeta & { version: 1 } & (
     | { type: 'undo' | 'redo'; targetId: string; change: Change }
   );
 export type CurrentChangeEvent = EventMeta & {
-  version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14;
+  version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15;
 } & (
     | { type: 'change'; groupId: string; change: HabitChange }
     | { type: 'undo' | 'redo'; targetId: string; change: HabitChange }
@@ -144,6 +150,7 @@ export type Replay = {
   hasV12: boolean;
   hasV13: boolean;
   hasV14: boolean;
+  hasV15: boolean;
 };
 export const emptyReplay = (): Replay => ({
   state: { habits: [], values: {}, hapticsEnabled: true },
@@ -165,6 +172,7 @@ export const emptyReplay = (): Replay => ({
   hasV12: false,
   hasV13: false,
   hasV14: false,
+  hasV15: false,
 });
 export const GROUP_INACTIVITY_MS = 2 * 60 * 1000;
 
@@ -360,7 +368,7 @@ function dailyValue(value: unknown, version: number) {
     'Category selections must be unique and sorted.',
   );
 }
-function entryFits(habit: Habit, value: EntryValue | null, version = 14) {
+function entryFits(habit: Habit, value: EntryValue | null, version = 15) {
   if (value === null) return true;
   switch (habitType(habit)) {
     case 'checkbox':
@@ -380,7 +388,7 @@ function entryFits(habit: Habit, value: EntryValue | null, version = 14) {
 }
 export function validateChange(
   value: unknown,
-  version = 14,
+  version = 15,
 ): asserts value is Change {
   object(value);
   if (value.kind === 'entry') {
@@ -467,6 +475,13 @@ export function validateChange(
       valid(value.before) && valid(value.after),
       'Invalid display preference.',
     );
+  } else if (value.kind === 'checkboxStyle') {
+    keys(value, ['kind', 'before', 'after']);
+    insist(version >= 15, 'Checkbox style requires version 15.');
+    insist(
+      isCheckboxStyle(value.before) && isCheckboxStyle(value.after),
+      'Invalid checkbox style.',
+    );
   } else if (value.kind === 'hideCompleted') {
     keys(value, ['kind', 'before', 'after']);
     insist(version >= 9, 'Completed visibility requires version 9.');
@@ -525,7 +540,8 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
       value.version === 11 ||
       value.version === 12 ||
       value.version === 13 ||
-      value.version === 14,
+      value.version === 14 ||
+      value.version === 15,
     'Unsupported event version.',
   );
   id(value.id);
@@ -717,6 +733,7 @@ function reduceEvent(
       hasV12: event.version >= 12,
       hasV13: event.version >= 13,
       hasV14: event.version >= 14,
+      hasV15: event.version >= 15,
     };
   }
   insist(
@@ -762,6 +779,10 @@ function reduceEvent(
   insist(
     !previous.hasV11 || event.version >= 11,
     'Older events cannot follow version-11 events.',
+  );
+  insist(
+    !previous.hasV15 || event.version >= 15,
+    'Older events cannot follow version-15 events.',
   );
   insist(
     !previous.hasV14 || event.version >= 14,
@@ -922,6 +943,7 @@ function reduceEvent(
     hasV12: previous.hasV12 || event.version >= 12,
     hasV13: previous.hasV13 || event.version >= 13,
     hasV14: previous.hasV14 || event.version >= 14,
+    hasV15: previous.hasV15 || event.version >= 15,
   };
 }
 export function applyChange(state: StoredState, change: Change): StoredState {
@@ -931,13 +953,14 @@ function reduceChange(
   state: StoredState,
   change: Change,
   mutable: boolean,
-  version = 14,
+  version = 15,
 ): StoredState {
   validateChange(change, version);
   let next: StoredState;
   if (
     change.kind === 'columnSpacing' ||
     change.kind === 'weekStart' ||
+    change.kind === 'checkboxStyle' ||
     change.kind === 'dateFading' ||
     change.kind === 'textScale' ||
     change.kind === 'hideCompleted'
@@ -1113,6 +1136,8 @@ export function replayEvents(input: unknown): {
 export function describeChange(change: Change, state: StoredState): string {
   if (change.kind === 'columnSpacing')
     return `Column spacing · ${change.after}`;
+  if (change.kind === 'checkboxStyle')
+    return `Checkbox style · ${change.after === 'boxes' ? 'Checkboxes' : 'Ticks & crosses'}`;
   if (change.kind === 'weekStart') return `Week starts on ${change.after}`;
   if (change.kind === 'hideCompleted')
     return `Hide completed today ${change.after ? 'on' : 'off'}`;

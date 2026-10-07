@@ -438,3 +438,12 @@ restore/deletion snapshots and atomic backup recovery preserve them. Toggling
 away from and back to the default uses normal net-zero grouping. Preferences
 remain outside History. The [v14 fixture](examples/storage-v14.json) extends the
 exact v13 prefix. Its future default does not alter earlier records.
+
+## Version 15: checkbox appearance preference
+
+`checkboxStyle` accepts exactly `boxes` or `marks`. Absent fields use `boxes`.
+It is a global preference and remains outside visible History and Undo/Redo;
+it preserves Redo and does not interrupt entry correction groups. Current writers
+and exports use v15. V1–v14 reject this preference and remain readable with their
+exact prefixes; SQL stays schema 1. There is no seed update or entry rewrite.
+The [v15 example](examples/storage-v15.json) extends the v14 log with this setting.

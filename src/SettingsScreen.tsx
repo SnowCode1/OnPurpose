@@ -5,6 +5,8 @@ import { TextSizeSetting } from './TextSizeSetting';
 import { Icon, type IconName } from './Icon';
 import { InfoNote } from './InfoNote';
 import {
+  checkboxStyleOptions,
+  type CheckboxStyle,
   columnSpacingOptions,
   weekStartOptions,
   type ColumnSpacing,
@@ -36,6 +38,8 @@ type Props = {
   onColumnSpacingChange: (value: ColumnSpacing) => void;
   weekStart: WeekStart;
   onWeekStartChange: (value: WeekStart) => void;
+  checkboxStyle: CheckboxStyle;
+  onCheckboxStyleChange: (value: CheckboxStyle) => void;
   dateFading: boolean;
   onDateFadingChange: (value: boolean) => void;
   hideCompleted: boolean;
@@ -250,6 +254,13 @@ export function SettingsScreen(p: Props) {
                 onChange={p.onTextScaleChange}
               />
             </View>
+            <Choice
+              label="Checkbox style"
+              value={p.checkboxStyle}
+              options={checkboxStyleOptions}
+              onChange={p.onCheckboxStyleChange}
+              disabled={disabled}
+            />
             <Choice
               label="Row spacing"
               value={p.rowSpacing}

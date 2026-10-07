@@ -174,6 +174,7 @@ function PersistentApp({
     columnSpacing = displayDefaults.columnSpacing,
     weekStart = displayDefaults.weekStart,
     dateFading = displayDefaults.dateFading,
+    checkboxStyle = displayDefaults.checkboxStyle,
     hideCompleted = displayDefaults.hideCompleted,
     textScale = displayDefaults.textScale,
   } = snapshot.replay.state;
@@ -192,7 +193,15 @@ function PersistentApp({
     deferGrid: boolean;
   }>({ page: 'history', visible: false, deferGrid: false });
   const gridDisplay = useGridDisplayPreferences(
-    { rowSpacing, columnSpacing, textScale, dateFading, hideCompleted },
+    {
+      rowSpacing,
+      columnSpacing,
+      textScale,
+      dateFading,
+      hideCompleted,
+      checkboxStyle,
+      weekStart,
+    },
     panel.deferGrid,
   );
   const [editing, setEditing] = useState<{
@@ -753,6 +762,15 @@ function PersistentApp({
           if (store.change({ kind: 'hideCompleted', before, after }))
             feedback('selection');
         }}
+        checkboxStyle={checkboxStyle}
+        onCheckboxStyleChange={(after) => {
+          if (!editable) return;
+          const before =
+            store.getSnapshot().replay.state.checkboxStyle ??
+            displayDefaults.checkboxStyle;
+          if (store.change({ kind: 'checkboxStyle', before, after }))
+            feedback('selection');
+        }}
         dateFading={dateFading}
         onColumnSpacingChange={(after) => {
           if (!editable) return;
@@ -852,6 +870,8 @@ function PersistentApp({
                 <PerformanceBoundary name="grid">
                   <HabitGrid
                     columnSpacing={gridDisplay.columnSpacing}
+                    checkboxStyle={gridDisplay.checkboxStyle}
+                    weekStart={gridDisplay.weekStart}
                     dateFading={gridDisplay.dateFading}
                     hideCompleted={gridDisplay.hideCompleted}
                     rowSpacing={gridDisplay.rowSpacing}

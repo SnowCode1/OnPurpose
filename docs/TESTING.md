@@ -1469,3 +1469,15 @@ In Settings → Appearance try text size 85%, 100% and 150%, with Compact/Roomy 
 and column spacing, then dismiss Settings. Marks should scale with the text,
 remain centred and retain the full cell hit area. Test OS larger text and both
 orientations on iPhone; browser layout does not establish native performance.
+
+### Saved styles, tap feedback and week boundaries
+
+Appearance → Checkbox style should initially show Checkboxes. Select Ticks &
+crosses, dismiss Settings and reload: it should persist without appearing in
+History or clearing Redo. Try both at 85/100/150% text size and different spacing.
+Rapidly check/uncheck five cells: recording must stay immediate; only tapped marks
+should gently press/release. Scroll quickly, Undo and reload: newly mounted cells
+must not animate. Enable iOS Reduce Motion and repeat; marks should change state
+without the pulse. Check Monday/Sunday week dividers align across headings and
+rows during horizontal scrolling, future reveal, rotation and row reordering.
+Device feel/performance and native Reduce Motion remain phone acceptance checks.

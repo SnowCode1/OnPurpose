@@ -1,3 +1,4 @@
+import type { WeekStart } from './displayPreferences';
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
@@ -15,11 +16,13 @@ import { loadingStripOffset, loadingEdgeMasks } from './gridLoading';
 // range, so a virtualized-list spacer never hides the calendar during a JS stall.
 const FallbackDate = memo(function FallbackDate({
   dateFading,
+  weekStart,
   day,
   index,
   width,
 }: {
   dateFading: boolean;
+  weekStart: WeekStart;
   day: GridDay;
   index: number;
   width: number;
@@ -38,6 +41,7 @@ const FallbackDate = memo(function FallbackDate({
         day={day}
         width={width}
         recorded={false}
+        weekStart={weekStart}
         dateFading={dateFading}
       />
     </View>
@@ -45,11 +49,13 @@ const FallbackDate = memo(function FallbackDate({
 });
 export const GridDateBackdrop = memo(function GridDateBackdrop({
   dateFading,
+  weekStart,
   days,
   width,
   offset,
 }: {
   dateFading: boolean;
+  weekStart: WeekStart;
   days: GridDay[];
   width: number;
   offset: SharedValue<number>;
@@ -79,6 +85,7 @@ export const GridDateBackdrop = memo(function GridDateBackdrop({
       >
         {days.map((day, index) => (
           <FallbackDate
+            weekStart={weekStart}
             dateFading={dateFading}
             key={day.key}
             day={day}

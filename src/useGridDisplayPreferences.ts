@@ -1,9 +1,15 @@
 import { useState } from 'react';
 import type { RowSpacing } from './rowSpacing.ts';
-import type { ColumnSpacing } from './displayPreferences.ts';
+import type {
+  ColumnSpacing,
+  CheckboxStyle,
+  WeekStart,
+} from './displayPreferences.ts';
 
 export type GridDisplayPreferences = {
   rowSpacing: RowSpacing;
+  checkboxStyle: CheckboxStyle;
+  weekStart: WeekStart;
   columnSpacing: ColumnSpacing;
   textScale: number;
   dateFading: boolean;

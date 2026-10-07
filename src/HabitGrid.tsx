@@ -1,7 +1,11 @@
+import type {
+  CheckboxStyle,
+  WeekStart,
+  ColumnSpacing,
+} from './displayPreferences';
 import { Text, useAppWindowDimensions } from './Typography';
 import { completedHabitsSelection } from './storage/selection';
 import { visibleHabitRows } from './habitCompletion';
-import type { ColumnSpacing } from './displayPreferences';
 import { gridRowHeight, type RowSpacing } from './rowSpacing';
 import {
   type ComponentType,
@@ -56,6 +60,8 @@ import { appear, disappear, rowTransition, menuAppear } from './motion';
 
 type Props = {
   rowSpacing: RowSpacing;
+  checkboxStyle: CheckboxStyle;
+  weekStart: WeekStart;
   columnSpacing: ColumnSpacing;
   dateFading: boolean;
   hideCompleted: boolean;
@@ -77,6 +83,8 @@ type Props = {
 
 export const HabitGrid = memo(function HabitGrid({
   rowSpacing,
+  checkboxStyle,
+  weekStart,
   columnSpacing,
   dateFading,
   hideCompleted,
@@ -213,6 +221,7 @@ export const HabitGrid = memo(function HabitGrid({
   const renderHeading = useCallback(
     ({ item: day }: { item: GridDay }) => (
       <GridDateHeading
+        weekStart={weekStart}
         dateFading={dateFading}
         store={store}
         habits={sourceHabits}
@@ -220,7 +229,7 @@ export const HabitGrid = memo(function HabitGrid({
         width={columnWidth}
       />
     ),
-    [store, sourceHabits, columnWidth, dateFading],
+    [store, sourceHabits, columnWidth, dateFading, weekStart],
   );
   const cellsDisabled = !editable || !!dragId || reorderMode;
   const renderColumn = useCallback(
@@ -232,6 +241,8 @@ export const HabitGrid = memo(function HabitGrid({
         palettes={palettes}
         motions={rowMotion}
         heights={rowHeights}
+        checkboxStyle={checkboxStyle}
+        weekStart={weekStart}
         baseHeight={baseRowHeight}
         fontScale={fontScale}
         width={columnWidth}
@@ -247,6 +258,8 @@ export const HabitGrid = memo(function HabitGrid({
       rowMotion,
       rowHeights,
       baseRowHeight,
+      checkboxStyle,
+      weekStart,
       fontScale,
       columnWidth,
       gridHeight,
@@ -546,6 +559,7 @@ export const HabitGrid = memo(function HabitGrid({
               style={{ width: dateWidth, minHeight: 56, overflow: 'hidden' }}
             >
               <GridDateBackdrop
+                weekStart={weekStart}
                 dateFading={dateFading}
                 days={days}
                 width={columnWidth}

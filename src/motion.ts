@@ -1,4 +1,5 @@
 import {
+  Easing,
   FadeIn,
   FadeInDown,
   FadeOut,
@@ -30,3 +31,15 @@ export const menuAppear = FadeInDown.withInitialValues({
 })
   .duration(150)
   .reduceMotion(ReduceMotion.System);
+
+// 180 ms total: a shallow press and a smooth return, without spring overshoot.
+export const cellPressIn = {
+  duration: 45,
+  easing: Easing.out(Easing.quad),
+  reduceMotion: ReduceMotion.System,
+};
+export const cellSettle = {
+  duration: 135,
+  easing: Easing.out(Easing.cubic),
+  reduceMotion: ReduceMotion.System,
+};

@@ -1,4 +1,8 @@
-import { type ColumnSpacing, type WeekStart } from './displayPreferences';
+import {
+  type CheckboxStyle,
+  type ColumnSpacing,
+  type WeekStart,
+} from './displayPreferences';
 import { type RowSpacing } from './rowSpacing';
 import { useState, type ComponentType, type ReactNode } from 'react';
 import {
@@ -32,6 +36,8 @@ export function AppPanel({
   onColumnSpacingChange,
   weekStart,
   onWeekStartChange,
+  checkboxStyle,
+  onCheckboxStyleChange,
   dateFading,
   onDateFadingChange,
   textScale,
@@ -71,6 +77,8 @@ export function AppPanel({
   onColumnSpacingChange: (value: ColumnSpacing) => void;
   weekStart: WeekStart;
   onWeekStartChange: (value: WeekStart) => void;
+  checkboxStyle: CheckboxStyle;
+  onCheckboxStyleChange: (value: CheckboxStyle) => void;
   dateFading: boolean;
   onDateFadingChange: (value: boolean) => void;
   textScale: number;
@@ -198,6 +206,8 @@ export function AppPanel({
                   onColumnSpacingChange={onColumnSpacingChange}
                   weekStart={weekStart}
                   onWeekStartChange={onWeekStartChange}
+                  checkboxStyle={checkboxStyle}
+                  onCheckboxStyleChange={onCheckboxStyleChange}
                   dateFading={dateFading}
                   onDateFadingChange={onDateFadingChange}
                   hideCompleted={hideCompleted}

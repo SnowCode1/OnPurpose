@@ -122,3 +122,13 @@ Necessary width-related list remounts occur after dismissal. Entry subscriptions
 save failure/retry and archive restores remain live. Native rotation/system text
 changes are not frozen. Phone testing must confirm press responsiveness and a
 correctly aligned return in both orientations and with larger text.
+
+## Checkbox appearance
+
+Appearance → Checkbox style offers **Checkboxes** (default) and **Ticks & crosses**.
+Both scale with the same app/OS text size as the grid, with bounds from row and
+column geometry. Shape still represents the dated On/Off state; success tint
+continues to use the habit's goal. `checkboxStyle` persists as a v15 preference,
+separate from habit History/Undo, and participates in deferred grid presentation.
+Week start also waits for dismissal now that the grid draws a subtle week divider.
+No separate rest-day setting or record type is introduced.

@@ -28,6 +28,8 @@ test('settings receive every choice while mounted grid geometry and typography w
     columnSpacing,
     dateFading,
     hideCompleted,
+    checkboxStyle,
+    weekStart,
   }) {
     renders++;
     const scale = useContext(FontScale);
@@ -40,6 +42,8 @@ test('settings receive every choice while mounted grid geometry and typography w
       columnSpacing,
       dateFading,
       hideCompleted,
+      checkboxStyle,
+      weekStart,
       scale,
       scroll,
     };
@@ -60,11 +64,15 @@ test('settings receive every choice while mounted grid geometry and typography w
           columnSpacing: displayed.columnSpacing,
           dateFading: displayed.dateFading,
           hideCompleted: displayed.hideCompleted,
+          checkboxStyle: displayed.checkboxStyle,
+          weekStart: displayed.weekStart,
         }),
       ),
     );
   }
   const initial = {
+    checkboxStyle: 'boxes',
+    weekStart: 'monday',
     rowSpacing: 'standard',
     columnSpacing: 'compact',
     textScale: 1,
@@ -90,6 +98,8 @@ test('settings receive every choice while mounted grid geometry and typography w
         textScale: 1.15,
         dateFading: false,
         hideCompleted: true,
+        checkboxStyle: 'marks',
+        weekStart: 'sunday',
       },
     ];
     for (const current of choices) {
@@ -112,6 +122,8 @@ test('settings receive every choice while mounted grid geometry and typography w
     assert.equal(grid.scale, 1.15);
     assert.equal(grid.dateFading, false);
     assert.equal(grid.hideCompleted, true);
+    assert.equal(grid.checkboxStyle, 'marks');
+    assert.equal(grid.weekStart, 'sunday');
     assert.equal(grid.scroll, '2026-08-01');
     assert.equal(mounts, 1);
     // Avoid DOM-object assertions: failures must never print a browser graph.

@@ -349,7 +349,7 @@ test('defaults and explicit off survive SQLite reload, Undo/Redo, net-zero group
           change: { kind: 'haptics', before: true, after: false },
         },
       ]),
-    /version-14/,
+    /version-15/,
   );
 });
 test('v14 example retains the exact v13 prefix', async () => {

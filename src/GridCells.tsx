@@ -1,8 +1,14 @@
 import { cellEntryLabel, entryLabel } from './entries';
 import { evaluateGoal, checkboxChecked } from './habitGoals';
-import { Icon } from './Icon';
+import { GridCheckboxMark, type CheckboxFeedback } from './GridCheckboxMark';
+import { WeekDivider } from './WeekDivider';
+import {
+  beginsWeek,
+  type WeekStart,
+  type CheckboxStyle,
+} from './displayPreferences';
 import { Text } from './Typography';
-import { memo, useMemo, useSyncExternalStore } from 'react';
+import { memo, useMemo, useRef, useSyncExternalStore } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { GridDay } from './calendar';
 import { habitType, isNumericHabit, type Habit } from './habits';
@@ -25,6 +31,7 @@ type CellProps = {
   motion: RowMotion;
   height: number;
   width: number;
+  checkboxStyle: CheckboxStyle;
   fontScale: number;
   disabled: boolean;
   onPress: (habit: Habit, day: GridDay) => void;
@@ -37,10 +44,12 @@ const GridCell = memo(function GridCell({
   motion,
   height,
   width,
+  checkboxStyle,
   fontScale,
   disabled,
   onPress,
 }: CellProps) {
+  const mark = useRef<CheckboxFeedback>(null);
   const selection = useMemo(
     () => entrySelection(store, `${habit.id}:${day.key}`),
     [store, habit.id, day.key],
@@ -73,7 +82,13 @@ const GridCell = memo(function GridCell({
                 ? 'Choose categories for this day'
                 : 'Read or edit this day’s text'
         }
-        onPress={() => onPress(habit, day)}
+        onPress={() => {
+          onPress(habit, day);
+          const next =
+            store.getSnapshot().replay.state.values[`${habit.id}:${day.key}`];
+          if (checkbox && checkboxChecked(habit, next, day.key) !== checked)
+            mark.current?.pulse();
+        }}
         style={({ pressed }) => [
           styles.cell,
           {
@@ -103,14 +118,16 @@ const GridCell = memo(function GridCell({
             {cellEntryLabel(habit, value)}
           </Text>
         ) : (
-          <Icon
-            name={checked ? 'tick' : 'close'}
+          <GridCheckboxMark
+            ref={mark}
+            checked={checked}
+            style={checkboxStyle}
+            checkmark={palette.checkmark}
             size={Math.max(
               0,
               Math.min(28 * fontScale, height - 16, width - 16),
             )}
-            strokeWidth={checked ? 2.3 : 1.8}
-            color={goal.met ? habit.color : tone.checkbox}
+            colour={goal.met ? habit.color : tone.checkbox}
           />
         )}
       </Pressable>
@@ -125,6 +142,8 @@ export const GridDateColumn = memo(function GridDateColumn({
   motions,
   heights,
   baseHeight,
+  checkboxStyle,
+  weekStart,
   fontScale,
   width,
   height,
@@ -138,6 +157,8 @@ export const GridDateColumn = memo(function GridDateColumn({
   motions: Record<string, RowMotion>;
   heights: Record<string, number>;
   baseHeight: number;
+  checkboxStyle: CheckboxStyle;
+  weekStart: WeekStart;
   fontScale: number;
   width: number;
   height: number;
@@ -157,21 +178,25 @@ export const GridDateColumn = memo(function GridDateColumn({
           height={heights[habit.id] ?? baseHeight}
           fontScale={fontScale}
           width={width}
+          checkboxStyle={checkboxStyle}
           disabled={disabled}
           onPress={onPress}
         />
       ))}
+      {beginsWeek(day.key, weekStart) && <WeekDivider />}
     </View>
   );
 });
 export const GridDateHeading = memo(function GridDateHeading({
   dateFading,
+  weekStart,
   store,
   habits,
   day,
   width,
 }: {
   dateFading: boolean;
+  weekStart: WeekStart;
   store: ChangeStore;
   habits: Habit[];
   day: GridDay;
@@ -192,6 +217,7 @@ export const GridDateHeading = memo(function GridDateHeading({
       width={width}
       recorded={recorded}
       dateFading={dateFading}
+      weekStart={weekStart}
     />
   );
 });
@@ -200,11 +226,13 @@ export const GridDateLabel = memo(function GridDateLabel({
   width,
   recorded,
   dateFading,
+  weekStart,
 }: {
   day: GridDay;
   width: number;
   recorded: boolean;
   dateFading: boolean;
+  weekStart: WeekStart;
 }) {
   const tone = dateTones[recorded || !dateFading ? 0 : dayTone(day.daysAgo)];
   return (
@@ -226,6 +254,7 @@ export const GridDateLabel = memo(function GridDateLabel({
       <Text style={[styles.dayNumber, { color: tone.number }]}>
         {day.number}
       </Text>
+      {beginsWeek(day.key, weekStart) && <WeekDivider />}
     </View>
   );
 });
