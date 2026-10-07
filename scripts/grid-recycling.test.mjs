@@ -104,6 +104,7 @@ test('recycled date columns keep row views while switching subscriptions, taps a
           react: React,
           'react/jsx-runtime': awaitlessJsx,
           'react-native': {
+            Platform: { OS: 'web' },
             View: ({ children }) => React.createElement('div', null, children),
             Pressable,
             StyleSheet: { create: (s) => s, hairlineWidth: 1 },
@@ -112,6 +113,14 @@ test('recycled date columns keep row views while switching subscriptions, taps a
             Text: ({ children }) => React.createElement('span', null, children),
           },
           './ReorderRow': { ReorderRow: Row },
+          'react-native-reanimated': { useReducedMotion: () => false },
+          './useGridColumnPress': {
+            useGridColumnPress: () => ({ pressed: null, handlers: {} }),
+          },
+          './GridCheckboxLayer': {
+            CheckboxGraphic: () => null,
+            GridCheckboxLayer: () => null,
+          },
           './entries': entries,
           './habitGoals': {
             ...goals,

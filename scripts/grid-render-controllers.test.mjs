@@ -103,7 +103,7 @@ test('one row controller serves all columns; recycling/rotation retains owners a
     top: rowTops.value[id],
   });
   let motions = { a: motion('a'), b: motion('b') };
-  const render = async (generation, count = 12) =>
+  const render = async (generation, count = 12, stationary = false) =>
     act(() =>
       root.render(
         React.createElement(
@@ -119,6 +119,8 @@ test('one row controller serves all columns; recycling/rotation retains owners a
                 key: `${column}:${m.id}`,
                 motion: m,
                 testID: `${column}:${m.id}`,
+                animatedPosition:
+                  column === 'name' || column === 'loading' || !stationary,
               }),
             ),
           ),
@@ -137,6 +139,18 @@ test('one row controller serves all columns; recycling/rotation retains owners a
   await render('landscape', 28);
   assert.equal(created, 2, 'new date views attach to the existing two owners');
   assert.equal(received.get('landscape_27:a'), positionA);
+  await render('landscape', 28, true);
+  assert.equal(created, 2, 'stationary cells retain their existing owners');
+  assert.notEqual(received.get('landscape_27:a'), positionA);
+  assert.equal(received.get('landscape_27:a').transform[0].translateY, 0);
+  assert.equal(received.get('name:a'), positionA);
+  assert.equal(received.get('loading:a'), positionA);
+  await render('landscape', 28);
+  assert.equal(
+    received.get('landscape_27:a'),
+    positionA,
+    'movement reconnects the same handle',
+  );
   rowTops.value = { a: 52, b: 0 };
   assert.equal(positionA.read().transform[0].translateY, 52);
   assert.equal(positionB.read().transform[0].translateY, 0);

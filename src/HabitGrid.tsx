@@ -349,6 +349,7 @@ export const HabitGrid = memo(function HabitGrid({
         disabled={cellsDisabled}
         onPress={onCellPress}
         experiment={experiment}
+        batchCheckboxes={!rowWindow.moving}
       />
     ),
     [
@@ -366,6 +367,7 @@ export const HabitGrid = memo(function HabitGrid({
       cellsDisabled,
       onCellPress,
       experiment,
+      rowWindow.moving,
     ],
   );
   function actOnHabit(habit: Habit, action: HabitAction) {

@@ -89,13 +89,17 @@ export function ReorderRow({
   motion,
   style,
   ref,
+  animatedPosition = true,
   ...props
 }: ViewProps & {
   motion: RowMotion;
   ref?: Ref<View>;
+  animatedPosition?: boolean;
 }) {
   const positions = useContext(RowStyles);
-  const position = positions[motion.id] ?? {
+  // Stationary date cells keep the same native row but do not attach animated
+  // descriptors on every recycled column. Reconnect the shared style for motion.
+  const position = (animatedPosition ? positions[motion.id] : undefined) ?? {
     transform: [{ translateY: motion.top }],
     zIndex: motion.active ? 1 : 0,
   };

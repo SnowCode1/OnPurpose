@@ -370,3 +370,20 @@ wrapped heights, two-row buckets and overscan. Keep all names measuring and full
 content height. Menus/reordering and the 300 ms identity-change window retain all
 rows through removal/restoration motion. Keep the UI-thread read-only fallback
 independent of this window and preserve dated subscriptions when rows remount.
+
+Native GridDateColumn uses one ordinary Pressable and useGridColumnPress per date;
+gridColumnHit maps full-content Y through measured/omitted rows. Capture the habit
+and date at press-in, retain them through press-out-before-press, and reject a
+changed row/date or disabled edit. During row motion only, hit testing reads
+current shared tops at touch boundaries so an animating row cannot edit its
+neighbour; never read UI positions per frame. Individual accessible row views retain
+roles, checked/disabled states, labels and explicit native activation handlers.
+Do not collapse accessibility into one column. Native text stays native and keeps
+its existing fitting/truncation rules; web keeps per-cell Pressables.
+GridCheckboxLayer batches idle checkbox shapes in one SVG per column. Its
+entry-selected graphics retain current dated defaults/goals and instrument their
+policy work. Pause batching throughout menu/drag/removal/restoration movement;
+the same row views then attach shared animation handles and native marks. Idle
+date rows pass animatedPosition=false, retaining top-zero static transforms
+without animated descriptors. One temporary feedback overlay per tapped column
+hides its corresponding idle shape; external edits/Undo/recycling never pulse.

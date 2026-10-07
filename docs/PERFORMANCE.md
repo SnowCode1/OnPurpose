@@ -464,3 +464,61 @@ cancellation, wrapped/scaled window coverage, bucket-only updates and full-row
 transition coverage. A synthetic four-row viewport initially renders six of 30
 rows; this is a work-count assertion, not a native speed measurement. Fresh phone
 Normal-mode timings are required before claiming an improvement over the baseline.
+
+### Second iPhone report and column batching
+
+The next Normal/iOS/Sample run lasted 22.1 seconds. Six grid-ready measurements
+averaged 508 ms, maximum 893 ms; header/body onLoad averaged 175/163 ms. It
+recorded 6,888 cell renders, 572 columns, 1,306 cell mounts/unmounts each and
+4,545 ms of accumulated React work across 494 commits. Goals totalled 16.3 ms,
+checkbox policy 5.6 ms and SQL calls remained absent. The JS timer's maximum
+lateness was 925 ms. Compared with the first report, ready callbacks improved
+from 846 to 508 ms (about 40%), but the runs differed in length and work and the
+first included statistics. This is indicative, not a controlled speedup. Raw
+render totals cannot be compared without work counts. Half-second readiness is
+still unsatisfactory; rendering remains the target.
+
+The founder requested a larger improvement. Native date columns now have one
+ordinary Pressable rather than one per real row. useGridColumnPress captures the
+habit/date at press-in, accounts for press-out-before-press and accepts only a
+release on that same current row/date. gridColumnHit uses measured heights and
+absolute content coordinates; omitted fallback rows cannot be edited.
+While rows move, touch boundaries read current shared tops so input follows the
+visible row rather than its final target. Idle taps and scrolling do not perform
+synchronous UI-position reads. Disabled save/error state blocks both normal and
+accessible activation. Native scrolling
+still owns press cancellation and UI-thread synchronization.
+
+Each native cell keeps an accessible row view, role, checked/disabled state,
+label, hint and native activation handlers, using the documented
+[View accessibility events](https://reactnative.dev/docs/view).
+Numeric/text/category values remain native Text, including existing scaling,
+numeric fitting and readable tail truncation. The browser retains individual
+Pressables. Accessibility correctness on the physical phone still needs review.
+
+GridCheckboxLayer draws idle checkbox boxes/ticks/crosses inside one SVG per
+column, retaining per-entry subscriptions and dated goal colours. This replaces
+individual checkbox drawing roots/wrappers, not native text. Only a locally
+accepted checkbox change creates a short native feedback overlay; its idle
+shape is hidden while pulsing. The overlay is removed after 220 ms, rapid taps
+restart it, and reduced motion/tap-disabled settings allocate none. External
+updates, Undo and date recycling do not initiate feedback.
+
+Stationary native date rows also stop attaching shared animated styles: they
+keep the same Animated.View with an ordinary top-zero/translateY position.
+Menu/drag/reorder and the existing identity-change window reconnect the shared
+row styles and use the native checkbox marks so names and cells move together.
+No row-view remount or sibling reorder is required for that switch. Names and
+loading strips still use their original shared styles. With eight real rows,
+ordinary Pressability controllers fall from eight to one per date, and idle
+date-position attachments fall from eight to zero. SVG root reduction depends on
+the number of checkbox rows/style/values. These are structural counts, not an
+eightfold speedup claim.
+
+The diagnostic modes now operate on this optimized native control path. Normal
+and No goal tint use the batched shapes; Simple cells still substitutes text
+glyphs/static rows. Policy timing includes both accessible cells and drawing
+subscribers, so duplicated drawing work is not hidden from reports. The original
+native Normal renderer is not retained as a runtime toggle. A fresh identical
+Normal-mode scroll/rotation report is required to measure this pass. No Skia,
+native dependency, storage change or removal of width-reset safety was introduced.

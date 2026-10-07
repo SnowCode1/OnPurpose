@@ -45,5 +45,10 @@ export function useGridRowWindow(
         : habits.slice(range.start, range.end),
     [habits, range.start, range.end],
   );
-  return { rows, updateOffset, setViewport };
+  return {
+    rows,
+    updateOffset,
+    setViewport,
+    moving: interactiveReorder || transition.full,
+  };
 }

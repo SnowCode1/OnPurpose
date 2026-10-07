@@ -1620,3 +1620,35 @@ rotations, numeric draft/Close/Done, deferred appearance settings, Today, delaye
 filtering and specific-entry Undo. Screenshots retained the existing appearance.
 Browser FlatList does not establish native recycler
 latency. A fresh iPhone report and reorder/animation acceptance remain pending.
+
+## Native column input and batched checkbox shapes
+
+grid-column-rendering.test.mjs runs the actual native GridDateColumn branch,
+GridCheckboxLayer and press hook with bounded native-control/SVG mocks. It checks
+one ordinary control and drawing root, per-cell accessibility roles/states,
+native text-fitting props, current dated defaults, explicit Off, press-out-before-
+press, cross-row release cancellation, date recycling mid-gesture, accessible
+activation and disabled save/error guards. It verifies a single temporary tap
+overlay with the idle graphic hidden, cleanup, movement fallback on the same
+accessible row view and disposal of subscriptions. During-motion touches follow
+sampled native row tops; idle touches do not read UI
+positions. Pure hit tests cover wrapped
+heights, omitted rows, exact boundaries and invalid coordinates. Controller tests
+also verify stationary cells use static transforms and reconnect existing handles
+for movement, retaining name/loading styles. Mocks do not establish native touch
+arbitration, drawing parity, VoiceOver traversal or speed.
+
+Phone review: reload, check five boxes rapidly, then edit number/text/categories.
+Scroll horizontally and vertically, rotate in both directions and check the
+labels/colours/marks; try a hold/drag, archive/Undo and Hide completed movement.
+With VoiceOver enabled, focus individual cells and double-tap checkbox/numeric
+actions; confirm the column itself is not exposed as one combined control. Test
+larger text and Reduce Motion. Send the same Normal scroll/rotation report after
+returning from Settings, without opening statistics during the measured run.
+
+Local validation passed: TypeScript, ESLint and formatting, all 321 tests, and
+single-worker iOS/web exports under a 2 GiB memory scope. Browser regression review
+passed numeric drafts, deferred sizing, bounded date navigation, rotation/date
+alignment, vertical row refill, Today and targeted Undo. This validates the web
+control path; the native branch is covered by the focused mocks above. Fresh
+iPhone timing, gesture/drawing and accessibility acceptance remain pending.

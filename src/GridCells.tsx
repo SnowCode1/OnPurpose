@@ -7,8 +7,25 @@ import {
   type CheckboxStyle,
 } from './displayPreferences';
 import { Text } from './Typography';
-import { memo, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+  type ViewProps,
+} from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
+import { useGridColumnPress } from './useGridColumnPress';
+import { CheckboxGraphic, GridCheckboxLayer } from './GridCheckboxLayer';
 import type { GridDay } from './calendar';
 import { habitType, isNumericHabit, type Habit } from './habits';
 import { ReorderRow, type RowMotion } from './ReorderRow';
@@ -41,6 +58,11 @@ type CellProps = {
   disabled: boolean;
   onPress: (habit: Habit, day: GridDay) => void;
   experiment?: GridExperiment;
+  nativeControl?: boolean;
+  pressed?: boolean;
+  drawCheckbox?: boolean;
+  onFeedback?: (habit: Habit) => void;
+  animatedPosition?: boolean;
 };
 const GridCell = memo(function GridCell({
   store,
@@ -56,6 +78,11 @@ const GridCell = memo(function GridCell({
   disabled,
   onPress,
   experiment = 'normal',
+  nativeControl = false,
+  pressed = false,
+  drawCheckbox = true,
+  onFeedback,
+  animatedPosition = true,
 }: CellProps) {
   const mark = useRef<CheckboxFeedback>(null);
   const selection = useMemo(
@@ -92,86 +119,112 @@ const GridCell = memo(function GridCell({
         : evaluateGoal(habit, value, day.key);
   const tone = palette.tones[dayTone(day.daysAgo)];
   const Row = experiment === 'simple-cells' ? StaticCellRow : ReorderRow;
+  const activate = () => {
+    if (disabled) return;
+    const previous =
+      store.getSnapshot().replay.state.values[`${habit.id}:${day.key}`];
+    onPress(habit, day);
+    const next =
+      store.getSnapshot().replay.state.values[`${habit.id}:${day.key}`];
+    if (
+      checkbox &&
+      experiment !== 'simple-cells' &&
+      tapAnimations &&
+      checkboxChecked(habit, next, day.key) !==
+        checkboxChecked(habit, previous, day.key)
+    ) {
+      if (onFeedback) onFeedback(habit);
+      else mark.current?.pulse();
+    }
+  };
+  const controls = {
+    accessible: true,
+    testID: `cell-${habit.id}-${day.key}`,
+    accessibilityRole: checkbox ? ('checkbox' as const) : ('button' as const),
+    accessibilityState: checkbox ? { checked, disabled } : { disabled },
+    accessibilityLabel: `${habit.name}, ${day.fullLabel}${checkbox ? '' : `, ${value === undefined ? 'not recorded' : entryLabel(habit, value) + (habit.unit ? ` ${habit.unit}` : '')}`}, ${goal.active ? (goal.met ? 'goal met' : recorded ? 'goal not met' : 'not recorded') : 'tracking only'}${goal.active && !goal.scheduled ? ', not scheduled' : ''}`,
+    accessibilityHint: checkbox
+      ? 'Toggle this day’s checkbox state'
+      : numeric
+        ? 'Edit this day’s total'
+        : habit.type === 'categorical'
+          ? 'Choose categories for this day'
+          : 'Read or edit this day’s text',
+  };
+  const cellStyle = (pressed: boolean) => [
+    styles.cell,
+    {
+      height,
+      borderBottomColor: tone.rule,
+      backgroundColor: pressed
+        ? `${habit.color}20`
+        : goal.met
+          ? palette.completedBackground
+          : day.daysAgo === 0
+            ? '#090909'
+            : '#000000',
+    },
+  ];
+  const content = !checkbox ? (
+    <Text
+      numberOfLines={numeric ? 1 : gridEntryTextLines(height, fontScale)}
+      adjustsFontSizeToFit={numeric}
+      minimumFontScale={numeric ? 0.65 : undefined}
+      ellipsizeMode="tail"
+      style={[
+        numeric ? styles.numeric : styles.textEntry,
+        { color: recorded ? habit.color : tone.number },
+      ]}
+    >
+      {cellEntryLabel(habit, value)}
+    </Text>
+  ) : experiment === 'simple-cells' ? (
+    <Text
+      style={{
+        fontSize: 22 * fontScale,
+        color: goal.met ? habit.color : tone.checkbox,
+      }}
+    >
+      {checked ? '✓' : '□'}
+    </Text>
+  ) : drawCheckbox ? (
+    <GridCheckboxMark
+      ref={mark}
+      identity={`${habit.id}:${day.key}`}
+      checked={checked}
+      style={checkboxStyle}
+      checkmark={palette.checkmark}
+      size={Math.max(0, Math.min(28 * fontScale, height - 16, width - 16))}
+      colour={goal.met ? habit.color : tone.checkbox}
+    />
+  ) : null;
+  if (nativeControl)
+    return (
+      <Row
+        motion={motion}
+        {...(experiment === 'simple-cells' ? {} : { animatedPosition })}
+        {...controls}
+        style={cellStyle(pressed)}
+        accessibilityActions={[
+          { name: 'activate', label: controls.accessibilityHint },
+        ]}
+        onAccessibilityTap={activate}
+        onAccessibilityAction={(event) => {
+          if (event.nativeEvent.actionName === 'activate') activate();
+        }}
+      >
+        {content}
+      </Row>
+    );
   return (
     <Row motion={motion}>
       <Pressable
-        testID={`cell-${habit.id}-${day.key}`}
+        {...controls}
         disabled={disabled}
-        accessibilityRole={checkbox ? 'checkbox' : 'button'}
-        accessibilityState={checkbox ? { checked, disabled } : { disabled }}
-        accessibilityLabel={`${habit.name}, ${day.fullLabel}${checkbox ? '' : `, ${value === undefined ? 'not recorded' : entryLabel(habit, value) + (habit.unit ? ` ${habit.unit}` : '')}`}, ${goal.active ? (goal.met ? 'goal met' : recorded ? 'goal not met' : 'not recorded') : 'tracking only'}${goal.active && !goal.scheduled ? ', not scheduled' : ''}`}
-        accessibilityHint={
-          checkbox
-            ? 'Toggle this day’s checkbox state'
-            : numeric
-              ? 'Edit this day’s total'
-              : habit.type === 'categorical'
-                ? 'Choose categories for this day'
-                : 'Read or edit this day’s text'
-        }
-        onPress={() => {
-          onPress(habit, day);
-          const next =
-            store.getSnapshot().replay.state.values[`${habit.id}:${day.key}`];
-          if (
-            checkbox &&
-            experiment !== 'simple-cells' &&
-            tapAnimations &&
-            checkboxChecked(habit, next, day.key) !== checked
-          )
-            mark.current?.pulse();
-        }}
-        style={({ pressed }) => [
-          styles.cell,
-          {
-            height,
-            borderBottomColor: tone.rule,
-            backgroundColor: pressed
-              ? `${habit.color}20`
-              : goal.met
-                ? palette.completedBackground
-                : day.daysAgo === 0
-                  ? '#090909'
-                  : '#000000',
-          },
-        ]}
+        onPress={activate}
+        style={({ pressed }) => cellStyle(pressed)}
       >
-        {!checkbox ? (
-          <Text
-            numberOfLines={numeric ? 1 : gridEntryTextLines(height, fontScale)}
-            adjustsFontSizeToFit={numeric}
-            minimumFontScale={numeric ? 0.65 : undefined}
-            ellipsizeMode="tail"
-            style={[
-              numeric ? styles.numeric : styles.textEntry,
-              { color: recorded ? habit.color : tone.number },
-            ]}
-          >
-            {cellEntryLabel(habit, value)}
-          </Text>
-        ) : experiment === 'simple-cells' ? (
-          <Text
-            style={{
-              fontSize: 22 * fontScale,
-              color: goal.met ? habit.color : tone.checkbox,
-            }}
-          >
-            {checked ? '✓' : '□'}
-          </Text>
-        ) : (
-          <GridCheckboxMark
-            ref={mark}
-            identity={`${habit.id}:${day.key}`}
-            checked={checked}
-            style={checkboxStyle}
-            checkmark={palette.checkmark}
-            size={Math.max(
-              0,
-              Math.min(28 * fontScale, height - 16, width - 16),
-            )}
-            colour={goal.met ? habit.color : tone.checkbox}
-          />
-        )}
+        {content}
       </Pressable>
     </Row>
   );
@@ -179,12 +232,20 @@ const GridCell = memo(function GridCell({
 function StaticCellRow({
   motion,
   children,
-}: {
+  style,
+  ...props
+}: ViewProps & {
   motion: RowMotion;
   children: import('react').ReactNode;
 }) {
   return (
-    <View style={{ position: 'absolute', top: motion.top, left: 0, right: 0 }}>
+    <View
+      {...props}
+      style={[
+        { position: 'absolute', top: motion.top, left: 0, right: 0 },
+        style,
+      ]}
+    >
       {children}
     </View>
   );
@@ -205,6 +266,7 @@ export const GridDateColumn = memo(function GridDateColumn({
   disabled,
   onPress,
   experiment,
+  batchCheckboxes = true,
 }: {
   store: ChangeStore;
   habits: Habit[];
@@ -221,10 +283,88 @@ export const GridDateColumn = memo(function GridDateColumn({
   disabled: boolean;
   onPress: CellProps['onPress'];
   experiment?: GridExperiment;
+  batchCheckboxes?: boolean;
 }) {
   recordPerformance('grid.column.render');
+  const native = Platform.OS !== 'web';
+  const reducedMotion = useReducedMotion();
+  const [feedback, setFeedback] = useState<{
+    id: string;
+    date: string;
+    token: number;
+  } | null>(null);
+  const token = useRef(0);
+  const requestFeedback = useCallback(
+    (habit: Habit) => {
+      if (
+        !native ||
+        !tapAnimations ||
+        reducedMotion ||
+        experiment === 'simple-cells'
+      )
+        return;
+      setFeedback({ id: habit.id, date: day.key, token: ++token.current });
+    },
+    [native, tapAnimations, reducedMotion, experiment, day.key],
+  );
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = setTimeout(
+      () => setFeedback((current) => (current === feedback ? null : current)),
+      220,
+    );
+    return () => clearTimeout(timer);
+  }, [feedback]);
+  const activeFeedback =
+    feedback?.date === day.key &&
+    habits.some((habit) => habit.id === feedback.id)
+      ? feedback
+      : null;
+  const columnPress = useGridColumnPress({
+    habits,
+    motions,
+    heights,
+    baseHeight,
+    date: day.key,
+    disabled,
+    moving: !batchCheckboxes && experiment !== 'simple-cells',
+    activate: (habit) => {
+      const previous =
+        store.getSnapshot().replay.state.values[`${habit.id}:${day.key}`];
+      onPress(habit, day);
+      const next =
+        store.getSnapshot().replay.state.values[`${habit.id}:${day.key}`];
+      if (
+        habitType(habit) === 'checkbox' &&
+        checkboxChecked(habit, previous, day.key) !==
+          checkboxChecked(habit, next, day.key)
+      )
+        requestFeedback(habit);
+    },
+  });
+  const checkboxHabits = useMemo(
+    () => habits.filter((habit) => habitType(habit) === 'checkbox'),
+    [habits],
+  );
+  const layer =
+    native &&
+    batchCheckboxes &&
+    experiment !== 'simple-cells' &&
+    checkboxHabits.length > 0;
+  const Root = native ? Pressable : View;
   return (
-    <View style={{ width, height, backgroundColor: '#000000' }}>
+    <Root
+      style={{ width, height, backgroundColor: '#000000' }}
+      {...(native
+        ? {
+            ...columnPress.handlers,
+            disabled,
+            accessible: false,
+            focusable: false,
+            pointerEvents: 'box-only' as const,
+          }
+        : {})}
+    >
       {habits.map((habit) => (
         <GridCell
           key={habit.id}
@@ -241,11 +381,141 @@ export const GridDateColumn = memo(function GridDateColumn({
           disabled={disabled}
           onPress={onPress}
           experiment={experiment}
+          nativeControl={native}
+          pressed={native && columnPress.pressed === habit.id}
+          drawCheckbox={!layer && activeFeedback?.id !== habit.id}
+          onFeedback={native ? requestFeedback : undefined}
+          animatedPosition={!native || !batchCheckboxes}
         />
       ))}
-    </View>
+      {layer && (
+        <GridCheckboxLayer width={width} height={height}>
+          {checkboxHabits.map((habit) => {
+            const rowHeight = heights[habit.id] ?? baseHeight;
+            return (
+              <CheckboxGraphic
+                key={habit.id}
+                store={store}
+                habit={habit}
+                day={day}
+                palette={palettes[habit.id]}
+                size={Math.max(
+                  0,
+                  Math.min(28 * fontScale, rowHeight - 16, width - 16),
+                )}
+                style={checkboxStyle}
+                x={width / 2}
+                y={
+                  motions[habit.id].top +
+                  (rowHeight - StyleSheet.hairlineWidth) / 2
+                }
+                hidden={activeFeedback?.id === habit.id}
+                noGoalTint={experiment === 'no-goal-tint'}
+              />
+            );
+          })}
+        </GridCheckboxLayer>
+      )}
+      {native && activeFeedback && (
+        <CheckboxTapFeedback
+          key={`${activeFeedback.id}:${day.key}`}
+          store={store}
+          habit={habits.find((habit) => habit.id === activeFeedback.id)!}
+          day={day}
+          palette={palettes[activeFeedback.id]}
+          motion={motions[activeFeedback.id]}
+          height={heights[activeFeedback.id] ?? baseHeight}
+          width={width}
+          fontScale={fontScale}
+          checkboxStyle={checkboxStyle}
+          token={activeFeedback.token}
+          noGoalTint={experiment === 'no-goal-tint'}
+          animatedPosition={!batchCheckboxes}
+        />
+      )}
+    </Root>
   );
 });
+
+function CheckboxTapFeedback({
+  store,
+  habit,
+  day,
+  palette,
+  motion,
+  height,
+  width,
+  fontScale,
+  checkboxStyle,
+  token,
+  noGoalTint,
+  animatedPosition,
+}: Pick<
+  CellProps,
+  | 'store'
+  | 'habit'
+  | 'day'
+  | 'palette'
+  | 'motion'
+  | 'height'
+  | 'width'
+  | 'fontScale'
+  | 'checkboxStyle'
+> & { token: number; noGoalTint: boolean; animatedPosition: boolean }) {
+  const mark = useRef<CheckboxFeedback>(null);
+  const selection = useMemo(
+    () => entrySelection(store, `${habit.id}:${day.key}`),
+    [store, habit.id, day.key],
+  );
+  const value = useSyncExternalStore(
+    selection.subscribe,
+    selection.getSnapshot,
+  );
+  const checked = performanceEnabled
+    ? timePerformance('grid.checkbox.policy', () =>
+        checkboxChecked(habit, value, day.key),
+      )
+    : checkboxChecked(habit, value, day.key);
+  const met =
+    !noGoalTint &&
+    (performanceEnabled
+      ? timePerformance(
+          'grid.goal',
+          () => evaluateGoal(habit, value, day.key).met,
+        )
+      : evaluateGoal(habit, value, day.key).met);
+  useEffect(() => {
+    mark.current?.pulse();
+  }, [token]);
+  return (
+    <ReorderRow
+      motion={motion}
+      animatedPosition={animatedPosition}
+      pointerEvents="none"
+      accessible={false}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={{
+        height,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingBottom: StyleSheet.hairlineWidth,
+      }}
+    >
+      <GridCheckboxMark
+        ref={mark}
+        identity={`${habit.id}:${day.key}`}
+        checked={checked}
+        style={checkboxStyle}
+        checkmark={palette.checkmark}
+        size={Math.max(0, Math.min(28 * fontScale, height - 16, width - 16))}
+        colour={
+          met ? habit.color : palette.tones[dayTone(day.daysAgo)].checkbox
+        }
+      />
+    </ReorderRow>
+  );
+}
 export const GridDateHeading = memo(function GridDateHeading({
   dateFading,
   weekStart,

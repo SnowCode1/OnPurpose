@@ -1286,3 +1286,17 @@ complete rows during reordering and removal/restoration transitions. Names,
 measured heights and content geometry stay complete. Existing loading fallbacks,
 native horizontal sync, date identity and storage invariants remain. The width
 reset is retained for correctness; device timing improvement remains unverified.
+
+### 2026-10-07 — Batch stationary native checkbox rendering and input
+
+The second iPhone report averaged 508 ms ready versus the first 846 ms, with
+different run lengths/work; this is not a controlled speedup. Founder considered
+the eight-of-fourteen landscape row reduction insufficient and requested further
+improvement. Native date columns now share ordinary press handling and idle SVG
+checkbox drawing. Accessible per-cell views/actions and native number/text fitting
+remain. At rest, date rows use static transforms without attaching animated
+descriptors; menu/drag/removal restores the shared handles and native marks on
+the same row views. Local tap feedback uses one temporary overlay per column.
+Date recycling/cross-row releases/disabled errors reject edits. Web retains the
+per-cell controls. No Skia, storage migration or dependency was added. Fresh phone
+timing and native touch/accessibility checks remain required.
