@@ -401,3 +401,26 @@ change, not evidence that SQL or rendering dominates on the phone. Sequential
 warmup/cache/JIT differences mean the two read medians are not a history-size
 scaling comparison. Device reports and release profiling remain the deciding
 input. No Skia dependency or storage schema/event change was made.
+
+### First iPhone baseline
+
+The founder sent a Normal-mode iOS/Sample run lasting 41.3 seconds. It recorded
+11,158 cell renders, 797 date-column renders and 2,366 cell mounts/unmounts each.
+React Profiler accumulated 8,405 ms across 818 commits, with a 296 ms maximum.
+Cell goal evaluation totalled 34.8 ms; dated checkbox policy totalled 9.2 ms.
+These synchronous calculations are small relative to the recorded rendering
+work in this fixture. This does not establish costs for every possible rule set.
+
+Four grid-ready measurements averaged 846 ms, maximum 1,169 ms. Header/body
+onLoad averages were both about 585 ms; these measurements overlap, not add.
+The JS timer saw a 5,129 ms maximum lateness, which establishes a scheduling
+stall, not its cause or a native frame rate. The run also included statistics
+renders, so this is an exploratory baseline rather than a controlled benchmark.
+No SQL calls occurred, consistent with the in-memory Sample repository and the
+grid read path. Saved-data write latency remains a separate unmeasured path.
+
+Simple cells is the next comparison before changing the renderer. Compare work
+counts as well as elapsed totals because manual flings cover different ranges;
+goal-free rendering is unlikely to explain most of this baseline's delay. A
+report collected entirely inside Settings can contain only JS timer samples:
+absent render/ready metrics mean unmeasured, not zero-duration work.
