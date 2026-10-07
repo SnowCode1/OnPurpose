@@ -10,6 +10,44 @@ checkoff interaction before investing in release infrastructure.
 
 ## 2. Create the project's own development build
 
+### Release performance test before App Store setup
+
+For a quick no-account comparison, use the paired Expo Go sessions described in
+[DEVELOPMENT.md](DEVELOPMENT.md). They disable profiling/sample/motion tools and
+compare development JS with production/minified JS. Expo Go's native host stays
+the same, so this is not full release-build evidence.
+
+`eas.json` now contains a `preview` profile with internal distribution,
+`developmentClient: false` and explicit iOS `buildConfiguration: Release`.
+It builds a standalone signed app with its JS bundled, without a development
+server or public App Store submission. The developer-only tools/fictional history
+remain excluded by `__DEV__`, and the profile also sets their flags false.
+No cloud project, bundle identifier, Apple signing or device registration has
+been configured yet; the profile is prepared, not an installable build.
+
+On Linux, use [EAS internal distribution](https://docs.expo.dev/build/internal-distribution/)
+after an active paid Apple Developer membership and Expo account are available.
+Choose a provisional testing bundle identifier (the final brand remains open),
+link the intended Expo project, sign in through the local EAS terminal and register
+the iPhone before the first ad hoc build. Do not paste credentials into chat.
+Review current EAS build quotas before starting the cloud job. No dev-client
+dependency is needed for this Release preview. The manual commands after setup are:
+
+```sh
+npx eas-cli@latest device:create
+npx eas-cli@latest build --platform ios --profile preview
+```
+
+Open the completed build's install link on the registered iPhone. Unlike Expo Go,
+this app has its own storage container. Use a fictional backup in that container
+to match the test list/history/appearance, or compare empty preset data in both
+hosts. Do not compare a small empty Release list with a large populated dev list
+and report the difference as a speedup. Preview build and signing are manual;
+there is no automatic submission or deployment. See Expo's
+[internal-build tutorial](https://docs.expo.dev/tutorial/eas/internal-distribution-builds/).
+
+### Development build for daily work
+
 Use an Expo account and Apple Developer Program membership for the EAS physical
 iPhone signing workflow. Apple lists membership at US$99 per year, with regional
 pricing shown during enrolment. EAS service quotas/pricing are separate; review
@@ -18,7 +56,7 @@ the current plan before scheduling cloud builds.
 When accounts are ready, choose the stable iOS bundle identifier, link the correct
 Expo project, and install `expo-dev-client` with `npx expo install`. Run EAS CLI
 login and build configuration, then create development/internal-distribution and
-production profiles in `eas.json`. Register the physical device as directed by
+production profiles alongside the prepared preview profile in `eas.json`. Register the physical device as directed by
 EAS for an ad hoc development build. These account steps are not done yet.
 
 After configuration, the typical commands are:

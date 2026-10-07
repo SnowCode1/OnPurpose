@@ -32,15 +32,24 @@ function load(path, imports, context = {}) {
   );
   return module.exports;
 }
-export function performanceFixture({ development = true, flag = true } = {}) {
+export function performanceFixture({
+  development = true,
+  flag = true,
+  comparison = false,
+} = {}) {
   let offset = 0;
   const timers = new Map();
   let id = 0;
   const captured = [];
   const clock = { now: () => performance.now() + offset };
+  const featureContext = {
+    __DEV__: development,
+    process: { env: { EXPO_PUBLIC_DEV_COMPARISON: String(comparison) } },
+  };
+  const features = load('../src/developmentFeatures.ts', {}, featureContext);
   const timing = load(
     '../src/performance.ts',
-    { './performanceModel.ts': metrics },
+    { './performanceModel.ts': metrics, './developmentFeatures.ts': features },
     {
       __DEV__: development,
       process: { env: { EXPO_PUBLIC_DEV_PERFORMANCE: String(flag) } },

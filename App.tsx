@@ -43,6 +43,7 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { type EntryDay } from './src/calendar';
 import { PerformanceBoundary } from './src/PerformanceBoundary';
+import { developmentToolsEnabled } from './src/developmentFeatures';
 import { HabitDetailsScreen } from './src/HabitDetailsScreen';
 import { HabitGrid } from './src/HabitGrid';
 import { habitType, isNumericHabit, type Habit } from './src/habits';
@@ -61,20 +62,26 @@ import { shareBackup, chooseBackup } from './src/storage/backups';
 
 // Metro removes this branch (and its module) from release JavaScript.
 const PreviewHeading: ComponentType<TextProps> =
-  __DEV__ && process.env.EXPO_PUBLIC_DEV_PREVIEW === 'true'
+  __DEV__ &&
+  developmentToolsEnabled &&
+  process.env.EXPO_PUBLIC_DEV_PREVIEW === 'true'
     ? // eslint-disable-next-line @typescript-eslint/no-require-imports -- Keep native capture out of release JS.
       require('./src/dev/DevPreviewText').DevPreviewText
     : Text;
 
 const PreviewDateButton: ComponentType<PressableProps> =
-  __DEV__ && process.env.EXPO_PUBLIC_DEV_PREVIEW === 'true'
+  __DEV__ &&
+  developmentToolsEnabled &&
+  process.env.EXPO_PUBLIC_DEV_PREVIEW === 'true'
     ? // eslint-disable-next-line @typescript-eslint/no-require-imports -- Keep native capture out of release JS.
       require('./src/dev/DevPreviewText').DevPreviewButton
     : Pressable;
 
 // One global capture listener reaches native sheets and DOM editors alike.
 const previewTools: typeof import('./src/dev/DevPreviewCapture') | null =
-  __DEV__ && process.env.EXPO_PUBLIC_DEV_PREVIEW === 'true'
+  __DEV__ &&
+  developmentToolsEnabled &&
+  process.env.EXPO_PUBLIC_DEV_PREVIEW === 'true'
     ? // eslint-disable-next-line @typescript-eslint/no-require-imports -- Development-only sensor/capture code.
       require('./src/dev/DevPreviewCapture')
     : null;
@@ -82,7 +89,9 @@ const PreviewCapture = previewTools?.DevPreviewCapture;
 const PreviewControls = previewTools?.DevPreviewControls;
 const performanceTools:
   typeof import('./src/dev/DevPerformanceControls') | null =
-  __DEV__ && process.env.EXPO_PUBLIC_DEV_PERFORMANCE === 'true'
+  __DEV__ &&
+  developmentToolsEnabled &&
+  process.env.EXPO_PUBLIC_DEV_PERFORMANCE === 'true'
     ? // eslint-disable-next-line @typescript-eslint/no-require-imports -- Native timing tools are development only.
       require('./src/dev/DevPerformanceControls')
     : null;
@@ -91,10 +100,11 @@ const PerformanceLifecycle = performanceTools?.DevPerformanceLifecycle;
 
 // Development sample history is excluded from production bundles.
 const SampleDataMode:
-  typeof import('./src/dev/SampleDataMode').SampleDataMode | null = __DEV__
-  ? // eslint-disable-next-line @typescript-eslint/no-require-imports -- Do not bundle sample fixtures in release JS.
-    require('./src/dev/SampleDataMode').SampleDataMode
-  : null;
+  typeof import('./src/dev/SampleDataMode').SampleDataMode | null =
+  __DEV__ && developmentToolsEnabled
+    ? // eslint-disable-next-line @typescript-eslint/no-require-imports -- Do not bundle sample fixtures in release JS.
+      require('./src/dev/SampleDataMode').SampleDataMode
+    : null;
 
 export default function App() {
   return (

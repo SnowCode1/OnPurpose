@@ -1300,3 +1300,15 @@ the same row views. Local tap feedback uses one temporary overlay per column.
 Date recycling/cross-row releases/disabled errors reject edits. Web retains the
 per-cell controls. No Skia, storage migration or dependency was added. Fresh phone
 timing and native touch/accessibility checks remain required.
+
+### 2026-10-07 — Compare development overhead before more rendering work
+
+Founder requested a release comparison after another inconclusive development
+report. Paired Expo Go sessions now use the same saved store and disable sample
+mode, timing/Profiler and preview sensors in both. One retains development JS;
+one uses production/minified JS. A temporary developmentFeatures override avoids
+SDK 57's local-env precedence without editing the founder's env files or weakening
+literal release guards. This comparison is qualitative and leaves the native
+Expo Go host unchanged. EAS internal preview is prepared with explicit Release
+and no dev-client; Expo project, provisional bundle ID, paid Apple membership,
+signing and device enrolment are still prerequisites, not completed deployment.

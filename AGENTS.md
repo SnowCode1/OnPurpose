@@ -387,3 +387,13 @@ the same row views then attach shared animation handles and native marks. Idle
 date rows pass animatedPosition=false, retaining top-zero static transforms
 without animated descriptors. One temporary feedback overlay per tapped column
 hides its corresponding idle shape; external edits/Undo/recycling never pulse.
+
+developmentFeatures.ts supplies the temporary EXPO_PUBLIC_DEV_COMPARISON override
+for paired Saved-data Expo Go sessions. Keep literal **DEV** guards on native dev
+imports; comparison disables App sample/preview/performance mounts and recording
+without changing env files or storage. scripts/start-comparison.mjs owns ports
+8083 (unprofiled development) and 8082 (production JS), one worker and cleared cache.
+Keep its override out of env files: SDK 57's virtual env merges local files over
+runtime flags. Production JS in Expo Go is not a compiled native Release build.
+eas.json's internal preview specifies Release without dev-client; cloud project,
+bundle ID, signing and device enrolment remain manual setup, not completed builds.

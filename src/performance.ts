@@ -3,9 +3,11 @@ import {
   type GridExperiment,
   type PerformanceReport,
 } from './performanceModel.ts';
+import { developmentToolsEnabled } from './developmentFeatures.ts';
 export const performanceEnabled =
   typeof __DEV__ !== 'undefined' &&
   __DEV__ &&
+  developmentToolsEnabled &&
   process.env.EXPO_PUBLIC_DEV_PERFORMANCE === 'true';
 const windowSamples = createPerformanceRecorder();
 const runSamples = createPerformanceRecorder();

@@ -66,6 +66,43 @@ and detailed runtime/accessibility checks remain to be recorded.
 Stop a foreground server with Ctrl+C. Do not use `expo run:ios` or the simulator
 shortcut on Linux: the Apple toolchain and iOS simulator require macOS.
 
+## Compare development and production JavaScript
+
+For a quick performance comparison on the physical iPhone, start two terminals:
+
+```sh
+npm run start:compare-dev
+npm run start:production-js
+```
+
+The development comparison uses port 8083. The production-JavaScript comparison
+uses port 8082 with Expo's `--no-dev --minify` options. Both use one Metro worker
+and the ordinary saved habit list, with sample mode, profiling and preview motion
+capture disabled by the temporary `EXPO_PUBLIC_DEV_COMPARISON=true` override.
+Keep that variable out of env files; the launchers own it. They do not edit
+`.env.local`, reset storage or stop the ordinary development server on port 8081.
+SDK 57's development env module merges env files over runtime variables, so merely
+passing false for the three existing flags is insufficient. The comparison gate
+in developmentFeatures.ts disables their App mounts and all performance recording;
+literal `__DEV__` import guards still exclude native dev tools from release bundles.
+
+Open each terminal's Expo Go QR code on the phone. Compare the same saved list,
+appearance, date range, flings and rotations; let downloading/bundling settle first.
+The local manifests were verified to have the same Expo Go scope key, so they use
+the same project storage. Compare list/appearance on the phone before timing.
+Edits in either session are real saved edits; use the same existing records for
+scroll tests. Sensor previews and Save timings are intentionally unavailable.
+Use observations or an iPhone screen recording for this first comparison.
+
+Production JavaScript in Expo Go is a useful partial test, not a compiled iOS
+release build: Expo Go remains the native host. FlashList specifically recommends
+release-mode profiling, and React Native warns about development overhead. See
+[FlashList performance](https://shopify.github.io/flash-list/docs/fundamentals/performance/)
+and [React Native performance](https://reactnative.dev/docs/performance).
+For a fully compiled Release comparison, use the internal preview profile in
+[RELEASING.md](RELEASING.md). Closing the two comparison terminals stops them;
+scan the ordinary port-8081 QR to return to sample data/dev tools.
+
 ## If the phone will not connect
 
 - Check the same account, same Wi-Fi, local network permission, and Expo Go SDK.

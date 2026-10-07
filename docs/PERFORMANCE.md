@@ -522,3 +522,23 @@ subscribers, so duplicated drawing work is not hidden from reports. The original
 native Normal renderer is not retained as a runtime toggle. A fresh identical
 Normal-mode scroll/rotation report is required to measure this pass. No Skia,
 native dependency, storage change or removal of width-reset safety was introduced.
+
+### Development overhead comparison
+
+The next received Normal/iOS/Sample run lasted 22.7 seconds. Five ready callbacks
+averaged 737 ms, maximum 1,068 ms. It recorded 5,576 cell renders, 475 columns,
+4,944 ms of React work over 386 commits, 17.3 ms of goals and a 1,734 ms maximum
+JS timer delay. This does not demonstrate a further speed improvement; manual
+work differs and the report has no renderer revision identifier.
+
+Founder requested testing whether development mode explains much of the delay.
+[React Native](https://reactnative.dev/docs/performance#running-in-development-mode-devtrue)
+warns about development overhead; [FlashList](https://shopify.github.io/flash-list/docs/fundamentals/performance/)
+explicitly requires release-mode profiling. Paired local launchers now compare
+unprofiled development and production/minified JS in Expo Go, on the same saved
+store with sample history and preview capture disabled. This is qualitative
+native-host-controlled evidence, not a fully compiled release test or an FPS
+measurement. No development timing report is collected during either session.
+The prepared EAS internal preview profile specifies Release, but cloud project,
+Apple signing and device registration still need setup. Read DEVELOPMENT.md and
+RELEASING.md for the distinct workflows and matching-data requirements.

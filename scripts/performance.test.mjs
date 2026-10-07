@@ -154,7 +154,11 @@ test('timing runs exclude mode-switch warmup, notify only on discrete changes, s
   );
 });
 test('production or disabled diagnostics leave SQL adapter identity and experiment mode untouched', () => {
-  for (const options of [{ development: false }, { flag: false }]) {
+  for (const options of [
+    { development: false },
+    { flag: false },
+    { comparison: true },
+  ]) {
     const f = performanceFixture(options),
       db = {};
     assert.equal(f.profileSql(db), db);

@@ -1,0 +1,17 @@
+{
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "developmentClient": false,
+      "environment": "preview",
+      "ios": {
+        "buildConfiguration": "Release"
+      },
+      "env": {
+        "EXPO_PUBLIC_DEV_PREVIEW": "false",
+        "EXPO_PUBLIC_DEV_PERFORMANCE": "false",
+        "EXPO_PUBLIC_DEV_MOCK_DATA": "false"
+      }
+    }
+  }
+}

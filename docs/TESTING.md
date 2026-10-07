@@ -1652,3 +1652,23 @@ passed numeric drafts, deferred sizing, bounded date navigation, rotation/date
 alignment, vertical row refill, Today and targeted Undo. This validates the web
 control path; the native branch is covered by the focused mocks above. Fresh
 iPhone timing, gesture/drawing and accessibility acceptance remain pending.
+
+## Development / production JavaScript comparison
+
+Use start:compare-dev (8083) and start:production-js (8082), following
+DEVELOPMENT.md. Compare the same saved list/range/appearance after bundling settles,
+without changing settings between sessions. Sample mode and profiling/preview
+mounts are disabled by a separate comparison override. performance.test.mjs now
+checks that this override disables collection/timers and preserves SQL adapter
+identity even when the normal performance flag is enabled. Literal **DEV** guards
+still remove native development modules/fixtures from production.
+
+Local checks passed with 321 tests and a one-worker iOS export under a 2 GiB
+memory scope. An initial export with default worker count hit its overall timeout;
+the explicit single-worker rerun completed. Served iOS bundles were verified:
+development has dev=true with the comparison override present and no conflicting
+local override; production has dev=false/minify=true, the feature and performance
+gates folded false, and no fictional sample fixture content. Both manifests have
+the same Expo Go scope key. This does not establish phone performance; comparison
+observations are pending. The prepared EAS Release profile still requires cloud
+project/signing/device setup before a standalone binary can be tested.
