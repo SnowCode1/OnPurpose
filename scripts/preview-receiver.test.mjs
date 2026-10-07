@@ -11,6 +11,65 @@ const token = 'preview-test-token-with-at-least-32-characters';
 const png =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
 
+test('paired timing reports save anonymously, reject extra data and keep screenshots separate', async (t) => {
+  const { url, headers, directory, post } = await receiver(t);
+  const report = {
+    version: 1,
+    environment: 'development',
+    platform: 'ios',
+    source: 'saved',
+    mode: 'normal',
+    elapsedMs: 15000,
+    metrics: { 'grid.ready': { count: 2, totalMs: 120, maxMs: 80 } },
+  };
+  const send = (value, overrides = {}) =>
+    fetch(`${url}/performance`, {
+      method: 'POST',
+      headers: { ...headers, ...overrides },
+      body: JSON.stringify(value),
+    });
+  assert.equal((await send(report, { Authorization: '' })).status, 401);
+  assert.equal(
+    (await send(report, { Origin: 'https://example.com' })).status,
+    401,
+  );
+  assert.equal(
+    (await send({ ...report, description: 'Must not be accepted' })).status,
+    400,
+  );
+  const accepted = await send(report);
+  assert.equal(accepted.status, 201);
+  const saved = await accepted.json();
+  const target = join(directory, '..', 'performance');
+  assert.deepEqual(
+    JSON.parse(await readFile(join(target, 'latest.json'), 'utf8')),
+    report,
+  );
+  assert.deepEqual(
+    JSON.parse(await readFile(join(target, saved.filename), 'utf8')),
+    report,
+  );
+  assert.equal(
+    (
+      await send({
+        ...report,
+        metrics: { 'private-name': { count: 1, totalMs: 0, maxMs: 0 } },
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (await send({ ...report, extra: 'x'.repeat(66000) })).status,
+    413,
+  );
+  assert.equal((await post(JSON.stringify({ png }))).status, 201);
+  assert.deepEqual(
+    await readFile(join(directory, 'latest.png')),
+    Buffer.from(png, 'base64'),
+  );
+  assert.equal((await readdir(target)).length, 2);
+});
+
 async function receiver(t, directoryOverride) {
   const root = await mkdtemp(join(tmpdir(), 'onpurpose-preview-'));
   const directory = directoryOverride

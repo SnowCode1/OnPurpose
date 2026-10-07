@@ -7,7 +7,7 @@ import {
   type CheckboxStyle,
 } from './displayPreferences';
 import { Text } from './Typography';
-import { memo, useMemo, useRef, useSyncExternalStore } from 'react';
+import { memo, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { GridDay } from './calendar';
 import { habitType, isNumericHabit, type Habit } from './habits';
@@ -15,7 +15,12 @@ import { ReorderRow, type RowMotion } from './ReorderRow';
 import { dayTone, dateTones, type GridPalette } from './gridAppearance';
 import { entrySelection, recordedDaySelection } from './storage/selection';
 import type { ChangeStore } from './storage/store';
-import { recordPerformance } from './performance';
+import {
+  performanceEnabled,
+  recordPerformance,
+  timePerformance,
+} from './performance';
+import type { GridExperiment } from './performanceModel';
 import {
   GRID_ENTRY_FONT_SIZE,
   GRID_ENTRY_LINE_HEIGHT,
@@ -35,6 +40,7 @@ type CellProps = {
   fontScale: number;
   disabled: boolean;
   onPress: (habit: Habit, day: GridDay) => void;
+  experiment?: GridExperiment;
 };
 const GridCell = memo(function GridCell({
   store,
@@ -49,6 +55,7 @@ const GridCell = memo(function GridCell({
   fontScale,
   disabled,
   onPress,
+  experiment = 'normal',
 }: CellProps) {
   const mark = useRef<CheckboxFeedback>(null);
   const selection = useMemo(
@@ -60,14 +67,33 @@ const GridCell = memo(function GridCell({
     selection.getSnapshot,
   );
   recordPerformance('grid.cell.render');
+  useEffect(() => {
+    if (!performanceEnabled) return;
+    recordPerformance('grid.cell.mount');
+    return () => recordPerformance('grid.cell.unmount');
+  }, []);
   const numeric = isNumericHabit(habit);
   const checkbox = habitType(habit) === 'checkbox';
-  const checked = checkbox && checkboxChecked(habit, value, day.key);
+  const checked =
+    checkbox &&
+    (performanceEnabled
+      ? timePerformance('grid.checkbox.policy', () =>
+          checkboxChecked(habit, value, day.key),
+        )
+      : checkboxChecked(habit, value, day.key));
   const recorded = value !== undefined;
-  const goal = evaluateGoal(habit, value, day.key);
+  const goal =
+    experiment === 'no-goal-tint'
+      ? { active: false, met: false, scheduled: true }
+      : performanceEnabled
+        ? timePerformance('grid.goal', () =>
+            evaluateGoal(habit, value, day.key),
+          )
+        : evaluateGoal(habit, value, day.key);
   const tone = palette.tones[dayTone(day.daysAgo)];
+  const Row = experiment === 'simple-cells' ? StaticCellRow : ReorderRow;
   return (
-    <ReorderRow motion={motion}>
+    <Row motion={motion}>
       <Pressable
         testID={`cell-${habit.id}-${day.key}`}
         disabled={disabled}
@@ -89,6 +115,7 @@ const GridCell = memo(function GridCell({
             store.getSnapshot().replay.state.values[`${habit.id}:${day.key}`];
           if (
             checkbox &&
+            experiment !== 'simple-cells' &&
             tapAnimations &&
             checkboxChecked(habit, next, day.key) !== checked
           )
@@ -122,6 +149,15 @@ const GridCell = memo(function GridCell({
           >
             {cellEntryLabel(habit, value)}
           </Text>
+        ) : experiment === 'simple-cells' ? (
+          <Text
+            style={{
+              fontSize: 22 * fontScale,
+              color: goal.met ? habit.color : tone.checkbox,
+            }}
+          >
+            {checked ? '✓' : '□'}
+          </Text>
         ) : (
           <GridCheckboxMark
             ref={mark}
@@ -137,9 +173,22 @@ const GridCell = memo(function GridCell({
           />
         )}
       </Pressable>
-    </ReorderRow>
+    </Row>
   );
 });
+function StaticCellRow({
+  motion,
+  children,
+}: {
+  motion: RowMotion;
+  children: import('react').ReactNode;
+}) {
+  return (
+    <View style={{ position: 'absolute', top: motion.top, left: 0, right: 0 }}>
+      {children}
+    </View>
+  );
+}
 export const GridDateColumn = memo(function GridDateColumn({
   store,
   habits,
@@ -155,6 +204,7 @@ export const GridDateColumn = memo(function GridDateColumn({
   height,
   disabled,
   onPress,
+  experiment,
 }: {
   store: ChangeStore;
   habits: Habit[];
@@ -170,7 +220,9 @@ export const GridDateColumn = memo(function GridDateColumn({
   height: number;
   disabled: boolean;
   onPress: CellProps['onPress'];
+  experiment?: GridExperiment;
 }) {
+  recordPerformance('grid.column.render');
   return (
     <View style={{ width, height, backgroundColor: '#000000' }}>
       {habits.map((habit) => (
@@ -188,6 +240,7 @@ export const GridDateColumn = memo(function GridDateColumn({
           checkboxStyle={checkboxStyle}
           disabled={disabled}
           onPress={onPress}
+          experiment={experiment}
         />
       ))}
     </View>

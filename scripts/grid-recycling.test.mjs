@@ -66,7 +66,8 @@ test('recycled date columns keep row views while switching subscriptions, taps a
       for (const listener of listeners) listener();
     });
   let mounts = 0,
-    renders = 0;
+    renders = 0,
+    goalCalls = 0;
   function Row({ children }) {
     renders++;
     useEffect(() => {
@@ -112,13 +113,22 @@ test('recycled date columns keep row views while switching subscriptions, taps a
           },
           './ReorderRow': { ReorderRow: Row },
           './entries': entries,
-          './habitGoals': goals,
+          './habitGoals': {
+            ...goals,
+            evaluateGoal: (...args) => {
+              goalCalls++;
+              return goals.evaluateGoal(...args);
+            },
+          },
           './habits': habits,
           './gridAppearance': appearance,
           './displayPreferences': display,
           './storage/selection': selection,
           './gridEntryText': textLayout,
-          './performance': { recordPerformance: () => {} },
+          './performance': {
+            recordPerformance: () => {},
+            performanceEnabled: false,
+          },
           './GridCheckboxMark': { GridCheckboxMark: () => null },
         };
         if (!(name in modules)) throw new Error(`Unexpected module ${name}`);
@@ -143,12 +153,13 @@ test('recycled date columns keep row views while switching subscriptions, taps a
     disabled: false,
   };
   const taps = [];
-  const render = async (day) =>
+  const render = async (day, experiment = 'normal') =>
     act(() =>
       root.render(
         React.createElement(module.exports.GridDateColumn, {
           ...props,
           day,
+          experiment,
           onPress: (habit, day) => taps.push([habit.id, day.key]),
         }),
       ),
@@ -178,4 +189,17 @@ test('recycled date columns keep row views while switching subscriptions, taps a
   assert.equal(button.textContent, '—');
   assert.match(button.getAttribute('aria-label'), /not recorded/);
   assert.equal(mounts, 1);
+  const calls = goalCalls;
+  await render(days[1], 'no-goal-tint');
+  assert.equal(goalCalls, calls, 'success-tint experiment skips evaluation');
+  assert.equal(document.querySelector('button').textContent, '0');
+  await render(days[1], 'simple-cells');
+  assert.ok(
+    goalCalls > calls,
+    'simple rendering still evaluates the same goal',
+  );
+  assert.equal(document.querySelector('button').textContent, '0');
+  assert.equal(listeners.size, 1);
+  await act(() => document.querySelector('button').click());
+  assert.deepEqual(taps.at(-1), ['read', '2026-10-06']);
 });

@@ -27,7 +27,10 @@ try {
   const server = createPreviewReceiver({
     token: process.env.EXPO_PUBLIC_PREVIEW_TOKEN,
     directory,
-    onSaved: (path) => console.log(`Preview saved: ${path}`),
+    onSaved: (path) =>
+      console.log(
+        `${path.endsWith('.json') ? 'Timings' : 'Preview'} saved: ${path}`,
+      ),
   });
   server.on('error', (error) => {
     console.error(

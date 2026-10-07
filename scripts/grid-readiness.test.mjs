@@ -47,6 +47,7 @@ function fixture(platform = 'ios') {
     navigated = [];
   const context = {
     exports: {},
+    performanceEnabled: false,
     Platform: { OS: platform },
     frame,
     columnWidth: 55,

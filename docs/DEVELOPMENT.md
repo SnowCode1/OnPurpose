@@ -384,3 +384,20 @@ existing new architecture. See [FlashList usage](https://shopify.github.io/flash
 and [v2 architecture requirements](https://shopify.github.io/flash-list/docs/v2-migration/).
 No new custom native module is required. Keep the lockfile and test Expo Go after
 upgrades. RN Web retains FlatList; a web pass is not native list evidence.
+
+## Phone grid diagnostics
+
+With EXPO_PUBLIC_DEV_PERFORMANCE=true in .env.local, reload Expo Go and open
+Settings → Development → Grid diagnostics. Normal, No goal tint and Simple cells
+compare the current renderer with two temporary reductions. Start, return to the
+grid, wait two seconds, then repeat the same scroll/rotation actions. Stop and send
+uses the paired preview receiver (also requires EXPO_PUBLIC_DEV_PREVIEW=true).
+Reports contain fixed numeric metrics only and arrive in .dev/performance/latest.json;
+earlier reports are retained alongside it. Failed sends can retry the in-memory
+last report. Runs end at one minute, app inactivity or sample-source/reset changes.
+See PERFORMANCE.md for metric limits and interpretation. Release bundles exclude
+the native diagnostics controls and transport; flags never alter habit history.
+
+npm run benchmark:bottlenecks runs the production store/repository against
+fictional temporary Node SQLite files under a 256 MiB heap limit. These are desktop
+CPU/SQL timings, not iPhone rendering or native SQLite bridge measurements.

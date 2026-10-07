@@ -61,7 +61,8 @@
     "test:preview": "node --max-old-space-size=256 --test --test-timeout=15000 scripts/preview-receiver.test.mjs",
     "test:calendar": "node --max-old-space-size=256 --test --test-timeout=15000 scripts/calendar.test.mjs",
     "test": "node --max-old-space-size=256 --test --test-concurrency=2 --test-timeout=15000 scripts/*.test.mjs",
-    "benchmark:grid": "node scripts/benchmark-grid.mjs"
+    "benchmark:grid": "node scripts/benchmark-grid.mjs",
+    "benchmark:bottlenecks": "node --max-old-space-size=256 scripts/benchmark-bottlenecks.mjs"
   },
   "private": true,
   "engines": {

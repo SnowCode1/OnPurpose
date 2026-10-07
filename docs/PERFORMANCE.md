@@ -72,10 +72,11 @@ Expo Go. It is enabled locally for this pass; the example defaults false. Both
 samples, even with the local flag enabled.
 
 React Native DevTools receives one aggregate console report per active five-second
-window, prefixed `[OnPurpose performance]`. It includes counts and average/max
+window, prefixed `[OnPurpose performance]`. It includes counts, total and maximum
 milliseconds; it never includes habit names, entry values, dates or raw events.
-No file is written and no diagnostics are uploaded. Turn the flag off and reload
-for an uninstrumented comparison.
+Automatic console aggregates stay local. Explicit development test runs can send
+anonymous timing reports to the paired preview receiver; see the investigation
+workflow below. Turn the flag off and reload for an uninstrumented comparison.
 
 - `grid.container.render`, `grid.cell.render`, `grid.heading.render`: render attempt
   counts, including initial mounting and newly virtualized columns. Duration zero
@@ -324,3 +325,79 @@ through width changes with a renderer that explicitly supports new geometry.
 Do not simply remove width keys: that previously mixed old measured widths with
 new ones. Compare release performance before choosing a larger custom renderer.
 The existing loading fallback is a resilience feature, not the performance goal.
+
+## Grid bottleneck investigation (7 October)
+
+Founder requested measurement before choosing Skia or a data-engine rewrite.
+Settings → Development → Grid diagnostics is gated by `__DEV__` and
+EXPO_PUBLIC_DEV_PERFORMANCE. Start a run, close Settings, wait two seconds for
+mode-switch/dismissal warmup, then perform the same date flings and three
+portrait/landscape/portrait rotations. Return and Stop and send timings.
+Repeat each mode with the same list and date range; avoid editing during this
+scroll/rotation comparison. A separate Normal run with ten check/uncheck actions
+measures the edit/write path. Sample uses an in-memory repository; Saved uses the
+native SQLite adapter on phones. Do not mix sources within a run. Changing or
+resetting sample data stops the current test.
+
+Modes are temporary, never preferences/events:
+
+- Normal: current controls and goal evaluation.
+- No goal tint: skips evaluateGoal for cells, preserving values, dated checkbox
+  defaults and native controls. Success-colour/accessibility goal summaries are
+  deliberately absent during this experiment; rules themselves are not edited.
+- Simple cells: preserves values, checkbox defaults and goal evaluation, using
+  static row views and native text marks instead of per-cell animated row views,
+  animated checkbox wrappers and SVG ticks. Name reordering is disabled. This is
+  a diagnostic rendering comparison, not an accepted product appearance.
+
+Runs stop automatically after 60 seconds of measurement or when the app becomes
+inactive; Normal is restored. The last numeric report remains in memory for Retry.
+Only discrete start/stop changes notify React; the 100 ms event-loop monitor does
+not update React. Its lateness measures JS scheduling, not UI/GPU frame rate.
+
+Metrics: grid.ready measures from the observed width-change layout event (or the
+new-frame layout effect for other resets) until both current viewport/onLoad
+signals are accepted. It is not proof of GPU presentation. grid.header.load and
+grid.body.load use FlashList's elapsedTimeInMs; grid.render is React Profiler's
+actualDuration. grid.cell.mount/unmount/render and grid.column.render count work.
+grid.goal and grid.checkbox.policy isolate synchronous policy/evaluation costs.
+store.load/apply/publish/ack/append retain their separate meanings. SQL reads,
+writes and exclusive transactions are timed through their awaited completion;
+these include bridge/wait/JS-resumption latency, not just SQLite engine time.
+repository.read.parse/replay and append.validate/serialize/projection.serialize
+measure CPU around the existing production operations. Nested durations overlap;
+never add transaction, SQL and validation totals as independent costs.
+Instrumentation itself adds work, especially per-cell clocks/aggregates. Treat
+No goal tint as an upper bound on the removed evaluation/reporting cost, then
+confirm a proposed optimization with diagnostics disabled on the phone. These
+development comparisons do not replace release-build profiling.
+
+Explicit reports POST to /performance on the existing paired receiver, retaining
+its authentication/no-browser-origin policy. Both development env flags must be
+on for sending. Receiver caps JSON at 64 KiB and rejects extra fields, arbitrary
+metric names, non-finite numbers and habit-shaped payloads. Files are ignored in
+.dev/performance/ (latest.json plus dated reports), never habit storage/backups.
+No raw SQL, names, descriptions, values or habit dates are sent. Native controls,
+upload and app-state listener are excluded from release bundles.
+
+npm run benchmark:bottlenecks exercises the actual repository/store code on
+Node SQLite with temporary fictional disk files, bounded 256 MiB heap. Use a hard
+40-second timeout/memory scope when diagnosing runaway work. It compares 20 habits
+at six months and two years, the latter with three fictional notes. The benchmark
+never opens the real database and cleans its temporary directory.
+
+Representative desktop run, 7 October (not iPhone/Expo bridge/rendering timings):
+
+| Fixture                                             | Reading/evaluating 960 cells, median | SQL calls for reading | Edit + flush median / p95 |
+| --------------------------------------------------- | -----------------------------------: | --------------------: | ------------------------: |
+| 180 days, 2,401 events, ~59 KiB projection          |                             0.370 ms |                     0 |          1.781 / 2.640 ms |
+| 730 days + notes, 9,735 events, ~263 KiB projection |                             0.208 ms |                     0 |         8.739 / 13.506 ms |
+
+For 20 edits in the larger fixture, append validation used 109.64 ms CPU total,
+projection serialization 20.36 ms, store reduction 40.97 ms; awaited SQL reads
+used 2.74 ms total and writes 1.24 ms. The source confirms a full projection is
+validated/serialized per edit. That is a candidate for a later targeted-projection
+change, not evidence that SQL or rendering dominates on the phone. Sequential
+warmup/cache/JIT differences mean the two read medians are not a history-size
+scaling comparison. Device reports and release profiling remain the deciding
+input. No Skia dependency or storage schema/event change was made.

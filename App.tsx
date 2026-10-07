@@ -80,6 +80,14 @@ const previewTools: typeof import('./src/dev/DevPreviewCapture') | null =
     : null;
 const PreviewCapture = previewTools?.DevPreviewCapture;
 const PreviewControls = previewTools?.DevPreviewControls;
+const performanceTools:
+  typeof import('./src/dev/DevPerformanceControls') | null =
+  __DEV__ && process.env.EXPO_PUBLIC_DEV_PERFORMANCE === 'true'
+    ? // eslint-disable-next-line @typescript-eslint/no-require-imports -- Native timing tools are development only.
+      require('./src/dev/DevPerformanceControls')
+    : null;
+const PerformanceControls = performanceTools?.DevPerformanceControls;
+const PerformanceLifecycle = performanceTools?.DevPerformanceLifecycle;
 
 // Development sample history is excluded from production bundles.
 const SampleDataMode:
@@ -92,6 +100,7 @@ export default function App() {
   return (
     <>
       {PreviewCapture && <PreviewCapture />}
+      {PerformanceLifecycle && <PerformanceLifecycle />}
       <StoreApp />
     </>
   );
@@ -789,10 +798,13 @@ function PersistentApp({
       <AppPanel
         sampleData={sampleData}
         developmentControls={
-          developmentControls || PreviewControls ? (
+          developmentControls || PreviewControls || PerformanceControls ? (
             <>
               {developmentControls}
               {PreviewControls && <PreviewControls />}
+              {PerformanceControls && (
+                <PerformanceControls sampleData={sampleData} />
+              )}
             </>
           ) : undefined
         }

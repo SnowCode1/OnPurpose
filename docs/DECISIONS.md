@@ -1262,3 +1262,15 @@ through width changes with a renderer that explicitly supports new geometry.
 Do not simply remove width keys: that previously mixed old measured widths with
 new ones. Compare release performance before choosing a larger custom renderer.
 The existing loading fallback is a resilience feature, not the performance goal.
+
+### 2026-10-07 — Measure grid bottlenecks before a renderer rewrite
+
+Founder requested tests to establish whether Skia targets the actual bottleneck
+and whether simpler renderer/data changes could address it. Added development-only
+phone comparisons (Normal, No goal tint, Simple cells) and explicit anonymous
+reports through the paired preview receiver. Measurement separates visible-grid
+readiness signals, React commits, synchronous goals, SQL awaits and projection
+validation/serialization. Temporary modes stay outside storage/History and reset
+when stopped. Desktop tests use fictional temporary databases only; they confirm
+SQL-free entry reads and expose full-projection write costs, without establishing
+native latency. No Skia or storage migration is approved or introduced by this pass.

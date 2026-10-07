@@ -10,6 +10,7 @@ import {
 import { localDateKey } from '../calendar';
 import type { ChangeStore } from '../storage/store';
 import { createSampleStore } from './sampleData';
+import { performanceRun } from '../performance';
 
 export function SampleDataMode({
   store,
@@ -50,6 +51,7 @@ export function SampleDataMode({
           accessibilityLabel="Use sample data instead of real data"
           value={enabled}
           onValueChange={(value) => {
+            performanceRun.stop();
             setError(false);
             setEnabled(value);
           }}
@@ -68,6 +70,7 @@ export function SampleDataMode({
           accessibilityRole="button"
           style={styles.button}
           onPress={() => {
+            performanceRun.stop();
             setError(false);
             setSample(null);
           }}

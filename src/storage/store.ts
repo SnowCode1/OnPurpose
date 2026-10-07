@@ -12,7 +12,12 @@ import {
   type StoredEvent,
 } from './model.ts';
 import type { Repository } from './repository.ts';
-import { performanceEnabled, recordPerformance } from '../performance.ts';
+import {
+  performanceEnabled,
+  recordPerformance,
+  timePerformanceAsync,
+  timePerformance,
+} from '../performance.ts';
 
 export type StoreSnapshot = {
   status: 'loading' | 'ready' | 'load-error';
@@ -59,8 +64,9 @@ export class ChangeStore {
     if (this.loading) return this.loading;
     if (this.snapshot.status === 'ready') return Promise.resolve();
     this.update({ status: 'loading', error: null });
-    this.loading = this.repository
-      .load()
+    this.loading = timePerformanceAsync('store.load', () =>
+      this.repository.load(),
+    )
       .then((loaded) => {
         this.update({ ...loaded, status: 'ready', error: null });
       })
@@ -167,7 +173,9 @@ export class ChangeStore {
         try {
           await this.repository.append(item.event, item.replay.state);
           this.queue.shift();
-          this.update({ pending: this.queue.length, error: null });
+          timePerformance('store.ack', () =>
+            this.update({ pending: this.queue.length, error: null }),
+          );
         } catch {
           this.update({
             error: 'Changes are not saved. Keep the app open and retry.',

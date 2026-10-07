@@ -5,6 +5,8 @@ import {
   type Replay,
   type StoredState,
 } from './model.ts';
+import { timePerformance } from '../performance.ts';
+import { profileSql } from './profileSql.ts';
 
 export interface SqlPort {
   execAsync(sql: string): Promise<void>;
@@ -50,20 +52,22 @@ async function readEvents(
     id: string;
     event_json: string;
   }>('SELECT sequence, id, event_json FROM changes ORDER BY sequence');
-  const input = rows.map((row) => {
-    const parsed: unknown = JSON.parse(row.event_json);
-    if (
-      !parsed ||
-      typeof parsed !== 'object' ||
-      !('sequence' in parsed) ||
-      !('id' in parsed) ||
-      parsed.sequence !== row.sequence ||
-      parsed.id !== row.id
-    )
-      throw new Error('The change log is inconsistent.');
-    return parsed;
-  });
-  return replayEvents(input);
+  const input = timePerformance('repository.read.parse', () =>
+    rows.map((row) => {
+      const parsed: unknown = JSON.parse(row.event_json);
+      if (
+        !parsed ||
+        typeof parsed !== 'object' ||
+        !('sequence' in parsed) ||
+        !('id' in parsed) ||
+        parsed.sequence !== row.sequence ||
+        parsed.id !== row.id
+      )
+        throw new Error('The change log is inconsistent.');
+      return parsed;
+    }),
+  );
+  return timePerformance('repository.read.replay', () => replayEvents(input));
 }
 async function saveProjection(
   db: SqlPort,
@@ -73,14 +77,17 @@ async function saveProjection(
   await db.runAsync(
     'INSERT INTO current_state (singleton, last_sequence, state_json) VALUES (1, ?, ?) ON CONFLICT(singleton) DO UPDATE SET last_sequence = excluded.last_sequence, state_json = excluded.state_json',
     sequence,
-    JSON.stringify(state),
+    timePerformance('repository.projection.serialize', () =>
+      JSON.stringify(state),
+    ),
   );
 }
 
 export function sqliteRepository(
-  db: TransactionalSql,
+  connection: TransactionalSql,
   initialize: () => StoredEvent,
 ): Repository {
+  const db = profileSql(connection);
   return {
     async load() {
       const version = await db.getFirstAsync<{ user_version: number }>(
@@ -168,18 +175,22 @@ PRAGMA user_version = 1;`);
             'Another writer changed the database. Reopen OnPurpose.',
           );
         // Validate the before-value against the transaction's committed projection.
-        const current = JSON.parse(previous.state_json) as StoredState;
-        const projected =
-          event.type === 'initialize'
-            ? null
-            : applyChange(current, event.change);
-        if (JSON.stringify(projected) !== JSON.stringify(state))
-          throw new Error('Current-state projection mismatch.');
+        const matches = timePerformance('repository.append.validate', () => {
+          const current = JSON.parse(previous.state_json) as StoredState;
+          const projected =
+            event.type === 'initialize'
+              ? null
+              : applyChange(current, event.change);
+          return JSON.stringify(projected) === JSON.stringify(state);
+        });
+        if (!matches) throw new Error('Current-state projection mismatch.');
         await tx.runAsync(
           'INSERT INTO changes (sequence, id, event_json) VALUES (?, ?, ?)',
           event.sequence,
           event.id,
-          JSON.stringify(event),
+          timePerformance('repository.append.serialize', () =>
+            JSON.stringify(event),
+          ),
         );
         await saveProjection(tx, event.sequence, state);
       });

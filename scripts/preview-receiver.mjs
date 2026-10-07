@@ -3,6 +3,7 @@ import { Buffer } from 'node:buffer';
 import { createServer } from 'node:http';
 import { mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { validPerformanceReport } from '../src/performanceModel.ts';
 
 const MAX_BODY = 12 * 1024 * 1024;
 const PNG_SIGNATURE = Buffer.from('89504e470d0a1a0a', 'hex');
@@ -40,7 +41,11 @@ export function createPreviewReceiver({
       reply(200, { ready: true });
       return;
     }
-    if (req.method !== 'POST' || req.url !== '/preview') {
+    const performanceReport = req.url === '/performance';
+    if (
+      req.method !== 'POST' ||
+      (!performanceReport && req.url !== '/preview')
+    ) {
       reply(404, { error: 'Not found' });
       return;
     }
@@ -48,7 +53,8 @@ export function createPreviewReceiver({
       reply(415, { error: 'Expected JSON' });
       return;
     }
-    if (Number(req.headers['content-length']) > MAX_BODY) {
+    const maximumBody = performanceReport ? 64 * 1024 : MAX_BODY;
+    if (Number(req.headers['content-length']) > maximumBody) {
       reply(413, { error: 'Image too large' });
       return;
     }
@@ -62,7 +68,7 @@ export function createPreviewReceiver({
       const chunks = [];
       for await (const chunk of req) {
         size += chunk.length;
-        if (size > MAX_BODY) {
+        if (size > maximumBody) {
           reply(413, { error: 'Image too large' });
           return;
         }
@@ -73,6 +79,31 @@ export function createPreviewReceiver({
         payload = JSON.parse(Buffer.concat(chunks).toString('utf8'));
       } catch {
         reply(400, { error: 'Invalid JSON' });
+        return;
+      }
+      if (performanceReport) {
+        if (!validPerformanceReport(payload)) {
+          reply(400, { error: 'Expected anonymous timing metrics' });
+          return;
+        }
+        const target = join(directory, '..', 'performance');
+        await mkdir(target, { recursive: true, mode: 0o700 });
+        const id = randomUUID();
+        const filename = `${new Date().toISOString().replace(/[:.]/g, '-')}-${id}.json`;
+        const temporary = join(target, `.${id}.tmp`);
+        const json = JSON.stringify(payload, null, 2);
+        await writeFile(join(target, filename), json, {
+          flag: 'wx',
+          mode: 0o600,
+        });
+        try {
+          await writeFile(temporary, json, { flag: 'wx', mode: 0o600 });
+          await rename(temporary, join(target, 'latest.json'));
+        } finally {
+          await rm(temporary, { force: true });
+        }
+        reply(201, { saved: true, filename });
+        onSaved(join(target, filename));
         return;
       }
       const base64 = payload?.png;

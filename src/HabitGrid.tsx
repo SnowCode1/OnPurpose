@@ -53,7 +53,11 @@ import { createGridPalette } from './gridAppearance';
 import { GridDateColumn, GridDateHeading } from './GridCells';
 import { GridDateBackdrop, GridLoadingBackdrop } from './GridLoadingBackdrop';
 import type { ChangeStore } from './storage/store';
-import { recordPerformance } from './performance';
+import {
+  performanceEnabled,
+  performanceRun,
+  recordPerformance,
+} from './performance';
 import { gridLayout } from './gridLayout';
 import Animated, {
   useAnimatedReaction,
@@ -126,12 +130,17 @@ export const HabitGrid = memo(function HabitGrid({
   onAddHabit,
 }: Props) {
   recordPerformance('grid.container.render');
+  const experiment = useSyncExternalStore(
+    performanceRun.subscribe,
+    performanceRun.getMode,
+  );
   const { fontScale } = useAppWindowDimensions();
   const [width, setWidth] = useState(0);
   const [dayCount, setDayCount] = useState(90);
   const [futureCount, setFutureCount] = useState(0);
   const [origin, setOrigin] = useState(0);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const layoutStarted = useRef(0);
   const pendingNavigation = useRef<number | null>(null);
   const layoutReady = useRef<{
     frame: object;
@@ -141,6 +150,7 @@ export const HabitGrid = memo(function HabitGrid({
     bodySize: boolean;
     headerLayout: boolean;
     bodyLayout: boolean;
+    startedAt: number;
   } | null>(null);
   const [rangeReset, setRangeReset] = useState(0);
   const pendingReveal = useRef<{
@@ -330,6 +340,7 @@ export const HabitGrid = memo(function HabitGrid({
         height={gridHeight}
         disabled={cellsDisabled}
         onPress={onCellPress}
+        experiment={experiment}
       />
     ),
     [
@@ -346,6 +357,7 @@ export const HabitGrid = memo(function HabitGrid({
       gridHeight,
       cellsDisabled,
       onCellPress,
+      experiment,
     ],
   );
   function actOnHabit(habit: Habit, action: HabitAction) {
@@ -550,8 +562,12 @@ export const HabitGrid = memo(function HabitGrid({
       bodySize: false,
       headerLayout: false,
       bodyLayout: false,
+      startedAt: performanceEnabled
+        ? layoutStarted.current || performance.now()
+        : 0,
     };
     alignGeometry(frame.offset.x, false);
+    layoutStarted.current = 0;
     // This effect belongs to a new native-list generation, not scroll settles.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [frame]);
@@ -567,6 +583,8 @@ export const HabitGrid = memo(function HabitGrid({
     )
       return;
     layoutReady.current = null;
+    if (performanceEnabled)
+      recordPerformance('grid.ready', performance.now() - pending.startedAt);
     setReadyFrame(pending.frame);
     alignGeometry(pending.target, true);
     const day = pendingNavigation.current;
@@ -648,6 +666,7 @@ export const HabitGrid = memo(function HabitGrid({
         measureReorder();
         const nextWidth = event.nativeEvent.layout.width;
         if (nextWidth !== width) {
+          if (performanceEnabled) layoutStarted.current = performance.now();
           cancelReorder();
           stopSync();
           if (pendingReveal.current) {
@@ -808,7 +827,10 @@ export const HabitGrid = memo(function HabitGrid({
                 contentOffset={frame.offset}
                 style={[{ width: dateWidth, flex: 1 }, columnReadiness]}
                 onScroll={headerScroll}
-                onLoad={() => listLoaded('header')}
+                onLoad={({ elapsedTimeInMs }) => {
+                  recordPerformance('grid.header.load', elapsedTimeInMs);
+                  listLoaded('header');
+                }}
                 onLayout={(event) =>
                   listLaidOut('header', event.nativeEvent.layout.width)
                 }
@@ -864,7 +886,7 @@ export const HabitGrid = memo(function HabitGrid({
                       selected={habitMenu?.id === habit.id}
                       motion={rowMotion[habit.id]}
                       reorder={reorderMode}
-                      disabled={!editable}
+                      disabled={!editable || experiment === 'simple-cells'}
                       onPress={() => {
                         if (habitMenu) setHabitMenu(null);
                         else onHabitPress(habit);
@@ -923,7 +945,10 @@ export const HabitGrid = memo(function HabitGrid({
                       columnReadiness,
                     ]}
                     onScroll={bodyScroll}
-                    onLoad={() => listLoaded('body')}
+                    onLoad={({ elapsedTimeInMs }) => {
+                      recordPerformance('grid.body.load', elapsedTimeInMs);
+                      listLoaded('body');
+                    }}
                     onLayout={(event) =>
                       listLaidOut('body', event.nativeEvent.layout.width)
                     }

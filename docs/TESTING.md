@@ -1567,3 +1567,29 @@ confirmed correct rotation layout. Real entry rendering remains noticeably slow.
 This establishes correctness/gesture acceptance, not satisfactory rendering
 latency or a measured frame rate. Further performance work must separate React
 render, native layout and release-versus-development costs.
+
+## Grid diagnostic comparisons (7 October)
+
+Use DEVELOPMENT.md/PERFORMANCE.md for three identical phone scroll/rotation runs.
+Confirm Timings saved and inspect .dev/performance/ reports. Keep data source and
+range fixed. A separate Normal run checks ten checkbox edits; source sample is
+memory-only and cannot establish SQLite latency. Native ready callbacks include
+JS delivery; React commits exclude native/GPU work. Never report these as FPS.
+
+Automated cases cover strict anonymous report validation, warmup exclusion,
+discrete notifications, one-minute stop, release/env guards, SQL-free entry reads,
+real SQLite write counts, rollback/error/queued retry invariants, paired receiver
+size/privacy/auth checks and preservation of PNG capture. Recycling tests also
+verify that No goal tint skips evaluation and Simple cells retain values/goals,
+subscriptions and correct dated taps. Browser dev review exercises all modes,
+report generation, rotation and no persisted experiment events; transport is mocked
+because native paired uploads intentionally reject browser origins. Production
+web output excludes the native diagnostics UI/transport. Phone comparison remains
+pending; no renderer-speed improvement is claimed yet.
+
+Local validation: TypeScript, ESLint and formatting passed; all 315 tests and
+eight preview-receiver tests passed. Single-worker iOS, production web and
+development web exports completed under bounded memory. Browser review passed
+all three modes, both rotations, report generation and unchanged stored values.
+No iPhone timing report has arrived yet. Desktop fixture results are recorded in
+PERFORMANCE.md and cannot establish native render/bridge latency.

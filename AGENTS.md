@@ -339,3 +339,21 @@ presentation size/style deferral. Quick Undo supports all entry dates independen
 of filtering/goals, and archival reverses only the archived field on the current
 habit. Preserve unrelated entries, definition edits and current order. Keep timers
 and receipts outside persistence/export and keep their subscription off the grid.
+
+## Grid bottleneck diagnostics
+
+performanceModel.ts owns bounded anonymous metric/report validation; performance.ts
+owns warmup-limited temporary Normal/No goal tint/Simple cells runs and aggregate
+counts. Native DevPerformanceControls/transport/lifecycle require `__DEV__` and the
+performance env flag and are excluded from release. Explicit uploads require the
+preview flag too and use paired /performance; receiver rejects extra fields/data
+and stores ignored .dev/performance/ reports separately from PNGs. Preserve
+normal appearance on stop, timeout, inactivity and sample source/reset changes.
+profileSql.ts wraps existing SQL calls only when profiling is enabled, preserving
+transaction, atomic log/projection and error/retry semantics. Time JSON validation
+separately from awaited SQL, but do not add nested durations. Grid ready/onLoad
+signals are not GPU frame measurements; JS timer lateness is not native FPS.
+Keep experiment state outside preferences/history and preserve native default
+checkbox policies in both comparisons. Simple cells are an experiment, not a
+product replacement. benchmark:bottlenecks uses fictional temporary Node SQLite
+files under 256 MiB; never infer iPhone performance from it. Read PERFORMANCE.md.
