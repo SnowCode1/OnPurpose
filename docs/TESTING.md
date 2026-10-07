@@ -1561,3 +1561,9 @@ phone review alongside the corrected native rotation gate. Callback regression
 tests cover estimated width mismatch, stale generations and event ordering; row
 transition tests cover surviving/restored targets and immediate geometry/drag
 cancellation. Neither mock establishes native frame rates.
+
+Phone follow-up, 7 October: founder accepted the Undo/row-removal animations and
+confirmed correct rotation layout. Real entry rendering remains noticeably slow.
+This establishes correctness/gesture acceptance, not satisfactory rendering
+latency or a measured frame rate. Further performance work must separate React
+render, native layout and release-versus-development costs.

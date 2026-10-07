@@ -307,3 +307,20 @@ Settings, then requested smoother disappearance and row movement. Undo now fades
 out for 180 ms, and row identity changes animate one shared record with matching
 keys rather than resetting it in the idle cancellation effect. Geometry changes
 and cancellation of an active drag still reset immediately.
+
+### Phone acceptance and remaining rendering cost (7 October)
+
+The founder confirmed that Undo/row-removal animations feel good and rotations
+now lay out correctly. The remaining concern is the delay filling the grid with
+real entries. Entries are already read from the in-memory projection; rotation
+does not reload SQLite. Current date columns build every habit row, including
+vertically off-screen rows, and width changes remount both measured lists. These
+are confirmed structural costs; their share of device latency remains unmeasured.
+
+Assistant proposal, not yet an approved rewrite: measure visible-cell readiness,
+React commits and native layout on the phone; simplify cell/row view trees and
+reduce work outside the visible rectangle; investigate retaining recycled views
+through width changes with a renderer that explicitly supports new geometry.
+Do not simply remove width keys: that previously mixed old measured widths with
+new ones. Compare release performance before choosing a larger custom renderer.
+The existing loading fallback is a resilience feature, not the performance goal.
