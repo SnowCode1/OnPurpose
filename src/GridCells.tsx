@@ -1,10 +1,8 @@
 import { cellEntryLabel, entryLabel } from './entries';
 import { evaluateGoal, checkboxChecked } from './habitGoals';
 import { GridCheckboxMark, type CheckboxFeedback } from './GridCheckboxMark';
-import { WeekDivider } from './WeekDivider';
 import {
-  beginsWeek,
-  endsWeek,
+  isShadedWeek,
   type WeekStart,
   type CheckboxStyle,
 } from './displayPreferences';
@@ -249,9 +247,11 @@ export const GridDateLabel = memo(function GridDateLabel({
   const tone = dateTones[recorded || !dateFading ? 0 : dayTone(day.daysAgo)];
   return (
     <View
+      testID="date-heading"
       style={[
         styles.dayHeader,
         { width },
+        weekDividers && isShadedWeek(day.key, weekStart) && styles.shadedWeek,
         day.daysAgo === 0 && styles.todayColumn,
       ]}
     >
@@ -266,11 +266,6 @@ export const GridDateLabel = memo(function GridDateLabel({
       <Text style={[styles.dayNumber, { color: tone.number }]}>
         {day.number}
       </Text>
-      <WeekDivider
-        enabled={weekDividers}
-        startsWeek={beginsWeek(day.key, weekStart)}
-        endsWeek={endsWeek(day.key, weekStart)}
-      />
     </View>
   );
 });
@@ -282,6 +277,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     minHeight: 56,
   },
+  shadedWeek: { backgroundColor: '#0C0C0C' },
   weekday: { fontSize: 11, fontWeight: '500' },
   dayNumber: {
     fontSize: 19,
@@ -290,7 +286,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   todayColumn: {
-    backgroundColor: '#090909',
+    backgroundColor: '#191919',
     borderTopLeftRadius: 8,
     borderTopRightRadius: 8,
   },

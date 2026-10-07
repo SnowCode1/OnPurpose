@@ -281,17 +281,18 @@ Current writers/exports are v15. `checkboxStyle` is a strict boxes/marks prefere
 `GridCheckboxMark.tsx` scales both styles and owns tap-only UI-thread feedback.
 Never animate on cell mount, store acknowledgements, Undo or scroll. Respect
 ReduceMotion.System; rapid taps cancel/restart the short non-bouncy sequence.
-`WeekDivider.tsx` paints the existing header edge as a segmented horizontal rule,
-with gaps at saved week boundaries; Off leaves a plain hairline. Keep live/fallback
-headings and the future-pull streak aligned without changing geometry.
+`GridCells.tsx` shades alternating calendar weeks only in live/fallback date
+headings using fixed-date `isShadedWeek` from displayPreferences. Keep the original
+quiet header border and future-pull streak unchanged; never shade habit cells.
 Defer checkboxStyle and weekStart with other grid presentation preferences until
 Settings dismisses. A separate rest-day feature was declined; keep scheduling in
 effective-dated habit goals.
 
 Current writers/exports are v16. `weekDividers` and `tapAnimations` are boolean
 preferences defaulting On; keep v1–v15 prefixes, schema 1, History/Redo isolation
-and grid-presentation deferral. `WeekDivider.tsx` now draws week markers only in
-live/fallback date headings and exports the permanent quiet `HabitNameDivider`.
+and grid-presentation deferral. Week dividers now controls faint alternating
+header backgrounds; Today retains its own highlight. `HabitNameDivider.tsx` owns
+the permanent quiet name/day separator.
 Never reintroduce full-height week lines. The name/day separator is an overlay,
 independent of the week toggle. Gate tap-only pulses with tapAnimations while
 retaining Reduce Motion and immediate saves; haptics remains a separate setting.

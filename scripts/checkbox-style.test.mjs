@@ -4,8 +4,7 @@ import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import {
-  beginsWeek,
-  endsWeek,
+  isShadedWeek,
   displayDefaults,
   isCheckboxStyle,
 } from '../src/displayPreferences.ts';
@@ -129,32 +128,40 @@ test('style reload/backup persist while preserving Undo, Redo and entry grouping
     /version-16/,
   );
 });
-test('week boundaries follow saved weekdays across year, leap day and DST dates', () => {
+test('week shading follows fixed Monday/Sunday weeks across year, leap day, DST and pre-epoch dates', () => {
+  const shift = (key, offset) => {
+    const date = new Date(`${key}T12:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + offset);
+    return date.toISOString().slice(0, 10);
+  };
   for (const [monday, sunday] of [
     ['2026-10-05', '2026-10-04'],
-    ['2024-02-26', '2024-03-03'],
-    ['2025-12-29', '2026-01-04'],
+    ['2024-02-26', '2024-02-25'],
+    ['2025-12-29', '2025-12-28'],
     ['2026-03-09', '2026-03-08'],
+    ['1969-12-29', '1969-12-28'],
   ]) {
-    assert.equal(beginsWeek(monday, 'monday'), true);
-    assert.equal(beginsWeek(monday, 'sunday'), false);
-    assert.equal(beginsWeek(sunday, 'sunday'), true);
-    assert.equal(beginsWeek(sunday, 'monday'), false);
-    assert.equal(endsWeek(sunday, 'monday'), true);
-    assert.equal(endsWeek(monday, 'monday'), false);
-    assert.equal(endsWeek(sunday, 'sunday'), false);
+    for (const [start, anchor] of [
+      ['monday', monday],
+      ['sunday', sunday],
+    ]) {
+      const shade = isShadedWeek(anchor, start);
+      for (let day = 0; day < 7; day++) {
+        assert.equal(isShadedWeek(shift(anchor, day), start), shade);
+        assert.equal(isShadedWeek(shift(anchor, day + 7), start), !shade);
+        assert.equal(isShadedWeek(shift(anchor, day - 7), start), !shade);
+        assert.equal(isShadedWeek(shift(anchor, day + 14), start), shade);
+      }
+    }
   }
-  for (const saturday of [
-    '2026-10-03',
-    '2024-03-02',
-    '2026-01-03',
-    '2026-03-07',
-  ]) {
-    assert.equal(endsWeek(saturday, 'sunday'), true);
-    assert.equal(endsWeek(saturday, 'monday'), false);
-  }
-  assert.equal(beginsWeek('2024-02-29', 'monday'), false);
-  assert.equal(endsWeek('2024-02-29', 'monday'), false);
+  assert.notEqual(
+    isShadedWeek('2026-10-04', 'monday'),
+    isShadedWeek('2026-10-04', 'sunday'),
+  );
+  assert.equal(
+    isShadedWeek('2026-10-05', 'monday'),
+    isShadedWeek('2026-10-05', 'sunday'),
+  );
 });
 test('v15 example retains the exact v14 event prefix', async () => {
   const previous = JSON.parse(

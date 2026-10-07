@@ -40,15 +40,11 @@ export const checkboxStyleOptions = [
 export function isCheckboxStyle(value: unknown): value is CheckboxStyle {
   return value === 'boxes' || value === 'marks';
 }
-// Use the saved local date directly; device timezone must not shift its weekday.
-export function beginsWeek(date: string, start: WeekStart): boolean {
-  return (
-    new Date(`${date}T12:00:00Z`).getUTCDay() === (start === 'monday' ? 1 : 0)
-  );
-}
-
-export function endsWeek(date: string, start: WeekStart): boolean {
-  return (
-    new Date(`${date}T12:00:00Z`).getUTCDay() === (start === 'monday' ? 0 : 6)
-  );
+// Fixed calendar weeks keep their shade when Today changes or the range expands.
+// UTC arithmetic reads the saved local date without device timezone/DST shifts.
+export function isShadedWeek(date: string, start: WeekStart): boolean {
+  const day = Date.parse(`${date}T12:00:00Z`) / 86_400_000;
+  // The first Monday/Sunday after the Unix epoch was January 5/4, 1970.
+  const week = Math.floor((day - (start === 'monday' ? 4 : 3)) / 7);
+  return ((week % 2) + 2) % 2 === 0;
 }

@@ -1485,12 +1485,13 @@ Device feel/performance and native Reduce Motion remain phone acceptance checks.
 ### Optional header markers and feedback
 
 Appearance: Week dividers and Tap animations should both start On. Turn each Off
-and close Settings; the date headings should have a plain continuous hairline
-(including while scrolling quickly), while the name/day hairline stays fixed.
-Re-enable dividers: a slightly brighter horizontal rule should run beneath the
-headings with an eight-point gap between weeks, without vertical ticks or week
-lines in body rows. Pull toward the future: the streak should share the existing
-header edge and retain its fixed right anchor.
+and close Settings; the date headings should be black except for Today.
+Re-enable dividers: backgrounds alternate black and faint grey per week, confined
+to the date headings, with no changes to habit cells or name backgrounds. The
+quiet continuous header border and name/day hairline stay fixed in either mode.
+Pull toward the future: the streak should retain its original contrast and fixed
+right anchor. Fast-scroll, extend history/future and cross midnight: a given
+calendar week must keep its shade. Today should stay distinct on either shade.
 Change Monday/Sunday, rotate and try large text; boundaries must retain their dates.
 With tap animation Off, check/uncheck rapidly in both styles: values still update
 immediately and haptics retain their separate setting. Turn it On and repeat with
@@ -1503,3 +1504,11 @@ landscape, 150% text, Monday/Sunday boundary gaps, the plain disabled hairline,
 unchanged column geometry and independent name separator. Native rubber-band
 pulling and the streak's appearance against the new rule still require iPhone
 review; browser geometry is not evidence of that gesture.
+
+The alternating-header-background trial passed `npm run check`, all 287 tests
+and single-worker iOS/web exports under a 2 GiB limit. Pure tests cover fixed
+week shading across Monday/Sunday starts, DST-adjacent dates, leap/year boundaries
+and pre-epoch dates. Browser review checked portrait/landscape, 150% text,
+Monday/Sunday grouping, Today contrast, deferred toggle/reload, unchanged habit
+cell backgrounds and column geometry. Native shade visibility and future-pull
+contrast require phone review.

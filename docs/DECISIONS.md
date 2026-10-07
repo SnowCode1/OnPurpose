@@ -1166,3 +1166,20 @@ that edge and keeps its fixed right anchor.
 Week dividers Off restores a plain continuous hairline. The permanent name/day
 separator remains quiet and independent. This is a visual trial using the
 existing v16 preference; no storage, completion or navigation semantics change.
+
+### 2026-10-07 — Alternating date-header week backgrounds trial
+
+Founder found the segmented rule unsatisfactory and reported that it obscured
+the accepted future-pull highlight. They approved the assistant's next proposal:
+faint alternating week backgrounds confined to the date headings. Habit cells,
+row colours and name backgrounds remain unchanged. The original continuous
+quiet header border and original pull-streak position are restored.
+
+Header weeks alternate black and #0C0C0C; Today uses #191919 with its existing
+rounded top corners so it stays distinct on either shade. `isShadedWeek` uses
+a fixed Monday/Sunday calendar anchor, rather than Today or viewport offsets,
+so loading older/future dates or rolling over cannot flip existing shades. Live
+and fallback headings share the styling. The existing Week dividers preference
+controls this trial; Off removes the week shading and retains Today. No new
+preference, storage version or layout geometry is introduced. Native contrast
+and future-pull visibility remain phone acceptance checks.
