@@ -1481,3 +1481,15 @@ must not animate. Enable iOS Reduce Motion and repeat; marks should change state
 without the pulse. Check Monday/Sunday week dividers align across headings and
 rows during horizontal scrolling, future reveal, rotation and row reordering.
 Device feel/performance and native Reduce Motion remain phone acceptance checks.
+
+### Optional header markers and feedback
+
+Appearance: Week dividers and Tap animations should both start On. Turn each Off
+and close Settings; week markers should disappear from headings (including while
+scrolling quickly), while the name/day hairline stays fixed. Re-enable markers
+and check they are brighter short header lines, with no week lines in body rows.
+Change Monday/Sunday, rotate and try large text; boundaries must retain their dates.
+With tap animation Off, check/uncheck rapidly in both styles: values still update
+immediately and haptics retain their separate setting. Turn it On and repeat with
+iOS Reduce Motion. Reload saved-data mode to check switches persist; neither
+setting should enter History or clear Redo. Native visual feel remains phone QA.

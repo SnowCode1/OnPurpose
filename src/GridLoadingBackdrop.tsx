@@ -17,12 +17,14 @@ import { loadingStripOffset, loadingEdgeMasks } from './gridLoading';
 const FallbackDate = memo(function FallbackDate({
   dateFading,
   weekStart,
+  weekDividers,
   day,
   index,
   width,
 }: {
   dateFading: boolean;
   weekStart: WeekStart;
+  weekDividers: boolean;
   day: GridDay;
   index: number;
   width: number;
@@ -41,6 +43,7 @@ const FallbackDate = memo(function FallbackDate({
         day={day}
         width={width}
         recorded={false}
+        weekDividers={weekDividers}
         weekStart={weekStart}
         dateFading={dateFading}
       />
@@ -50,12 +53,14 @@ const FallbackDate = memo(function FallbackDate({
 export const GridDateBackdrop = memo(function GridDateBackdrop({
   dateFading,
   weekStart,
+  weekDividers,
   days,
   width,
   offset,
 }: {
   dateFading: boolean;
   weekStart: WeekStart;
+  weekDividers: boolean;
   days: GridDay[];
   width: number;
   offset: SharedValue<number>;
@@ -85,6 +90,7 @@ export const GridDateBackdrop = memo(function GridDateBackdrop({
       >
         {days.map((day, index) => (
           <FallbackDate
+            weekDividers={weekDividers}
             weekStart={weekStart}
             dateFading={dateFading}
             key={day.key}

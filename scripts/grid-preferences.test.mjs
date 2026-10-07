@@ -29,6 +29,8 @@ test('settings receive every choice while mounted grid geometry and typography w
     dateFading,
     hideCompleted,
     checkboxStyle,
+    weekDividers,
+    tapAnimations,
     weekStart,
   }) {
     renders++;
@@ -43,6 +45,8 @@ test('settings receive every choice while mounted grid geometry and typography w
       dateFading,
       hideCompleted,
       checkboxStyle,
+      weekDividers,
+      tapAnimations,
       weekStart,
       scale,
       scroll,
@@ -65,6 +69,8 @@ test('settings receive every choice while mounted grid geometry and typography w
           dateFading: displayed.dateFading,
           hideCompleted: displayed.hideCompleted,
           checkboxStyle: displayed.checkboxStyle,
+          weekDividers: displayed.weekDividers,
+          tapAnimations: displayed.tapAnimations,
           weekStart: displayed.weekStart,
         }),
       ),
@@ -72,6 +78,8 @@ test('settings receive every choice while mounted grid geometry and typography w
   }
   const initial = {
     checkboxStyle: 'boxes',
+    weekDividers: true,
+    tapAnimations: true,
     weekStart: 'monday',
     rowSpacing: 'standard',
     columnSpacing: 'compact',
@@ -99,6 +107,8 @@ test('settings receive every choice while mounted grid geometry and typography w
         dateFading: false,
         hideCompleted: true,
         checkboxStyle: 'marks',
+        weekDividers: false,
+        tapAnimations: false,
         weekStart: 'sunday',
       },
     ];
@@ -123,6 +133,8 @@ test('settings receive every choice while mounted grid geometry and typography w
     assert.equal(grid.dateFading, false);
     assert.equal(grid.hideCompleted, true);
     assert.equal(grid.checkboxStyle, 'marks');
+    assert.equal(grid.weekDividers, false);
+    assert.equal(grid.tapAnimations, false);
     assert.equal(grid.weekStart, 'sunday');
     assert.equal(grid.scroll, '2026-08-01');
     assert.equal(mounts, 1);

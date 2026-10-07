@@ -285,3 +285,11 @@ ReduceMotion.System; rapid taps cancel/restart the short non-bouncy sequence.
 Defer checkboxStyle and weekStart with other grid presentation preferences until
 Settings dismisses. A separate rest-day feature was declined; keep scheduling in
 effective-dated habit goals.
+
+Current writers/exports are v16. `weekDividers` and `tapAnimations` are boolean
+preferences defaulting On; keep v1–v15 prefixes, schema 1, History/Redo isolation
+and grid-presentation deferral. `WeekDivider.tsx` now draws week markers only in
+live/fallback date headings and exports the permanent quiet `HabitNameDivider`.
+Never reintroduce full-height week lines. The name/day separator is an overlay,
+independent of the week toggle. Gate tap-only pulses with tapAnimations while
+retaining Reduce Motion and immediate saves; haptics remains a separate setting.

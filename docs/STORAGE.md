@@ -447,3 +447,12 @@ it preserves Redo and does not interrupt entry correction groups. Current writer
 and exports use v15. V1–v14 reject this preference and remain readable with their
 exact prefixes; SQL stays schema 1. There is no seed update or entry rewrite.
 The [v15 example](examples/storage-v15.json) extends the v14 log with this setting.
+
+## Version 16: optional grid dividers and tap feedback
+
+`weekDividers` and `tapAnimations` are strict boolean preferences, both defaulting
+to true when absent. They stay outside History/Undo, preserve Redo and correction
+groups, and use the ordinary serialized write/retry and atomic restore paths.
+Current writers/exports use v16; v1–v15 prefixes and schema 1 remain unchanged.
+Older event versions reject these new preference kinds. The [v16 example](examples/storage-v16.json)
+extends the exact v15 prefix with both switches turned off.

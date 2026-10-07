@@ -38,6 +38,10 @@ type Props = {
   onColumnSpacingChange: (value: ColumnSpacing) => void;
   weekStart: WeekStart;
   onWeekStartChange: (value: WeekStart) => void;
+  weekDividers: boolean;
+  onWeekDividersChange: (value: boolean) => void;
+  tapAnimations: boolean;
+  onTapAnimationsChange: (value: boolean) => void;
   checkboxStyle: CheckboxStyle;
   onCheckboxStyleChange: (value: CheckboxStyle) => void;
   dateFading: boolean;
@@ -273,6 +277,18 @@ export function SettingsScreen(p: Props) {
               value={p.columnSpacing}
               options={columnSpacingOptions}
               onChange={p.onColumnSpacingChange}
+              disabled={disabled}
+            />
+            <Toggle
+              label="Week dividers"
+              value={p.weekDividers}
+              onChange={p.onWeekDividersChange}
+              disabled={disabled}
+            />
+            <Toggle
+              label="Tap animations"
+              value={p.tapAnimations}
+              onChange={p.onTapAnimationsChange}
               disabled={disabled}
             />
             <Toggle

@@ -36,6 +36,10 @@ export function AppPanel({
   onColumnSpacingChange,
   weekStart,
   onWeekStartChange,
+  weekDividers,
+  onWeekDividersChange,
+  tapAnimations,
+  onTapAnimationsChange,
   checkboxStyle,
   onCheckboxStyleChange,
   dateFading,
@@ -77,6 +81,10 @@ export function AppPanel({
   onColumnSpacingChange: (value: ColumnSpacing) => void;
   weekStart: WeekStart;
   onWeekStartChange: (value: WeekStart) => void;
+  weekDividers: boolean;
+  onWeekDividersChange: (value: boolean) => void;
+  tapAnimations: boolean;
+  onTapAnimationsChange: (value: boolean) => void;
   checkboxStyle: CheckboxStyle;
   onCheckboxStyleChange: (value: CheckboxStyle) => void;
   dateFading: boolean;
@@ -206,6 +214,10 @@ export function AppPanel({
                   onColumnSpacingChange={onColumnSpacingChange}
                   weekStart={weekStart}
                   onWeekStartChange={onWeekStartChange}
+                  weekDividers={weekDividers}
+                  onWeekDividersChange={onWeekDividersChange}
+                  tapAnimations={tapAnimations}
+                  onTapAnimationsChange={onTapAnimationsChange}
                   checkboxStyle={checkboxStyle}
                   onCheckboxStyleChange={onCheckboxStyleChange}
                   dateFading={dateFading}

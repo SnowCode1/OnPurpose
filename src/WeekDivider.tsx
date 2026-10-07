@@ -1,6 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-// Overlay, rather than a layout border: the week marker cannot shift a date or
-// shrink a touch target. It follows the same column in the header and body.
+// Both are overlays: they cannot shrink a date, name or touch target.
 export function WeekDivider() {
   return (
     <View
@@ -9,14 +8,35 @@ export function WeekDivider() {
       accessible={false}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={styles.divider}
+      style={styles.week}
+    />
+  );
+}
+export function HabitNameDivider() {
+  return (
+    <View
+      testID="habit-name-divider"
+      pointerEvents="none"
+      accessible={false}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={styles.names}
     />
   );
 }
 const styles = StyleSheet.create({
-  divider: {
+  week: {
     position: 'absolute',
     left: 0,
+    top: 12,
+    bottom: 12,
+    width: 2,
+    borderRadius: 1,
+    backgroundColor: '#777777',
+  },
+  names: {
+    position: 'absolute',
+    right: 0,
     top: 0,
     bottom: 0,
     width: StyleSheet.hairlineWidth,

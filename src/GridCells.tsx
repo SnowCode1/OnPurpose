@@ -32,6 +32,7 @@ type CellProps = {
   height: number;
   width: number;
   checkboxStyle: CheckboxStyle;
+  tapAnimations: boolean;
   fontScale: number;
   disabled: boolean;
   onPress: (habit: Habit, day: GridDay) => void;
@@ -45,6 +46,7 @@ const GridCell = memo(function GridCell({
   height,
   width,
   checkboxStyle,
+  tapAnimations,
   fontScale,
   disabled,
   onPress,
@@ -86,7 +88,11 @@ const GridCell = memo(function GridCell({
           onPress(habit, day);
           const next =
             store.getSnapshot().replay.state.values[`${habit.id}:${day.key}`];
-          if (checkbox && checkboxChecked(habit, next, day.key) !== checked)
+          if (
+            checkbox &&
+            tapAnimations &&
+            checkboxChecked(habit, next, day.key) !== checked
+          )
             mark.current?.pulse();
         }}
         style={({ pressed }) => [
@@ -143,7 +149,7 @@ export const GridDateColumn = memo(function GridDateColumn({
   heights,
   baseHeight,
   checkboxStyle,
-  weekStart,
+  tapAnimations,
   fontScale,
   width,
   height,
@@ -158,7 +164,7 @@ export const GridDateColumn = memo(function GridDateColumn({
   heights: Record<string, number>;
   baseHeight: number;
   checkboxStyle: CheckboxStyle;
-  weekStart: WeekStart;
+  tapAnimations: boolean;
   fontScale: number;
   width: number;
   height: number;
@@ -178,18 +184,19 @@ export const GridDateColumn = memo(function GridDateColumn({
           height={heights[habit.id] ?? baseHeight}
           fontScale={fontScale}
           width={width}
+          tapAnimations={tapAnimations}
           checkboxStyle={checkboxStyle}
           disabled={disabled}
           onPress={onPress}
         />
       ))}
-      {beginsWeek(day.key, weekStart) && <WeekDivider />}
     </View>
   );
 });
 export const GridDateHeading = memo(function GridDateHeading({
   dateFading,
   weekStart,
+  weekDividers,
   store,
   habits,
   day,
@@ -197,6 +204,7 @@ export const GridDateHeading = memo(function GridDateHeading({
 }: {
   dateFading: boolean;
   weekStart: WeekStart;
+  weekDividers: boolean;
   store: ChangeStore;
   habits: Habit[];
   day: GridDay;
@@ -217,6 +225,7 @@ export const GridDateHeading = memo(function GridDateHeading({
       width={width}
       recorded={recorded}
       dateFading={dateFading}
+      weekDividers={weekDividers}
       weekStart={weekStart}
     />
   );
@@ -227,12 +236,14 @@ export const GridDateLabel = memo(function GridDateLabel({
   recorded,
   dateFading,
   weekStart,
+  weekDividers,
 }: {
   day: GridDay;
   width: number;
   recorded: boolean;
   dateFading: boolean;
   weekStart: WeekStart;
+  weekDividers: boolean;
 }) {
   const tone = dateTones[recorded || !dateFading ? 0 : dayTone(day.daysAgo)];
   return (
@@ -254,7 +265,7 @@ export const GridDateLabel = memo(function GridDateLabel({
       <Text style={[styles.dayNumber, { color: tone.number }]}>
         {day.number}
       </Text>
-      {beginsWeek(day.key, weekStart) && <WeekDivider />}
+      {weekDividers && beginsWeek(day.key, weekStart) && <WeekDivider />}
     </View>
   );
 });

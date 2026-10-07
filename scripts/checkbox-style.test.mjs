@@ -110,7 +110,7 @@ test('style reload/backup persist while preserving Undo, Redo and entry grouping
       digest,
     ),
     decoded = await decodeArchive(backup, digest);
-  assert.equal(JSON.parse(backup).version, 15);
+  assert.equal(JSON.parse(backup).version, 16);
   await store.exclusive(() => store.replace(decoded.events));
   assert.equal(store.getSnapshot().replay.state.checkboxStyle, 'boxes');
   assert.deepEqual(store.getSnapshot().events, events);
@@ -125,7 +125,7 @@ test('style reload/backup persist while preserving Undo, Redo and entry grouping
           change: { kind: 'haptics', before: true, after: false },
         },
       ]),
-    /version-15/,
+    /version-16/,
   );
 });
 test('week boundaries follow saved weekdays across year, leap day and DST dates', () => {
@@ -161,4 +161,82 @@ test('v15 example retains the exact v14 event prefix', async () => {
     previous.events,
   );
   assert.equal(next.replay.state.checkboxStyle, 'marks');
+});
+
+test('week dividers and tap animations default on, validate strictly and survive reload/restore without clearing Redo', async (t) => {
+  const raw = new DatabaseSync(':memory:');
+  t.after(() => raw.close());
+  const repo = sqliteRepository(port(raw), () => ({
+    ...meta(1),
+    version: 15,
+    type: 'initialize',
+    habits: [habit],
+  }));
+  let store = new ChangeStore(repo, meta);
+  await store.load();
+  store.change({
+    kind: 'entry',
+    habitId: 'walk',
+    date: '2026-10-07',
+    before: null,
+    after: 1,
+  });
+  store.undo();
+  const redo = store.getSnapshot().replay.redo.map((e) => e.id);
+  for (const kind of ['weekDividers', 'tapAnimations']) {
+    assert.equal(displayDefaults[kind], true);
+    assert.equal(
+      store.getSnapshot().replay.state[kind] ?? displayDefaults[kind],
+      true,
+    );
+    const change = { kind, before: true, after: false };
+    for (let version = 1; version < 16; version++)
+      assert.throws(() => validateChange(change, version), /version 16/);
+    for (const after of [null, 0, 'off'])
+      assert.throws(() => validateChange({ ...change, after }));
+    assert.equal(store.change(change), true);
+  }
+  assert.deepEqual(
+    store.getSnapshot().replay.redo.map((e) => e.id),
+    redo,
+  );
+  assert.equal(store.getSnapshot().replay.undo.length, 0);
+  await store.flush();
+  store = new ChangeStore(repo, meta);
+  await store.load();
+  for (const kind of ['weekDividers', 'tapAnimations'])
+    assert.equal(store.getSnapshot().replay.state[kind], false);
+  const archive = await encodeArchive(
+    store.getSnapshot().events,
+    '2026-10-07T02:00:00.000Z',
+    digest,
+  );
+  const decoded = await decodeArchive(archive, digest);
+  await store.exclusive(() => store.replace(decoded.events));
+  store.redo();
+  assert.equal(store.getSnapshot().replay.state.values['walk:2026-10-07'], 1);
+  for (const kind of ['weekDividers', 'tapAnimations'])
+    assert.equal(store.getSnapshot().replay.state[kind], false);
+  await store.flush();
+});
+test('v16 example retains the exact v15 event prefix', async () => {
+  const previous = JSON.parse(
+    readFileSync(
+      new URL('../docs/examples/storage-v15.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const next = await decodeArchive(
+    readFileSync(
+      new URL('../docs/examples/storage-v16.json', import.meta.url),
+      'utf8',
+    ),
+    digest,
+  );
+  assert.deepEqual(
+    next.events.slice(0, previous.events.length),
+    previous.events,
+  );
+  assert.equal(next.replay.state.weekDividers, false);
+  assert.equal(next.replay.state.tapAnimations, false);
 });

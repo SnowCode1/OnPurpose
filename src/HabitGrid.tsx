@@ -1,3 +1,4 @@
+import { HabitNameDivider } from './WeekDivider';
 import type {
   CheckboxStyle,
   WeekStart,
@@ -61,6 +62,8 @@ import { appear, disappear, rowTransition, menuAppear } from './motion';
 type Props = {
   rowSpacing: RowSpacing;
   checkboxStyle: CheckboxStyle;
+  weekDividers: boolean;
+  tapAnimations: boolean;
   weekStart: WeekStart;
   columnSpacing: ColumnSpacing;
   dateFading: boolean;
@@ -84,6 +87,8 @@ type Props = {
 export const HabitGrid = memo(function HabitGrid({
   rowSpacing,
   checkboxStyle,
+  weekDividers,
+  tapAnimations,
   weekStart,
   columnSpacing,
   dateFading,
@@ -221,6 +226,7 @@ export const HabitGrid = memo(function HabitGrid({
   const renderHeading = useCallback(
     ({ item: day }: { item: GridDay }) => (
       <GridDateHeading
+        weekDividers={weekDividers}
         weekStart={weekStart}
         dateFading={dateFading}
         store={store}
@@ -229,7 +235,7 @@ export const HabitGrid = memo(function HabitGrid({
         width={columnWidth}
       />
     ),
-    [store, sourceHabits, columnWidth, dateFading, weekStart],
+    [store, sourceHabits, columnWidth, dateFading, weekStart, weekDividers],
   );
   const cellsDisabled = !editable || !!dragId || reorderMode;
   const renderColumn = useCallback(
@@ -242,7 +248,7 @@ export const HabitGrid = memo(function HabitGrid({
         motions={rowMotion}
         heights={rowHeights}
         checkboxStyle={checkboxStyle}
-        weekStart={weekStart}
+        tapAnimations={tapAnimations}
         baseHeight={baseRowHeight}
         fontScale={fontScale}
         width={columnWidth}
@@ -259,7 +265,7 @@ export const HabitGrid = memo(function HabitGrid({
       rowHeights,
       baseRowHeight,
       checkboxStyle,
-      weekStart,
+      tapAnimations,
       fontScale,
       columnWidth,
       gridHeight,
@@ -554,11 +560,13 @@ export const HabitGrid = memo(function HabitGrid({
                 <Text style={styles.dateTitle}>{month} ⌄</Text>
                 <Text style={styles.dateYear}>{year}</Text>
               </DateButtonComponent>
+              <HabitNameDivider />
             </View>
             <View
               style={{ width: dateWidth, minHeight: 56, overflow: 'hidden' }}
             >
               <GridDateBackdrop
+                weekDividers={weekDividers}
                 weekStart={weekStart}
                 dateFading={dateFading}
                 days={days}
@@ -651,6 +659,7 @@ export const HabitGrid = memo(function HabitGrid({
                       }}
                     />
                   ))}
+                  <HabitNameDivider />
                 </View>
                 <View
                   style={{

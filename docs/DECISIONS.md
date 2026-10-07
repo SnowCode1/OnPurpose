@@ -1135,3 +1135,19 @@ UI thread, cancels/restarts smoothly for rapid taps and respects system Reduce
 Motion. Mounting columns, save acknowledgements and Undo/Redo do not trigger it.
 The week marker is a quiet noninteractive overlay on the left edge of Monday or
 Sunday, aligned between date headings and body columns without affecting layout.
+
+### 2026-10-07 — Header week markers and optional feedback
+
+Founder found the full-height week hairline too faint, but liked that treatment
+for the missing name/day boundary. The assistant moved week markers to the date
+header only: a brighter 2-point rounded vertical tick, inset 12 points from the
+top/bottom, at the saved Monday/Sunday boundary. A permanent quiet hairline now
+separates the fixed names/date control from scrolling dates and cells. Both are
+noninteractive overlays and do not change name wrapping or column widths.
+
+Founder requested Appearance switches for Week dividers and Tap animations,
+both default On. These are v16 preferences outside History/Undo and join deferred
+grid presentation. Disabling week dividers hides live and fallback header markers;
+there are no week lines in the body. Disabling tap animations suppresses the
+local pulse, retaining immediate state updates and the independent haptic setting.
+System Reduce Motion still takes precedence when animation is enabled.

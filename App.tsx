@@ -175,6 +175,8 @@ function PersistentApp({
     weekStart = displayDefaults.weekStart,
     dateFading = displayDefaults.dateFading,
     checkboxStyle = displayDefaults.checkboxStyle,
+    weekDividers = displayDefaults.weekDividers,
+    tapAnimations = displayDefaults.tapAnimations,
     hideCompleted = displayDefaults.hideCompleted,
     textScale = displayDefaults.textScale,
   } = snapshot.replay.state;
@@ -200,6 +202,8 @@ function PersistentApp({
       dateFading,
       hideCompleted,
       checkboxStyle,
+      weekDividers,
+      tapAnimations,
       weekStart,
     },
     panel.deferGrid,
@@ -762,6 +766,24 @@ function PersistentApp({
           if (store.change({ kind: 'hideCompleted', before, after }))
             feedback('selection');
         }}
+        weekDividers={weekDividers}
+        onWeekDividersChange={(after) => {
+          if (!editable) return;
+          const before =
+            store.getSnapshot().replay.state.weekDividers ??
+            displayDefaults.weekDividers;
+          if (store.change({ kind: 'weekDividers', before, after }))
+            feedback('selection');
+        }}
+        tapAnimations={tapAnimations}
+        onTapAnimationsChange={(after) => {
+          if (!editable) return;
+          const before =
+            store.getSnapshot().replay.state.tapAnimations ??
+            displayDefaults.tapAnimations;
+          if (store.change({ kind: 'tapAnimations', before, after }))
+            feedback('selection');
+        }}
         checkboxStyle={checkboxStyle}
         onCheckboxStyleChange={(after) => {
           if (!editable) return;
@@ -870,6 +892,8 @@ function PersistentApp({
                 <PerformanceBoundary name="grid">
                   <HabitGrid
                     columnSpacing={gridDisplay.columnSpacing}
+                    weekDividers={gridDisplay.weekDividers}
+                    tapAnimations={gridDisplay.tapAnimations}
                     checkboxStyle={gridDisplay.checkboxStyle}
                     weekStart={gridDisplay.weekStart}
                     dateFading={gridDisplay.dateFading}

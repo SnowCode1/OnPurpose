@@ -9,6 +9,8 @@ import type {
 export type GridDisplayPreferences = {
   rowSpacing: RowSpacing;
   checkboxStyle: CheckboxStyle;
+  weekDividers: boolean;
+  tapAnimations: boolean;
   weekStart: WeekStart;
   columnSpacing: ColumnSpacing;
   textScale: number;

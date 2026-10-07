@@ -17,6 +17,8 @@ export function isWeekStart(value: unknown): value is WeekStart {
 }
 export const displayDefaults = {
   checkboxStyle: 'boxes',
+  weekDividers: true,
+  tapAnimations: true,
   textScale: 1,
   hideCompleted: false,
   columnSpacing: 'compact',

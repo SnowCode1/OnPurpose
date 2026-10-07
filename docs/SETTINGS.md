@@ -132,3 +132,11 @@ continues to use the habit's goal. `checkboxStyle` persists as a v15 preference,
 separate from habit History/Undo, and participates in deferred grid presentation.
 Week start also waits for dismissal now that the grid draws a subtle week divider.
 No separate rest-day setting or record type is introduced.
+
+Appearance now includes **Week dividers** and **Tap animations**, both initially
+On and saved separately from History/Undo (v16). Week markers are brighter short
+lines confined to the date header; their weekday follows Daily tracking → Week
+starts on. The fixed, quiet name/day separator stays visible independently.
+Animation Off suppresses checkbox/mark pulses; it does not affect haptics or
+navigation. Reduce Motion overrides the pulse even when its app toggle is On.
+Both settings wait until dismissal before changing the mounted grid.
