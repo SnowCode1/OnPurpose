@@ -16,6 +16,9 @@ import {
   isCheckboxStyle,
   type CheckboxStyle,
   isColumnSpacing,
+  isNameColumnWidth,
+  effectiveColumnSpacing,
+  type NameColumnWidth,
   isWeekStart,
   type ColumnSpacing,
   type WeekStart,
@@ -30,6 +33,8 @@ export type StoredState = {
   hapticsEnabled: boolean;
   rowSpacing?: RowSpacing;
   columnSpacing?: ColumnSpacing;
+  columnDensity?: ColumnSpacing;
+  nameColumnWidth?: NameColumnWidth;
   weekStart?: WeekStart;
   dateFading?: boolean;
   checkboxStyle?: CheckboxStyle;
@@ -69,6 +74,8 @@ export type Change =
   | { kind: 'haptics'; before: boolean; after: boolean }
   | { kind: 'rowSpacing'; before: RowSpacing; after: RowSpacing }
   | { kind: 'columnSpacing'; before: ColumnSpacing; after: ColumnSpacing }
+  | { kind: 'columnDensity'; before: ColumnSpacing; after: ColumnSpacing }
+  | { kind: 'nameColumnWidth'; before: NameColumnWidth; after: NameColumnWidth }
   | { kind: 'weekStart'; before: WeekStart; after: WeekStart }
   | { kind: 'weekDividers'; before: boolean; after: boolean }
   | { kind: 'tapAnimations'; before: boolean; after: boolean }
@@ -83,6 +90,8 @@ export type PreferenceChange = Extract<
       | 'haptics'
       | 'rowSpacing'
       | 'columnSpacing'
+      | 'columnDensity'
+      | 'nameColumnWidth'
       | 'weekStart'
       | 'weekDividers'
       | 'tapAnimations'
@@ -97,6 +106,8 @@ export function isPreference(change: Change): change is PreferenceChange {
     change.kind === 'haptics' ||
     change.kind === 'rowSpacing' ||
     change.kind === 'columnSpacing' ||
+    change.kind === 'columnDensity' ||
+    change.kind === 'nameColumnWidth' ||
     change.kind === 'weekStart' ||
     change.kind === 'weekDividers' ||
     change.kind === 'tapAnimations' ||
@@ -108,7 +119,8 @@ export function isPreference(change: Change): change is PreferenceChange {
 }
 export type HabitChange = Exclude<Change, PreferenceChange>;
 export type EventMeta = {
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16;
+  version:
+    1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17;
   id: string;
   sequence: number;
   recordedAt: string;
@@ -120,7 +132,8 @@ export type LegacyChangeEvent = EventMeta & { version: 1 } & (
     | { type: 'undo' | 'redo'; targetId: string; change: Change }
   );
 export type CurrentChangeEvent = EventMeta & {
-  version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16;
+  version:
+    2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17;
 } & (
     | { type: 'change'; groupId: string; change: HabitChange }
     | { type: 'undo' | 'redo'; targetId: string; change: HabitChange }
@@ -160,6 +173,7 @@ export type Replay = {
   hasV14: boolean;
   hasV15: boolean;
   hasV16: boolean;
+  hasV17: boolean;
 };
 export const emptyReplay = (): Replay => ({
   state: { habits: [], values: {}, hapticsEnabled: true },
@@ -183,6 +197,7 @@ export const emptyReplay = (): Replay => ({
   hasV14: false,
   hasV15: false,
   hasV16: false,
+  hasV17: false,
 });
 export const GROUP_INACTIVITY_MS = 2 * 60 * 1000;
 
@@ -378,7 +393,7 @@ function dailyValue(value: unknown, version: number) {
     'Category selections must be unique and sorted.',
   );
 }
-function entryFits(habit: Habit, value: EntryValue | null, version = 16) {
+function entryFits(habit: Habit, value: EntryValue | null, version = 17) {
   if (value === null) return true;
   switch (habitType(habit)) {
     case 'checkbox':
@@ -398,7 +413,7 @@ function entryFits(habit: Habit, value: EntryValue | null, version = 16) {
 }
 export function validateChange(
   value: unknown,
-  version = 16,
+  version = 17,
 ): asserts value is Change {
   object(value);
   if (value.kind === 'entry') {
@@ -485,6 +500,20 @@ export function validateChange(
       valid(value.before) && valid(value.after),
       'Invalid display preference.',
     );
+  } else if (value.kind === 'columnDensity') {
+    keys(value, ['kind', 'before', 'after']);
+    insist(version >= 17, 'Revised column spacing requires version 17.');
+    insist(
+      isColumnSpacing(value.before) && isColumnSpacing(value.after),
+      'Invalid revised column spacing.',
+    );
+  } else if (value.kind === 'nameColumnWidth') {
+    keys(value, ['kind', 'before', 'after']);
+    insist(version >= 17, 'Name column width requires version 17.');
+    insist(
+      isNameColumnWidth(value.before) && isNameColumnWidth(value.after),
+      'Invalid name column width.',
+    );
   } else if (value.kind === 'weekDividers' || value.kind === 'tapAnimations') {
     keys(value, ['kind', 'before', 'after']);
     insist(version >= 16, 'Grid appearance toggles require version 16.');
@@ -559,7 +588,8 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
       value.version === 13 ||
       value.version === 14 ||
       value.version === 15 ||
-      value.version === 16,
+      value.version === 16 ||
+      value.version === 17,
     'Unsupported event version.',
   );
   id(value.id);
@@ -753,6 +783,7 @@ function reduceEvent(
       hasV14: event.version >= 14,
       hasV15: event.version >= 15,
       hasV16: event.version >= 16,
+      hasV17: event.version >= 17,
     };
   }
   insist(
@@ -798,6 +829,10 @@ function reduceEvent(
   insist(
     !previous.hasV11 || event.version >= 11,
     'Older events cannot follow version-11 events.',
+  );
+  insist(
+    !previous.hasV17 || event.version >= 17,
+    'Older events cannot follow version-17 events.',
   );
   insist(
     !previous.hasV16 || event.version >= 16,
@@ -968,6 +1003,7 @@ function reduceEvent(
     hasV14: previous.hasV14 || event.version >= 14,
     hasV15: previous.hasV15 || event.version >= 15,
     hasV16: previous.hasV16 || event.version >= 16,
+    hasV17: previous.hasV17 || event.version >= 17,
   };
 }
 export function applyChange(state: StoredState, change: Change): StoredState {
@@ -977,12 +1013,14 @@ function reduceChange(
   state: StoredState,
   change: Change,
   mutable: boolean,
-  version = 16,
+  version = 17,
 ): StoredState {
   validateChange(change, version);
   let next: StoredState;
   if (
     change.kind === 'columnSpacing' ||
+    change.kind === 'columnDensity' ||
+    change.kind === 'nameColumnWidth' ||
     change.kind === 'weekStart' ||
     change.kind === 'weekDividers' ||
     change.kind === 'tapAnimations' ||
@@ -992,7 +1030,12 @@ function reduceChange(
     change.kind === 'hideCompleted'
   ) {
     insist(
-      (state[change.kind] ?? displayDefaults[change.kind]) === change.before,
+      (change.kind === 'columnSpacing'
+        ? (state.columnSpacing ?? 'compact')
+        : change.kind === 'columnDensity'
+          ? effectiveColumnSpacing(state)
+          : (state[change.kind] ?? displayDefaults[change.kind])) ===
+        change.before,
       'Preference precondition failed.',
     );
     next = { ...state, [change.kind]: change.after };
@@ -1160,6 +1203,9 @@ export function replayEvents(input: unknown): {
   return { events, replay };
 }
 export function describeChange(change: Change, state: StoredState): string {
+  if (change.kind === 'nameColumnWidth') return 'Name column width';
+  if (change.kind === 'columnDensity')
+    return `Column spacing · ${change.after}`;
   if (change.kind === 'columnSpacing')
     return `Column spacing · ${change.after}`;
   if (change.kind === 'weekDividers')

@@ -99,7 +99,7 @@ export function Icon({
           <Path d="M4 8v8M1 10v4M20 8v8M23 10v4M11 17h2" />
         </>
       )}
-      {name === 'undo' && <Path d="m8 4-5 5 5 5M3 9h10a6 6 0 0 1 0 12" />}
+      {name === 'undo' && <Path d="M9 14l-4-4 4-4M5 10h11a4 4 0 1 1 0 8h-1" />}
       {name === 'redo' && <Path d="m16 4 5 5-5 5M21 9H11a6 6 0 0 0 0 12" />}
       {name === 'edit' && <Path d="m15 4 5 5M4 20l5-1L21 7l-5-5L4 14v6Z" />}
       {name === 'reorder' && <Path d="M5 7h14M5 12h14M5 17h14" />}

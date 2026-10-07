@@ -1512,3 +1512,52 @@ and pre-epoch dates. Browser review checked portrait/landscape, 150% text,
 Monday/Sunday grouping, Today contrast, deferred toggle/reload, unchanged habit
 cell backgrounds and column geometry. Native shade visibility and future-pull
 contrast require phone review.
+
+### Main-page shortcuts, v17 spacing and recycled columns
+
+Run check, npm test and single-worker iOS/web exports under the documented memory
+limits. Focused suites cover signed/bounded date windows, cached policy semantics,
+new spacing/name preferences, unchanged legacy archive prefixes, numeric suggestion
+bounds/explicit zero, delayed completion bursts and targeted Undo. Recycling tests
+retain a row's native-view stand-in while changing entry subscriptions, accessible
+values and tap dates; row-measurement tests batch wraps and reject stale generations.
+Quick Undo tests use the real ChangeStore/replay, including archive restore after
+unrelated colour/order/entry changes, expiry, retouches, restore/redo and deletion.
+Mocked native scroll worklets verify alignment/readiness, not phone frame rates.
+
+On the iPhone, test fast flings both ways, future pull/entry, Today arrival and a
+far date-picker jump. Rotate from portrait to landscape and back while far into
+history; dates/cells must remain paired, with temporary fallback instead of mixed
+geometry. Check held-row reordering still moves the actual row smoothly. With Tap
+animations on/off and Reduce Motion, only accepted taps should pulse.
+
+Appearance order is Name width, Columns, Rows, Text size. Standard is the previous
+Compact; new Compact is denser and Roomy is the previous Standard. Try large text,
+wraps, both orientations and reload. Hidden presentation changes stay deferred.
+Turn Hide completed on in Settings: already completed rows should be gone when
+returning. New rapid checkoffs retain targets until a 700 ms quiet period.
+
+Recent numeric suggestions fill the draft only; Close cancels, Done writes.
+Record a value or archive a habit: Undo should appear for four seconds with an
+outline icon, independently of filtering/goals/date. Away from Today, navigation
+stays available beside it. Undo restores only that action; History remains the
+long-lived Undo route. After archiving and quick Undo, entries/notes/position remain.
+
+The founder reported the first cache/frame attempt did not improve either native
+issue. After recycled lists/shared animation changes, scrolling and rotation were
+better, but an intermediate rotation layout persisted for about a second. The
+first readiness mask then left only dashes after rotation. Native readiness now
+uses first-visible-items onLoad plus current viewports, rather than an exact
+estimated content width. This correction still requires device acceptance.
+
+Final local validation: check passed, all 307 tests passed, and iOS/web exports
+completed with one worker under a 2 GiB memory bound. Browser review passed recent
+numeric draft/Close/Done, control ordering and deferred sizing, denser Compact,
+bounded 2022 date jump, portrait/landscape alignment and Today, delayed hiding and
+specific-entry Undo. This browser uses RN Web FlatList, not the native recycler.
+The founder accepted four-second entry/archive Undo and filtering ready on return
+from Settings. The added 180 ms Undo fade and 220 ms shared row movement need
+phone review alongside the corrected native rotation gate. Callback regression
+tests cover estimated width mismatch, stale generations and event ordering; row
+transition tests cover surviving/restored targets and immediate geometry/drag
+cancellation. Neither mock establishes native frame rates.

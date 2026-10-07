@@ -8,8 +8,10 @@ import {
   checkboxStyleOptions,
   type CheckboxStyle,
   columnSpacingOptions,
+  nameColumnWidthOptions,
   weekStartOptions,
   type ColumnSpacing,
+  type NameColumnWidth,
   type WeekStart,
 } from './displayPreferences';
 import { rowSpacingOptions, type RowSpacing } from './rowSpacing';
@@ -35,7 +37,9 @@ type Props = {
   rowSpacing: RowSpacing;
   onRowSpacingChange: (value: RowSpacing) => void;
   columnSpacing: ColumnSpacing;
+  nameColumnWidth: NameColumnWidth;
   onColumnSpacingChange: (value: ColumnSpacing) => void;
+  onNameColumnWidthChange: (value: NameColumnWidth) => void;
   weekStart: WeekStart;
   onWeekStartChange: (value: WeekStart) => void;
   weekDividers: boolean;
@@ -249,20 +253,18 @@ export function SettingsScreen(p: Props) {
       {p.page === 'appearance' && (
         <>
           <Group>
-            <View style={styles.control}>
-              <TextSizeSetting
-                compact
-                key={p.textScale}
-                value={p.textScale}
-                editable={!disabled}
-                onChange={p.onTextScaleChange}
-              />
-            </View>
             <Choice
-              label="Checkbox style"
-              value={p.checkboxStyle}
-              options={checkboxStyleOptions}
-              onChange={p.onCheckboxStyleChange}
+              label="Name column width"
+              value={p.nameColumnWidth}
+              options={nameColumnWidthOptions}
+              onChange={p.onNameColumnWidthChange}
+              disabled={disabled}
+            />
+            <Choice
+              label="Column spacing"
+              value={p.columnSpacing}
+              options={columnSpacingOptions}
+              onChange={p.onColumnSpacingChange}
               disabled={disabled}
             />
             <Choice
@@ -272,11 +274,22 @@ export function SettingsScreen(p: Props) {
               onChange={p.onRowSpacingChange}
               disabled={disabled}
             />
+            <View style={styles.control}>
+              <TextSizeSetting
+                compact
+                key={p.textScale}
+                value={p.textScale}
+                editable={!disabled}
+                onChange={p.onTextScaleChange}
+              />
+            </View>
+          </Group>
+          <Group>
             <Choice
-              label="Column spacing"
-              value={p.columnSpacing}
-              options={columnSpacingOptions}
-              onChange={p.onColumnSpacingChange}
+              label="Checkbox style"
+              value={p.checkboxStyle}
+              options={checkboxStyleOptions}
+              onChange={p.onCheckboxStyleChange}
               disabled={disabled}
             />
             <Toggle

@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { FlatList } from 'react-native';
+import { useLayoutEffect } from 'react';
+import type { FlashListRef } from '@shopify/flash-list';
 import {
   cancelAnimation,
   Easing,
@@ -24,6 +24,7 @@ export function useGridScroll({
   visibleDays,
   dayCount,
   futureCount,
+  origin,
   onSettle,
   onReveal,
 }: {
@@ -31,12 +32,14 @@ export function useGridScroll({
   visibleDays: number;
   dayCount: number;
   futureCount: number;
-  onSettle: (day: number) => void;
+  origin: number;
+  onSettle: (day: number, finished: boolean) => void;
   onReveal: (offset: number) => void;
 }) {
-  const header = useAnimatedRef<FlatList<GridDay>>();
-  const body = useAnimatedRef<FlatList<GridDay>>();
+  const header = useAnimatedRef<FlashListRef<GridDay>>();
+  const body = useAnimatedRef<FlashListRef<GridDay>>();
   const driver = useSharedValue(0);
+  const geometryReady = useSharedValue(true);
   const pull = useSharedValue(0);
   const dragging = useSharedValue(false);
   const thresholdTicked = useSharedValue(false);
@@ -53,7 +56,7 @@ export function useGridScroll({
     },
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     driver.set(0);
     pull.set(0);
     dragging.set(false);
@@ -76,6 +79,7 @@ export function useGridScroll({
     'worklet';
     if (
       dragging.value &&
+      origin <= 0 &&
       !thresholdTicked.value &&
       shouldRevealFuture(offset)
     ) {
@@ -86,7 +90,10 @@ export function useGridScroll({
 
   function dayForOffset(offset: number) {
     'worklet';
-    return settledDay(offset, columnWidth, dayCount, futureCount, visibleDays);
+    return (
+      origin +
+      settledDay(offset, columnWidth, dayCount, futureCount, visibleDays)
+    );
   }
 
   const headerScroll = useAnimatedScrollHandler({
@@ -100,26 +107,33 @@ export function useGridScroll({
       if (driver.value !== 1) return;
       offset.set(event.contentOffset.x);
       scrollTo(body, event.contentOffset.x, 0, false);
-      pull.set(Math.max(0, -event.contentOffset.x));
+      pull.set(origin > 0 ? 0 : Math.max(0, -event.contentOffset.x));
       tickAtThreshold(event.contentOffset.x);
     },
     onEndDrag: (event) => {
       if (driver.value !== 1) return;
       tickAtThreshold(event.contentOffset.x);
       dragging.set(false);
-      if (shouldRevealFuture(event.contentOffset.x)) {
+      if (
+        shouldRevealFuture(event.contentOffset.x) ||
+        (origin > 0 && event.contentOffset.x < 0)
+      ) {
         driver.set(0);
         pull.set(0);
         runOnJS(onReveal)(event.contentOffset.x);
       } else {
         runOnJS(onSettle)(
           dayForOffset(event.targetContentOffset?.x ?? event.contentOffset.x),
+          Math.abs(
+            (event.targetContentOffset?.x ?? event.contentOffset.x) -
+              event.contentOffset.x,
+          ) < 1,
         );
       }
     },
     onMomentumEnd: (event) => {
       if (driver.value === 1)
-        runOnJS(onSettle)(dayForOffset(event.contentOffset.x));
+        runOnJS(onSettle)(dayForOffset(event.contentOffset.x), true);
     },
   });
   const bodyScroll = useAnimatedScrollHandler({
@@ -134,26 +148,33 @@ export function useGridScroll({
         offset.set(event.contentOffset.x);
       if (driver.value !== 2) return;
       scrollTo(header, event.contentOffset.x, 0, false);
-      pull.set(Math.max(0, -event.contentOffset.x));
+      pull.set(origin > 0 ? 0 : Math.max(0, -event.contentOffset.x));
       tickAtThreshold(event.contentOffset.x);
     },
     onEndDrag: (event) => {
       if (driver.value !== 2) return;
       tickAtThreshold(event.contentOffset.x);
       dragging.set(false);
-      if (shouldRevealFuture(event.contentOffset.x)) {
+      if (
+        shouldRevealFuture(event.contentOffset.x) ||
+        (origin > 0 && event.contentOffset.x < 0)
+      ) {
         driver.set(0);
         pull.set(0);
         runOnJS(onReveal)(event.contentOffset.x);
       } else {
         runOnJS(onSettle)(
           dayForOffset(event.targetContentOffset?.x ?? event.contentOffset.x),
+          Math.abs(
+            (event.targetContentOffset?.x ?? event.contentOffset.x) -
+              event.contentOffset.x,
+          ) < 1,
         );
       }
     },
     onMomentumEnd: (event) => {
       if (driver.value === 2)
-        runOnJS(onSettle)(dayForOffset(event.contentOffset.x));
+        runOnJS(onSettle)(dayForOffset(event.contentOffset.x), true);
     },
   });
   function stopSync() {
@@ -162,14 +183,14 @@ export function useGridScroll({
     pull.set(0);
     dragging.set(false);
   }
-  function scrollToToday(onArrive: () => void) {
+  function scrollToDay(day: number, onArrive: () => void) {
     runOnUI(() => {
       'worklet';
       cancelAnimation(navigationOffset);
       dragging.set(false);
       pull.set(0);
       // Keep the expanded range until arrival, including when coming from future days.
-      const target = futureCount * columnWidth;
+      const target = (futureCount + day - origin) * columnWidth;
       navigationOffset.set(offset.value);
       driver.set(3);
       // Stop native momentum before taking over both lists on the UI thread.
@@ -195,6 +216,20 @@ export function useGridScroll({
       );
     })();
   }
+  function alignGeometry(target: number, ready: boolean) {
+    runOnUI((position: number, finished: boolean) => {
+      'worklet';
+      cancelAnimation(navigationOffset);
+      dragging.set(false);
+      pull.set(0);
+      // Ignore old mount offsets until both new lists have their native sizes.
+      driver.set(finished ? 0 : 4);
+      geometryReady.set(finished);
+      offset.set(position);
+      scrollTo(header, position, 0, false);
+      scrollTo(body, position, 0, false);
+    })(target, ready);
+  }
   function continueReveal(offset: number) {
     runOnUI((target: number) => {
       'worklet';
@@ -209,9 +244,11 @@ export function useGridScroll({
     body,
     stopSync,
     continueReveal,
-    scrollToToday,
+    scrollToDay,
+    alignGeometry,
     pull,
     offset,
+    geometryReady,
     headerScroll,
     bodyScroll,
   };

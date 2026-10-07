@@ -54,7 +54,7 @@ test('app and system text sizes share adaptive grid geometry in portrait and lan
           assert.ok(
             Number.isInteger(layout.visibleDays) && layout.visibleDays >= 1,
           );
-          assert.ok(layout.columnWidth >= Math.min(layout.dateWidth, 48));
+          assert.ok(layout.columnWidth >= Math.min(layout.dateWidth, 44));
           assert.equal(layout.nameWidth + layout.dateWidth, width);
           assert.ok(gridRowHeight(spacing, scale) >= 44);
         }

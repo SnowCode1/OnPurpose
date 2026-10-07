@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { RowSpacing } from './rowSpacing.ts';
 import type {
   ColumnSpacing,
+  NameColumnWidth,
   CheckboxStyle,
   WeekStart,
 } from './displayPreferences.ts';
@@ -13,6 +14,7 @@ export type GridDisplayPreferences = {
   tapAnimations: boolean;
   weekStart: WeekStart;
   columnSpacing: ColumnSpacing;
+  nameColumnWidth: NameColumnWidth;
   textScale: number;
   dateFading: boolean;
   hideCompleted: boolean;
@@ -34,5 +36,8 @@ export function useGridDisplayPreferences(
     )
   )
     setDisplayed(current);
-  return deferred ? displayed : current;
+  // Completion filtering is prepared while Settings is still covering the grid.
+  return deferred
+    ? { ...displayed, hideCompleted: current.hideCompleted }
+    : current;
 }

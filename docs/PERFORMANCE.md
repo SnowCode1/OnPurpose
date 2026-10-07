@@ -216,3 +216,94 @@ renders for several hidden appearance choices/save acknowledgements, and one
 render when the final preferences are released. Returning settings to their
 original displayed values produces no grid render. This establishes the
 presentation update boundary, not native latency or iPhone frame rates.
+
+## Dated goals, windowed navigation and rotation (7 October)
+
+The founder reported renewed fast-scroll stalls and several seconds of misplaced
+columns after rotation. Each cell was repeating goal timeline/default lookups,
+while keyed native lists rebuilt with delayed initial scrolling and the loading
+backdrop briefly retained the old pixel offset. The read-only date strip also
+grew with every loaded date. These are identified costs, not a measured allocation
+of the device's frame time.
+
+`habitGoals.ts` caches date/definition policy in a WeakMap, at most 256 dates per
+live definition. It shares effective rule, default state and schedule math; it
+never caches daily values or completion results. Entry edits remain live, and
+immutable definition changes/Undo/restore invalidate via identity. Start/type/
+timeline reference changes also reset the policy cache. Non-checkbox cells no
+longer ask for checkbox defaults. No quota/statistics computation enters cells.
+
+`createGridDayCache` accepts a signed date origin, retains overlapping identities
+and bounds its disposable cache to the loaded window or 512 dates, whichever is
+larger. Date-picker jumps create 120 dates around the target, rather than all
+intervening years. Native older/newer boundary loading extends in 90-day chunks;
+more than 360 loaded dates compact to 270 only after final native settling. The
+fallback strip remains prepainted for that window and follows the UI-thread offset.
+No per-frame JS synchronization is introduced. Newer historical dates load
+without future resistance/haptics; beyond the current future edge retains the pull.
+
+Rotation captures the actual native offset once, translating it back to a date.
+A stable frame supplies identical initialScrollIndex/contentOffset to header/body,
+and sets the fallback's new pixel offset during layout. Old mount offsets are
+ignored until both native viewports and first-visible-items onLoad signals match that frame; stale
+generation callbacks cannot release it. The existing list width keys remain.
+Font-dependent name wraps still measure natively; phone review must establish
+that the combined transition feels correct.
+
+Name width and revised column density join Settings presentation deferral.
+Hide completed uses a 700 ms quiet period to keep tap-burst targets stable;
+Undo/unchecking reveals immediately. The root retains stable entry callbacks
+when the feature is off. Numeric suggestions read only 30 date keys on opening,
+not the lifetime entry map. Neither feature delays normal persistence.
+
+### Device feedback and recycled columns
+
+The founder reported that the first cache/frame attempt improved neither scrolling
+nor rotation. Native date lists now use FlashList 2.3.3 to recycle mounted column
+views. This JS library supports the existing new-architecture Expo Go runtime;
+2.0.2, selected by the SDK recommendation, lacked inverted-list support. Native
+inversion uses the library's supported prop, without custom mirrored cell wrappers.
+The founder subsequently reported better scrolling and rotation, with an approximately
+one-second intermediate rotation layout still visible, especially landscape to portrait.
+
+Row preview targets now animate as one shared record in useHabitReorder, rather
+than starting a separate spring/reaction/shared value in every date cell. Ordinary
+name-height/layout changes set row targets directly; hiding, archiving and
+restoring rows animate the shared target record for 220 ms. Swaps and completed drops
+retain their UI-thread springs. Unchanged measured root bounds do not publish
+another React update. Checkbox feedback uses native Animated only on accepted taps,
+with non-interaction animations and Reduce Motion; recycled identities stop/reset
+an earlier pulse, and new columns never pulse on mount.
+
+Rotation still resets lists when physical column width changes: the recycler has
+measured widths for old historical items, which cannot safely be mixed with the
+new fixed width. It starts both lists at the captured date, and exposes only the
+existing fallback dates/dashes until both viewports are current and native lists
+report their first visible items drawn through onLoad. An exact estimated total
+content width must not gate native readiness; web FlatList uses its fixed size.
+useMeasuredRowHeights batches native name-wrap reports into one animation-frame
+update, rejecting stale geometry callbacks and skipping unchanged measurements.
+These final transition changes still need phone acceptance. No iPhone frame-rate
+measurement is claimed.
+
+The browser retains its RN Web FlatList path because inverted FlashList DOM offsets
+failed the layout review. Browser checks exercise controls/geometry, not native recycling.
+Header/body synchronization, fallback offsets and tap animations remain native/UI-thread;
+no per-frame JS list synchronization was added. Width/reset list keys remain deliberate.
+
+Temporary Undo receipts notify only QuickUndoActions, not the grid container. All
+accepted grid entry changes and archival offer four seconds of specific-action Undo;
+entry/goals/filtering/date restrictions are removed. Preferences and unrelated edits
+remain intact. Completion filtering is prepared immediately behind Settings, while
+only presentation geometry waits for native dismissal.
+
+The founder reported that the initial mask left only dashes after rotation. That
+check incorrectly depended on the recycler's estimated total width matching an
+exact value. Native readiness now uses current viewport layouts and onLoad for
+both lists, rejecting stale generations. Focused callback tests cover estimated
+width mismatch and event ordering; physical rotation acceptance remains pending.
+The founder accepted four-second entry/archive Undo and filtering prepared behind
+Settings, then requested smoother disappearance and row movement. Undo now fades
+out for 180 ms, and row identity changes animate one shared record with matching
+keys rather than resetting it in the idle cancellation effect. Geometry changes
+and cancellation of an active drag still reset immediately.

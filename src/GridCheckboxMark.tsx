@@ -1,21 +1,21 @@
-import { memo, useImperativeHandle, type Ref } from 'react';
-import { View } from 'react-native';
-import Animated, {
-  cancelAnimation,
-  useAnimatedStyle,
-  useSharedValue,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
+import {
+  memo,
+  useEffect,
+  useImperativeHandle,
+  useState,
+  type Ref,
+} from 'react';
+import { Animated, Easing, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import type { CheckboxStyle } from './displayPreferences';
 import { Icon } from './Icon';
-import { cellPressIn, cellSettle } from './motion';
 export type CheckboxFeedback = { pulse: () => void };
 
 // Only an accepted local tap starts this animation. Mounting virtualized days,
 // replaying History and changing appearance never animate a screenful of cells.
 export const GridCheckboxMark = memo(function GridCheckboxMark({
   ref,
+  identity,
   checked,
   style,
   size,
@@ -23,34 +23,53 @@ export const GridCheckboxMark = memo(function GridCheckboxMark({
   checkmark,
 }: {
   ref: Ref<CheckboxFeedback>;
+  identity: string;
   checked: boolean;
   style: CheckboxStyle;
   size: number;
   colour: string;
   checkmark: string;
 }) {
-  const progress = useSharedValue(1);
-  const animated = useAnimatedStyle(() => ({
-    transform: [{ scale: progress.value }],
-    opacity: 0.8 + ((progress.value - 0.94) / 0.06) * 0.2,
-  }));
+  // Native Animated creates no Reanimated mapper/reaction per untouched cell.
+  // The small native graph is connected only when a tap actually animates.
+  const [progress] = useState(() => new Animated.Value(1));
+  const reducedMotion = useReducedMotion();
+  useEffect(() => {
+    progress.stopAnimation();
+    progress.setValue(1);
+    return () => progress.stopAnimation();
+  }, [identity, progress]);
   useImperativeHandle(
     ref,
     () => ({
       pulse() {
-        cancelAnimation(progress);
-        progress.value = withSequence(
-          withTiming(0.94, cellPressIn),
-          withTiming(1, cellSettle),
-        );
+        progress.stopAnimation();
+        progress.setValue(1);
+        if (reducedMotion) return;
+        Animated.sequence([
+          Animated.timing(progress, {
+            toValue: 0.94,
+            duration: 45,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+            isInteraction: false,
+          }),
+          Animated.timing(progress, {
+            toValue: 1,
+            duration: 135,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+            isInteraction: false,
+          }),
+        ]).start();
       },
     }),
-    [progress],
+    [progress, reducedMotion],
   );
   const box = size * (22 / 28);
   return (
     <Animated.View
-      style={animated}
+      style={{ transform: [{ scale: progress }] }}
       pointerEvents="none"
       accessible={false}
       accessibilityElementsHidden

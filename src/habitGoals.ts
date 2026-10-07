@@ -271,25 +271,78 @@ export function ruleIsMet(
     }
   }
 }
+type DatePolicy = {
+  goal: HabitGoal | null;
+  rule: SuccessRule;
+  active: boolean;
+  scheduled: boolean;
+  withinStart: boolean;
+  defaultChecked: boolean;
+};
+const policies = new WeakMap<
+  Habit,
+  {
+    goals: Habit['goals'];
+    start: Habit['startDate'];
+    type: ReturnType<typeof habitType>;
+    dates: Map<string, DatePolicy>;
+  }
+>();
+export const MAX_CACHED_GOAL_DATES = 256;
+// Cache date/definition work, never entry values or completion results. Store
+// definitions are immutable; edits, Undo and restore replace their identities.
+function datePolicy(habit: Habit, date: string): DatePolicy {
+  const type = habitType(habit);
+  let cache = policies.get(habit);
+  if (
+    !cache ||
+    cache.goals !== habit.goals ||
+    cache.start !== habit.startDate ||
+    cache.type !== type
+  ) {
+    cache = {
+      goals: habit.goals,
+      start: habit.startDate,
+      type,
+      dates: new Map(),
+    };
+    policies.set(habit, cache);
+  }
+  const saved = cache.dates.get(date);
+  if (saved) return saved;
+  const goal = goalAt(habit, date);
+  const rule = goal?.rule ?? defaultSuccessRule(habit);
+  const active = rule.kind !== 'none';
+  const withinStart = !habit.startDate || date >= habit.startDate;
+  const policy = {
+    goal,
+    rule,
+    active,
+    withinStart,
+    scheduled:
+      withinStart &&
+      active &&
+      scheduledOn(goal ?? { weekdays: allWeekdays }, ordinal(date)),
+    defaultChecked: withinStart && (goal?.defaultChecked ?? false),
+  };
+  if (cache.dates.size >= MAX_CACHED_GOAL_DATES)
+    cache.dates.delete(cache.dates.keys().next().value!);
+  cache.dates.set(date, policy);
+  return policy;
+}
 export function evaluateGoal(
   habit: Habit,
   value: EntryValue | undefined,
   date: string,
 ) {
-  const goal = goalAt(habit, date),
-    rule = goal?.rule ?? defaultSuccessRule(habit);
-  const active = rule.kind !== 'none';
-  const withinStart = !habit.startDate || date >= habit.startDate;
-  const scheduled =
-    withinStart &&
-    active &&
-    scheduledOn(goal ?? { weekdays: allWeekdays }, ordinal(date));
+  const { goal, rule, active, withinStart, scheduled, defaultChecked } =
+    datePolicy(habit, date);
   const met =
     withinStart &&
     ruleIsMet(
       rule,
       habitType(habit) === 'checkbox'
-        ? Number(checkboxChecked(habit, value, date))
+        ? Number(value === 1 || value === 0 ? value === 1 : defaultChecked)
         : value,
     );
   return { goal, rule, active, scheduled, met, recorded: value !== undefined };
@@ -376,10 +429,7 @@ export function checkboxChecked(
   date: string,
 ): boolean {
   if (value === 1 || value === 0) return value === 1;
-  return (
-    (!habit.startDate || date >= habit.startDate) &&
-    (goalAt(habit, date)?.defaultChecked ?? false)
-  );
+  return datePolicy(habit, date).defaultChecked;
 }
 export function toggleCheckboxValue(
   habit: Habit,

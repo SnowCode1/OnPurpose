@@ -435,7 +435,7 @@ test('v13 period/cycle edits survive SQLite reopen, undo/redo and atomic backup 
     '2026-10-06T12:00:00.000Z',
     digest,
   );
-  assert.equal(JSON.parse(archive).version, 16);
+  assert.equal(JSON.parse(archive).version, 17);
   const decoded = await decodeArchive(archive, digest);
   await store.exclusive(() => store.replace(decoded.events));
   assert.deepEqual(store.getSnapshot().replay.state.habits[0], after);
@@ -455,7 +455,7 @@ test('v13 period/cycle edits survive SQLite reopen, undo/redo and atomic backup 
           change: { kind: 'haptics', before: true, after: false },
         },
       ]),
-    /version-16/,
+    /version-17/,
   );
 });
 test('version-13 fixture extends the unchanged version-12 log and restores goals with Undo/Redo', async () => {

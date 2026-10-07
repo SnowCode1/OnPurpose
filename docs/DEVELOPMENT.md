@@ -374,3 +374,13 @@ Sample Walk now has a 5-day/2-off cycle; Meditate uses 3 weeks on/1 off;
 Workout has 2–4 successful days per week on alternating weeks. These are
 fictional v13 edits appended by `sampleTiming.ts`, never changes to real habits.
 Use these to check period progress, rest periods and the full-screen editor.
+
+### Native grid list dependency
+
+The native date lists use `@shopify/flash-list` 2.3.3, installed explicitly with
+`npx expo install @shopify/flash-list@2.3.3`. Expo's recommended 2.0.2 lacks the
+inverted layout used here; this intentionally newer JS-only library uses the
+existing new architecture. See [FlashList usage](https://shopify.github.io/flash-list/docs/usage/)
+and [v2 architecture requirements](https://shopify.github.io/flash-list/docs/v2-migration/).
+No new custom native module is required. Keep the lockfile and test Expo Go after
+upgrades. RN Web retains FlatList; a web pass is not native list evidence.

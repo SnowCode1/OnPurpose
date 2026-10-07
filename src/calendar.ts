@@ -51,10 +51,11 @@ export function createGridDayCache(today: string) {
     month: 'long',
     year: 'numeric',
   });
-  return (count: number, futureCount = 0): GridDay[] =>
-    Array.from({ length: count + futureCount }, (_, index) => {
-      const daysAgo = index - futureCount;
+  return (count: number, futureCount = 0, origin = 0): GridDay[] => {
+    const result = Array.from({ length: count + futureCount }, (_, index) => {
+      const daysAgo = index - futureCount + origin;
       let day = cache.get(daysAgo);
+      if (day) cache.delete(daysAgo);
       if (!day) {
         const date = calendarDay(today, daysAgo);
         day = {
@@ -64,10 +65,15 @@ export function createGridDayCache(today: string) {
           number: date.getDate(),
           fullLabel: full.format(date),
         };
-        cache.set(daysAgo, day);
       }
+      cache.set(daysAgo, day);
       return day;
     });
+    // Retain the entire loaded window and a small overlap, not lifetime browsing.
+    const limit = Math.max(512, count + futureCount);
+    while (cache.size > limit) cache.delete(cache.keys().next().value!);
+    return result;
+  };
 }
 export function makeGridDays(
   today: string,

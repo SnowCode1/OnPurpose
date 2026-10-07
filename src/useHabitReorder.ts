@@ -10,18 +10,20 @@ import {
   runOnJS,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import type { Habit } from './habits';
 import type { HabitAnchor } from './HabitName';
 import { dragDestination, moveHabit, habitRowPositions } from './habitOrdering';
 import { feedback } from './haptics';
-import { reorderSpring } from './motion';
+import { reorderSpring, rowRemovalTiming } from './motion';
 
 export function useHabitReorder(
   habits: Habit[],
   heights: Record<string, number>,
   fallback: number,
   onReorder: (ids: string[]) => boolean,
+  rowGeometry: string,
 ) {
   const root = useRef<View>(null);
   const scroll = useRef<ScrollView>(null);
@@ -57,6 +59,8 @@ export function useHabitReorder(
   const frame = useRef<number | null>(null);
   const settling = useRef<string | null>(null);
   const latest = useRef({ habits, heights, fallback, onReorder });
+  const previousRows = useRef({ identity: '', geometry: rowGeometry });
+  const identity = habits.map((habit) => habit.id).join('|');
   useLayoutEffect(() => {
     latest.current = { habits, heights, fallback, onReorder };
   });
@@ -73,12 +77,39 @@ export function useHabitReorder(
     );
   }
   useLayoutEffect(() => {
-    if (!drag.current && !settling.current) resetTargets();
-  }, [habits, heights, fallback]); // eslint-disable-line react-hooks/exhaustive-deps
+    const previous = previousRows.current;
+    previousRows.current = { identity, geometry: rowGeometry };
+    if (drag.current || settling.current) return;
+    const target = habitRowPositions(
+      habits.map((habit) => habit.id),
+      heights,
+      fallback,
+    ).tops;
+    if (
+      previous.identity &&
+      previous.identity !== identity &&
+      previous.geometry === rowGeometry
+    ) {
+      // Keep the object's keys identical for Reanimated's record interpolation.
+      // Survivors start at their current animated position; restored/new rows
+      // start at their own target. Removed IDs do not accumulate in this cache.
+      const current = rowTops.get();
+      rowTops.set(
+        Object.fromEntries(
+          Object.keys(target).map((id) => [id, current[id] ?? target[id]]),
+        ),
+      );
+      rowTops.set(withTiming(target, rowRemovalTiming));
+    } else resetTargets();
+  }, [habits, heights, fallback, identity, rowGeometry]); // eslint-disable-line react-hooks/exhaustive-deps
   const [bounds, setBounds] = useState({ rootY: 0, rootHeight: 0 });
   function measure() {
     root.current?.measureInWindow((x, y, _, height) => {
-      setBounds({ rootY: y, rootHeight: height });
+      setBounds((previous) =>
+        previous.rootY === y && previous.rootHeight === height
+          ? previous
+          : { rootY: y, rootHeight: height },
+      );
       Object.assign(geometry.current, {
         rootX: x,
         rootY: y,
@@ -114,12 +145,12 @@ export function useHabitReorder(
       cancelAnimation(dragY);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const identity = habits.map((habit) => habit.id).join('|');
   useEffect(() => {
     // Own committed drop is settling into place; unrelated changes cancel a drag.
     if (settling.current === identity) return stop;
     // Persisted identity changes must cancel an in-flight native drag.
-    cancel();
+    if (drag.current || settling.current) cancel();
+    else setMenu(null);
     return stop;
   }, [identity]); // eslint-disable-line react-hooks/exhaustive-deps
   function update() {
@@ -147,11 +178,14 @@ export function useHabitReorder(
       d.target = target;
       d.draft = moveHabit(d.ids, d.id, target);
       rowTops.set(
-        habitRowPositions(
-          d.draft,
-          latest.current.heights,
-          latest.current.fallback,
-        ).tops,
+        withSpring(
+          habitRowPositions(
+            d.draft,
+            latest.current.heights,
+            latest.current.fallback,
+          ).tops,
+          reorderSpring,
+        ),
       );
       feedback('selection');
     }

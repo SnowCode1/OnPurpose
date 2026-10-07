@@ -1183,3 +1183,65 @@ and fallback headings share the styling. The existing Week dividers preference
 controls this trial; Off removes the week shading and retains Today. No new
 preference, storage version or layout geometry is introduced. Native contrast
 and future-pull visibility remain phone acceptance checks.
+
+### 2026-10-07 — Main-page shortcuts, spacing and scrolling
+
+Founder accepted alternating header week backgrounds, especially the stronger
+Today highlight. They approved all five assistant proposals: date navigation,
+recent numeric suggestions, delayed completed-row hiding, a temporary specific-entry
+Undo, and name-column width. They also reported fast-scroll stalls and delayed,
+misplaced layout after rotation; improvements require device feedback.
+
+Month/year now opens a compact native inline date picker with Close, Today and
+Go to date. Numeric suggestions use up to three distinct totals from the previous
+30 days, ranked by frequency then recency; tapping only fills the draft. Done
+applies and Close cancels. No suggestion is automatically written.
+
+Hide completed waits for a 700 ms pause after completion-mask changes. Undo and
+unchecking reveal immediately; settled rows use existing restrained movement.
+The final temporary Undo is available for four seconds after any accepted grid
+entry edit or archival, independently of completion/filtering and on any date.
+Its own toolbar subscriber keeps the grid's callbacks/props stable. When away
+from Today, a compact icon appears beside Today so date navigation stays available.
+Entry corrections append ordinary compensating edits; archival restores only
+archive status onto the current definition, preserving later colours/notes/order
+and entries. Retouching that entry, changing archive status, deletion or a replaced
+prefix invalidates a stale receipt. Receipts/timers are not stored. The founder
+clarified that twelve seconds was too long; a Tabler outline replaces the text arrow.
+Turning Hide completed on prepares the filtering behind Settings, so it has
+settled on return; the 700 ms pause is for newly recorded completions only.
+
+Founder requested Name width → Column spacing → Row spacing. Name widths use
+80/100/120% of existing adaptive width, retaining measured wraps. Columns now use
+44/48/64-point minimums: Standard is the old Compact and the new default; Roomy
+is the old Standard. A new v17 `columnDensity` preference preserves old raw
+`columnSpacing` events and their preconditions. Old Compact/absent maps to Standard;
+old Standard/Roomy maps to Roomy. `nameColumnWidth` is also v17. Both remain outside
+History/Undo, preserve Redo and defer grid geometry until Settings dismisses.
+
+Per-cell goal evaluation now caches date/definition policy, bounded to 256 dates
+per live immutable definition, while values/results remain live. The date cache
+keeps the loaded range plus bounded overlap. Date jumps create a 120-day window
+around the target instead of all intervening years. Long ranges compact after
+final native settling, over 360 days to 270. Rotation initializes both lists with
+one captured date/offset and aligns the fallback on the UI thread, ignoring old
+mount offsets until both current native viewports and first visible items are ready. Native gesture feel remains
+a phone check; browser layout and Node tests do not establish frame rates.
+
+The founder rejected the first performance attempt on the phone: neither problem
+improved. Native columns then moved to FlashList 2.3.3, sharing reorder springs
+and reducing per-cell animation setup; native inversion replaces an interim custom
+flip that caused mirrored text in a shared preview. The founder reported better
+scrolling and rotation, with a remaining brief intermediate layout. Final changes
+batch name-height reports and cover partial native geometry with the existing
+loading fallback. A physical width change still resets measured lists deliberately;
+browser uses RN Web FlatList. Final transition acceptance remains pending.
+
+The founder accepted the four-second Undo duration and existing completed rows
+already filtered on returning from Settings. They requested a smooth Undo fade
+and row movement after hiding/archiving. Undo fades for 180 ms; surviving names
+and cells use the same 220 ms shared target animation, respecting Reduce Motion.
+The founder reported that the first rotation mask remained as dashes. Native
+readiness now uses FlashList onLoad/current viewports rather than waiting for its
+estimated total content width to match exactly. Rotation and motion still await
+physical-device acceptance.

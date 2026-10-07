@@ -1,10 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-  loadingStripOffset,
-  loadingEdgeMasks,
-  gridRenderBudget,
-} from '../src/gridLoading.ts';
+import { loadingStripOffset, loadingEdgeMasks } from '../src/gridLoading.ts';
 
 test('loading marks stay aligned with inverted native date columns at every fractional scroll position', () => {
   for (const visible of [1, 4, 10])
@@ -65,13 +61,4 @@ test('rubber-band masks cover only space outside loaded dates, including future 
         right: 0,
       });
     }
-});
-test('render batches cover the viewport and give lightweight headings a wider lead in both orientations', () => {
-  for (const visible of [1, 2, 4, 10, 18]) {
-    const budget = gridRenderBudget(visible);
-    assert.ok(budget.bodyBatch >= visible);
-    assert.ok(budget.headerBatch > budget.bodyBatch);
-    assert.ok(budget.headerWindow > budget.bodyWindow);
-    assert.ok(budget.batchPeriod > 0 && budget.batchPeriod < 50);
-  }
 });

@@ -35,7 +35,7 @@ test('column spacing fits whole dates and preserves name width across orientatio
     columnSpacingOptions.map(
       (option) => gridLayout(366, 1, option.value).visibleDays,
     ),
-    [4, 3, 2],
+    [5, 4, 3],
   );
   for (const width of [0, 20, 100])
     for (const option of columnSpacingOptions) {

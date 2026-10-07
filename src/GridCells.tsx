@@ -62,7 +62,7 @@ const GridCell = memo(function GridCell({
   recordPerformance('grid.cell.render');
   const numeric = isNumericHabit(habit);
   const checkbox = habitType(habit) === 'checkbox';
-  const checked = checkboxChecked(habit, value, day.key);
+  const checked = checkbox && checkboxChecked(habit, value, day.key);
   const recorded = value !== undefined;
   const goal = evaluateGoal(habit, value, day.key);
   const tone = palette.tones[dayTone(day.daysAgo)];
@@ -125,6 +125,7 @@ const GridCell = memo(function GridCell({
         ) : (
           <GridCheckboxMark
             ref={mark}
+            identity={`${habit.id}:${day.key}`}
             checked={checked}
             style={checkboxStyle}
             checkmark={palette.checkmark}

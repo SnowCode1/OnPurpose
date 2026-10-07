@@ -296,3 +296,46 @@ the permanent quiet name/day separator.
 Never reintroduce full-height week lines. The name/day separator is an overlay,
 independent of the week toggle. Gate tap-only pulses with tapAnimations while
 retaining Reduce Motion and immediate saves; haptics remains a separate setting.
+
+Current writers/exports are v17. `nameColumnWidth` and `columnDensity` are strict
+preferences outside History/Undo, preserving Redo, schema 1 and exact v1–v16
+prefixes. Read docs/SETTINGS.md and STORAGE.md. New column sizes are 44/48/64
+(Standard default); `effectiveColumnSpacing` maps old Compact/absent to Standard,
+old Standard/Roomy to Roomy without rewriting old `columnSpacing` events or their
+preconditions. Order geometry controls Name width, Column spacing, Row spacing.
+
+`DateNavigationSheet.tsx` owns the native date-picker draft. `HabitGrid.tsx`
+loads signed-origin windows around selected dates; keep old/future entry keys
+exact, date identities shared and windows compact only at final native settling.
+Native FlashList 2.3.3 recycles date columns; web retains RN Web FlatList.
+Width changes reset measured lists, using the same stable frame/contentOffset; hold old mount
+events until both current viewports and native onLoad signals are ready, rejecting stale frames.
+Never require an exact total recycler content width to reveal cells; that width is estimated.
+Web FlatList retains its fixed content-size check.
+The fallback offset and native synchronization stay on the UI thread.
+`habitGoals.ts` caches only bounded date/immutable-definition policies (256),
+never entry values/results. Date cache bounds retain the loaded window and
+limited overlap. Do not claim phone frame rates from mock worklets or Node.
+
+`numericSuggestions.ts` reads 30 earlier dates and preserves explicit zero.
+Suggestions fill drafts; Done applies and Close cancels.
+`useDelayedCompletionMask.ts` keeps burst targets for 700 ms, revealing undone
+rows immediately. `useQuickUndo.ts` owns a stable `quickUndo.ts` controller with
+four-second entry/archive receipts and independent `QuickUndoActions.tsx` subscription; `quickEntryUndo.ts` validates the prefix, later retouches, current value
+and active habit. Append ordinary compensating edits; never rewind unrelated
+actions or erase raw History. Keep receipts/timers out of persistence/exports.
+
+`useMeasuredRowHeights.ts` batches native wraps, rejects stale geometry and cancels
+on unmount. Geometry readiness shows existing fallback dates/dashes until both
+lists report current viewports and visible items drawn; do not expose mixed layouts or accept old offsets.
+`useHabitReorder` animates the shared row-top record on swaps; ReorderRow consumes
+it directly, without one spring/reaction per cell. Hide/archive/restore transitions
+use one 220 ms shared record animation; geometry changes remain immediate. Idle
+identity changes must not cancel/reset that animation. Quick Undo fades out for
+180 ms after its four-second lifetime. Both respect system Reduce Motion.
+Checkbox marks use native non-interaction tap animations; recycled identities reset
+an earlier pulse. Completion filtering applies behind Settings immediately, unlike
+presentation size/style deferral. Quick Undo supports all entry dates independent
+of filtering/goals, and archival reverses only the archived field on the current
+habit. Preserve unrelated entries, definition edits and current order. Keep timers
+and receipts outside persistence/export and keep their subscription off the grid.

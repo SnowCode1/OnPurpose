@@ -1,6 +1,6 @@
 # OnPurpose — project goals
 
-Status: living product brief. Last updated: 6 October 2026.
+Status: living product brief. Last updated: 7 October 2026.
 “OnPurpose” is a working name, not a final brand or reserved App Store name.
 
 ## Primary goal
@@ -97,7 +97,18 @@ and uncertainty about whether something was saved.
   goals default to Today, preserving earlier goals and results; backdated corrections
   are explicit and undoable. Share evaluation across grid, statistics and Hide completed
   today. Keep numeric averages based on all calendar days. See [GOALS.md](docs/GOALS.md).
-- Offer saved row- and column-spacing settings.
+- Offer saved name-column width, column spacing and row spacing, in that order.
+  Name width offers Narrow/Standard/Wide. Standard columns retain the previous
+  Compact density; new Compact is slightly denser and Roomy retains the previous
+  Standard density. Preserve usable tap targets and app/OS text scaling.
+- Group date headings with faint alternating week backgrounds, leaving habit cells
+  unchanged; Today retains its clearer highlight. The founder accepted this look.
+- Jump to a chosen date through the month/year control. Offer recent numeric
+  totals as explicit draft choices, applied only on Done. With Hide completed today,
+  keep newly completed rows in place during a tap burst, then collapse after a pause;
+  prepare existing completed rows while Settings is open. Offer a brief specific-action
+  Undo for entries and archival without undoing unrelated changes; use an outline
+  icon and a four-second duration, rather than the rejected twelve seconds.
 - Develop without owning a Mac; use the physical iPhone for actual testing.
 - Maintain project goals, agent guidance including CLAUDE.md, and a docs folder.
 

@@ -19,13 +19,3 @@ export function loadingEdgeMasks(
     left: Math.min(width, Math.max(0, offset - maximum)),
   };
 }
-
-export function gridRenderBudget(visibleDays: number) {
-  return {
-    bodyBatch: Math.max(2, visibleDays + 1),
-    headerBatch: Math.max(12, visibleDays * 3),
-    batchPeriod: 16,
-    bodyWindow: 5,
-    headerWindow: 11,
-  };
-}

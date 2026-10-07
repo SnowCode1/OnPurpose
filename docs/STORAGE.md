@@ -456,3 +456,20 @@ groups, and use the ordinary serialized write/retry and atomic restore paths.
 Current writers/exports use v16; v1–v15 prefixes and schema 1 remain unchanged.
 Older event versions reject these new preference kinds. The [v16 example](examples/storage-v16.json)
 extends the exact v15 prefix with both switches turned off.
+
+## Version 17: name width and revised column spacing
+
+Current writers/exports use v17, accepting unchanged v1–v16 prefixes and SQL
+schema 1. `nameColumnWidth` validates narrow/standard/wide, default Standard.
+`columnDensity` validates compact/standard/roomy for the revised 44/48/64-point
+choices. It falls back through `effectiveColumnSpacing`: old absent/Compact to
+Standard, old Standard/Roomy to Roomy. Old `columnSpacing` events still validate
+with their original absent Compact precondition and retain their raw values.
+No existing event or habit is rewritten or reseeded. Versions 1–16 reject the
+new kinds, and older events cannot follow v17 events.
+
+Both preferences use the ordinary serialized atomic write/restore path, preserve
+Redo and grouping, and remain outside habit History/Undo. The [v17 example](examples/storage-v17.json)
+extends the exact v16 prefix. The temporary grid Undo is a normal guarded
+compensating entry change, preserving append-only history and visible failure/retry.
+Its receipt and timers are ephemeral and excluded from exports.

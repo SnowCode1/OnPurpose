@@ -1,8 +1,8 @@
 import {
-  Easing,
   FadeIn,
   FadeInDown,
   FadeOut,
+  Easing,
   LinearTransition,
   ReduceMotion,
 } from 'react-native-reanimated';
@@ -13,6 +13,11 @@ export const reorderSpring = {
   mass: 1,
   overshootClamping: true,
   energyThreshold: 1e-4,
+  reduceMotion: ReduceMotion.System,
+};
+export const rowRemovalTiming = {
+  duration: 220,
+  easing: Easing.out(Easing.cubic),
   reduceMotion: ReduceMotion.System,
 };
 export const rowTransition = LinearTransition.springify()
@@ -31,15 +36,3 @@ export const menuAppear = FadeInDown.withInitialValues({
 })
   .duration(150)
   .reduceMotion(ReduceMotion.System);
-
-// 180 ms total: a shallow press and a smooth return, without spring overshoot.
-export const cellPressIn = {
-  duration: 45,
-  easing: Easing.out(Easing.quad),
-  reduceMotion: ReduceMotion.System,
-};
-export const cellSettle = {
-  duration: 135,
-  easing: Easing.out(Easing.cubic),
-  reduceMotion: ReduceMotion.System,
-};

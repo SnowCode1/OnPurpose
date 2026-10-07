@@ -1,6 +1,7 @@
 import {
   type CheckboxStyle,
   type ColumnSpacing,
+  type NameColumnWidth,
   type WeekStart,
 } from './displayPreferences';
 import { type RowSpacing } from './rowSpacing';
@@ -33,6 +34,8 @@ export function AppPanel({
   visible,
   HeadingComponent,
   columnSpacing,
+  nameColumnWidth,
+  onNameColumnWidthChange,
   onColumnSpacingChange,
   weekStart,
   onWeekStartChange,
@@ -78,7 +81,9 @@ export function AppPanel({
   visible: boolean;
   HeadingComponent: ComponentType<TextProps>;
   columnSpacing: ColumnSpacing;
+  nameColumnWidth: NameColumnWidth;
   onColumnSpacingChange: (value: ColumnSpacing) => void;
+  onNameColumnWidthChange: (value: NameColumnWidth) => void;
   weekStart: WeekStart;
   onWeekStartChange: (value: WeekStart) => void;
   weekDividers: boolean;
@@ -211,6 +216,8 @@ export function AppPanel({
                   rowSpacing={rowSpacing}
                   onRowSpacingChange={onRowSpacingChange}
                   columnSpacing={columnSpacing}
+                  nameColumnWidth={nameColumnWidth}
+                  onNameColumnWidthChange={onNameColumnWidthChange}
                   onColumnSpacingChange={onColumnSpacingChange}
                   weekStart={weekStart}
                   onWeekStartChange={onWeekStartChange}

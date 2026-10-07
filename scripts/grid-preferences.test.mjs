@@ -26,6 +26,7 @@ test('settings receive every choice while mounted grid geometry and typography w
   const Grid = memo(function Grid({
     rowSpacing,
     columnSpacing,
+    nameColumnWidth,
     dateFading,
     hideCompleted,
     checkboxStyle,
@@ -42,6 +43,7 @@ test('settings receive every choice while mounted grid geometry and typography w
     grid = {
       rowSpacing,
       columnSpacing,
+      nameColumnWidth,
       dateFading,
       hideCompleted,
       checkboxStyle,
@@ -66,6 +68,7 @@ test('settings receive every choice while mounted grid geometry and typography w
         React.createElement(Grid, {
           rowSpacing: displayed.rowSpacing,
           columnSpacing: displayed.columnSpacing,
+          nameColumnWidth: displayed.nameColumnWidth,
           dateFading: displayed.dateFading,
           hideCompleted: displayed.hideCompleted,
           checkboxStyle: displayed.checkboxStyle,
@@ -82,7 +85,8 @@ test('settings receive every choice while mounted grid geometry and typography w
     tapAnimations: true,
     weekStart: 'monday',
     rowSpacing: 'standard',
-    columnSpacing: 'compact',
+    columnSpacing: 'standard',
+    nameColumnWidth: 'standard',
     textScale: 1,
     dateFading: true,
     hideCompleted: false,
@@ -101,11 +105,12 @@ test('settings receive every choice while mounted grid geometry and typography w
       { ...initial, columnSpacing: 'roomy', textScale: 1.5 },
       {
         ...initial,
+        nameColumnWidth: 'wide',
         rowSpacing: 'roomy',
         columnSpacing: 'standard',
         textScale: 1.15,
         dateFading: false,
-        hideCompleted: true,
+        hideCompleted: false,
         checkboxStyle: 'marks',
         weekDividers: false,
         tapAnimations: false,
@@ -129,22 +134,29 @@ test('settings receive every choice while mounted grid geometry and typography w
     assert.equal(renders, 2);
     assert.equal(grid.rowSpacing, 'roomy');
     assert.equal(grid.columnSpacing, 'standard');
+    assert.equal(grid.nameColumnWidth, 'wide');
     assert.equal(grid.scale, 1.15);
     assert.equal(grid.dateFading, false);
-    assert.equal(grid.hideCompleted, true);
+    assert.equal(grid.hideCompleted, false);
     assert.equal(grid.checkboxStyle, 'marks');
     assert.equal(grid.weekDividers, false);
     assert.equal(grid.tapAnimations, false);
     assert.equal(grid.weekStart, 'sunday');
     assert.equal(grid.scroll, '2026-08-01');
     assert.equal(mounts, 1);
+    const hidden = { ...latest, hideCompleted: true, columnSpacing: 'compact' };
+    await render(hidden, true);
+    assert.equal(grid.hideCompleted, true);
+    assert.equal(grid.columnSpacing, 'standard');
+    assert.equal(mounts, 1);
+    await render(latest, true);
     // Avoid DOM-object assertions: failures must never print a browser graph.
     assert.equal(host.firstChild === node, true);
     await render(latest, true);
     await render(initial, true);
     await render(latest, true); // user changes mind back to displayed values
     await render(latest, false);
-    assert.equal(renders, 2);
+    assert.equal(renders, 4);
   } finally {
     await act(() => root.unmount());
     browser.window.close();

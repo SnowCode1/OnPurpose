@@ -1,3 +1,5 @@
+import { useQuickUndo } from './src/useQuickUndo';
+import { recentNumericTotals } from './src/numericSuggestions';
 import { checkboxChecked, toggleCheckboxValue } from './src/habitGoals';
 import { sameValue } from './src/storage/model';
 import { DailyRecordDialog } from './src/DailyRecordDialog';
@@ -9,7 +11,10 @@ import { descriptionVersions } from './src/descriptionVersions';
 import { DescriptionEditor } from './src/DescriptionEditor';
 import { descriptionDraftKey } from './src/descriptionDrafts';
 import { applyPlaceholderDescriptions } from './src/storage/presetDescriptions';
-import { displayDefaults } from './src/displayPreferences';
+import {
+  displayDefaults,
+  effectiveColumnSpacing,
+} from './src/displayPreferences';
 import { useGridDisplayPreferences } from './src/useGridDisplayPreferences';
 import type { RowSpacing } from './src/rowSpacing';
 import { habitTrackingStart } from './src/statistics';
@@ -171,7 +176,7 @@ function PersistentApp({
     values,
     hapticsEnabled,
     rowSpacing = 'standard',
-    columnSpacing = displayDefaults.columnSpacing,
+    nameColumnWidth = displayDefaults.nameColumnWidth,
     weekStart = displayDefaults.weekStart,
     dateFading = displayDefaults.dateFading,
     checkboxStyle = displayDefaults.checkboxStyle,
@@ -180,6 +185,7 @@ function PersistentApp({
     hideCompleted = displayDefaults.hideCompleted,
     textScale = displayDefaults.textScale,
   } = snapshot.replay.state;
+  const columnSpacing = effectiveColumnSpacing(snapshot.replay.state);
   const activeHabits = useMemo(
     () => habits.filter((habit) => !habit.archived),
     [habits],
@@ -189,6 +195,8 @@ function PersistentApp({
     setHapticsEnabled(hapticsEnabled);
   }, [hapticsEnabled]);
   const today = useLocalToday();
+  const quickUndo = useQuickUndo(store);
+  const captureQuickUndo = quickUndo.capture;
   const [panel, setPanel] = useState<{
     page: 'history' | 'settings' | 'archive';
     visible: boolean;
@@ -198,6 +206,7 @@ function PersistentApp({
     {
       rowSpacing,
       columnSpacing,
+      nameColumnWidth,
       textScale,
       dateFading,
       hideCompleted,
@@ -245,6 +254,13 @@ function PersistentApp({
     (/^\d+(\.\d*)?$/.test(trimmed) &&
       Number.isFinite(numeric) &&
       numeric <= Number.MAX_SAFE_INTEGER);
+  const suggestedTotals = useMemo(
+    () =>
+      editing
+        ? recentNumericTotals(values, editing.habit.id, editing.day.key)
+        : [],
+    [values, editing],
+  );
   const accent = editing?.habit.color ?? detail?.color ?? '#FFFFFF';
 
   const pressCell = useCallback(
@@ -261,23 +277,24 @@ function PersistentApp({
         feedback('selection');
       } else {
         const after = toggleCheckboxValue(habit, before ?? undefined, day.key);
-        if (
-          store.change({
-            kind: 'entry',
-            habitId: habit.id,
-            date: day.key,
-            before,
-            after,
-          })
-        )
+        const change = {
+          kind: 'entry' as const,
+          habitId: habit.id,
+          date: day.key,
+          before,
+          after,
+        };
+        if (store.change(change)) {
+          captureQuickUndo(change);
           feedback(
             checkboxChecked(habit, after ?? undefined, day.key)
               ? 'confirm'
               : 'undo',
           );
+        }
       }
     },
-    [store, setInput, setEditing],
+    [store, setInput, setEditing, captureQuickUndo],
   );
 
   const openDetails = useCallback((habit: Habit) => {
@@ -306,17 +323,17 @@ function PersistentApp({
     if (!editing || !valid || !store.canEdit()) return;
     const before = store.getSnapshot().replay.state.values[editing.key] ?? null;
     const after = trimmed === '' ? null : numeric;
-    if (
-      before !== after &&
-      !store.change({
-        kind: 'entry',
-        habitId: editing.habit.id,
-        date: editing.day.key,
-        before,
-        after,
-      })
-    )
-      return;
+    const change = {
+      kind: 'entry' as const,
+      habitId: editing.habit.id,
+      date: editing.day.key,
+      before,
+      after,
+    };
+    if (before !== after) {
+      if (!store.change(change)) return;
+      captureQuickUndo(change);
+    }
     setEditing(null);
     if (before !== after) feedback(after === null ? 'undo' : 'confirm');
   }
@@ -326,13 +343,15 @@ function PersistentApp({
     const before =
       store.getSnapshot().replay.state.values[recording.key] ?? null;
     if (sameEntry(before, after)) return true;
-    const accepted = store.change({
-      kind: 'entry',
+    const change = {
+      kind: 'entry' as const,
       habitId: recording.habit.id,
       date: recording.day.key,
       before,
       after,
-    });
+    };
+    const accepted = store.change(change);
+    if (accepted) captureQuickUndo(change);
     if (accepted) feedback(after === null ? 'undo' : 'confirm');
     return accepted;
   }
@@ -349,12 +368,13 @@ function PersistentApp({
       .replay.state.habits.find((habit) => habit.id === detailId);
     if (!habit || !store.canEdit()) return false;
     if (colour === habit.color) return true;
-    const accepted = store.change({
-      kind: 'colour',
+    const change = {
+      kind: 'colour' as const,
       habitId: habit.id,
       before: habit.color,
       after: colour,
-    });
+    };
+    const accepted = store.change(change);
     if (accepted) feedback('confirm');
     return accepted;
   }
@@ -376,17 +396,21 @@ function PersistentApp({
         before.description === after.description
       )
         return true;
-      const accepted = store.change({
-        kind: 'habit',
+      const change = {
+        kind: 'habit' as const,
         habitId: after.id,
         index: before ? current.indexOf(before) : current.length,
         before,
         after,
-      });
-      if (accepted) feedback('confirm');
+      };
+      const accepted = store.change(change);
+      if (accepted) {
+        captureQuickUndo(change);
+        feedback('confirm');
+      }
       return accepted;
     },
-    [store],
+    [store, captureQuickUndo],
   );
   const restoreDescription = useCallback(
     (id: string, description: string | undefined) => {
@@ -641,6 +665,53 @@ function PersistentApp({
                       {editing.habit.unit}
                     </Text>
                   </View>
+                  {!!suggestedTotals.length && (
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        flexWrap: 'wrap',
+                        gap: 8,
+                        marginBottom: 12,
+                      }}
+                    >
+                      {suggestedTotals.map((total) => (
+                        <Pressable
+                          key={total}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Use recent total ${total}${editing.habit.unit ? ` ${editing.habit.unit}` : ''}`}
+                          accessibilityState={{
+                            selected: trimmed !== '' && numeric === total,
+                          }}
+                          onPress={() => {
+                            setInput(String(total));
+                            feedback('selection');
+                          }}
+                          style={{
+                            minHeight: 44,
+                            minWidth: 52,
+                            paddingHorizontal: 14,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            borderRadius: 10,
+                            backgroundColor:
+                              trimmed !== '' && numeric === total
+                                ? `${accent}22`
+                                : '#1C1C1C',
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: accent,
+                              fontSize: 16,
+                              fontVariant: ['tabular-nums'],
+                            }}
+                          >
+                            {total}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  )}
                   <Text style={styles.secondary}>
                     {valid
                       ? 'Leave blank to clear this entry.'
@@ -652,7 +723,7 @@ function PersistentApp({
                       onPress={closeDialog}
                       style={styles.action}
                     >
-                      <Text style={styles.actionText}>Cancel</Text>
+                      <Text style={styles.actionText}>Close</Text>
                     </Pressable>
                     <Pressable
                       accessibilityRole="button"
@@ -674,7 +745,7 @@ function PersistentApp({
                           { color: checkmarkColor(accent) },
                         ]}
                       >
-                        Save total
+                        Done
                       </Text>
                     </Pressable>
                   </View>
@@ -755,6 +826,15 @@ function PersistentApp({
         onRetry={() => {
           void store.retry();
         }}
+        nameColumnWidth={nameColumnWidth}
+        onNameColumnWidthChange={(after) => {
+          if (!editable) return;
+          const before =
+            store.getSnapshot().replay.state.nameColumnWidth ??
+            displayDefaults.nameColumnWidth;
+          if (store.change({ kind: 'nameColumnWidth', before, after }))
+            feedback('selection');
+        }}
         columnSpacing={columnSpacing}
         weekStart={weekStart}
         hideCompleted={hideCompleted}
@@ -796,10 +876,10 @@ function PersistentApp({
         dateFading={dateFading}
         onColumnSpacingChange={(after) => {
           if (!editable) return;
-          const before =
-            store.getSnapshot().replay.state.columnSpacing ??
-            displayDefaults.columnSpacing;
-          if (store.change({ kind: 'columnSpacing', before, after }))
+          const before = effectiveColumnSpacing(
+            store.getSnapshot().replay.state,
+          );
+          if (store.change({ kind: 'columnDensity', before, after }))
             feedback('selection');
         }}
         onWeekStartChange={(after) => {
@@ -892,6 +972,7 @@ function PersistentApp({
                 <PerformanceBoundary name="grid">
                   <HabitGrid
                     columnSpacing={gridDisplay.columnSpacing}
+                    nameColumnWidth={gridDisplay.nameColumnWidth}
                     weekDividers={gridDisplay.weekDividers}
                     tapAnimations={gridDisplay.tapAnimations}
                     checkboxStyle={gridDisplay.checkboxStyle}
@@ -910,6 +991,7 @@ function PersistentApp({
                     onReorder={reorderHabits}
                     store={store}
                     onHabitPress={openDetails}
+                    quickUndo={quickUndo}
                     onCellPress={pressCell}
                     onHistoryPress={openHistory}
                     onSettingsPress={openSettings}

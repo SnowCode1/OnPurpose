@@ -4,15 +4,16 @@ Implemented 4 October 2026. The founder requested row and column spacing and
 asked for a couple of genuinely useful additional settings. Week start and date
 fading are the assistant's choices within that scope, awaiting phone review.
 
-| Control              | Default  | Purpose                                                                                                                                                  |
-| -------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Text size            | 100%     | One app-wide slider, 85–150% in 5% steps, with Reset to 100%. Includes descriptions and their editor.                                                    |
-| Row spacing          | Standard | Compact / Standard / Roomy minimum heights of 44 / 52 / 64 points. Larger text and measured content can grow.                                            |
-| Column spacing       | Compact  | Target widths of 48 / 64 / 80 points before font scaling. Compact preserves the previous layout. Fit whole days; the actual width fills available space. |
-| Fade distant dates   | On       | Existing grid fading for empty older/future dates. Off gives every age the recent-day tone. Recorded values remain fully coloured in either mode.        |
-| Week starts on       | Monday   | Monday or Sunday ordering in the statistics calendar and weekday breakdown. Does not change recording dates, streaks or chart bucket totals.             |
-| Hide completed today | Off      | Filter rows meeting their dated success goal at Today, with Show completed for corrections.                                                              |
-| Haptic feedback      | On       | Enable or disable existing action feedback.                                                                                                              |
+| Control              | Default  | Purpose                                                                                                                                                           |
+| -------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Text size            | 100%     | One app-wide slider, 85–150% in 5% steps, with Reset to 100%. Includes descriptions and their editor.                                                             |
+| Name column width    | Standard | Narrow / Standard / Wide at 80/100/120% of the adaptive name width, with text wrapping and full cell targets.                                                     |
+| Row spacing          | Standard | Compact / Standard / Roomy minimum heights of 44 / 52 / 64 points. Larger text and measured content can grow.                                                     |
+| Column spacing       | Standard | Target widths of 44 / 48 / 64 points before font scaling. Standard preserves the previous Compact layout. Fit whole days; the actual width fills available space. |
+| Fade distant dates   | On       | Existing grid fading for empty older/future dates. Off gives every age the recent-day tone. Recorded values remain fully coloured in either mode.                 |
+| Week starts on       | Monday   | Monday or Sunday ordering in the statistics calendar and weekday breakdown. Does not change recording dates, streaks or chart bucket totals.                      |
+| Hide completed today | Off      | Filter rows meeting their dated success goal at Today, with Show completed for corrections.                                                                       |
+| Haptic feedback      | On       | Enable or disable existing action feedback.                                                                                                                       |
 
 Spacing shares geometry with date headings, cells, loading placeholders and
 reordering. Column spacing preserves the name-column width and uses the existing
@@ -142,3 +143,32 @@ unchanged. The fixed, quiet name/day separator stays visible independently.
 Animation Off suppresses checkbox/mark pulses; it does not affect haptics or
 navigation. Reduce Motion overrides the pulse even when its app toggle is On.
 Both settings wait until dismissal before changing the mounted grid.
+
+## Revised grid spacing and quick corrections (v17)
+
+Appearance begins with Name column width, Column spacing and Row spacing,
+followed by Text size. The three geometry controls retain app/OS font scaling.
+Standard columns are the previous Compact, now the default. Compact is a denser
+44-point minimum, Standard 48 and Roomy 64 (the previous Standard). Name widths
+are 80/100/120% of the existing adaptive width, bounded by space for a readable
+date column; longer names can grow row height.
+
+New selections save `columnDensity` and `nameColumnWidth` as v17 preferences,
+separate from History/Undo and preserving Redo. Old spacing events stay unchanged:
+absent/old Compact displays Standard; old Standard/Roomy displays Roomy. The old
+80-point option is superseded by the requested new Roomy density. Raw backup
+records and old replay preconditions remain intact. Both controls join deferred
+grid presentation and do not repeatedly rebuild the grid beneath Settings.
+
+Hide completed today now waits for a 700 ms pause between newly qualifying taps,
+then collapses rows. Undo/unchecking reveals immediately. A temporary Undo in the
+fixed toolbar centre restores a specific entry or archive action for four seconds,
+without hiding essential Today navigation or moving cells. Show completed remains
+available. Filtering is applied behind Settings as soon as the switch changes,
+so existing completed rows have gone on return. Presentation sizing still waits
+for dismissal. Settings gains no timing toggles.
+
+Temporary Undo fades out over 180 ms after its four-second lifetime. Hiding or
+archiving a row eases remaining names and cells together over 220 ms. Restoring
+rows through Undo uses the same shared positions. Both respect Reduce Motion;
+rotation and font/spacing geometry changes remain immediate.
