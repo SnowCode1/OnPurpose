@@ -4,6 +4,7 @@ import { GridCheckboxMark, type CheckboxFeedback } from './GridCheckboxMark';
 import { WeekDivider } from './WeekDivider';
 import {
   beginsWeek,
+  endsWeek,
   type WeekStart,
   type CheckboxStyle,
 } from './displayPreferences';
@@ -265,7 +266,11 @@ export const GridDateLabel = memo(function GridDateLabel({
       <Text style={[styles.dayNumber, { color: tone.number }]}>
         {day.number}
       </Text>
-      {weekDividers && beginsWeek(day.key, weekStart) && <WeekDivider />}
+      <WeekDivider
+        enabled={weekDividers}
+        startsWeek={beginsWeek(day.key, weekStart)}
+        endsWeek={endsWeek(day.key, weekStart)}
+      />
     </View>
   );
 });

@@ -1151,3 +1151,18 @@ grid presentation. Disabling week dividers hides live and fallback header marker
 there are no week lines in the body. Disabling tap animations suppresses the
 local pulse, retaining immediate state updates and the independent haptic setting.
 System Reduce Motion still takes precedence when animation is enabled.
+
+### 2026-10-07 — Segmented week rule trial
+
+Founder disliked the bright vertical header ticks and approved trying the
+assistant's proposal: a horizontal rule beneath the date headings, continuous
+within each week with a small gap at the saved week boundary. This supersedes
+the vertical tick treatment above. Each date paints its portion of a neutral
+1.5-point rule; four-point insets on either side make an eight-point boundary
+gap. The existing header edge retains its geometry, with no extra row or space.
+Live and loading headings use the same rule; the future-pull streak follows
+that edge and keeps its fixed right anchor.
+
+Week dividers Off restores a plain continuous hairline. The permanent name/day
+separator remains quiet and independent. This is a visual trial using the
+existing v16 preference; no storage, completion or navigation semantics change.

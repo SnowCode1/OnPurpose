@@ -46,3 +46,9 @@ export function beginsWeek(date: string, start: WeekStart): boolean {
     new Date(`${date}T12:00:00Z`).getUTCDay() === (start === 'monday' ? 1 : 0)
   );
 }
+
+export function endsWeek(date: string, start: WeekStart): boolean {
+  return (
+    new Date(`${date}T12:00:00Z`).getUTCDay() === (start === 'monday' ? 0 : 6)
+  );
+}

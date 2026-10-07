@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import {
   beginsWeek,
+  endsWeek,
   displayDefaults,
   isCheckboxStyle,
 } from '../src/displayPreferences.ts';
@@ -139,8 +140,21 @@ test('week boundaries follow saved weekdays across year, leap day and DST dates'
     assert.equal(beginsWeek(monday, 'sunday'), false);
     assert.equal(beginsWeek(sunday, 'sunday'), true);
     assert.equal(beginsWeek(sunday, 'monday'), false);
+    assert.equal(endsWeek(sunday, 'monday'), true);
+    assert.equal(endsWeek(monday, 'monday'), false);
+    assert.equal(endsWeek(sunday, 'sunday'), false);
+  }
+  for (const saturday of [
+    '2026-10-03',
+    '2024-03-02',
+    '2026-01-03',
+    '2026-03-07',
+  ]) {
+    assert.equal(endsWeek(saturday, 'sunday'), true);
+    assert.equal(endsWeek(saturday, 'monday'), false);
   }
   assert.equal(beginsWeek('2024-02-29', 'monday'), false);
+  assert.equal(endsWeek('2024-02-29', 'monday'), false);
 });
 test('v15 example retains the exact v14 event prefix', async () => {
   const previous = JSON.parse(

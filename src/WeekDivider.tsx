@@ -1,14 +1,34 @@
 import { StyleSheet, View } from 'react-native';
 // Both are overlays: they cannot shrink a date, name or touch target.
-export function WeekDivider() {
+export function WeekDivider({
+  enabled = true,
+  startsWeek = false,
+  endsWeek = false,
+}: {
+  enabled?: boolean;
+  startsWeek?: boolean;
+  endsWeek?: boolean;
+}) {
   return (
     <View
-      testID="week-divider"
+      testID={enabled ? 'week-divider' : 'date-header-rule'}
       pointerEvents="none"
       accessible={false}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={styles.week}
+      style={[
+        styles.week,
+        {
+          left: enabled && startsWeek ? 4 : 0,
+          right: enabled && endsWeek ? 4 : 0,
+          height: enabled ? 1.5 : StyleSheet.hairlineWidth,
+          backgroundColor: enabled ? '#626262' : '#363636',
+          borderTopLeftRadius: enabled && startsWeek ? 1 : 0,
+          borderBottomLeftRadius: enabled && startsWeek ? 1 : 0,
+          borderTopRightRadius: enabled && endsWeek ? 1 : 0,
+          borderBottomRightRadius: enabled && endsWeek ? 1 : 0,
+        },
+      ]}
     />
   );
 }
@@ -27,12 +47,7 @@ export function HabitNameDivider() {
 const styles = StyleSheet.create({
   week: {
     position: 'absolute',
-    left: 0,
-    top: 12,
-    bottom: 12,
-    width: 2,
-    borderRadius: 1,
-    backgroundColor: '#777777',
+    bottom: 0,
   },
   names: {
     position: 'absolute',

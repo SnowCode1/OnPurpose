@@ -281,7 +281,9 @@ Current writers/exports are v15. `checkboxStyle` is a strict boxes/marks prefere
 `GridCheckboxMark.tsx` scales both styles and owns tap-only UI-thread feedback.
 Never animate on cell mount, store acknowledgements, Undo or scroll. Respect
 ReduceMotion.System; rapid taps cancel/restart the short non-bouncy sequence.
-`WeekDivider.tsx` overlays the saved week-start edge without changing geometry.
+`WeekDivider.tsx` paints the existing header edge as a segmented horizontal rule,
+with gaps at saved week boundaries; Off leaves a plain hairline. Keep live/fallback
+headings and the future-pull streak aligned without changing geometry.
 Defer checkboxStyle and weekStart with other grid presentation preferences until
 Settings dismisses. A separate rest-day feature was declined; keep scheduling in
 effective-dated habit goals.

@@ -134,9 +134,9 @@ Week start also waits for dismissal now that the grid draws a subtle week divide
 No separate rest-day setting or record type is introduced.
 
 Appearance now includes **Week dividers** and **Tap animations**, both initially
-On and saved separately from History/Undo (v16). Week markers are brighter short
-lines confined to the date header; their weekday follows Daily tracking → Week
-starts on. The fixed, quiet name/day separator stays visible independently.
+On and saved separately from History/Undo (v16). Week divisions are gaps in a horizontal rule beneath the date headings,
+continuous within each week. Their boundary follows Daily tracking → Week
+starts on. Turning them Off leaves a plain continuous hairline. The fixed, quiet name/day separator stays visible independently.
 Animation Off suppresses checkbox/mark pulses; it does not affect haptics or
 navigation. Reduce Motion overrides the pulse even when its app toggle is On.
 Both settings wait until dismissal before changing the mounted grid.

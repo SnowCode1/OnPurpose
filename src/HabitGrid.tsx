@@ -1,4 +1,4 @@
-import { HabitNameDivider } from './WeekDivider';
+import { HabitNameDivider, WeekDivider } from './WeekDivider';
 import type {
   CheckboxStyle,
   WeekStart,
@@ -561,6 +561,7 @@ export const HabitGrid = memo(function HabitGrid({
                 <Text style={styles.dateYear}>{year}</Text>
               </DateButtonComponent>
               <HabitNameDivider />
+              <WeekDivider enabled={false} />
             </View>
             <View
               style={{ width: dateWidth, minHeight: 56, overflow: 'hidden' }}
@@ -902,7 +903,7 @@ const styles = StyleSheet.create({
   pullStreak: {
     position: 'absolute',
     right: 0,
-    bottom: 0,
+    bottom: StyleSheet.hairlineWidth,
     height: 1,
     zIndex: 2,
   },
@@ -974,7 +975,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#363636',
+    // Keep the same geometry; individual date rules paint this shared edge.
+    borderBottomColor: 'transparent',
   },
   namesHeader: {
     justifyContent: 'center',

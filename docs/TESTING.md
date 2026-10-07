@@ -1478,18 +1478,28 @@ History or clearing Redo. Try both at 85/100/150% text size and different spacin
 Rapidly check/uncheck five cells: recording must stay immediate; only tapped marks
 should gently press/release. Scroll quickly, Undo and reload: newly mounted cells
 must not animate. Enable iOS Reduce Motion and repeat; marks should change state
-without the pulse. Check Monday/Sunday week dividers align across headings and
-rows during horizontal scrolling, future reveal, rotation and row reordering.
+without the pulse. Check Monday/Sunday week boundaries stay aligned with their dates
+during horizontal scrolling, future reveal, rotation and row reordering.
 Device feel/performance and native Reduce Motion remain phone acceptance checks.
 
 ### Optional header markers and feedback
 
 Appearance: Week dividers and Tap animations should both start On. Turn each Off
-and close Settings; week markers should disappear from headings (including while
-scrolling quickly), while the name/day hairline stays fixed. Re-enable markers
-and check they are brighter short header lines, with no week lines in body rows.
+and close Settings; the date headings should have a plain continuous hairline
+(including while scrolling quickly), while the name/day hairline stays fixed.
+Re-enable dividers: a slightly brighter horizontal rule should run beneath the
+headings with an eight-point gap between weeks, without vertical ticks or week
+lines in body rows. Pull toward the future: the streak should share the existing
+header edge and retain its fixed right anchor.
 Change Monday/Sunday, rotate and try large text; boundaries must retain their dates.
 With tap animation Off, check/uncheck rapidly in both styles: values still update
 immediately and haptics retain their separate setting. Turn it On and repeat with
 iOS Reduce Motion. Reload saved-data mode to check switches persist; neither
 setting should enter History or clear Redo. Native visual feel remains phone QA.
+
+The segmented-rule trial passed `npm run check`, all 287 tests and single-worker
+iOS/web exports under a 2 GiB limit. Disposable browser review checked portrait,
+landscape, 150% text, Monday/Sunday boundary gaps, the plain disabled hairline,
+unchanged column geometry and independent name separator. Native rubber-band
+pulling and the streak's appearance against the new rule still require iPhone
+review; browser geometry is not evidence of that gesture.
