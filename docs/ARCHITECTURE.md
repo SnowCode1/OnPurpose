@@ -22,6 +22,9 @@ src/history.ts  edit-day grouping and action/effective-date presentation
 src/Icon.tsx   code-native outline icons rendered with react-native-svg
 src/HabitGrid.tsx  compact toolbar, fixed names/date headers; virtualized date columns and future pull feedback
 src/gridLayout.ts  adaptive name/day widths from measured space and text scale
+src/useGridDates.ts  bounded date windows, navigation, rotation frames and readiness
+src/DateColumns.tsx  native recycler/web adapter and frozen initial index
+src/HabitContextMenu.tsx  anchored menu appearance and local height measurement
 src/useGridScroll.ts  Reanimated UI-thread synchronization and release handlers
 src/gridNavigation.ts  pull threshold and scroll-offset-to-calendar-day mapping
 src/calendar.ts   local calendar keys and signed date arithmetic
@@ -405,10 +408,38 @@ are unchanged. A static local-import scan found no runtime import cycles; it doe
 not inspect dynamic requires or establish native runtime behaviour.
 
 Generated icon catalogues account for the largest files and should stay generated.
-ChangeStore is a focused 224-line coordinator; model.ts is larger because it
-centralizes strict event validation and replay across versions. Splitting those
-rules warrants a separate compatibility-focused change. HabitGrid remains the
-largest handwritten UI module: its calendar-window/readiness controller is a
-potential future extraction, but must preserve UI-thread synchronization, native
-list generations, date anchoring and stable render callbacks. Do not split it
-solely to reach a line-count target. This pass adds no dependencies or framework.
+ChangeStore is a focused 224-line coordinator. The following continuation separates
+model validation from replay and extracts the grid's date controller; see below.
+Do not split generated data or feature forms solely to reach a line-count target.
+These passes add no dependencies or framework.
+
+## Grid and storage responsibility boundaries
+
+| Module              | Responsibility                                                                                                  |
+| ------------------- | --------------------------------------------------------------------------------------------------------------- |
+| HabitGrid           | Measured outer width, habit rows, reorder controls, toolbar and cell render callbacks                           |
+| useGridDates        | Cached/bounded dates, Today/date/future navigation, paired native generation readiness and resize anchoring     |
+| useGridScroll       | UI-thread list synchronization, actual offsets, pull thresholds and reduced-motion-aware arrival                |
+| DateColumns         | Native recycler/web FlatList adapter, retaining native initial index until the existing generation key remounts |
+| HabitContextMenu    | Menu appearance, local height measurement and placement; held names remain reachable                            |
+| storage/types       | Event, change, state and replay TypeScript shapes; no runtime logic                                             |
+| storage/changeUtils | Classification, equality and inverse values shared by validation/replay/writes                                  |
+| storage/validation  | Strict shape/version validation and state-precondition assertions                                               |
+| storage/model       | Public compatibility facade, deterministic transitions, grouping and replay                                     |
+
+The grid remains one mounted state owner: moving hooks into useGridDates does not
+introduce another state store, per-frame callback or remounted screen. Its date
+objects retain their cache identities. The outer layout handler cancels reorder,
+prepares the current native date anchor, then changes width. Header and body keep
+their existing width/range keys and shared starting offset. Current viewport plus
+native drawing readiness releases columns; web still uses fixed content sizes.
+
+Context-menu height is local to the always-mounted menu component, so native menu
+measurement no longer updates the grid parent. Only the original Animated.View
+subtree appears/disappears, preserving transition and press/hold hit regions.
+
+Existing storage consumers continue importing model.ts. It reexports the same
+public types and helpers. Validation imports types/utilities, never model/replay,
+so splitting it does not introduce a runtime cycle. Types, error messages,
+version gates, immutable live updates, mutable startup replay and all event
+prefixes are unchanged. No schema, writer version or persisted data is changed.

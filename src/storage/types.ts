@@ -1,0 +1,144 @@
+// Event and replay shapes only. Keep runtime validation/reduction out of this
+// module so validators, adapters and replay can depend on one type boundary.
+import type { Habit } from '../habits.ts';
+import type { EntryValue, EntryValues } from '../entries.ts';
+import type { RowSpacing } from '../rowSpacing.ts';
+import type {
+  CheckboxStyle,
+  ColumnSpacing,
+  NameColumnWidth,
+  WeekStart,
+} from '../displayPreferences.ts';
+
+export type StoredState = {
+  habits: Habit[];
+  values: EntryValues;
+  hapticsEnabled: boolean;
+  rowSpacing?: RowSpacing;
+  columnSpacing?: ColumnSpacing;
+  columnDensity?: ColumnSpacing;
+  nameColumnWidth?: NameColumnWidth;
+  weekStart?: WeekStart;
+  dateFading?: boolean;
+  checkboxStyle?: CheckboxStyle;
+  weekDividers?: boolean;
+  tapAnimations?: boolean;
+  textScale?: number;
+  hideCompleted?: boolean;
+};
+export type DeletedHabit = {
+  habit: Habit;
+  entries: Record<string, EntryValue>;
+};
+export type Change =
+  | {
+      kind: 'entry';
+      habitId: string;
+      date: string;
+      before: EntryValue | null;
+      after: EntryValue | null;
+    }
+  | { kind: 'colour'; habitId: string; before: string; after: string }
+  | {
+      kind: 'habit';
+      habitId: string;
+      index: number;
+      before: Habit | null;
+      after: Habit | null;
+    }
+  | {
+      kind: 'deleteHabit';
+      habitId: string;
+      index: number;
+      before: DeletedHabit | null;
+      after: DeletedHabit | null;
+    }
+  | { kind: 'order'; before: string[]; after: string[] }
+  | { kind: 'haptics'; before: boolean; after: boolean }
+  | { kind: 'rowSpacing'; before: RowSpacing; after: RowSpacing }
+  | { kind: 'columnSpacing'; before: ColumnSpacing; after: ColumnSpacing }
+  | { kind: 'columnDensity'; before: ColumnSpacing; after: ColumnSpacing }
+  | { kind: 'nameColumnWidth'; before: NameColumnWidth; after: NameColumnWidth }
+  | { kind: 'weekStart'; before: WeekStart; after: WeekStart }
+  | { kind: 'weekDividers'; before: boolean; after: boolean }
+  | { kind: 'tapAnimations'; before: boolean; after: boolean }
+  | { kind: 'checkboxStyle'; before: CheckboxStyle; after: CheckboxStyle }
+  | { kind: 'dateFading'; before: boolean; after: boolean }
+  | { kind: 'textScale'; before: number; after: number }
+  | { kind: 'hideCompleted'; before: boolean; after: boolean };
+export type PreferenceChange = Extract<
+  Change,
+  {
+    kind:
+      | 'haptics'
+      | 'rowSpacing'
+      | 'columnSpacing'
+      | 'columnDensity'
+      | 'nameColumnWidth'
+      | 'weekStart'
+      | 'weekDividers'
+      | 'tapAnimations'
+      | 'checkboxStyle'
+      | 'dateFading'
+      | 'textScale'
+      | 'hideCompleted';
+  }
+>;
+export type HabitChange = Exclude<Change, PreferenceChange>;
+export type EventMeta = {
+  version:
+    1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17;
+  id: string;
+  sequence: number;
+  recordedAt: string;
+  timeZone: string;
+  utcOffsetMinutes: number;
+};
+export type LegacyChangeEvent = EventMeta & { version: 1 } & (
+    | { type: 'change'; change: Change }
+    | { type: 'undo' | 'redo'; targetId: string; change: Change }
+  );
+export type CurrentChangeEvent = EventMeta & {
+  version:
+    2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17;
+} & (
+    | { type: 'change'; groupId: string; change: HabitChange }
+    | { type: 'undo' | 'redo'; targetId: string; change: HabitChange }
+    | { type: 'preference'; change: PreferenceChange }
+  );
+export type ChangeEvent = LegacyChangeEvent | CurrentChangeEvent;
+export type StoredEvent =
+  (EventMeta & { type: 'initialize'; habits: Habit[] }) | ChangeEvent;
+export type HistoryAction = EventMeta & {
+  type: 'change';
+  change: HabitChange;
+  firstRecordedAt: string;
+  firstSequence: number;
+  editCount: number;
+  lastChangedSequence: number;
+};
+export type RedoAction = { action: HistoryAction; undoId: string };
+export type Replay = {
+  state: StoredState;
+  undo: HistoryAction[];
+  redo: RedoAction[];
+  lastGroup: HistoryAction | null;
+  legacyUndo: LegacyChangeEvent[];
+  legacyRedo: LegacyChangeEvent[];
+  hasV2: boolean;
+  hasV3: boolean;
+  hasV4: boolean;
+  hasV5: boolean;
+  hasV6: boolean;
+  hasV7: boolean;
+  hasV8: boolean;
+  hasV9: boolean;
+  hasV10: boolean;
+  hasV11: boolean;
+  hasV12: boolean;
+  hasV13: boolean;
+  hasV14: boolean;
+  hasV15: boolean;
+  hasV16: boolean;
+  hasV17: boolean;
+};

@@ -313,10 +313,18 @@ prefixes. Read docs/SETTINGS.md and STORAGE.md. New column sizes are 44/48/64
 old Standard/Roomy to Roomy without rewriting old `columnSpacing` events or their
 preconditions. Order geometry controls Name width, Column spacing, Row spacing.
 
-`DateNavigationSheet.tsx` owns the native date-picker draft. `HabitGrid.tsx`
-loads signed-origin windows around selected dates; keep old/future entry keys
+`DateNavigationSheet.tsx` owns the native date-picker draft. `useGridDates.ts`
+owns signed-origin date windows, Today/future navigation, native generation frames,
+readiness and resize anchoring. `HabitGrid.tsx` owns measured outer width, rows and
+reorder cancellation; call prepareResize before changing that width. Keep the
+controller in the same mounted grid, not a conditional component. Preserve the
+existing discrete callbacks into useGridScroll; keep old/future entry keys
 exact, date identities shared and windows compact only at final native settling.
-Native FlashList 2.3.3 recycles date columns; web retains RN Web FlatList.
+`DateColumns.tsx` owns native FlashList 2.3.3/web FlatList adaptation and the
+frozen native initial index; list keys still reset width/range generations.
+`HabitContextMenu.tsx` owns menu measurement/placement, staying mounted when closed
+to retain its measured height. Keep the held name uncovered and close before
+dispatching actions; measurement must not update the grid parent.
 Width changes reset measured lists, using the same stable frame/contentOffset; hold old mount
 events until both current viewports and native onLoad signals are ready, rejecting stale frames.
 Never require an exact total recycler content width to reveal cells; that width is estimated.
@@ -406,3 +414,13 @@ Keep its override out of env files: SDK 57's virtual env merges local files over
 runtime flags. Production JS in Expo Go is not a compiled native Release build.
 eas.json's internal preview specifies Release without dev-client; cloud project,
 bundle ID, signing and device enrolment remain manual setup, not completed builds.
+
+Storage responsibility boundaries: `storage/model.ts` remains the public facade
+and owns deterministic live/replay transitions and grouping. `storage/types.ts`
+contains type-only shapes; `storage/validation.ts` owns exact fields/version gates,
+date/daily/habit validation and precondition assertions; `storage/changeUtils.ts`
+owns preference classification, structural equality and inversion. Validation
+must not import replay/model at runtime. Preserve all public model exports,
+legacy rejection semantics, mutable replay versus immutable live updates, v17
+writers and schema 1 when changing these modules. Do not bypass validation to
+make the split appear faster.

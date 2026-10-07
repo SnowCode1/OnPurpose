@@ -15,8 +15,11 @@ once, not on every launch. Habit creation, renaming, units, icons, start dates, 
 Effective-dated success goals and weekday schedules also persist.
 Full-screen statistics are derived from saved values; comments remain later work. See [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md).
 
-`src/storage/model.ts` defines version-17 events and deterministic replay, with
-backward-compatible interpretation of existing version-1–16 records. The version
+`src/storage/model.ts` remains the public entry point for version-17 events and
+deterministic replay, with backward-compatible interpretation of existing
+version-1–16 records. `types.ts` owns event/replay shapes, `validation.ts` owns
+strict field/version checks, and `changeUtils.ts` owns classification, equality
+and inversion. These modules do not import replay at runtime. The version
 sections below describe when each field was introduced; new writes use v17.
 `repository.ts` implements the native database operations against a small SQL
 interface; `native.ts` connects it to Expo SQLite and native UUID/SHA-256 support.
@@ -474,3 +477,12 @@ Redo and grouping, and remain outside habit History/Undo. The [v17 example](exam
 extends the exact v16 prefix. The temporary grid Undo is a normal guarded
 compensating entry change, preserving append-only history and visible failure/retry.
 Its receipt and timers are ephemeral and excluded from exports.
+
+## Responsibility split verification
+
+On 7 October 2026 validation/types/utilities were extracted behind the existing
+model.ts exports. A transpiled-function comparison against the prior commit found
+all 26 moved/retained storage function bodies identical, and the public runtime
+export list unchanged. All historical replay/export fixtures and the full test
+suite pass. This is a responsibility refactor, not a storage-engine optimization;
+there is no schema migration, event rewrite, reseed or altered write queue.

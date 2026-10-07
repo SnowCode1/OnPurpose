@@ -554,3 +554,14 @@ App. The actual-dialog/controller test verifies that multiple keystrokes cause
 no further host commits, while Done still reads the latest entry before saving.
 This is a React ownership/work-count improvement; no new phone timing was taken.
 The date renderer and scrolling algorithms are unchanged by the refactor.
+
+### Grid/controller organization
+
+useGridDates now owns the same bounded range, navigation and readiness state that
+previously lived directly in HabitGrid. The hook runs in the same mounted owner;
+useGridScroll's synchronization and streak/shared offsets remain on the UI thread.
+DateColumns retains native recycling, stable initial index and existing width/
+range generation keys. Context-menu measurement moves to local component state;
+a test confirms it causes no additional parent commits. Storage validation was
+extracted with identical function bodies, not weakened or optimized. This pass
+makes future performance work easier to isolate; no phone speedup is claimed.

@@ -1691,3 +1691,27 @@ Statistics, type, Close/reopen and Done; try a recent-total suggestion, zero and
 clear. Check a categorical entry and chart select/clear. Backup Cancel must leave
 the current store untouched; restore remains an explicitly confirmed operation.
 These mocks and the bundle export do not establish physical-iPhone behaviour.
+
+## Grid/controller and model organization
+
+`grid-coordination.test.mjs` mounts the actual useGridDates hook with bounded
+native-scroll mocks. It covers native-position rotation anchoring, rejection of
+old-generation callbacks, ordered layout/draw readiness, shared date identities,
+both-list future reveal, animated Today arrival before future collapse,
+single-boundary history expansion, final-settle compaction and distant bounded
+navigation. The actual DateColumns adapter retains its native initial index until
+its generation key changes. The menu test covers uncovered held-name hit regions,
+local measurement with no parent commits and close-before-action ordering.
+`grid-readiness.test.mjs` now extracts the unchanged handlers from useGridDates;
+existing native/web readiness and useGridScroll tests still apply.
+
+All 331 tests and the single-worker iOS export passed under memory limits.
+Transpiled-function comparison against the preceding commit found all 26 storage
+functions and 11 moved grid handlers identical; model's public runtime exports
+also match. These supplement the existing legacy fixture, SQLite, save failure,
+recovery, export and undo tests. Check/type/lint/format must remain clean.
+
+Phone checks after reload: rotate in both directions at an older date, fling
+through history and return to Today, pull into tomorrow, then hold a habit and
+continue dragging with its menu open. Verify names/cells stay aligned and retain
+the accepted animations. Local mocks/export do not establish native acceptance.

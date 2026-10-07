@@ -1332,3 +1332,19 @@ signing and device enrolment are still prerequisites, not completed deployment.
   tightly related compatibility rules. No dependency or storage format changes.
 - GitNexus had no OnPurpose index. The founder allowed indexing if helpful;
   direct reference tracing and tests were sufficient for these bounded changes.
+
+## 7 October 2026: continue grid and replay organization
+
+- Founder authorized continuing with the remaining large files.
+- Extract useGridDates around existing date-window/navigation/readiness/rotation
+  state. Keep useGridScroll's UI-thread protocol and paired native list generation
+  keys. DateColumns owns the small native/web adapter and frozen native index.
+- Move context-menu measurement into HabitContextMenu. It stays mounted when
+  closed, preserving measured height and existing Animated.View enter/exit. Keep
+  the selected name uncovered for continued hold/drag and dispatch after closing.
+- Split event types, strict validation and value utilities from replay behind
+  model.ts's unchanged public interface. Validation cannot import replay. Retain
+  v17 writers, exact v1–v16 prefixes and SQL schema 1.
+- Function comparison found all 26 storage and 11 moved grid-handler bodies
+  identical. New controller tests cover real hook transitions with bounded mocks;
+  these checks do not prove phone layout/gesture or frame-rate behaviour.

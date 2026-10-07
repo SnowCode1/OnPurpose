@@ -6,15 +6,15 @@ import ts from 'typescript';
 // Exercise the actual native callback boundary without creating native lists or
 // enormous DOM trees. Estimated recycler width must never block drawn cells.
 const source = readFileSync(
-  new URL('../src/HabitGrid.tsx', import.meta.url),
+  new URL('../src/useGridDates.ts', import.meta.url),
   'utf8',
 );
 const parsed = ts.createSourceFile(
-  'HabitGrid.tsx',
+  'useGridDates.ts',
   source,
   ts.ScriptTarget.Latest,
   true,
-  ts.ScriptKind.TSX,
+  ts.ScriptKind.TS,
 );
 const names = new Set([
   'finishLayout',
