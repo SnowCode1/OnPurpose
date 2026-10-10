@@ -89,8 +89,11 @@ export function ChartFrame({
   }
   return (
     <View style={{ gap: 6 }}>
-      <View style={styles.plotRow}>
-        <View style={[styles.axis, { height }]} accessible={false}>
+      <View style={[styles.plotRow, !axis.length && { gap: 0 }]}>
+        <View
+          style={[styles.axis, { height }, !axis.length && { width: 0 }]}
+          accessible={false}
+        >
           {labels.map((label, index) => (
             <Text
               key={index}

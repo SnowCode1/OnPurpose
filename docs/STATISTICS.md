@@ -123,16 +123,23 @@ month-arrow details in Screen above; calculation rules below are unchanged.
   (a band for "between"). Longer windows show the average per calendar day of
   each week (year) or month (all time) so bars compare with the daily goal.
 - **Success over time:** faint columns are each week's (month's) share of
-  scheduled days met; the line is a weighted success rate where a day's weight
-  halves every 14 days (normalised, so early values are unbiased). It uses the
-  whole history, a fixed half-life (the current value does not change with the
-  range), skips days off, counts today only once it succeeds, and appears after
-  ~3 observations. Period goals use finished whole periods with a half-life of
-  four periods; habits without a goal show days recorded.
-- **Streaks:** the streak each day ended with — it climbs with each success and
-  drops to zero on a miss; days off, rest periods and an unfinished today hold
-  it. It ends at the current-streak tile and peaks at the longest (tested);
-  period goals count periods. The dot marks the longest in the window.
+  scheduled days met; the line is a centred Gaussian smoothing of the success
+  observations (sigma 7 calendar days, so about two weeks either side carry the
+  weight). The founder found the first, one-sided weighted average jagged; the
+  centred curve has no daily kinks, and at today only earlier days exist. It
+  uses the whole history (the value at a date never changes with the range),
+  skips days off, counts today only once it succeeds, and appears once about
+  two observations are nearby. Period goals smooth finished whole periods over
+  two periods; habits without a goal show days recorded.
+- **Streaks:** the founder found the first, climbing-line streak chart broke
+  down for long streaks. Now a timeline: each bar spans the calendar days a
+  streak lasted and gaps are breaks, so 5-day and 500-day streaks read alike;
+  the ongoing streak is brightest, a streak that began before the window fades
+  in from the left, and bars wide enough show their length. Below it, the best
+  three streaks of all time with dates. Runs are carried across days off and
+  rest periods, an unfinished today keeps the streak, and period goals count
+  periods; the longest run equals the longest-streak tile and the ongoing run
+  the current streak (tested).
 - **Calendar:** up to ~3 months, continuous rows of weeks (values inside number
   days, category dots, a dot for text); successful days in a row join into one
   bar, bridged across days off within the row; tapping edits as before. Longer

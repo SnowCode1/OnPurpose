@@ -176,6 +176,7 @@ test('numeric drafts stay local; Close cancels, invalid input cannot save, and D
       },
     },
     './colors': colors,
+    './Icon': { Icon: () => null },
     './numericSuggestions': suggestions,
     './haptics': { feedback: () => {} },
     './useKeyboardFocus': load('useKeyboardFocus.ts', {

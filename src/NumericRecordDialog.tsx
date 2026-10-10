@@ -11,6 +11,7 @@ import {
   type TextInput as NativeTextInput,
 } from 'react-native';
 import { Text, TextInput } from './Typography';
+import { Icon } from './Icon';
 import { useKeyboardFocus } from './useKeyboardFocus';
 import type { EntryDay } from './calendar';
 import type { EntryValues } from './entries';
@@ -21,6 +22,8 @@ import { recentNumericTotals } from './numericSuggestions';
 
 // Key the dialog by habit/date. Typing stays local; Done reads the latest store
 // precondition through onSave, and Close discards this uncommitted draft.
+// Close (top right) and Done (beside the field) stay above the keyboard; the
+// iOS decimal pad has no return key of its own.
 export function NumericRecordDialog({
   habit,
   day,
@@ -77,28 +80,70 @@ export function NumericRecordDialog({
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.eyebrow}>DAILY TOTAL</Text>
-            <Heading style={[styles.dialogTitle, { color: accent }]}>
-              {habit.name}
-            </Heading>
+            <View style={styles.header}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.eyebrow}>DAILY TOTAL</Text>
+                <Heading style={[styles.dialogTitle, { color: accent }]}>
+                  {habit.name}
+                </Heading>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+                accessibilityHint="Closes without saving this total"
+                onPress={onClose}
+                hitSlop={6}
+                style={({ pressed }) => [
+                  styles.close,
+                  { opacity: pressed ? 0.5 : 1 },
+                ]}
+              >
+                <Icon name="close" />
+              </Pressable>
+            </View>
             <>
               <Text style={styles.secondary}>{day.fullLabel}</Text>
               <View style={styles.inputRow}>
-                <TextInput
-                  {...inputFocus}
-                  keyboardType="decimal-pad"
-                  accessibilityLabel={`Daily total${habit.unit ? ` in ${habit.unit}` : ''}`}
-                  value={input}
-                  onChangeText={setInput}
-                  onSubmitEditing={saveNumber}
-                  selectionColor={accent}
-                  placeholder="0"
-                  placeholderTextColor="#555555"
-                  style={[
-                    styles.input,
-                    { color: accent, borderColor: `${accent}66` },
-                  ]}
-                />
+                <View style={styles.field}>
+                  <TextInput
+                    {...inputFocus}
+                    keyboardType="decimal-pad"
+                    returnKeyType="done"
+                    accessibilityLabel={`Daily total${habit.unit ? ` in ${habit.unit}` : ''}`}
+                    value={input}
+                    onChangeText={setInput}
+                    onSubmitEditing={saveNumber}
+                    selectionColor={accent}
+                    placeholder="0"
+                    placeholderTextColor="#555555"
+                    style={[
+                      styles.input,
+                      { color: accent, borderColor: `${accent}66` },
+                    ]}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ disabled: !valid || !editable }}
+                    disabled={!valid || !editable}
+                    onPress={saveNumber}
+                    style={({ pressed }) => [
+                      styles.done,
+                      {
+                        backgroundColor: accent,
+                        opacity: !valid || !editable ? 0.4 : pressed ? 0.75 : 1,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.doneText,
+                        { color: checkmarkColor(accent) },
+                      ]}
+                    >
+                      Done
+                    </Text>
+                  </Pressable>
+                </View>
                 <Text style={[styles.inputUnit, { color: accent }]}>
                   {habit.unit}
                 </Text>
@@ -155,38 +200,6 @@ export function NumericRecordDialog({
                   ? 'Leave blank to clear this entry.'
                   : 'Enter a number of zero or more.'}
               </Text>
-              <View style={styles.actions}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={onClose}
-                  style={styles.action}
-                >
-                  <Text style={styles.actionText}>Close</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ disabled: !valid || !editable }}
-                  disabled={!valid || !editable}
-                  onPress={saveNumber}
-                  style={[
-                    styles.action,
-                    styles.primaryAction,
-                    {
-                      backgroundColor: accent,
-                      opacity: valid && editable ? 1 : 0.4,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.primaryActionText,
-                      { color: checkmarkColor(accent) },
-                    ]}
-                  >
-                    Done
-                  </Text>
-                </Pressable>
-              </View>
             </>
           </ScrollView>
         </View>
@@ -221,25 +234,34 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   dialogTitle: { fontSize: 26, fontWeight: '600', marginBottom: 12 },
-  secondary: { color: '#A1A1A1', fontSize: 13, lineHeight: 20 },
-  inputRow: { marginVertical: 20 },
-  input: { borderWidth: 1, borderRadius: 14, fontSize: 36, padding: 16 },
-  inputUnit: { fontSize: 12, marginTop: 8 },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginTop: 24,
-  },
-  action: {
-    minHeight: 48,
-    justifyContent: 'center',
+  secondary: { color: '#A1A1A1', fontSize: 13, lineHeight: 21 },
+  header: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  close: {
+    width: 44,
+    height: 44,
+    marginTop: -10,
+    marginRight: -12,
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    justifyContent: 'center',
   },
-  actionText: { color: '#D0D0D0' },
-  primaryAction: { borderRadius: 14 },
-  primaryActionText: { color: '#000000', fontWeight: '600' },
+  inputRow: { marginVertical: 20 },
+  field: { flexDirection: 'row', alignItems: 'stretch', gap: 10 },
+  input: {
+    flex: 1,
+    minWidth: 0,
+    borderWidth: 1,
+    borderRadius: 14,
+    fontSize: 36,
+    padding: 16,
+  },
+  done: {
+    minWidth: 84,
+    minHeight: 48,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doneText: { fontSize: 17, fontWeight: '600' },
+  inputUnit: { fontSize: 12, marginTop: 8 },
 });

@@ -327,80 +327,103 @@ export function observations(
   return result.sort((a, b) => a.day - b.day);
 }
 
-export const TREND_HALF_LIFE_DAYS = 14;
-/** About three recent observations before the trend is worth drawing. */
-export const TREND_MINIMUM_WEIGHT = 2.5;
+/** About two weeks either side carries most of the weight. */
+export const TREND_SIGMA_DAYS = 7;
+/** Roughly two nearby observations before the trend is worth drawing. */
+export const TREND_MINIMUM_WEIGHT = 2;
 
 /**
- * A weighted success rate for each day from `from` to `to`: every earlier
- * observation counts, and its weight halves for every half-life of calendar
- * days back. Normalising by total weight keeps early values unbiased.
+ * A smoothed success rate for each day from `from` to `to`: a weighted share
+ * of nearby observations on both sides, with Gaussian weights (sigma in
+ * calendar days). Unlike a running average it has no daily kinks; at the
+ * latest day only earlier observations exist, so it reads as recent success.
  */
-export function trendRates(
+export function smoothedRates(
   obs: Observation[],
   from: number,
   to: number,
-  halfLife = TREND_HALF_LIFE_DAYS,
+  sigma = TREND_SIGMA_DAYS,
   minimumWeight = 0,
 ): (number | null)[] {
-  const decay = 0.5 ** (1 / halfLife),
+  const reach = Math.ceil(sigma * 3),
     rates: (number | null)[] = [];
-  let sum = 0,
-    weight = 0,
-    index = 0,
-    day = obs.length ? Math.min(obs[0].day, from) : from;
-  for (; day <= to; day++) {
-    sum *= decay;
-    weight *= decay;
-    for (; index < obs.length && obs[index].day === day; index++) {
-      sum += Number(obs[index].met);
-      weight += 1;
+  let first = 0;
+  for (let day = from; day <= to; day++) {
+    while (first < obs.length && obs[first].day < day - reach) first++;
+    let sum = 0,
+      weight = 0;
+    for (let i = first; i < obs.length && obs[i].day <= day + reach; i++) {
+      const distance = obs[i].day - day,
+        w = Math.exp(-(distance * distance) / (2 * sigma * sigma));
+      weight += w;
+      sum += w * Number(obs[i].met);
     }
-    if (day >= from)
-      rates.push(
-        weight > 1e-9 && weight >= minimumWeight ? sum / weight : null,
-      );
+    rates.push(weight > 1e-9 && weight >= minimumWeight ? sum / weight : null);
   }
   return rates;
 }
 
+/** One streak: the calendar span it covered and its length in its unit. */
+export type StreakRun = {
+  from: number;
+  to: number;
+  length: number;
+  /** Still unbroken today (an unfinished today does not break it). */
+  ongoing: boolean;
+};
+
 /**
- * The streak each day ends with. Goal: consecutive successful scheduled days;
- * off days, rest periods and no-goal days hold it. Period: consecutive met
- * periods. Recording: consecutive calendar days with an entry. An unfinished
- * today holds yesterday's value.
+ * Every streak in the habit's history. Goal: successful scheduled days in a
+ * row, carried across days off and no-goal days. Period: met periods in a row
+ * (rest and partial periods hold; non-period goals break). Recording: calendar
+ * days in a row with an entry. The longest length matches the longest-streak
+ * tile and an ongoing run matches the current streak.
  */
-export function streakValues(
+export function streakRuns(
   habit: Habit,
   series: SeriesDay[],
   mode: SuccessMode,
   obs: Observation[],
   today: string,
-): number[] {
+): StreakRun[] {
   const now = dayNumber(today),
-    values: number[] = [];
-  let streak = 0,
-    next = 0;
-  for (const item of series) {
-    if (item.outcome === 'outside') streak = 0;
-    else if (item.outcome !== 'future') {
-      if (mode === 'recording') {
-        if (isRecorded(habit, item.value)) streak++;
-        else if (item.day < now) streak = 0;
-      } else if (mode === 'goal') {
-        if (item.outcome === 'met') streak++;
-        else if (item.outcome === 'missed') streak = 0;
-      } else {
-        // Period streaks count whole periods and only continue through
-        // period goals; rest and partial periods hold them.
-        if (!item.goal?.period) streak = 0;
-        for (; next < obs.length && obs[next].day <= item.day; next++)
-          if (obs[next].period) streak = obs[next].met ? streak + 1 : 0;
+    runs: StreakRun[] = [];
+  let run: StreakRun | null = null;
+  const close = () => {
+    if (run) runs.push(run);
+    run = null;
+  };
+  const extend = (from: number, to: number) => {
+    if (run) {
+      run.to = to;
+      run.length++;
+    } else run = { from, to, length: 1, ongoing: false };
+  };
+  if (mode === 'period') {
+    let next = 0;
+    for (const item of series) {
+      if (item.outcome === 'future') break;
+      if (item.outcome === 'outside' || !item.goal?.period) close();
+      for (; next < obs.length && obs[next].day <= item.day; next++) {
+        const result = obs[next];
+        if (!result.period) continue;
+        if (result.met) extend(result.from, result.day);
+        else close();
       }
     }
-    values.push(streak);
-  }
-  return values;
+  } else
+    for (const item of series) {
+      if (item.outcome === 'future') break;
+      if (item.outcome === 'outside') close();
+      else if (mode === 'recording') {
+        if (isRecorded(habit, item.value)) extend(item.day, item.day);
+        else if (item.day < now) close();
+      } else if (item.outcome === 'met') extend(item.day, item.day);
+      else if (item.outcome === 'missed') close();
+    }
+  if (run) (run as StreakRun).ongoing = true;
+  close();
+  return runs;
 }
 
 /** Ticks for a time axis: weeks, months or years depending on the span. */

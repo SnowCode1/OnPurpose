@@ -16,10 +16,10 @@ import {
   niceMaximum,
   observations,
   statsWindow,
-  streakValues,
+  streakRuns,
   successMode,
   timeTicks,
-  trendRates,
+  smoothedRates,
   weekStartOf,
 } from '../src/statsSeries.ts';
 import { categoryColours } from '../src/categoryColours.ts';
@@ -66,13 +66,13 @@ test('series outcomes match evaluateGoal for every sample habit and day', async 
   }
 });
 
-test('the streak line ends at the current streak and peaks at the longest', async () => {
+test('streak runs end at the current streak and peak at the longest', async () => {
   const { habits, values, events } = await sample();
   for (const habit of habits) {
     const { start, series } = history(habit, values, events);
     const mode = successMode(series);
     const obs = observations(habit, series, mode, today);
-    const line = streakValues(habit, series, mode, obs, today);
+    const runs = streakRuns(habit, series, mode, obs, today);
     let current, longest;
     if (mode === 'period') {
       const periods = periodStatistics(habit, values, start, today, start);
@@ -88,8 +88,23 @@ test('the streak line ends at the current streak and peaks at the longest', asyn
       current = stats.streak;
       longest = stats.bestStreak;
     }
-    assert.equal(line.at(-1), current, `${habit.id} current (${mode})`);
-    assert.equal(Math.max(0, ...line), longest, `${habit.id} longest`);
+    const ongoing = runs.filter((run) => run.ongoing);
+    assert.ok(ongoing.length <= 1, `${habit.id} one ongoing run at most`);
+    assert.equal(
+      ongoing[0]?.length ?? 0,
+      current,
+      `${habit.id} current (${mode})`,
+    );
+    assert.equal(
+      Math.max(0, ...runs.map((run) => run.length)),
+      longest,
+      `${habit.id} longest`,
+    );
+    for (const [index, run] of runs.entries()) {
+      assert.ok(run.from <= run.to, `${habit.id} run spans forwards`);
+      if (index)
+        assert.ok(runs[index - 1].to < run.from, `${habit.id} ordered`);
+    }
   }
 });
 
@@ -110,32 +125,34 @@ test('period observations agree with the period goal results', async () => {
   }
 });
 
-test('the weighted trend is unbiased, halves weights each half-life and holds over gaps', () => {
-  const steady = Array.from({ length: 20 }, (_, day) => ({
+test('the smoothed trend is unbiased, symmetric, gentle day to day and needs nearby data', () => {
+  const steady = Array.from({ length: 60 }, (_, day) => ({
     day,
     met: true,
     from: day,
     period: false,
   }));
-  assert.deepEqual(new Set(trendRates(steady, 0, 19)), new Set([1]));
-  // One miss now and one success a half-life earlier: weights 1 and 1/2.
-  const rates = trendRates(
-    [
-      { day: 0, met: true, from: 0, period: false },
-      { day: 14, met: false, from: 14, period: false },
-    ],
-    0,
-    20,
+  assert.deepEqual(new Set(smoothedRates(steady, 0, 59)), new Set([1]));
+  // Alternating success and misses: smoothing removes the daily zigzag.
+  const alternating = steady.map((item) => ({
+    ...item,
+    met: item.day % 2 === 0,
+  }));
+  const rates = smoothedRates(alternating, 10, 30);
+  for (let i = 1; i < rates.length; i++)
+    assert.ok(Math.abs(rates[i] - rates[i - 1]) < 0.01, 'no zigzag');
+  assert.ok(Math.abs(rates[10] - 0.5) < 0.01);
+  // A single miss pulls the curve down symmetrically and gently.
+  const dip = steady.map((item) => ({ ...item, met: item.day !== 30 }));
+  const around = smoothedRates(dip, 24, 36);
+  assert.ok(Math.abs(around[2] - around[10]) < 1e-9, 'symmetric');
+  assert.ok(around[6] > 0.9, 'one miss is a gentle dip');
+  assert.deepEqual(smoothedRates([], 0, 2), [null, null, null]);
+  assert.deepEqual(
+    smoothedRates([{ day: 0, met: true, from: 0, period: false }], 0, 1, 7, 2),
+    [null, null],
+    'one observation is not a trend',
   );
-  assert.equal(rates[0], 1, 'the first observation is not pulled towards 0');
-  assert.ok(Math.abs(rates[14] - 1 / 3) < 1e-9);
-  assert.ok(Math.abs(rates[20] - 1 / 3) < 1e-9, 'no observations: unchanged');
-  assert.deepEqual(trendRates([], 0, 2), [null, null, null]);
-  assert.deepEqual(trendRates(steady, 0, 3, 14, 2.5).slice(0, 3), [
-    null,
-    null,
-    1,
-  ]);
 });
 
 test('bins partition the window with calendar-day averages and goal counts', async () => {

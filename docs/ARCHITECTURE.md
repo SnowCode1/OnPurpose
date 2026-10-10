@@ -12,7 +12,7 @@ A local-midnight timer and foreground check update the current day.
 index.ts       registers the app with Expo
 App.tsx        screen coordination, habit actions and nested native presentations
 src/useDailyEntryActions.ts  stable grid/statistics input actions and fresh save preconditions
-src/NumericRecordDialog.tsx  local numeric draft, validation, suggestions and Done/Close
+src/NumericRecordDialog.tsx  local numeric draft, validation, suggestions; Close top right, Done beside the field
 src/useBackupActions.ts  native backup confirmations, busy guard and error handling
 src/storage/   versioned event/replay model, SQLite transactions, queue and backups
 src/usePersistentStore.ts  store subscription, opening and foreground retry

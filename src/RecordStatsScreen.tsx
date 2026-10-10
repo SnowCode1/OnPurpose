@@ -40,11 +40,11 @@ import {
   habitSeries,
   observations,
   statsWindow,
-  streakValues,
+  streakRuns,
   successMode,
   successUnit,
-  trendRates,
-  TREND_HALF_LIFE_DAYS,
+  smoothedRates,
+  TREND_SIGMA_DAYS,
   TREND_MINIMUM_WEIGHT,
   type SeriesDay,
 } from './statsSeries';
@@ -119,26 +119,25 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
     () => observations(habit, history, mode, today),
     [habit, history, mode, today],
   );
+  // Period goals are judged once per period, so smooth over ~2 periods.
   const trend = useMemo(
     () =>
-      // Period goals are judged once per period: weigh the last ~4 periods.
-      trendRates(
+      smoothedRates(
         observed,
         from,
         window.to,
-        period ? period.days * 4 : TREND_HALF_LIFE_DAYS,
-        period ? 1.5 : TREND_MINIMUM_WEIGHT,
+        period ? period.days * 2 : TREND_SIGMA_DAYS,
+        period ? 1 : TREND_MINIMUM_WEIGHT,
       ),
     [observed, from, window.to, period],
   );
-  const streakLine = useMemo(() => {
-    const all = streakValues(habit, history, mode, observed, today),
-      first = dayNumber(trackingStart);
-    return Array.from({ length: span }, (_, index) => {
-      const day = from + index;
-      return day < first || day - first >= all.length ? 0 : all[day - first];
-    });
-  }, [habit, history, mode, observed, today, trackingStart, span, from]);
+  const runs = useMemo(
+    () => streakRuns(habit, history, mode, observed, today),
+    [habit, history, mode, observed, today],
+  );
+  const visibleRuns = runs.filter(
+    (run) => run.to >= from && run.from <= window.to,
+  );
   const timeOfDay = useMemo(
     () => timeOfDayStatistics(habit, values, actions, dateKey(from), end),
     [habit, values, actions, from, end],
@@ -183,7 +182,10 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
       ),
     );
   const trendNow = trend.findLast((value) => value !== null);
-  const longest = Math.max(0, ...streakLine);
+  const longestRun = visibleRuns.reduce<(typeof runs)[number] | null>(
+    (best, run) => (!best || run.length >= best.length ? run : best),
+    null,
+  );
   const selectedLabel = habit.categories?.find(
     (option) => option.id === category,
   )?.label;
@@ -298,10 +300,10 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
         }
         info={
           mode === 'period'
-            ? `Columns show whether each finished period met its target. The line is a trend that weighs recent ${periodNoun} more; rest periods and the current period don’t count.`
+            ? `Columns show whether each finished period met its target. The line smooths success over about two ${periodNoun} either side; rest periods and the current period don’t count.`
             : mode === 'recording'
-              ? 'Columns show the share of days with an entry. The line is a trend that weighs recent days more: a day’s weight halves every two weeks. Today counts once it’s recorded.'
-              : 'Columns show the share of scheduled days that met the goal. The line is a trend that weighs recent days more: a day’s weight halves every two weeks. Days off don’t count, and today counts once it’s done.'
+              ? 'Columns show the share of days with an entry. The line smooths that share over about two weeks either side, so single days don’t make it jump. Today counts once it’s recorded.'
+              : 'Columns show the share of scheduled days that met the goal. The line smooths success over about two weeks either side, so single days don’t make it jump. Days off don’t count, and today counts once it’s done.'
         }
       >
         <SuccessChart
@@ -322,22 +324,22 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
       <StatsSection
         title="Streaks"
         subtitle={
-          longest
-            ? `Longest in this period: ${plural(longest, mode === 'period' ? periodNoun.replace(/s$/, '') : 'day')}`
+          longestRun
+            ? `Longest here: ${plural(longestRun.length, mode === 'period' ? periodNoun.replace(/s$/, '') : 'day')}, ${statisticSpanLabel(dateKey(longestRun.from), dateKey(longestRun.to), today)}`
             : 'No streak in this period'
         }
         info={
           mode === 'period'
-            ? 'The line counts finished periods in a row that met their target and drops to zero after a missed period. Rest periods hold it. The dot marks the longest streak in this period.'
+            ? 'Each bar is a streak of finished periods in a row that met their target; rest periods hold it and a missed period breaks it. A bar fading in from the left began earlier. Tap a bar for its length and dates.'
             : mode === 'recording'
-              ? 'The line counts days in a row with an entry and drops to zero after a day without one. An unfinished today keeps yesterday’s streak. The dot marks the longest streak in this period.'
-              : 'The line rises by one for each successful scheduled day and drops to zero after a miss. Days off hold it, and an unfinished today keeps yesterday’s streak. The dot marks the longest streak in this period.'
+              ? 'Each bar is a streak of days in a row with an entry; a day without one breaks it, and an unfinished today keeps it. A bar fading in from the left began earlier. Tap a bar for its length and dates.'
+              : 'Each bar is a streak of successful scheduled days in a row, carried across days off; a missed day breaks it, and an unfinished today keeps it. A bar fading in from the left began earlier. Tap a bar for its length and dates.'
         }
       >
         <StreakChart
           key={`${habit.id}:${range}:${offset}`}
           colour={habit.color}
-          values={streakLine}
+          runs={runs}
           noun={mode === 'period' ? periodNoun : 'days'}
           from={from}
           to={window.to}

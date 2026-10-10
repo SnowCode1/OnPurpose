@@ -47,7 +47,7 @@ The requested preset icon update uses normal undoable edits in
   line), `ValueChart`, `SuccessChart`, `StreakChart`, `StatsCalendar`,
   `TimeOfDayChart` and `CategoryMatrix`; never import each other's screen.
   Pure `statsSeries.ts` owns day outcomes (walking the goal timeline without the
-  shared goal cache), bins, observations, the weighted trend and streak lines;
+  shared goal cache), bins, observations, the centred smoothed trend and streak runs;
   `categoryColours.ts` derives OKLCH category hues; `outcomeColours.ts` is the
   one colour language. `statisticsFormatting.ts` owns shared display helpers.
 - `src/GridCells.tsx` selects individual entries/date-heading state from the store.

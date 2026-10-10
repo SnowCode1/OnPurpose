@@ -1479,3 +1479,13 @@ signing and device enrolment are still prerequisites, not completed deployment.
   deferred until a scroll lock can be tested on both platforms.
 - No storage, event or backup change. Pure series code walks the goal timeline
   without filling the shared goal cache; the old StatsChart is removed.
+
+## 10 October 2026: chart feedback and number entry
+
+- Founder feedback: the streak chart did not work for long streaks, the trend
+  line was jagged, and the number entry's Close sat behind the keyboard.
+- Assistant changes: the trend is now a centred Gaussian smoothing (about two
+  weeks either side) instead of a one-sided weighted average; streaks are a
+  calendar timeline of runs with a best-three list, so any streak length reads
+  well. The number entry puts Close (X) at the top right and Done beside the
+  field, both above the keyboard; Android's keyboard Done still saves.
