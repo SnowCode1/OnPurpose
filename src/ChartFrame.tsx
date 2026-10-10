@@ -69,6 +69,7 @@ export function ChartFrame({
   colour,
   height = 140,
   axisWidth = 30,
+  reserveAxis = false,
   gridLines = true,
   draw,
 }: {
@@ -80,6 +81,8 @@ export function ChartFrame({
   colour: string;
   height?: number;
   axisWidth?: number;
+  /** Keep the label column without labels, aligning with other charts. */
+  reserveAxis?: boolean;
   /** Horizontal lines at the axis labels (off for row labels). */
   gridLines?: boolean;
   draw: (plot: PlotLayout) => ReactNode;
@@ -159,9 +162,14 @@ export function ChartFrame({
   }
   return (
     <View style={{ gap: 6 }}>
-      <View style={[styles.plotRow, !axis.length && { gap: 0 }]}>
+      <View
+        style={[styles.plotRow, !axis.length && !reserveAxis && { gap: 0 }]}
+      >
         <View
-          style={[styles.axis, { width: axis.length ? axisWidth : 0, height }]}
+          style={[
+            styles.axis,
+            { width: axis.length || reserveAxis ? axisWidth : 0, height },
+          ]}
           accessible={false}
         >
           {labels.map((label, i) => (

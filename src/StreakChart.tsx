@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import {
   Defs,
   LinearGradient,
+  Path,
   Rect,
   Stop,
   Text as SvgText,
@@ -19,7 +20,35 @@ import {
   type StreakRun,
 } from './statsSeries';
 
-const TRACK = '#141414';
+const TRACK = '#171717';
+// Days of a first or last month that fall outside the selected period.
+const OUTSIDE = '#0C0C0C';
+const HEADING = 20;
+
+/** A bar with independently rounded left and right ends. */
+function barPath(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  left: number,
+  right: number,
+) {
+  const b = y + h,
+    e = x + w;
+  return [
+    `M${x + left} ${y}`,
+    `H${e - right}`,
+    right ? `A${right} ${right} 0 0 1 ${e} ${y + right}` : '',
+    `V${b - right}`,
+    right ? `A${right} ${right} 0 0 1 ${e - right} ${b}` : '',
+    `H${x + left}`,
+    left ? `A${left} ${left} 0 0 1 ${x} ${b - left}` : '',
+    `V${y + left}`,
+    left ? `A${left} ${left} 0 0 1 ${x + left} ${y}` : '',
+    'Z',
+  ].join('');
+}
 
 /**
  * Streaks as a timeline: each bar spans the days a streak lasted and gaps are
@@ -48,9 +77,22 @@ export function StreakChart({
   const span = to - from + 1;
   const { unit, rows } = streakRows(from, to);
   const bar = unit === 'window' ? 26 : 18,
-    gap = 8,
-    height = rows.length * bar + (rows.length - 1) * gap + 4;
-  const top = (row: number) => 2 + row * (bar + gap);
+    gap = 8;
+  // Rows spanning several years get a year heading before each year's rows.
+  const headed = unit !== 'window' && rows[0].year !== rows.at(-1)!.year;
+  const headings: { year: number; top: number }[] = [];
+  const tops: number[] = [];
+  let cursor = 2;
+  rows.forEach((row, index) => {
+    if (headed && (index === 0 || rows[index - 1].year !== row.year)) {
+      headings.push({ year: row.year, top: cursor });
+      cursor += HEADING;
+    }
+    tops.push(cursor);
+    cursor += bar + gap;
+  });
+  const height = cursor - gap + 2;
+  const top = (row: number) => tops[row];
   const amount = (value: number) =>
     `${value} ${value === 1 ? noun.replace(/s$/, '') : noun}`;
   const dates = (run: StreakRun) =>
@@ -113,7 +155,7 @@ export function StreakChart({
         slots={slots}
         height={height}
         gridLines={false}
-        axisWidth={unit === 'quarter' ? 54 : 60}
+        reserveAxis
         axis={
           unit === 'window'
             ? []
@@ -138,7 +180,30 @@ export function StreakChart({
                   <Stop offset="1" stopColor={TRACK} stopOpacity={0} />
                 </LinearGradient>
               </Defs>
-              {rows.map((row, index) => (
+              {headings.map((heading) => (
+                <SvgText
+                  key={`year:${heading.year}`}
+                  x={0}
+                  y={heading.top + HEADING / 2 + 3}
+                  fontSize={11}
+                  fontWeight="700"
+                  fill="#9A9A9A"
+                >
+                  {String(heading.year)}
+                </SvgText>
+              ))}
+              {rows.map((row, index) => [
+                // Every row spans the full width, so the rows form one clean
+                // block; days outside the period (or month) stay darker.
+                <Rect
+                  key={`row:${index}`}
+                  x={0}
+                  y={top(index)}
+                  width={width}
+                  height={bar}
+                  rx={bar / 3.5}
+                  fill={OUTSIDE}
+                />,
                 <Rect
                   key={`track:${index}`}
                   x={px(row, row.from)}
@@ -147,8 +212,8 @@ export function StreakChart({
                   height={bar}
                   rx={bar / 3.5}
                   fill={TRACK}
-                />
-              ))}
+                />,
+              ])}
               {segments.map((segment) => {
                 const row = rows[segment.row],
                   x0 = px(row, segment.from),
@@ -162,42 +227,25 @@ export function StreakChart({
                     selectedKey !== `${segment.run.from}`
                       ? 0.45
                       : 1;
-                // Square the ends where the streak continues on another row.
-                const continuesLeft = segment.from > segment.run.from,
-                  continuesRight = segment.to < segment.run.to;
+                // Round only the real start and end of the streak; where it
+                // continues on another row the end stays square. One shape, so
+                // dimming never doubles up at the joins.
+                const roundLeft = segment.from === segment.run.from,
+                  roundRight = segment.to === segment.run.to;
                 return [
-                  <Rect
+                  <Path
                     key={`bar:${segment.run.from}:${segment.row}`}
-                    x={x0}
-                    y={y}
-                    width={w}
-                    height={bar}
-                    rx={r}
+                    d={barPath(
+                      x0,
+                      y,
+                      roundRight ? w : x1 - x0,
+                      bar,
+                      roundLeft ? r : 0,
+                      roundRight ? r : 0,
+                    )}
                     fill={fill}
                     opacity={opacity}
                   />,
-                  continuesLeft && segment.from > from ? (
-                    <Rect
-                      key={`left:${segment.run.from}:${segment.row}`}
-                      x={x0}
-                      y={y}
-                      width={Math.min(r, w)}
-                      height={bar}
-                      fill={fill}
-                      opacity={opacity}
-                    />
-                  ) : null,
-                  continuesRight ? (
-                    <Rect
-                      key={`right:${segment.run.from}:${segment.row}`}
-                      x={x0 + w - Math.min(r, w)}
-                      y={y}
-                      width={Math.min(r, w) + 1.5}
-                      height={bar}
-                      fill={fill}
-                      opacity={opacity}
-                    />
-                  ) : null,
                   // A streak that began before this window fades in.
                   segment.from === from && segment.run.from < from ? (
                     <Rect
@@ -226,6 +274,12 @@ export function StreakChart({
                     fontWeight="700"
                     textAnchor="end"
                     fill={checkmarkColor(segment.run.ongoing ? colour : faded)}
+                    opacity={
+                      selectedKey !== null &&
+                      selectedKey !== `${segment.run.from}`
+                        ? 0.45
+                        : 1
+                    }
                   >
                     {label}
                   </SvgText>

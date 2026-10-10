@@ -140,10 +140,14 @@ month-arrow details in Screen above; calculation rules below are unchanged.
   rest periods, an unfinished today keeps the streak, and period goals count
   periods; the longest run equals the longest-streak tile and the ongoing run
   the current streak (tested). Windows up to about six weeks use one row;
-  longer ones get a row per month (labelled, days 1–31 aligned down the rows)
-  and histories beyond about 13 months a row per quarter, as the founder asked,
-  so short streaks stay visible. A streak crossing rows continues with squared
-  ends and shows its length on its last part.
+  longer ones get a row per month and histories beyond about two years a row
+  per quarter, as the founder asked, so short streaks stay visible. After the
+  founder found multi-row alignment odd: every row spans the full width with
+  day 1 at the left (days 1–31 line up down the rows); days outside the period
+  or month stay darker; labels are short months in the same 30-point column as
+  every other chart, with a year heading where rows cross into a new year. A
+  streak crossing rows is one shape per row with square ends at the join, and
+  shows its length on its last part.
 - **Calendar:** up to ~3 months, continuous rows of weeks (values inside number
   days, category dots, a dot for text); successful days in a row join into one
   bar, bridged across days off within the row; tapping edits as before. Longer

@@ -1501,3 +1501,8 @@ signing and device enrolment are still prerequisites, not completed deployment.
   quarterly beyond about 13 months. The time-of-day chart moved onto the shared
   chart frame. Android and tests verified; iPhone feel, including the page
   sheet's own swipe, still to be checked by the founder.
+- Founder follow-up: multi-row streak alignment looked odd. Rows now always span
+  the full width (day 1 at the left, outside days darker), labels use the shared
+  30-point column so the timeline lines up with the other charts, years appear
+  as headings, and quarter rows start beyond about two years. Hold-and-drag was
+  confirmed on the Android phone, including moving between rows.

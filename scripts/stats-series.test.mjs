@@ -248,7 +248,7 @@ test('category colours are stable, distinct and readable on black', () => {
   for (const [id, colour] of colours) assert.equal(extended.get(id), colour);
 });
 
-test('streak rows: one row for a month, month rows for a year, quarter rows beyond', () => {
+test('streak rows: one row for a month, full month rows for a year, quarter rows beyond two years', () => {
   const to = dayNumber(today);
   const month = streakRows(to - 29, to);
   assert.equal(month.unit, 'window');
@@ -260,16 +260,30 @@ test('streak rows: one row for a month, month rows for a year, quarter rows beyo
   const year = streakRows(to - 364, to);
   assert.equal(year.unit, 'month');
   assert.equal(year.rows.length, 13, 'Oct 2025 to Oct 2026');
-  assert.match(year.rows[0].label, /2025/);
-  assert.ok(year.rows.every((row) => row.scale === 31));
-  assert.equal(year.rows[0].from, to - 364, 'first row starts in the window');
+  assert.deepEqual(
+    year.rows.map((row) => row.year),
+    [2025, 2025, 2025, ...Array(10).fill(2026)],
+  );
+  assert.ok(
+    year.rows.every((row) => row.scale === 31 && !/\d/.test(row.label)),
+  );
+  assert.equal(year.rows[0].from, to - 364, 'the window starts mid-month');
+  assert.equal(year.rows[0].start, dayNumber('2025-10-01'), 'the row does not');
+  assert.equal(year.rows[0].days, 31);
+  assert.equal(year.rows[4].days, 28, 'February 2026');
   assert.equal(year.rows.at(-1).to, to);
-  for (let i = 1; i < year.rows.length; i++)
+  for (let i = 1; i < year.rows.length; i++) {
     assert.equal(year.rows[i].from, year.rows[i - 1].to + 1, 'contiguous');
+    assert.equal(
+      year.rows[i].start,
+      year.rows[i - 1].start + year.rows[i - 1].days,
+    );
+  }
+  assert.equal(streakRows(to - 700, to).unit, 'month', 'two years of months');
   const long = streakRows(to - 900, to);
   assert.equal(long.unit, 'quarter');
   assert.ok(long.rows.every((row) => row.scale === 92));
-  assert.match(long.rows[0].label, /^Q\d \d{4}$/);
+  assert.match(long.rows[0].label, /^Q[1-4]$/);
   assert.equal(
     long.rows.reduce((sum, row) => sum + row.to - row.from + 1, 0),
     901,

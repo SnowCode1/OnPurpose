@@ -427,28 +427,42 @@ export function streakRuns(
 }
 
 export type StreakRow = {
+  /** Short month ("Aug") or quarter ("Q3"); the year is a separate heading. */
   label: string;
-  /** Day at x = 0 and the number of days the row's width represents. */
+  year: number;
+  /** Day at x = 0, days the row's width represents, and its real length. */
   start: number;
   scale: number;
+  days: number;
   /** Days of the window inside this row. */
   from: number;
   to: number;
 };
 
 /**
- * One row up to about six weeks; longer windows get a row per month (days
- * line up down the rows), and histories beyond about a year a row per quarter,
- * so short streaks stay wide enough to see and tap.
+ * One row up to about six weeks. Longer windows get a full row per calendar
+ * month (day 1 at the left on every row, so dates line up down the rows);
+ * histories beyond about two years a row per quarter. Days of the first and
+ * last month outside the window still get their place in the row.
  */
 export function streakRows(from: number, to: number) {
   const span = to - from + 1;
   if (span <= 45)
     return {
       unit: 'window' as const,
-      rows: [{ label: '', start: from, scale: span, from, to }] as StreakRow[],
+      rows: [
+        {
+          label: '',
+          year: Number(dateKey(from).slice(0, 4)),
+          start: from,
+          scale: span,
+          days: span,
+          from,
+          to,
+        },
+      ] as StreakRow[],
     };
-  const quarter = span > 400,
+  const quarter = span > 760,
     rows: StreakRow[] = [];
   let cursor = from;
   while (cursor <= to) {
@@ -462,17 +476,17 @@ export function streakRows(from: number, to: number) {
         after >= 12
           ? `${year + 1}-${String(after - 11).padStart(2, '0')}-01`
           : `${year}-${String(after + 1).padStart(2, '0')}-01`,
-      ),
-      at = new Date(`${dateKey(start)}T12:00:00`);
+      );
     rows.push({
       label: quarter
-        ? `Q${first / 3 + 1} ${year}`
-        : at.toLocaleDateString(undefined, {
+        ? `Q${first / 3 + 1}`
+        : new Date(`${dateKey(start)}T12:00:00`).toLocaleDateString(undefined, {
             month: 'short',
-            ...(first === 0 || !rows.length ? { year: 'numeric' } : {}),
           }),
+      year,
       start,
       scale: quarter ? 92 : 31,
+      days: next - start,
       from: Math.max(from, start),
       to: Math.min(to, next - 1),
     });
