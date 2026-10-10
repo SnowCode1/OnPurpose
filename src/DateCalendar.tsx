@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text, useAppWindowDimensions } from './Typography';
+import { Icon } from './Icon';
 import { entryDay } from './calendar';
 import { monthDays } from './statistics';
 import { weekDayOrder, type WeekStart } from './displayPreferences';
@@ -58,9 +59,14 @@ export function DateCalendar({
           <Text style={styles.titleText}>
             {choosing ? String(year) : monthLabel(month, 'long')}
           </Text>
-          <Text style={[styles.chevron, choosing && styles.chevronOpen]}>
-            ⌄
-          </Text>
+          <View style={choosing && styles.chevronOpen}>
+            <Icon
+              name="chevron"
+              size={Math.round(15 * Math.max(1, fontScale))}
+              strokeWidth={2.2}
+              color="#9C9C9C"
+            />
+          </View>
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -68,7 +74,9 @@ export function DateCalendar({
           onPress={() => step(choosing ? -12 : -1)}
           style={styles.nav}
         >
-          <Text style={styles.navText}>‹</Text>
+          <View style={{ transform: [{ rotate: '90deg' }] }}>
+            <Icon name="chevron" size={20} color="#D0D0D0" />
+          </View>
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -76,7 +84,9 @@ export function DateCalendar({
           onPress={() => step(choosing ? 12 : 1)}
           style={styles.nav}
         >
-          <Text style={styles.navText}>›</Text>
+          <View style={{ transform: [{ rotate: '-90deg' }] }}>
+            <Icon name="chevron" size={20} color="#D0D0D0" />
+          </View>
         </Pressable>
       </View>
       {choosing ? (
@@ -200,19 +210,17 @@ const styles = StyleSheet.create({
     minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
     paddingHorizontal: 4,
   },
-  titleText: { color: '#EEEEEE', fontSize: 16, fontWeight: '600' },
-  chevron: { color: '#888888', fontSize: 15, marginTop: -4 },
-  chevronOpen: { transform: [{ rotate: '180deg' }], marginTop: 4 },
+  titleText: { color: '#EEEEEE', fontSize: 17, fontWeight: '700' },
+  chevronOpen: { transform: [{ rotate: '180deg' }] },
   nav: {
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  navText: { color: '#D0D0D0', fontSize: 22 },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   weekday: {
     width: '14.2857%',

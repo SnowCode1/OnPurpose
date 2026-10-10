@@ -493,12 +493,32 @@ export const HabitGrid = memo(function HabitGrid({
             </Animated.View>
             <View style={[styles.namesHeader, { width: nameWidth }]}>
               <DateButtonComponent
-                style={styles.dateButton}
+                style={({ pressed }) => [
+                  styles.dateButton,
+                  { opacity: pressed ? 0.6 : 1 },
+                ]}
                 accessibilityRole="button"
                 accessibilityLabel={`${month} ${year}, browse dates`}
                 onPress={openDateActions}
               >
-                <Text style={styles.dateTitle}>{month} ⌄</Text>
+                <View style={styles.dateTitleRow}>
+                  <Text numberOfLines={1} style={styles.dateTitle}>
+                    {month}
+                  </Text>
+                  {/* A vector chevron sized with the text, flipped while open. */}
+                  <View
+                    style={
+                      datePickerOpen && { transform: [{ rotate: '180deg' }] }
+                    }
+                  >
+                    <Icon
+                      name="chevron"
+                      size={Math.round(16 * Math.max(1, fontScale))}
+                      strokeWidth={2.2}
+                      color="#9C9C9C"
+                    />
+                  </View>
+                </View>
                 <Text style={styles.dateYear}>{year}</Text>
               </DateButtonComponent>
               <HabitNameDivider />
@@ -778,17 +798,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 8,
   },
+  dateTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   dateTitle: {
-    color: '#E2E2E2',
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: -0.3,
+    flexShrink: 1,
+    color: '#EDEDED',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.4,
   },
   dateYear: {
-    color: '#858585',
-    fontSize: 11,
-    fontWeight: '400',
-    marginTop: 4,
+    color: '#8C8C8C',
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
     fontVariant: ['tabular-nums'],
   },
   toolbarActions: {

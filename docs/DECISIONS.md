@@ -1506,3 +1506,12 @@ signing and device enrolment are still prerequisites, not completed deployment.
   30-point column so the timeline lines up with the other charts, years appear
   as headings, and quarter rows start beyond about two years. Hold-and-drag was
   confirmed on the Android phone, including moving between rows.
+
+## 10 October 2026: date selector caret
+
+- Founder request: the small text caret beside the grid's month looked odd.
+  Assistant change: the month is bolder and slightly larger with a vector
+  chevron sized to the text (it flips while the date picker is open); the year
+  is a little clearer; the button fades when pressed. The Android calendar
+  header and month arrows use the same vector chevrons. Layout is unchanged:
+  month/year still sit in the top-left of the grid header.
