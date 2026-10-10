@@ -190,8 +190,10 @@ enabled. Font alternatives are a future visual comparison, not a selected change
 
 The existing Expo Haptics dependency supplies native feedback. `src/haptics.ts`
 centralizes single-pulse confirmation (Medium), undo/clear (Soft), selection ticks,
-and the future-pull threshold (Medium). Android uses native semantic haptic
-constants; web previews stay silent. Calls catch native failures and never block
+and the future-pull threshold (Medium). Android uses the same calls, which Expo
+plays through the Vibrator API; semantic view haptics were dropped because phones
+with touch-interaction vibration off (founder's Samsung) silently ignore them.
+Web previews stay silent. Calls catch native failures and never block
 state changes. Haptics run from event handlers, not render, effects, or state
 updaters, so replayed updater functions cannot duplicate them.
 

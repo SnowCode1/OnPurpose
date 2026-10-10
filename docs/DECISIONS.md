@@ -1553,3 +1553,18 @@ signing and device enrolment are still prerequisites, not completed deployment.
   `npx expo install`, 13.16.1) only when that view is missing. iOS and builds
   that include it keep the default. Metro must be restarted to pick up the new
   package.
+
+## 10 October 2026: Android haptics
+
+- Founder report: no haptics on the Android phone (Samsung Galaxy S21, Android
+  15, Expo Go 57.0.9). Diagnosis over adb: the phone's "Touch interactions"
+  vibration is off (`haptic_feedback_enabled = 0`), and the vibrator log showed
+  no requests from Expo Go at all. `performAndroidHapticsAsync` uses view
+  haptics, which Android drops when that system switch is off; expo-haptics
+  before 57.0.2 also ran it off the main thread, where it did nothing.
+- Assistant change: Android now uses the same Expo calls as iOS (Medium,
+  Soft, selection), which Expo plays through the Vibrator API. The app's own
+  Haptics setting is now the switch on Android, independent of the system
+  touch-interaction setting. iOS is unchanged and still follows System Haptics.
+  Pulse strength on Android is Expo's preset waveform; tune it if it feels too
+  faint or buzzy on the phone.
