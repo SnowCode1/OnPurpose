@@ -8,8 +8,8 @@ import { Plugin } from '@tiptap/pm/state';
 import type { Node as DocumentNode } from '@tiptap/pm/model';
 import { descriptionLink, MAX_DESCRIPTION_LENGTH } from '../description.ts';
 import {
-  highlightColours,
   highlightMarkdown,
+  highlightVariable,
   isHighlightColour,
 } from './highlights.ts';
 import { markdownDocument } from './markdownDocument.ts';
@@ -31,12 +31,11 @@ const ColouredHighlight = Highlight.extend({
     const id = isHighlightColour(HTMLAttributes.color)
       ? HTMLAttributes.color
       : 'yellow';
-    const colour = highlightColours[id];
     return [
       'mark',
       {
         'data-highlight': id,
-        style: `background-color:${colour.background};color:${colour.text}`,
+        style: `background-color:${highlightVariable(id, 'bg')};color:${highlightVariable(id, 'text')}`,
       },
       0,
     ];

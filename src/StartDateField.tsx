@@ -5,6 +5,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { localDateKey } from './calendar';
 import { DateCalendar } from './DateCalendar';
 import type { WeekStart } from './displayPreferences';
+import { useTheme } from './ThemeContext';
 
 export type StartDateFieldProps = {
   value: string;
@@ -22,6 +23,8 @@ export function StartDateField({
   help = 'Choose an earlier date to fill in old records. Statistics begin here.',
   weekStart,
 }: StartDateFieldProps) {
+  const theme = useTheme();
+  const displayColour = theme.colour(colour);
   // Android opens our calendar inline beneath the field, inside this editor.
   const [open, setOpen] = useState(false);
   const date = new Date(`${value}T12:00:00`);
@@ -36,7 +39,7 @@ export function StartDateField({
           gap: 8,
         }}
       >
-        <Text style={{ color: '#AAAAAA', fontSize: 12 }}>{label}</Text>
+        <Text style={{ color: theme.ink(0xaa), fontSize: 12 }}>{label}</Text>
         {Platform.OS === 'web' ? (
           <TextInput
             accessibilityLabel={label}
@@ -45,11 +48,11 @@ export function StartDateField({
             maxLength={10}
             placeholder="YYYY-MM-DD"
             style={{
-              color: colour,
+              color: displayColour,
               minHeight: 44,
               paddingHorizontal: 12,
               fontSize: 15,
-              backgroundColor: '#1C1C1C',
+              backgroundColor: theme.ink(0x1c),
               borderRadius: 10,
             }}
           />
@@ -61,8 +64,8 @@ export function StartDateField({
             value={date}
             mode="date"
             display="compact"
-            themeVariant="dark"
-            accentColor={colour}
+            themeVariant={theme.scheme}
+            accentColor={displayColour}
             onValueChange={(_, selected) => onChange(localDateKey(selected))}
             style={{ minHeight: 44 }}
           />
@@ -76,11 +79,11 @@ export function StartDateField({
               minHeight: 44,
               justifyContent: 'center',
               paddingHorizontal: 12,
-              backgroundColor: '#1C1C1C',
+              backgroundColor: theme.ink(0x1c),
               borderRadius: 10,
             }}
           >
-            <Text style={{ color: colour, fontSize: 15 }}>
+            <Text style={{ color: displayColour, fontSize: 15 }}>
               {date.toLocaleDateString(undefined, {
                 day: 'numeric',
                 month: 'short',
@@ -94,7 +97,7 @@ export function StartDateField({
         <DateCalendar
           value={value}
           today={localDateKey(new Date())}
-          accent={colour}
+          accent={displayColour}
           weekStart={weekStart}
           onChange={(day) => {
             onChange(day);
@@ -103,7 +106,7 @@ export function StartDateField({
         />
       )}
       {!!help && (
-        <Text style={{ color: '#999999', fontSize: 12, lineHeight: 18 }}>
+        <Text style={{ color: theme.ink(0x99), fontSize: 12, lineHeight: 18 }}>
           {help}
         </Text>
       )}

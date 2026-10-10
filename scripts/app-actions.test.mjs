@@ -14,6 +14,7 @@ import * as habits from '../src/habits.ts';
 import * as goals from '../src/habitGoals.ts';
 import * as colors from '../src/colors.ts';
 import * as suggestions from '../src/numericSuggestions.ts';
+import { themeContextModule } from './theme-fixture.mjs';
 
 // Execute the actual controllers/components with small native mocks. Never print
 // native/browser object graphs, and release each browser/root after its test.
@@ -177,6 +178,7 @@ test('numeric drafts stay local; Close cancels, invalid input cannot save, and D
     },
     './colors': colors,
     './Icon': { Icon: () => null },
+    './ThemeContext': themeContextModule(),
     './numericSuggestions': suggestions,
     './haptics': { feedback: () => {} },
     './useKeyboardFocus': load('useKeyboardFocus.ts', {
@@ -488,6 +490,7 @@ test('the shared chart frame supports tap, hold-and-drag tracking across rows, s
     },
     './Typography': { Text },
     './Icon': { Icon: () => null },
+    './ThemeContext': themeContextModule(),
     './haptics': { feedback: () => {} },
   });
   const { ChartFrame, ChartScrubLock } = frame;

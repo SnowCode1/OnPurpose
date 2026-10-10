@@ -25,6 +25,7 @@ import {
 import { descriptionDiff, type DescriptionPassage } from './descriptionDiff';
 import { DescriptionText } from './DescriptionText';
 import type { HistoryAction, StoredState } from './storage/model';
+import { useTheme } from './ThemeContext';
 
 export function DescriptionHistory({
   Heading,
@@ -41,6 +42,7 @@ export function DescriptionHistory({
   onRestore: (id: string, text: string | undefined) => boolean;
   onClose: () => void;
 }) {
+  const theme = useTheme();
   const [version, setVersion] = useState<'before' | 'after'>('after');
   const [showChanges, setShowChanges] = useState(true);
   const change = action.change;
@@ -77,6 +79,7 @@ export function DescriptionHistory({
   if (change.kind !== 'habit') return null;
   const habit = change.after ?? change.before!;
   const text = change[version]?.description;
+  const colour = theme.colour(habit.color);
   const current = state.habits.find((item) => item.id === habit.id);
   const canRestore = editable && !!current && current.description !== text;
   return (
@@ -88,7 +91,7 @@ export function DescriptionHistory({
       onRequestClose={onClose}
     >
       <SafeAreaProvider>
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#000000' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
           <View
             style={{
               flexDirection: 'row',
@@ -110,11 +113,17 @@ export function DescriptionHistory({
               <Heading
                 accessibilityRole="header"
                 numberOfLines={1}
-                style={{ color: '#DDDDDD', fontSize: 15, fontWeight: '600' }}
+                style={{
+                  color: theme.ink(0xdd),
+                  fontSize: 15,
+                  fontWeight: '600',
+                }}
               >
                 {habit.name}
               </Heading>
-              <Text style={{ color: '#777777', fontSize: 12, marginTop: 3 }}>
+              <Text
+                style={{ color: theme.ink(0x77), fontSize: 12, marginTop: 3 }}
+              >
                 Description history
               </Text>
             </View>
@@ -134,7 +143,7 @@ export function DescriptionHistory({
                 opacity: canRestore ? 1 : 0.35,
               }}
             >
-              <Text style={{ color: habit.color, fontSize: 15 }}>Restore</Text>
+              <Text style={{ color: colour, fontSize: 15 }}>Restore</Text>
             </Pressable>
           </View>
           <View
@@ -157,10 +166,11 @@ export function DescriptionHistory({
                   justifyContent: 'center',
                   alignItems: 'center',
                   borderRadius: 10,
-                  backgroundColor: version === value ? '#292929' : '#141414',
+                  backgroundColor:
+                    version === value ? theme.ink(0x29) : theme.ink(0x14),
                 }}
               >
-                <Text style={{ color: '#CCCCCC', fontSize: 14 }}>
+                <Text style={{ color: theme.ink(0xcc), fontSize: 14 }}>
                   {value === 'before' ? 'Before' : 'After'}
                 </Text>
               </Pressable>
@@ -178,7 +188,12 @@ export function DescriptionHistory({
             }}
           >
             <Text
-              style={{ color: '#888888', fontSize: 12, flex: 1, minWidth: 90 }}
+              style={{
+                color: theme.ink(0x88),
+                fontSize: 12,
+                flex: 1,
+                minWidth: 90,
+              }}
             >
               {new Date(action.recordedAt).toLocaleString()}
             </Text>
@@ -191,13 +206,18 @@ export function DescriptionHistory({
                 flexShrink: 1,
               }}
             >
-              <Text style={{ color: '#AAAAAA', fontSize: 12 }}>Changes</Text>
+              <Text style={{ color: theme.ink(0xaa), fontSize: 12 }}>
+                Changes
+              </Text>
               <Switch
                 accessibilityLabel="Highlight changed description passages"
                 value={showChanges}
                 onValueChange={setShowChanges}
-                trackColor={{ false: '#292929', true: '#365A4B' }}
-                thumbColor="#DDDDDD"
+                trackColor={{
+                  false: theme.ink(0x29),
+                  true: theme.tint('#365A4B'),
+                }}
+                thumbColor={theme.scheme === 'dark' ? '#DDDDDD' : '#FFFFFF'}
               />
               <Pressable
                 accessibilityRole="button"
@@ -215,7 +235,7 @@ export function DescriptionHistory({
                   opacity: hasChanges ? 1 : 0.35,
                 }}
               >
-                <Text style={{ color: '#BBBBBB', fontSize: 12 }}>
+                <Text style={{ color: theme.ink(0xbb), fontSize: 12 }}>
                   Next change
                 </Text>
               </Pressable>
@@ -240,7 +260,7 @@ export function DescriptionHistory({
             ListEmptyComponent={
               <Text
                 style={{
-                  color: '#888888',
+                  color: theme.ink(0x88),
                   fontSize: 15,
                   paddingHorizontal: 10,
                 }}
@@ -259,8 +279,8 @@ export function DescriptionHistory({
                     borderRadius: 8,
                     backgroundColor: highlighted
                       ? version === 'before'
-                        ? '#251A20'
-                        : '#14251E'
+                        ? theme.tint('#251A20')
+                        : theme.tint('#14251E')
                       : 'transparent',
                   }}
                 >
@@ -281,14 +301,13 @@ export function DescriptionHistory({
                         width: 2,
                         borderRadius: 1,
                         backgroundColor:
-                          version === 'before' ? '#AF7E92' : '#79AD96',
+                          version === 'before'
+                            ? theme.colour('#AF7E92')
+                            : theme.colour('#79AD96'),
                       }}
                     />
                   )}
-                  <DescriptionText
-                    tokens={passage.tokens}
-                    colour={habit.color}
-                  />
+                  <DescriptionText tokens={passage.tokens} colour={colour} />
                 </View>
               );
             }}

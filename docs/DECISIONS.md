@@ -1515,3 +1515,41 @@ signing and device enrolment are still prerequisites, not completed deployment.
   is a little clearer; the button fades when pressed. The Android calendar
   header and month arrows use the same vector chevrons. Layout is unchanged:
   month/year still sit in the top-left of the grid header.
+
+## 10 October 2026: themes and custom backgrounds (v19)
+
+- Founder request: dark / system / light themes first, with a customisable
+  background colour; the rest of the app adjusts so everything stays visible.
+  Reuse the OKLCH picker.
+- Founder decisions: Dark and Light are each customisable, and System switches
+  between them. The default is System, for older logs and new installs alike.
+  This supersedes the original "pure black background" decision; pure black
+  remains the default dark background.
+- Assistant design: one pure module (`src/theme.ts`) derives every colour from
+  the background. Interface greys keep their original contrast relative to the
+  background, which is exact on black. Habit and accent colours keep their hue
+  and colourfulness and only lighten or darken to reach 4.5:1. Saved habit
+  colours are never rewritten. Backgrounds are limited to a readable lightness
+  range per scheme, which is applied at display time rather than in validation.
+  The pages offer six presets per scheme. Light themes use white ticks on
+  filled colours and pale note highlights. The mounted grid switches theme when
+  Settings dismisses, like other presentation settings.
+- Behaviour change on black: a custom habit colour below 4.5:1 is now shown
+  lighter everywhere instead of sometimes grey, and filled marks are white on
+  mid-tone custom colours. Presets are unchanged.
+- Verified: typecheck, lint, formatting, 358 tests including new theme and v19
+  persistence tests, and iOS/Android bundle exports. Light, Paper and Midnight
+  were checked in the web preview (grid, Settings, notes, History). Native
+  behaviour on the iPhone and Android phone is still to be checked.
+
+- Founder follow-up (same day): make Paper the default light background and Dark
+  the default theme. Stored theme preferences now use `before: null` until the
+  first choice (as v18 grid sizes do), so defaults are display rules. Events
+  written earlier that day with the old defaults still replay.
+- Founder report: the note editor crashed on opening (Android, Expo Go). The
+  cause was unrelated to theming. SDK 57 hosts DOM components in
+  `@expo/dom-webview`, whose view this Expo Go build does not register. The
+  editor now falls back to `react-native-webview` (added with
+  `npx expo install`, 13.16.1) only when that view is missing. iOS and builds
+  that include it keep the default. Metro must be restarted to pick up the new
+  package.

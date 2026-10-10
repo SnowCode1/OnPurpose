@@ -30,6 +30,7 @@ import type { GridDay } from './calendar';
 import { habitType, isNumericHabit, type Habit } from './habits';
 import { ReorderRow, type RowMotion } from './ReorderRow';
 import { dayTone, dateTones, type GridPalette } from './gridAppearance';
+import { themedStyles, useTheme } from './ThemeContext';
 import { entrySelection, recordedDaySelection } from './storage/selection';
 import type { ChangeStore } from './storage/store';
 import {
@@ -157,12 +158,12 @@ const GridCell = memo(function GridCell({
       height,
       borderBottomColor: tone.rule,
       backgroundColor: pressed
-        ? `${habit.color}20`
+        ? palette.pressed
         : goal.met
           ? palette.completedBackground
           : day.daysAgo === 0
-            ? '#090909'
-            : '#000000',
+            ? palette.todayBackground
+            : palette.background,
     },
   ];
   const content = !checkbox ? (
@@ -173,7 +174,7 @@ const GridCell = memo(function GridCell({
       ellipsizeMode="tail"
       style={[
         numeric ? styles.numeric : styles.textEntry,
-        { color: recorded ? habit.color : tone.number },
+        { color: recorded ? palette.colour : tone.number },
       ]}
     >
       {cellEntryLabel(habit, value)}
@@ -182,7 +183,7 @@ const GridCell = memo(function GridCell({
     <Text
       style={{
         fontSize: 22 * fontScale,
-        color: goal.met ? habit.color : tone.checkbox,
+        color: goal.met ? palette.colour : tone.checkbox,
       }}
     >
       {checked ? '✓' : '□'}
@@ -195,7 +196,7 @@ const GridCell = memo(function GridCell({
       style={checkboxStyle}
       checkmark={palette.checkmark}
       size={Math.max(0, Math.min(28 * fontScale, height - 16, width - 16))}
-      colour={goal.met ? habit.color : tone.checkbox}
+      colour={goal.met ? palette.colour : tone.checkbox}
     />
   ) : null;
   if (nativeControl)
@@ -286,6 +287,7 @@ export const GridDateColumn = memo(function GridDateColumn({
   batchCheckboxes?: boolean;
 }) {
   recordPerformance('grid.column.render');
+  const theme = useTheme();
   const native = Platform.OS !== 'web';
   const reducedMotion = useReducedMotion();
   const [feedback, setFeedback] = useState<{
@@ -354,7 +356,7 @@ export const GridDateColumn = memo(function GridDateColumn({
   const Root = native ? Pressable : View;
   return (
     <Root
-      style={{ width, height, backgroundColor: '#000000' }}
+      style={{ width, height, backgroundColor: theme.background }}
       {...(native
         ? {
             ...columnPress.handlers,
@@ -510,7 +512,7 @@ function CheckboxTapFeedback({
         checkmark={palette.checkmark}
         size={Math.max(0, Math.min(28 * fontScale, height - 16, width - 16))}
         colour={
-          met ? habit.color : palette.tones[dayTone(day.daysAgo)].checkbox
+          met ? palette.colour : palette.tones[dayTone(day.daysAgo)].checkbox
         }
       />
     </ReorderRow>
@@ -568,21 +570,26 @@ export const GridDateLabel = memo(function GridDateLabel({
   weekStart: WeekStart;
   weekDividers: boolean;
 }) {
-  const tone = dateTones[recorded || !dateFading ? 0 : dayTone(day.daysAgo)];
+  const theme = useTheme();
+  const headingStyles = useHeadingStyles();
+  const tone =
+    dateTones(theme)[recorded || !dateFading ? 0 : dayTone(day.daysAgo)];
   return (
     <View
       testID="date-heading"
       style={[
-        styles.dayHeader,
+        headingStyles.dayHeader,
         { width },
-        weekDividers && isShadedWeek(day.key, weekStart) && styles.shadedWeek,
-        day.daysAgo === 0 && styles.todayColumn,
+        weekDividers &&
+          isShadedWeek(day.key, weekStart) &&
+          headingStyles.shadedWeek,
+        day.daysAgo === 0 && headingStyles.todayColumn,
       ]}
     >
       <Text
         style={[
           styles.weekday,
-          { color: day.daysAgo === 0 ? '#FFFFFF' : tone.label },
+          { color: day.daysAgo === 0 ? theme.ink(0xff) : tone.label },
         ]}
       >
         {day.label}
@@ -593,26 +600,28 @@ export const GridDateLabel = memo(function GridDateLabel({
     </View>
   );
 });
-const styles = StyleSheet.create({
+const useHeadingStyles = themedStyles((t) => ({
   dayHeader: {
-    backgroundColor: '#000000',
+    backgroundColor: t.background,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
     minHeight: 56,
   },
-  shadedWeek: { backgroundColor: '#0C0C0C' },
+  shadedWeek: { backgroundColor: t.ink(0x0c) },
+  todayColumn: {
+    backgroundColor: t.ink(0x19),
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+  },
+}));
+const styles = StyleSheet.create({
   weekday: { fontSize: 11, fontWeight: '500' },
   dayNumber: {
     fontSize: 19,
     fontWeight: '600',
     marginTop: 3,
     fontVariant: ['tabular-nums'],
-  },
-  todayColumn: {
-    backgroundColor: '#191919',
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
   },
   cell: {
     alignItems: 'center',

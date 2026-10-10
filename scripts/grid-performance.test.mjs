@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createGridPalette, dayTone } from '../src/gridAppearance.ts';
-import { colorOnBlack, dimmedColor, checkmarkColor } from '../src/colors.ts';
+import {
+  colorOnBlack,
+  contrastOnBlack,
+  dimmedColor,
+  checkmarkColor,
+} from '../src/colors.ts';
+import { blackTheme } from '../src/theme.ts';
 import { demoHabits } from '../src/habits.ts';
 import { createGridDayCache, makeGridDays } from '../src/calendar.ts';
 import { createSampleStore } from '../src/dev/sampleData.ts';
@@ -19,7 +25,7 @@ function change(store, habitId, date, after) {
     true,
   );
 }
-test('precomputed grid palettes preserve every old colour across the fade and future dates', () => {
+test('precomputed grid palettes preserve every old readable colour across the fade and future dates', () => {
   for (const colour of [
     ...demoHabits.map((habit) => habit.color),
     '#FF0000',
@@ -28,14 +34,20 @@ test('precomputed grid palettes preserve every old colour across the fade and fu
     '#00FFAA',
   ]) {
     const palette = createGridPalette(colour);
-    assert.equal(palette.checkmark, checkmarkColor(colour));
+    // Readable colours (every preset) are untouched on black; an unreadable
+    // one is lightened first and keeps the original tone rules from there.
+    const shown = blackTheme.colour(colour);
+    if (contrastOnBlack(colour) >= 4.5) assert.equal(shown, colour);
+    else assert.ok(contrastOnBlack(shown) >= 4.5);
+    assert.equal(palette.colour, shown);
+    assert.equal(palette.checkmark, checkmarkColor(shown));
     for (const ago of [-100, -1, 0, 1, 4, 5, 6, 7, 8, 100, 20000]) {
       const p = Math.max(0, Math.min(1, (ago - 4) / 4));
       const amount = ago < 0 ? 1 : p * p * (3 - 2 * p);
       assert.deepEqual(palette.tones[dayTone(ago)], {
-        checkbox: dimmedColor(colorOnBlack(colour, 170 / 255), amount),
-        number: dimmedColor(colorOnBlack(colour, 0.65), amount),
-        rule: `${dimmedColor(colour, amount)}20`,
+        checkbox: dimmedColor(colorOnBlack(shown, 170 / 255), amount),
+        number: dimmedColor(colorOnBlack(shown, 0.65), amount),
+        rule: `${dimmedColor(shown, amount)}20`,
       });
     }
   }

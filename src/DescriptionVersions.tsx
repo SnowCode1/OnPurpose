@@ -11,10 +11,10 @@ import {
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { DescriptionHistory } from './DescriptionHistory';
-import { contrastOnBlack } from './colors';
 import { descriptionExcerpt } from './descriptionReading';
 import type { Habit } from './habits';
 import type { HistoryAction, StoredState } from './storage/model';
+import { themedStyles, useTheme } from './ThemeContext';
 
 export function DescriptionVersions({
   habit,
@@ -33,13 +33,15 @@ export function DescriptionVersions({
   onRestore: (id: string, text: string | undefined) => boolean;
   onClose: () => void;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   const [selected, setSelected] = useState<HistoryAction | null>(null);
   const currentVersion = actions.find(
     (action) =>
       action.change.kind === 'habit' &&
       action.change.after?.description === habit.description,
   );
-  const accent = contrastOnBlack(habit.color) >= 4.5 ? habit.color : '#B7DCCF';
+  const accent = theme.colour(habit.color);
   return (
     <Modal
       visible
@@ -134,8 +136,8 @@ export function DescriptionVersions({
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#000000' },
+const useStyles = themedStyles((t) => ({
+  screen: { flex: 1, backgroundColor: t.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -144,14 +146,14 @@ const styles = StyleSheet.create({
   },
   close: { minWidth: 60, minHeight: 48, justifyContent: 'center' },
   title: { flex: 1, alignItems: 'center', paddingHorizontal: 8 },
-  heading: { color: '#DDDDDD', fontSize: 15, fontWeight: '600' },
-  subtitle: { color: '#777777', fontSize: 12, marginTop: 3 },
+  heading: { color: t.ink(0xdd), fontSize: 15, fontWeight: '600' },
+  subtitle: { color: t.ink(0x77), fontSize: 12, marginTop: 3 },
   row: {
     paddingVertical: 12,
     paddingHorizontal: 8,
     gap: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#242424',
+    borderBottomColor: t.ink(0x24),
   },
   rowHeader: {
     flexDirection: 'row',
@@ -159,8 +161,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 8,
   },
-  date: { color: '#929292', fontSize: 12 },
+  date: { color: t.ink(0x92), fontSize: 12 },
   current: { fontSize: 12 },
-  summary: { color: '#CCCCCC', fontSize: 15, lineHeight: 21 },
-  empty: { color: '#888888', fontSize: 15, paddingVertical: 24 },
-});
+  summary: { color: t.ink(0xcc), fontSize: 15, lineHeight: 21 },
+  empty: { color: t.ink(0x88), fontSize: 15, paddingVertical: 24 },
+}));

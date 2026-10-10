@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Text, useAppWindowDimensions } from './Typography';
 import { Icon } from './Icon';
 import { entryDay } from './calendar';
 import { monthDays } from './statistics';
 import { weekDayOrder, type WeekStart } from './displayPreferences';
+import { themedStyles, useTheme } from './ThemeContext';
 
 const weekdayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
@@ -19,22 +20,26 @@ const monthLabel = (month: string, style: 'long' | 'short') =>
     ...(style === 'long' ? { year: 'numeric' } : {}),
   });
 
-// Android has no inline system date picker, so this dark month calendar sits
+// Android has no inline system date picker, so this month calendar sits
 // inside our own sheets and editors. iOS keeps its native inline/compact picker.
 // Tapping the month title switches to a month/year chooser for distant dates.
 export function DateCalendar({
   value,
   today,
   onChange,
-  accent = '#DDDDDD',
+  accent,
   weekStart = 'monday',
 }: {
   value: string;
   today: string;
   onChange: (date: string) => void;
+  /** Selected-day fill, already readable on the background (theme.colour). */
   accent?: string;
   weekStart?: WeekStart;
 }) {
+  const styles = useStyles();
+  const theme = useTheme();
+  const fill = accent ?? theme.ink(0xdd);
   const { fontScale } = useAppWindowDimensions();
   const [month, setMonth] = useState(value.slice(0, 7));
   const [choosing, setChoosing] = useState(false);
@@ -64,7 +69,7 @@ export function DateCalendar({
               name="chevron"
               size={Math.round(15 * Math.max(1, fontScale))}
               strokeWidth={2.2}
-              color="#9C9C9C"
+              color={theme.ink(0x9c)}
             />
           </View>
         </Pressable>
@@ -75,7 +80,7 @@ export function DateCalendar({
           style={styles.nav}
         >
           <View style={{ transform: [{ rotate: '90deg' }] }}>
-            <Icon name="chevron" size={20} color="#D0D0D0" />
+            <Icon name="chevron" size={20} color={theme.ink(0xd0)} />
           </View>
         </Pressable>
         <Pressable
@@ -85,7 +90,7 @@ export function DateCalendar({
           style={styles.nav}
         >
           <View style={{ transform: [{ rotate: '-90deg' }] }}>
-            <Icon name="chevron" size={20} color="#D0D0D0" />
+            <Icon name="chevron" size={20} color={theme.ink(0xd0)} />
           </View>
         </Pressable>
       </View>
@@ -112,13 +117,13 @@ export function DateCalendar({
                 <View
                   style={[
                     styles.face,
-                    selected && { backgroundColor: '#262626' },
+                    selected && { backgroundColor: theme.ink(0x26) },
                   ]}
                 >
                   <Text
                     numberOfLines={1}
                     style={{
-                      color: selected ? '#FFFFFF' : '#B8B8B8',
+                      color: selected ? theme.ink(0xff) : theme.ink(0xb8),
                       fontSize: 15,
                     }}
                   >
@@ -165,18 +170,19 @@ export function DateCalendar({
                 <View
                   style={[
                     styles.face,
-                    selected && { backgroundColor: accent },
+                    selected && { backgroundColor: fill },
                     !selected && day === today && styles.today,
                   ]}
                 >
                   <Text
                     numberOfLines={1}
+                    // Background-coloured digits stay readable on the fill.
                     style={{
                       color: selected
-                        ? '#000000'
+                        ? theme.background
                         : day > today
-                          ? '#707070'
-                          : '#C8C8C8',
+                          ? theme.ink(0x70)
+                          : theme.ink(0xc8),
                       fontSize: 15,
                       fontWeight: selected || day === today ? '600' : '400',
                     }}
@@ -203,7 +209,7 @@ export function DateCalendar({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   title: {
     flex: 1,
@@ -213,7 +219,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 4,
   },
-  titleText: { color: '#EEEEEE', fontSize: 17, fontWeight: '700' },
+  titleText: { color: t.ink(0xee), fontSize: 17, fontWeight: '700' },
   chevronOpen: { transform: [{ rotate: '180deg' }] },
   nav: {
     width: 44,
@@ -225,7 +231,7 @@ const styles = StyleSheet.create({
   weekday: {
     width: '14.2857%',
     textAlign: 'center',
-    color: '#777777',
+    color: t.ink(0x77),
     fontSize: 11,
     paddingBottom: 8,
   },
@@ -239,5 +245,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 8,
   },
-  today: { borderWidth: 1, borderColor: '#555555' },
-});
+  today: { borderWidth: 1, borderColor: t.ink(0x55) },
+}));

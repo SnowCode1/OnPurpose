@@ -1,5 +1,6 @@
 import { Switch, View } from 'react-native';
 import { Text } from './Typography';
+import { useTheme } from './ThemeContext';
 export function CheckboxDefaultField({
   checked,
   onChange,
@@ -11,6 +12,7 @@ export function CheckboxDefaultField({
   colour: string;
   detail?: string;
 }) {
+  const theme = useTheme();
   return (
     <View
       style={{
@@ -21,10 +23,10 @@ export function CheckboxDefaultField({
       }}
     >
       <View style={{ flex: 1, gap: 4 }}>
-        <Text style={{ color: '#DDDDDD', fontSize: 14 }}>
+        <Text style={{ color: theme.ink(0xdd), fontSize: 14 }}>
           Default state · {checked ? 'On' : 'Off'}
         </Text>
-        <Text style={{ color: '#999999', fontSize: 12 }}>
+        <Text style={{ color: theme.ink(0x99), fontSize: 12 }}>
           {detail ? `${detail} · ` : ''}For days you haven’t changed
         </Text>
       </View>
@@ -32,7 +34,7 @@ export function CheckboxDefaultField({
         accessibilityLabel="Default checkbox state on"
         value={checked}
         onValueChange={onChange}
-        trackColor={{ true: colour }}
+        trackColor={{ true: theme.colour(colour) }}
       />
     </View>
   );

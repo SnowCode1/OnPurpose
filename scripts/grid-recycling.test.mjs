@@ -15,6 +15,7 @@ import * as display from '../src/displayPreferences.ts';
 import * as selection from '../src/storage/selection.ts';
 import * as textLayout from '../src/gridEntryText.ts';
 import { createGridDayCache } from '../src/calendar.ts';
+import { themeContextModule } from './theme-fixture.mjs';
 
 const code = ts.transpileModule(
   readFileSync(new URL('../src/GridCells.tsx', import.meta.url), 'utf8'),
@@ -113,6 +114,7 @@ test('recycled date columns keep row views while switching subscriptions, taps a
             Text: ({ children }) => React.createElement('span', null, children),
           },
           './ReorderRow': { ReorderRow: Row },
+          './ThemeContext': themeContextModule(),
           'react-native-reanimated': { useReducedMotion: () => false },
           './useGridColumnPress': {
             useGridColumnPress: () => ({ pressed: null, handlers: {} }),

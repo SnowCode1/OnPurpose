@@ -6,6 +6,7 @@ import { Icon } from './Icon';
 import { appear, disappear, menuAppear } from './motion';
 import type { Habit } from './habits';
 import type { HabitAction, HabitAnchor } from './HabitName';
+import { useTheme } from './ThemeContext';
 
 // Own measurement here so laying out the menu cannot rerender date columns.
 // Stay mounted while closed to retain the last measured height. The selected
@@ -28,6 +29,7 @@ export function HabitContextMenu({
   onAction: (action: HabitAction) => void;
 }) {
   const [menuHeight, setMenuHeight] = useState(250);
+  const theme = useTheme();
   if (!menu || !habit) return null;
   return (
     <Animated.View
@@ -84,9 +86,9 @@ export function HabitContextMenu({
           width: 224,
           maxHeight: '85%',
           borderRadius: 17,
-          backgroundColor: '#191919',
+          backgroundColor: theme.ink(0x19),
           borderWidth: 1,
-          borderColor: '#333333',
+          borderColor: theme.ink(0x33),
           shadowColor: '#000000',
           shadowOpacity: 0.5,
           shadowRadius: 16,
@@ -100,7 +102,7 @@ export function HabitContextMenu({
               paddingHorizontal: 16,
               paddingTop: 14,
               paddingBottom: 8,
-              color: habit.color,
+              color: theme.colour(habit.color),
               fontSize: 13,
               fontWeight: '600',
             }}
@@ -129,11 +131,11 @@ export function HabitContextMenu({
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 12,
-                backgroundColor: pressed ? '#292929' : 'transparent',
+                backgroundColor: pressed ? theme.ink(0x29) : 'transparent',
               })}
             >
               <Icon name={icon} size={18} />
-              <Text style={{ color: '#DDDDDD', fontSize: 15, flex: 1 }}>
+              <Text style={{ color: theme.ink(0xdd), fontSize: 15, flex: 1 }}>
                 {label}
               </Text>
             </Pressable>

@@ -5,6 +5,7 @@ import { appear } from './motion';
 import { Text, useAppWindowDimensions } from './Typography';
 import { Icon } from './Icon';
 import type { StatsRange } from './statistics';
+import { themedStyles, useTheme } from './ThemeContext';
 
 // Shared statistics building blocks. Both statistics screens use these so
 // layout, spacing and explanations stay consistent; neither imports the other.
@@ -23,6 +24,8 @@ export function RangePicker({
   range: StatsRange;
   onChange: (range: StatsRange) => void;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   const { fontScale } = useAppWindowDimensions();
   return (
     <View accessibilityRole="tablist" style={styles.ranges}>
@@ -40,12 +43,12 @@ export function RangePicker({
               styles.range,
               // Two per row once larger text no longer fits four.
               { flexBasis: fontScale > 1.3 ? '46%' : '20%' },
-              selected && { backgroundColor: '#2C2C2C' },
+              selected && { backgroundColor: theme.ink(0x2c) },
             ]}
           >
             <Text
               numberOfLines={1}
-              style={[styles.rangeText, selected && { color: '#FFFFFF' }]}
+              style={[styles.rangeText, selected && { color: theme.ink(0xff) }]}
             >
               {item.label}
             </Text>
@@ -67,6 +70,9 @@ export function StepArrows({
   onChange: (delta: -1 | 1) => void;
   labels?: [string, string];
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
+  const statsStyles = useStatsStyles();
   return (
     <View style={styles.arrows}>
       {([-1, 1] as const).map((delta) => {
@@ -89,7 +95,7 @@ export function StepArrows({
                 transform: [{ rotate: delta === -1 ? '90deg' : '-90deg' }],
               }}
             >
-              <Icon name="chevron" size={18} color="#C8C8C8" />
+              <Icon name="chevron" size={18} color={theme.ink(0xc8)} />
             </View>
           </Pressable>
         );
@@ -110,6 +116,8 @@ export function PeriodNavigator({
   canGoForward: boolean;
   onStep: (delta: -1 | 1) => void;
 }) {
+  const styles = useStyles();
+  const statsStyles = useStatsStyles();
   return (
     <View style={styles.periodRow}>
       <Text style={[statsStyles.period, { flex: 1 }]}>{label}</Text>
@@ -149,6 +157,7 @@ export function streakTiles(
 }
 
 export function StatTiles({ items }: { items: StatTile[] }) {
+  const styles = useStyles();
   if (!items.length) return null;
   return (
     <View style={styles.tiles}>
@@ -197,6 +206,8 @@ export function StatsSection({
   accessory?: ReactNode;
   children?: ReactNode;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   const [expanded, setExpanded] = useState(false);
   return (
     <View style={styles.section}>
@@ -220,7 +231,7 @@ export function StatsSection({
             <Icon
               name="info"
               size={18}
-              color={expanded ? '#D0D0D0' : '#7A7A7A'}
+              color={expanded ? theme.ink(0xd0) : theme.ink(0x7a)}
             />
           </Pressable>
         )}
@@ -236,7 +247,7 @@ export function StatsSection({
   );
 }
 
-export const statsStyles = StyleSheet.create({
+export const useStatsStyles = themedStyles((t) => ({
   body: {
     width: '100%',
     maxWidth: 720,
@@ -246,40 +257,40 @@ export const statsStyles = StyleSheet.create({
     gap: 22,
   },
   overview: { gap: 4 },
-  period: { color: '#8A8A8A', fontSize: 13, fontVariant: ['tabular-nums'] },
+  period: { color: t.ink(0x8a), fontSize: 13, fontVariant: ['tabular-nums'] },
   headline: {
-    color: '#F0F0F0',
+    color: t.ink(0xf0),
     fontSize: 30,
     fontWeight: '600',
     lineHeight: 38,
     fontVariant: ['tabular-nums'],
   },
-  headlineNote: { color: '#9A9A9A', fontSize: 14, lineHeight: 20 },
-  caption: { color: '#8E8E8E', fontSize: 13, lineHeight: 19 },
+  headlineNote: { color: t.ink(0x9a), fontSize: 14, lineHeight: 20 },
+  caption: { color: t.ink(0x8e), fontSize: 13, lineHeight: 19 },
   small: {
-    color: '#858585',
+    color: t.ink(0x85),
     fontSize: 12,
     lineHeight: 18,
     fontVariant: ['tabular-nums'],
   },
   bar: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  track: { flex: 1, height: 5, borderRadius: 3, backgroundColor: '#232323' },
+  track: { flex: 1, height: 5, borderRadius: 3, backgroundColor: t.ink(0x23) },
   monthButton: {
     width: 40,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   ranges: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 4,
     padding: 4,
     borderRadius: 13,
-    backgroundColor: '#151515',
+    backgroundColor: t.ink(0x15),
   },
   range: {
     flexGrow: 1,
@@ -289,7 +300,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 6,
   },
-  rangeText: { color: '#8F8F8F', fontSize: 14, fontWeight: '600' },
+  rangeText: { color: t.ink(0x8f), fontSize: 14, fontWeight: '600' },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tile: {
     flexGrow: 1,
@@ -298,23 +309,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 14,
-    backgroundColor: '#121212',
+    backgroundColor: t.ink(0x12),
     justifyContent: 'center',
     gap: 3,
   },
   spacer: { flexGrow: 1, flexBasis: '45%' },
   tileValue: {
-    color: '#EDEDED',
+    color: t.ink(0xed),
     fontSize: 19,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },
-  tileLabel: { color: '#8C8C8C', fontSize: 12, lineHeight: 16 },
+  tileLabel: { color: t.ink(0x8c), fontSize: 12, lineHeight: 16 },
   section: {
     gap: 12,
     paddingTop: 18,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#262626',
+    borderTopColor: t.ink(0x26),
   },
   arrows: { flexDirection: 'row' },
   periodRow: {
@@ -324,8 +335,8 @@ const styles = StyleSheet.create({
     marginRight: -8,
   },
   titleRow: { flexDirection: 'row', alignItems: 'center', minHeight: 32 },
-  title: { flex: 1, color: '#E2E2E2', fontSize: 17, fontWeight: '600' },
-  subtitle: { color: '#8E8E8E', fontSize: 13, lineHeight: 19, marginTop: -6 },
+  title: { flex: 1, color: t.ink(0xe2), fontSize: 17, fontWeight: '600' },
+  subtitle: { color: t.ink(0x8e), fontSize: 13, lineHeight: 19, marginTop: -6 },
   infoButton: {
     width: 36,
     height: 36,
@@ -336,7 +347,7 @@ const styles = StyleSheet.create({
   info: {
     padding: 12,
     borderRadius: 12,
-    backgroundColor: '#121212',
+    backgroundColor: t.ink(0x12),
   },
-  infoText: { color: '#ADADAD', fontSize: 13, lineHeight: 19 },
-});
+  infoText: { color: t.ink(0xad), fontSize: 13, lineHeight: 19 },
+}));

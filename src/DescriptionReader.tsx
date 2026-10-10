@@ -1,5 +1,5 @@
 import { memo, useCallback, useMemo } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, View } from 'react-native';
 import { Text } from './Typography';
 import { DescriptionText } from './DescriptionText';
 import {
@@ -7,6 +7,7 @@ import {
   type ReadingPassage,
 } from './descriptionReading';
 import { useSheetScroll } from './SheetModal';
+import { themedStyles } from './ThemeContext';
 
 // Reading content lives in the habit sheet, without another presentation step.
 export const DescriptionReader = memo(function DescriptionReader({
@@ -24,6 +25,7 @@ export const DescriptionReader = memo(function DescriptionReader({
   onVersions?: () => void;
   bottomInset?: number;
 }) {
+  const styles = useStyles();
   const passages = useMemo(
     () => descriptionReadingPassages(description ?? ''),
     [description],
@@ -83,7 +85,7 @@ export const DescriptionReader = memo(function DescriptionReader({
     />
   );
 });
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   body: {
     paddingHorizontal: 24,
     paddingTop: 12,
@@ -94,6 +96,6 @@ const styles = StyleSheet.create({
   },
   history: { alignItems: 'flex-end', marginTop: -8, marginBottom: 4 },
   action: { minHeight: 44, justifyContent: 'center' },
-  actionText: { color: '#BBBBBB', fontSize: 13 },
-  empty: { color: '#929292', fontSize: 15 },
-});
+  actionText: { color: t.ink(0xbb), fontSize: 13 },
+  empty: { color: t.ink(0x92), fontSize: 15 },
+}));

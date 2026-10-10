@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import {
   Gesture,
   GestureDetector,
@@ -17,6 +17,7 @@ import Svg, { Line, Rect } from 'react-native-svg';
 import { Text } from './Typography';
 import { Icon } from './Icon';
 import { feedback } from './haptics';
+import { themedStyles, useTheme } from './ThemeContext';
 
 /**
  * A selectable part of the chart, positioned in fractions of the plot. Slots
@@ -87,6 +88,8 @@ export function ChartFrame({
   gridLines?: boolean;
   draw: (plot: PlotLayout) => ReactNode;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   const [width, setWidth] = useState(0);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const lockPaging = useContext(ChartScrubLock);
@@ -246,7 +249,7 @@ export function ChartFrame({
                             0.5,
                             Math.min(height - 0.5, label.y * height),
                           )}
-                          stroke="#202020"
+                          stroke={theme.ink(0x20)}
                           strokeWidth={1}
                         />
                       ))}
@@ -257,7 +260,7 @@ export function ChartFrame({
                         x2={tick.x * width}
                         y1={0}
                         y2={height}
-                        stroke="#161616"
+                        stroke={theme.ink(0x16)}
                         strokeWidth={1}
                       />
                     ))}
@@ -325,7 +328,7 @@ export function ChartFrame({
               ]}
             >
               <View style={{ transform: [{ rotate: '90deg' }] }}>
-                <Icon name="chevron" size={16} color="#B0B0B0" />
+                <Icon name="chevron" size={16} color={theme.ink(0xb0)} />
               </View>
             </Pressable>
             <Pressable
@@ -342,7 +345,7 @@ export function ChartFrame({
               ]}
             >
               <View style={{ transform: [{ rotate: '-90deg' }] }}>
-                <Icon name="chevron" size={16} color="#B0B0B0" />
+                <Icon name="chevron" size={16} color={theme.ink(0xb0)} />
               </View>
             </Pressable>
             <Pressable
@@ -354,7 +357,7 @@ export function ChartFrame({
                 { opacity: pressed ? 0.5 : 1 },
               ]}
             >
-              <Icon name="close" size={16} color="#9A9A9A" />
+              <Icon name="close" size={16} color={theme.ink(0x9a)} />
             </Pressable>
           </>
         )}
@@ -363,25 +366,25 @@ export function ChartFrame({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   plotRow: { flexDirection: 'row', gap: 8 },
   axis: { width: 30 },
   axisLabel: {
     position: 'absolute',
     right: 0,
-    color: '#7E7E7E',
+    color: t.ink(0x7e),
     fontSize: 11,
     fontVariant: ['tabular-nums'],
   },
   ticks: { height: 18, marginTop: 4 },
   tick: {
     position: 'absolute',
-    color: '#7E7E7E',
+    color: t.ink(0x7e),
     fontSize: 11,
     width: 44,
   },
-  caption: { color: '#A0A0A0', fontSize: 13, lineHeight: 19 },
-  small: { color: '#858585', fontSize: 12, lineHeight: 18 },
+  caption: { color: t.ink(0xa0), fontSize: 13, lineHeight: 19 },
+  small: { color: t.ink(0x85), fontSize: 12, lineHeight: 18 },
   detail: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -393,4 +396,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));

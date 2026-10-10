@@ -35,6 +35,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { themedStyles, useTheme } from './ThemeContext';
 
 const orientations = ['portrait', 'landscape-left', 'landscape-right'] as const;
 const settle = {
@@ -68,6 +69,7 @@ export function SheetModal({
   onDismiss?: () => void;
   children: ReactNode;
 }) {
+  const theme = useTheme();
   if (Platform.OS === 'ios')
     return (
       <Modal
@@ -78,7 +80,7 @@ export function SheetModal({
         supportedOrientations={[...orientations]}
         onRequestClose={onClose}
         onDismiss={onDismiss}
-        backdropColor="#000000"
+        backdropColor={theme.background}
       >
         {children}
       </Modal>
@@ -208,6 +210,7 @@ function AndroidSheet({
   onDismiss?: () => void;
   children: ReactNode;
 }) {
+  const styles = useStyles();
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const latest = useRef({ onClose, onDismiss });
@@ -281,15 +284,15 @@ function AndroidSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   root: { flex: 1 },
   sheet: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: t.background,
     borderTopLeftRadius: 14,
     borderTopRightRadius: 14,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: '#2A2A2A',
+    borderColor: t.ink(0x2a),
     overflow: 'hidden',
   },
   handleArea: { height: 18, alignItems: 'center', justifyContent: 'center' },
@@ -297,7 +300,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#3A3A3A',
+    backgroundColor: t.ink(0x3a),
   },
   content: { flex: 1 },
-});
+}));

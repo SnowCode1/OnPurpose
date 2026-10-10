@@ -8,6 +8,7 @@ import {
   TEXT_SCALE_MAX,
   TEXT_SCALE_STEP,
 } from './textSize';
+import { useTheme } from './ThemeContext';
 
 export function TextSizeSetting({
   value,
@@ -20,6 +21,7 @@ export function TextSizeSetting({
   editable: boolean;
   onChange: (scale: number) => void;
 }) {
+  const theme = useTheme();
   const [draft, setDraft] = useState(value);
   return (
     <View style={{ gap: 8 }}>
@@ -32,7 +34,9 @@ export function TextSizeSetting({
           gap: 8,
         }}
       >
-        <Text style={{ color: '#E0E0E0', fontSize: 17, fontWeight: '500' }}>
+        <Text
+          style={{ color: theme.ink(0xe0), fontSize: 17, fontWeight: '500' }}
+        >
           Text size
         </Text>
         <Pressable
@@ -49,7 +53,7 @@ export function TextSizeSetting({
             opacity: editable && value !== 1 ? 1 : 0.35,
           }}
         >
-          <Text style={{ color: '#BBBBBB', fontSize: 13 }}>Reset</Text>
+          <Text style={{ color: theme.ink(0xbb), fontSize: 13 }}>Reset</Text>
         </Pressable>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -60,9 +64,9 @@ export function TextSizeSetting({
           step={TEXT_SCALE_STEP}
           value={value}
           disabled={!editable}
-          minimumTrackTintColor="#74BBA5"
-          maximumTrackTintColor="#303030"
-          thumbTintColor="#EEEEEE"
+          minimumTrackTintColor={theme.accent}
+          maximumTrackTintColor={theme.ink(0x30)}
+          thumbTintColor={theme.ink(0xee)}
           accessibilityLabel="App text size"
           accessibilityValue={{ text: `${Math.round(draft * 100)} percent` }}
           onValueChange={(next) => setDraft(roundTextScale(next))}
@@ -70,7 +74,7 @@ export function TextSizeSetting({
         />
         <Text
           style={{
-            color: '#CCCCCC',
+            color: theme.ink(0xcc),
             fontSize: 14,
             minWidth: 44,
             fontVariant: ['tabular-nums'],
@@ -80,7 +84,7 @@ export function TextSizeSetting({
         </Text>
       </View>
       {!compact && (
-        <Text style={{ color: '#969696', fontSize: 14, lineHeight: 21 }}>
+        <Text style={{ color: theme.ink(0x96), fontSize: 14, lineHeight: 21 }}>
           Applies throughout the app, including notes. Works alongside iPhone
           text size.
         </Text>

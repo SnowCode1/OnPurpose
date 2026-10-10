@@ -2,20 +2,25 @@ import { Text } from './Typography';
 import { View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import type { HabitIcon } from './habitIcons';
+import { normalizeHex } from './colors';
+import { useTheme } from './ThemeContext';
 import { phosphorPaths } from './phosphorPaths';
 import { tablerPaths } from './tablerPaths';
 
 // Decorative beside the habit name, whose accessible label remains authoritative.
 export function HabitSymbol({
   icon,
-  colour,
+  colour: requested,
   size = 20,
 }: {
   icon?: HabitIcon;
   colour: string;
   size?: number;
 }) {
+  const theme = useTheme();
   if (!icon) return null;
+  // Readable on any background; idempotent for display colours from callers.
+  const colour = normalizeHex(requested) ? theme.colour(requested) : requested;
   return (
     <View
       accessible={false}

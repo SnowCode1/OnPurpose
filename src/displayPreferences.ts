@@ -1,4 +1,5 @@
 import { isRowSpacing, type RowSpacing } from './rowSpacing.ts';
+import { defaultBackgrounds } from './theme.ts';
 
 export type ColumnSpacing = RowSpacing;
 export const columnSpacingOptions = [
@@ -35,6 +36,9 @@ export const displayDefaults = {
   nameColumnWidth: 'standard',
   weekStart: 'monday',
   dateFading: true,
+  themeMode: 'dark',
+  darkBackground: defaultBackgrounds.dark,
+  lightBackground: defaultBackgrounds.light,
 } as const;
 export function weekDayOrder(start: WeekStart): number[] {
   return Array.from(

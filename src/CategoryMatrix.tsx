@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { Text } from './Typography';
-import { colorOnBlack } from './colors';
 import { weekDayOrder, type WeekStart } from './displayPreferences';
 import type { Habit } from './habits';
 import { binSeries, valueUnit, weekdayOf, type SeriesDay } from './statsSeries';
+import { themedStyles, useTheme } from './ThemeContext';
 
 const ROW = 26,
   LABEL = 104,
@@ -32,6 +32,8 @@ export function CategoryMatrix({
   selected: string | null;
   onSelect: (id: string | null) => void;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   const [mode, setMode] = useState<'timeline' | 'weekday'>('timeline');
   const [width, setWidth] = useState(0);
   const counted = days.filter(
@@ -65,7 +67,10 @@ export function CategoryMatrix({
             style={[styles.option, mode === value && styles.chosen]}
           >
             <Text
-              style={[styles.optionText, mode === value && { color: '#FFF' }]}
+              style={[
+                styles.optionText,
+                mode === value && { color: theme.ink(0xff) },
+              ]}
             >
               {value === 'timeline' ? 'Over time' : 'By weekday'}
             </Text>
@@ -89,7 +94,8 @@ export function CategoryMatrix({
         )}
         {width > 0 &&
           rows.map(({ category, count }) => {
-            const colour = colours.get(category.id) ?? habit.color,
+            const colour =
+                colours.get(category.id) ?? theme.colour(habit.color),
               dimmed = !!selected && selected !== category.id;
             const shares =
               mode === 'timeline'
@@ -157,8 +163,8 @@ export function CategoryMatrix({
                           share === null
                             ? 'transparent'
                             : share > 0
-                              ? colorOnBlack(colour, 0.35 + 0.65 * share)
-                              : '#181818'
+                              ? theme.mix(colour, 0.35 + 0.65 * share)
+                              : theme.ink(0x18)
                         }
                       />
                     );
@@ -173,14 +179,14 @@ export function CategoryMatrix({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   toggle: {
     flexDirection: 'row',
     alignSelf: 'flex-start',
     padding: 3,
     gap: 3,
     borderRadius: 10,
-    backgroundColor: '#151515',
+    backgroundColor: t.ink(0x15),
   },
   option: {
     minHeight: 32,
@@ -188,8 +194,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
   },
-  chosen: { backgroundColor: '#2C2C2C' },
-  optionText: { color: '#8F8F8F', fontSize: 13, fontWeight: '600' },
+  chosen: { backgroundColor: t.ink(0x2c) },
+  optionText: { color: t.ink(0x8f), fontSize: 13, fontWeight: '600' },
   row: { flexDirection: 'row', alignItems: 'center', minHeight: ROW + 6 },
   label: {
     width: LABEL,
@@ -199,13 +205,13 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   swatch: { width: 8, height: 8, borderRadius: 4 },
-  labelText: { flex: 1, color: '#C8C8C8', fontSize: 13 },
+  labelText: { flex: 1, color: t.ink(0xc8), fontSize: 13 },
   count: {
     width: COUNT,
     textAlign: 'right',
-    color: '#A8A8A8',
+    color: t.ink(0xa8),
     fontSize: 13,
     fontVariant: ['tabular-nums'],
   },
-  weekday: { textAlign: 'center', color: '#777777', fontSize: 11 },
-});
+  weekday: { textAlign: 'center', color: t.ink(0x77), fontSize: 11 },
+}));

@@ -4,6 +4,7 @@ import { Text } from '../Typography';
 import { performanceEnabled, performanceRun } from '../performance';
 import type { GridExperiment } from '../performanceModel';
 import { uploadPerformance } from './performanceUpload';
+import { useTheme } from '../ThemeContext';
 const options: { value: GridExperiment; label: string }[] = [
   { value: 'normal', label: 'Normal' },
   { value: 'no-goal-tint', label: 'No goal tint' },
@@ -36,6 +37,7 @@ export function DevPerformanceControls({
   );
   const [choice, setChoice] = useState<GridExperiment>('normal');
   const [sending, setSending] = useState(false);
+  const theme = useTheme();
   if (!__DEV__ || !performanceEnabled) return null;
   async function send() {
     const current = running ? performanceRun.stop() : report;
@@ -76,7 +78,9 @@ export function DevPerformanceControls({
   }
   return (
     <View style={{ gap: 12, marginBottom: 24 }}>
-      <Text style={{ color: '#DDDDDD', fontSize: 17 }}>Grid diagnostics</Text>
+      <Text style={{ color: theme.ink(0xdd), fontSize: 17 }}>
+        Grid diagnostics
+      </Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
         {options.map((option) => (
           <Pressable
@@ -95,12 +99,13 @@ export function DevPerformanceControls({
               justifyContent: 'center',
               borderRadius: 8,
               backgroundColor:
-                choice === option.value ? '#74BBA520' : '#1B1B1B',
+                choice === option.value ? `${theme.accent}20` : theme.ink(0x1b),
             }}
           >
             <Text
               style={{
-                color: choice === option.value ? '#9BDBBE' : '#AAAAAA',
+                color:
+                  choice === option.value ? theme.accentText : theme.ink(0xaa),
                 fontSize: 14,
               }}
             >
@@ -109,7 +114,7 @@ export function DevPerformanceControls({
           </Pressable>
         ))}
       </View>
-      <Text style={{ color: '#969696', fontSize: 14, lineHeight: 21 }}>
+      <Text style={{ color: theme.ink(0x96), fontSize: 14, lineHeight: 21 }}>
         {running
           ? 'Close Settings and wait two seconds, then scroll and rotate. Return here to send timings. Stops automatically after one minute.'
           : 'Compare the same scroll and rotation in each mode. Simple cells keep data and goals but remove row/mark animations and SVG checks. Reordering is disabled in that mode.'}
@@ -132,7 +137,9 @@ export function DevPerformanceControls({
             }
             style={{ minHeight: 44, justifyContent: 'center' }}
           >
-            <Text style={{ color: '#9BDBBE', fontSize: 16 }}>Start test</Text>
+            <Text style={{ color: theme.accentText, fontSize: 16 }}>
+              Start test
+            </Text>
           </Pressable>
         )}
         {(running || report) && (
@@ -142,7 +149,7 @@ export function DevPerformanceControls({
             onPress={() => void send()}
             style={{ minHeight: 44, justifyContent: 'center' }}
           >
-            <Text style={{ color: '#DDDDDD', fontSize: 16 }}>
+            <Text style={{ color: theme.ink(0xdd), fontSize: 16 }}>
               {sending
                 ? 'Sending…'
                 : running
@@ -155,7 +162,7 @@ export function DevPerformanceControls({
       {!running && report && (
         <Text
           selectable
-          style={{ color: '#969696', fontSize: 13, lineHeight: 20 }}
+          style={{ color: theme.ink(0x96), fontSize: 13, lineHeight: 20 }}
         >
           {report.mode} · {report.source} ·{' '}
           {Math.round(report.elapsedMs / 1000)} seconds{'\n'}SQL reads:{' '}

@@ -5,7 +5,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   View,
   type TextProps,
   type TextInput as NativeTextInput,
@@ -17,6 +16,7 @@ import type { EntryDay } from './calendar';
 import type { EntryValues } from './entries';
 import type { Habit } from './habits';
 import { checkmarkColor } from './colors';
+import { themedStyles, useTheme } from './ThemeContext';
 import { feedback } from './haptics';
 import { recentNumericTotals } from './numericSuggestions';
 
@@ -43,6 +43,8 @@ export function NumericRecordDialog({
   onClose: () => void;
   onSave: (value: number | null) => boolean;
 }) {
+  const styles = useStyles();
+  const theme = useTheme();
   const inputFocus = useKeyboardFocus<NativeTextInput>();
   const [input, setInput] = useState(
     initialValue === null ? '' : String(initialValue),
@@ -58,7 +60,7 @@ export function NumericRecordDialog({
     () => recentNumericTotals(values, habit.id, day.key),
     [values, habit.id, day.key],
   );
-  const accent = habit.color;
+  const accent = theme.colour(habit.color);
   function saveNumber() {
     if (!valid || !editable) return;
     if (onSave(trimmed === '' ? null : numeric)) onClose();
@@ -115,7 +117,7 @@ export function NumericRecordDialog({
                     onSubmitEditing={saveNumber}
                     selectionColor={accent}
                     placeholder="0"
-                    placeholderTextColor="#555555"
+                    placeholderTextColor={theme.ink(0x55)}
                     style={[
                       styles.input,
                       { color: accent, borderColor: `${accent}66` },
@@ -179,7 +181,7 @@ export function NumericRecordDialog({
                         backgroundColor:
                           trimmed !== '' && numeric === total
                             ? `${accent}22`
-                            : '#1C1C1C',
+                            : theme.ink(0x1c),
                       }}
                     >
                       <Text
@@ -208,16 +210,16 @@ export function NumericRecordDialog({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   overlay: {
     flex: 1,
-    backgroundColor: '#000000BB',
+    backgroundColor: t.scrim(0xbb),
     justifyContent: 'center',
     padding: 24,
   },
   dialog: {
-    backgroundColor: '#101010',
-    borderColor: '#2A2A2A',
+    backgroundColor: t.ink(0x10),
+    borderColor: t.ink(0x2a),
     borderWidth: 1,
     padding: 24,
     borderRadius: 24,
@@ -227,14 +229,14 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   eyebrow: {
-    color: '#929292',
+    color: t.ink(0x92),
     fontSize: 10,
     fontWeight: '600',
     letterSpacing: 1.5,
     marginBottom: 10,
   },
   dialogTitle: { fontSize: 26, fontWeight: '600', marginBottom: 12 },
-  secondary: { color: '#A1A1A1', fontSize: 13, lineHeight: 21 },
+  secondary: { color: t.ink(0xa1), fontSize: 13, lineHeight: 21 },
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   close: {
     width: 44,
@@ -264,4 +266,4 @@ const styles = StyleSheet.create({
   },
   doneText: { fontSize: 17, fontWeight: '600' },
   inputUnit: { fontSize: 12, marginTop: 8 },
-});
+}));

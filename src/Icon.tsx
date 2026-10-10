@@ -1,4 +1,5 @@
 import Svg, { Circle, Path, Polygon, Rect } from 'react-native-svg';
+import { useTheme } from './ThemeContext';
 
 export type IconName =
   | 'history'
@@ -32,7 +33,7 @@ const gear = Array.from({ length: 40 }, (_, index) => {
 export function Icon({
   name,
   size = 21,
-  color = '#B8B8B8',
+  color: requested,
   strokeWidth = 1.7,
 }: {
   name: IconName;
@@ -40,6 +41,8 @@ export function Icon({
   color?: string;
   strokeWidth?: number;
 }) {
+  const theme = useTheme();
+  const color = requested ?? theme.ink(0xb8);
   return (
     <Svg
       width={size}

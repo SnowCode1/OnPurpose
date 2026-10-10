@@ -144,8 +144,10 @@ Markdown itself requires no account, network connection or external editor.
 
 The live editor uses Tiptap/ProseMirror in a local Expo DOM component. Only the
 full-screen writing surface uses this embedded web editor; the grid, statistics,
-notes reader and saved data remain native. Expo SDK 57 includes its DOM WebView in
-Expo Go. `@expo/metro-runtime` supports the embedded bundle. JavaScript, CSS and
+notes reader and saved data remain native. Expo SDK 57 hosts DOM components in
+`@expo/dom-webview`; Expo Go on Android ships that module without its native view
+(opening the editor crashed), so the editor falls back to `react-native-webview`
+when the view is missing (10 October 2026). `@expo/metro-runtime` supports the embedded bundle. JavaScript, CSS and
 HTML are bundled with the app; no CDN, server or account is required. The safe
 reader parser feeds a limited editor schema; HTML stays literal, and image metadata
 is retained with an alt-text placeholder rather than a fetched image. Done/Close

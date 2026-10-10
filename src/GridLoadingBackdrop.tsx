@@ -11,6 +11,7 @@ import type { GridDay } from './calendar';
 import { GridDateLabel } from './GridCells';
 import { ReorderRow, type RowMotion } from './ReorderRow';
 import { loadingStripOffset, loadingEdgeMasks } from './gridLoading';
+import { useTheme } from './ThemeContext';
 
 // These dates are cheap, read-only native text. They are prepared with each date
 // range, so a virtualized-list spacer never hides the calendar during a JS stall.
@@ -144,6 +145,7 @@ export const GridLoadingBackdrop = memo(function GridLoadingBackdrop({
       },
     ],
   }));
+  const theme = useTheme();
   const stripWidth = viewportWidth + columnWidth * 2;
   return (
     <View
@@ -167,6 +169,7 @@ export const GridLoadingBackdrop = memo(function GridLoadingBackdrop({
       >
         {habits.map((habit, index) => {
           const height = heights[habit.id] ?? baseHeight;
+          const colour = theme.colour(habit.color);
           const pattern = `loading-row-${index}`;
           return (
             <ReorderRow key={habit.id} motion={motions[habit.id]}>
@@ -183,7 +186,7 @@ export const GridLoadingBackdrop = memo(function GridLoadingBackdrop({
                       x2={columnWidth / 2 + 5}
                       y1={height / 2}
                       y2={height / 2}
-                      stroke={habit.color}
+                      stroke={colour}
                       strokeOpacity={0.25}
                       strokeWidth={2}
                       strokeLinecap="round"
@@ -200,7 +203,7 @@ export const GridLoadingBackdrop = memo(function GridLoadingBackdrop({
                   x2={stripWidth}
                   y1={height - 0.5}
                   y2={height - 0.5}
-                  stroke={habit.color}
+                  stroke={colour}
                   strokeOpacity={0.08}
                   strokeWidth={StyleSheet.hairlineWidth}
                 />
@@ -217,7 +220,7 @@ export const GridLoadingBackdrop = memo(function GridLoadingBackdrop({
             bottom: 0,
             left: viewportWidth,
             width: viewportWidth,
-            backgroundColor: '#000000',
+            backgroundColor: theme.background,
           },
           rightEdge,
         ]}
@@ -230,7 +233,7 @@ export const GridLoadingBackdrop = memo(function GridLoadingBackdrop({
             bottom: 0,
             left: -viewportWidth,
             width: viewportWidth,
-            backgroundColor: '#000000',
+            backgroundColor: theme.background,
           },
           leftEdge,
         ]}

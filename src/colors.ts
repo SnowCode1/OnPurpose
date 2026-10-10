@@ -87,43 +87,84 @@ export function oklchToHex(color: Oklch): string {
   );
 }
 
-export function contrastOnBlack(hex: string): number {
+/** WCAG relative luminance, 0 for black and 1 for white. */
+export function luminance(hex: string): number {
   const [r, g, b] = channels(hex);
-  return (0.2126 * r + 0.7152 * g + 0.0722 * b + 0.05) / 0.05;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+/** WCAG contrast ratio between two colours, from 1 to 21. */
+export function contrastRatio(first: string, second: string): number {
+  const a = luminance(first),
+    b = luminance(second);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+/** The neutral grey with this WCAG luminance, exact for round trips. */
+export function greyWithLuminance(value: number): string {
+  const channel = Math.round(clamp(encoded(clamp(value))) * 255)
+    .toString(16)
+    .padStart(2, '0')
+    .toUpperCase();
+  return `#${channel}${channel}${channel}`;
 }
 
+export function contrastOnBlack(hex: string): number {
+  return (luminance(hex) + 0.05) / 0.05;
+}
+
+// Marks drawn on a filled colour. White is the convention on saturated
+// mid-tones (the deeper habit colours of light themes); pale fills, including
+// every preset on black, keep black marks.
 export function checkmarkColor(hex: string): string {
-  return contrastOnBlack(hex) >= Math.sqrt(21) ? '#000000' : '#FFFFFF';
+  return contrastRatio(hex, '#FFFFFF') >= 3 ? '#FFFFFF' : '#000000';
 }
 
-// Resolve the existing empty-cell opacity against the grid's black background,
-// so OKLCH muting starts from the colour the user already sees.
-export function colorOnBlack(hex: string, opacity: number): string {
-  const valid = normalizeHex(hex);
-  if (!valid) throw new Error('Expected an RGB hex colour.');
+// Blend an opaque colour over a background in encoded sRGB, the way a
+// translucent fill looks. Over black this is the original channel scaling.
+export function mixColours(
+  background: string,
+  hex: string,
+  opacity: number,
+): string {
+  const base = normalizeHex(background),
+    top = normalizeHex(hex);
+  if (!base || !top) throw new Error('Expected an RGB hex colour.');
+  const amount = clamp(opacity);
   return (
     '#' +
     [1, 3, 5]
-      .map((start) =>
-        Math.round(parseInt(valid.slice(start, start + 2), 16) * clamp(opacity))
+      .map((start) => {
+        const from = parseInt(base.slice(start, start + 2), 16),
+          to = parseInt(top.slice(start, start + 2), 16);
+        return Math.round(from + (to - from) * amount)
           .toString(16)
-          .padStart(2, '0'),
-      )
+          .padStart(2, '0');
+      })
       .join('')
       .toUpperCase()
   );
 }
 
+// Resolve the existing empty-cell opacity against the grid's black background,
+// so OKLCH muting starts from the colour the user already sees.
+export function colorOnBlack(hex: string, opacity: number): string {
+  return mixColours('#000000', hex, opacity);
+}
+
+// Darken towards a dark background by up to 30% of the lightness gap. The
+// floor is measured from that background, so black keeps the original rule.
 export function dimmedColor(
   hex: string,
   amount: number,
   minimumLightness = 0.38,
+  backgroundLightness = 0,
 ): string {
   if (amount <= 0) return hex;
   const color = hexToOklch(hex);
+  const base = clamp(backgroundLightness);
+  const floor = base + minimumLightness * (1 - base);
   let lightness = Math.min(
     color.l,
-    Math.max(minimumLightness, color.l * (1 - 0.3 * clamp(amount))),
+    Math.max(floor, color.l - (color.l - base) * 0.3 * clamp(amount)),
   );
   const inGamut = (l: number) =>
     toLinear({ ...color, l }).every((n) => n >= -0.000001 && n <= 1.000001);

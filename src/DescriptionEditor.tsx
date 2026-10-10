@@ -3,6 +3,7 @@ import { Icon } from './Icon';
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ComponentType,
@@ -16,7 +17,6 @@ import {
   Modal,
   Platform,
   Pressable,
-  StyleSheet,
   View,
   type TextProps,
 } from 'react-native';
@@ -34,6 +34,17 @@ import {
   rememberDescriptionPosition,
 } from './storage/descriptionBookmarks';
 import { draftsFor } from './descriptionDrafts';
+import { editorPalette } from './richText/editorTheme';
+import { themedStyles, useTheme } from './ThemeContext';
+
+// SDK 57 hosts DOM components in @expo/dom-webview, but Expo Go on Android
+// ships its module without the registered view, so opening the editor crashed.
+// Fall back to react-native-webview only where that view is missing.
+const expoDomWebView =
+  Platform.OS === 'web' ||
+  !!(
+    globalThis as { expo?: { getViewConfig?: (name: string) => unknown } }
+  ).expo?.getViewConfig?.('ExpoDomWebViewModule');
 
 export function DescriptionEditor({
   title,
@@ -71,6 +82,10 @@ export function DescriptionEditor({
   const position = useRef<DescriptionPosition | undefined>(undefined);
   const editor = useRef<RichDescriptionRef>(null);
   const { fontScale } = useAppWindowDimensions();
+  const theme = useTheme();
+  const styles = useStyles();
+  const palette = useMemo(() => editorPalette(theme), [theme]);
+  const display = theme.colour(colour);
   const requestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleReady = useCallback(async () => setReady(true), []);
   const handleLimit = useCallback(
@@ -327,7 +342,7 @@ export function DescriptionEditor({
               <EditorAction
                 label="Close"
                 onPress={() => requestSnapshot('close')}
-                colour={colour}
+                colour={display}
                 disabled={requesting}
               />
               <View
@@ -340,7 +355,7 @@ export function DescriptionEditor({
               </View>
               <EditorAction
                 label="Done"
-                colour={colour}
+                colour={display}
                 disabled={!editable || loading || !ready || requesting}
                 onPress={() => requestSnapshot('done')}
               />
@@ -356,7 +371,7 @@ export function DescriptionEditor({
                 ref={editor}
                 initialValue={editorInitial}
                 initialPosition={initialPosition}
-                colour={colour}
+                colour={display}
                 fontScale={fontScale}
                 editable={editable}
                 onOpenLink={openDescriptionLink}
@@ -365,8 +380,10 @@ export function DescriptionEditor({
                 onPosition={handlePosition}
                 onSnapshot={snapshot}
                 onLimit={handleLimit}
+                palette={palette}
                 dom={{
-                  style: { flex: 1 },
+                  useExpoDOMWebView: expoDomWebView,
+                  style: { flex: 1, backgroundColor: theme.background },
                   containerStyle: { flex: 1 },
                   scrollEnabled: false,
                   keyboardDisplayRequiresUserAction: false,
@@ -383,7 +400,7 @@ export function DescriptionEditor({
             )}
             {!failed && (loading || !ready) && (
               <View style={styles.loading} pointerEvents="none">
-                <ActivityIndicator color="#929292" />
+                <ActivityIndicator color={theme.ink(0x92)} />
                 <Text
                   accessibilityLiveRegion="polite"
                   style={styles.loadingText}
@@ -416,6 +433,7 @@ function EditorAction({
   colour: string;
   disabled?: boolean;
 }) {
+  const styles = useStyles();
   return (
     <Pressable
       accessibilityRole="button"
@@ -441,8 +459,8 @@ function EditorAction({
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#000000' },
+const useStyles = themedStyles((t) => ({
+  screen: { flex: 1, backgroundColor: t.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -456,11 +474,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 6,
   },
-  actionText: { color: '#BBBBBB', fontSize: 15, fontWeight: '500' },
-  title: { color: '#DADADA', fontSize: 15, fontWeight: '600' },
-  subtitle: { color: '#777777', fontSize: 12, marginTop: 3 },
+  actionText: { color: t.ink(0xbb), fontSize: 15, fontWeight: '500' },
+  title: { color: t.ink(0xda), fontSize: 15, fontWeight: '600' },
+  subtitle: { color: t.ink(0x77), fontSize: 12, marginTop: 3 },
   status: {
-    color: '#AFAFAF',
+    color: t.ink(0xaf),
     fontSize: 12,
     lineHeight: 17,
     paddingHorizontal: 24,
@@ -476,5 +494,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
   },
-  loadingText: { color: '#929292', fontSize: 13 },
-});
+  loadingText: { color: t.ink(0x92), fontSize: 13 },
+}));

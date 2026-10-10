@@ -4,8 +4,9 @@
 
 One React Native screen written in strict TypeScript, running under Expo SDK 57.
 It uses a subscribed change store for persistent dated entries, habit colours,
-and haptic preferences, with safe areas for phone notches/home indicators. The app uses pure black with bright
-per-habit colours. Habit names open recent statistics; hold for anchored actions and drag-to-reorder.
+and haptic preferences, with safe areas for phone notches/home indicators. System / Dark / Light themes
+(pure black and warm Paper by default, each background customisable) carry bright
+per-habit colours that adjust to stay readable. Habit names open recent statistics; hold for anchored actions and drag-to-reorder.
 A local-midnight timer and foreground check update the current day.
 
 ```text
@@ -31,6 +32,9 @@ src/calendar.ts   local calendar keys and signed date arithmetic
 src/ColourPicker.tsx  presets, native sliders, custom preview and hex input
 src/haptics.ts   nonblocking native feedback for accepted actions
 src/colors.ts   OKLCH/sRGB conversion, gamut mapping and contrast helpers
+src/theme.ts    pure theme derivation from one background (ink, colour, mix, fade)
+src/ThemeContext.tsx  theme provider, useTheme and cached themedStyles
+src/BackgroundSettings.tsx  background presets, OKLCH sliders and live preview
 src/useLocalToday.ts  midnight and foreground date refresh
 src/habits.ts   typed demo habits and colour palette
 app.json       display name, platform configuration, template assets
@@ -147,6 +151,10 @@ Recorded checkbox/numeric values retain full colour, including explicit numeric
 zero. A date with any recorded value keeps its heading bright. Clear/undo restores
 the empty treatment immediately.
 
+Colours were designed on black and are now derived per theme (see SETTINGS.md,
+"Theme and backgrounds"). On black, everything below is unchanged. On other
+backgrounds, blends resolve against that background and fading moves towards it.
+
 Empty-cell alpha is first resolved against black; only OKLCH lightness is then
 reduced, by up to 30%. Hue and chroma stay fixed. Lightness has a floor of 0.38 for
 empty cells and 0.56 for date text unless the original was already darker. If the
@@ -166,9 +174,10 @@ grid is memoized with stable action callbacks to avoid rerendering it on colour
 slider changes. Hex accepts three or six RGB digits with an optional
 hash and stores a normalized six-digit value.
 
-Out-of-sRGB colours reduce chroma while preserving OKLCH hue/lightness. A contrast
-hint flags hard-to-read choices on black; custom colours are not silently replaced.
-Filled checkmarks use whichever of black/white has higher contrast. Colour math
+Out-of-sRGB colours reduce chroma while preserving OKLCH hue/lightness. Saved
+custom colours are never replaced; a colour below 4.5:1 on the current
+background is displayed with adjusted lightness, and the picker says so. Filled
+checkmarks are white when white reaches 3:1, otherwise black. Colour math
 uses [Ottosson's published OKLab matrices](https://bottosson.github.io/posts/oklab/).
 This is sRGB output, not wide-gamut Display P3 storage.
 

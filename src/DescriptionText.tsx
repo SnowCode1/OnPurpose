@@ -1,8 +1,8 @@
 import { Text } from './Typography';
 import { memo, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { highlightColours, isHighlightColour } from './richText/highlights';
-import { contrastOnBlack } from './colors';
+import { highlightPalette, isHighlightColour } from './richText/highlights';
+import { themedStyles, useTheme } from './ThemeContext';
 import { openDescriptionLink } from './descriptionLinks';
 import { parseDescription, type DescriptionToken } from './description';
 
@@ -30,7 +30,10 @@ export const DescriptionText = memo(function DescriptionText({
   tokens?: DescriptionToken[];
   colour: string;
 }) {
-  const linkColour = contrastOnBlack(colour) >= 4.5 ? colour : '#B7DCCF';
+  const theme = useTheme();
+  const styles = useStyles();
+  const highlights = highlightPalette(theme.scheme);
+  const linkColour = theme.colour(colour);
   function inline(nodes: Node[]): ReactNode[] {
     return nodes.map(({ token, children }, index) => {
       if (token.type === 'text' || token.type === 'html_inline')
@@ -45,7 +48,7 @@ export const DescriptionText = memo(function DescriptionText({
         );
       if (token.type === 'highlight_open') {
         const id = token.attrGet('colour');
-        const colour = highlightColours[isHighlightColour(id) ? id : 'yellow'];
+        const colour = highlights[isHighlightColour(id) ? id : 'yellow'];
         return (
           <Text
             key={index}
@@ -161,31 +164,31 @@ export const DescriptionText = memo(function DescriptionText({
   }
   return <View>{blocks(tree(tokens ?? parseDescription(text ?? '')))}</View>;
 });
-const styles = StyleSheet.create({
-  body: { color: '#C7C7C7', fontSize: 15, lineHeight: 23 },
-  bold: { fontWeight: '700', color: '#E2E2E2' },
+const useStyles = themedStyles((t) => ({
+  body: { color: t.ink(0xc7), fontSize: 15, lineHeight: 23 },
+  bold: { fontWeight: '700', color: t.ink(0xe2) },
   italic: { fontStyle: 'italic' },
   strike: { textDecorationLine: 'line-through' },
-  inlineCode: { fontFamily: 'monospace', backgroundColor: '#202020' },
+  inlineCode: { fontFamily: 'monospace', backgroundColor: t.ink(0x20) },
   quote: {
     borderLeftWidth: 2,
-    borderLeftColor: '#505050',
+    borderLeftColor: t.ink(0x50),
     paddingLeft: 12,
     marginBottom: 8,
   },
   code: {
-    color: '#CCCCCC',
+    color: t.ink(0xcc),
     fontSize: 13,
     lineHeight: 20,
     fontFamily: 'monospace',
     padding: 12,
-    backgroundColor: '#151515',
+    backgroundColor: t.ink(0x15),
     borderRadius: 8,
     marginBottom: 8,
   },
   rule: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#303030',
+    backgroundColor: t.ink(0x30),
     marginVertical: 10,
   },
-});
+}));

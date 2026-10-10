@@ -36,6 +36,7 @@ import { habitRowPositions, moveHabit } from './habitOrdering';
 import { RowPositions, type RowMotion } from './ReorderRow';
 import { useHabitReorder } from './useHabitReorder';
 import { createGridPalette } from './gridAppearance';
+import { themedStyles, useTheme } from './ThemeContext';
 import { GridDateColumn, GridDateHeading } from './GridCells';
 import { GridDateBackdrop, GridLoadingBackdrop } from './GridLoadingBackdrop';
 import type { ChangeStore } from './storage/store';
@@ -120,6 +121,8 @@ export const HabitGrid = memo(function HabitGrid({
     performanceRun.getMode,
   );
   const { fontScale } = useAppWindowDimensions();
+  const theme = useTheme();
+  const styles = useStyles();
   const [width, setWidth] = useState(0);
   const { visibleDays, nameWidth, dateWidth, columnWidth } = gridLayout(
     width,
@@ -237,10 +240,10 @@ export const HabitGrid = memo(function HabitGrid({
       Object.fromEntries(
         habits.map((habit) => [
           habit.id,
-          createGridPalette(habit.color, dateFading),
+          createGridPalette(habit.color, dateFading, theme),
         ]),
       ),
-    [habits, dateFading],
+    [habits, dateFading, theme],
   );
   const { tops, total: gridHeight } = useMemo(
     () =>
@@ -411,7 +414,7 @@ export const HabitGrid = memo(function HabitGrid({
             onPress={onHistoryPress}
             style={({ pressed }) => [
               styles.iconButton,
-              { backgroundColor: pressed ? '#171717' : 'transparent' },
+              { backgroundColor: pressed ? theme.ink(0x17) : 'transparent' },
             ]}
           >
             <Icon name="history" />
@@ -422,7 +425,7 @@ export const HabitGrid = memo(function HabitGrid({
             onPress={onSettingsPress}
             style={({ pressed }) => [
               styles.iconButton,
-              { backgroundColor: pressed ? '#171717' : 'transparent' },
+              { backgroundColor: pressed ? theme.ink(0x17) : 'transparent' },
             ]}
           >
             <Icon name="settings" />
@@ -453,7 +456,7 @@ export const HabitGrid = memo(function HabitGrid({
             paddingVertical: 6,
           }}
         >
-          <Text style={{ color: '#999999', fontSize: 12, flex: 1 }}>
+          <Text style={{ color: theme.ink(0x99), fontSize: 12, flex: 1 }}>
             Drag a habit to arrange your list
           </Text>
           <Pressable
@@ -464,7 +467,7 @@ export const HabitGrid = memo(function HabitGrid({
             }}
             style={{ minHeight: 44, padding: 12 }}
           >
-            <Text style={{ color: '#DDDDDD' }}>Done</Text>
+            <Text style={{ color: theme.ink(0xdd) }}>Done</Text>
           </Pressable>
         </View>
       )}
@@ -484,7 +487,7 @@ export const HabitGrid = memo(function HabitGrid({
               style={[styles.pullStreak, pullStreakStyle]}
             >
               <LinearGradient
-                colors={['#8A8A8A00', '#8A8A8A']}
+                colors={[`${theme.ink(0x8a)}00`, theme.ink(0x8a)]}
                 locations={[0, 1]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
@@ -515,7 +518,7 @@ export const HabitGrid = memo(function HabitGrid({
                       name="chevron"
                       size={Math.round(16 * Math.max(1, fontScale))}
                       strokeWidth={2.2}
-                      color="#9C9C9C"
+                      color={theme.ink(0x9c)}
                     />
                   </View>
                 </View>
@@ -599,7 +602,7 @@ export const HabitGrid = memo(function HabitGrid({
                     gap: 16,
                   }}
                 >
-                  <Text style={{ color: '#888888', fontSize: 14 }}>
+                  <Text style={{ color: theme.ink(0x88), fontSize: 14 }}>
                     {sourceHabits.length
                       ? 'Completed habits are hidden.'
                       : 'No habits yet.'}
@@ -710,7 +713,7 @@ export const HabitGrid = memo(function HabitGrid({
                     paddingVertical: 12,
                   }}
                 >
-                  <Text style={{ color: '#AAAAAA', fontSize: 14 }}>
+                  <Text style={{ color: theme.ink(0xaa), fontSize: 14 }}>
                     {showCompleted
                       ? 'Hide completed'
                       : `Show completed · ${completedCount}`}
@@ -740,8 +743,8 @@ export const HabitGrid = memo(function HabitGrid({
                           : 1,
                   })}
                 >
-                  <Icon name="plus" size={18} color="#777777" />
-                  <Text style={{ color: '#888888', fontSize: 14 }}>
+                  <Icon name="plus" size={18} color={theme.ink(0x77)} />
+                  <Text style={{ color: theme.ink(0x88), fontSize: 14 }}>
                     Add habit
                   </Text>
                 </Pressable>
@@ -766,7 +769,7 @@ export const HabitGrid = memo(function HabitGrid({
   );
 });
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   pullStreak: {
     position: 'absolute',
     right: 0,
@@ -786,7 +789,7 @@ const styles = StyleSheet.create({
   toolbarBrand: { flex: 1, justifyContent: 'center' },
   toolbarCentre: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   brand: {
-    color: '#888888',
+    color: t.ink(0x88),
     fontSize: 11,
     fontWeight: '600',
     letterSpacing: 1.5,
@@ -801,13 +804,13 @@ const styles = StyleSheet.create({
   dateTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   dateTitle: {
     flexShrink: 1,
-    color: '#EDEDED',
+    color: t.ink(0xed),
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: -0.4,
   },
   dateYear: {
-    color: '#8C8C8C',
+    color: t.ink(0x8c),
     fontSize: 12,
     fontWeight: '500',
     marginTop: 2,
@@ -830,7 +833,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#363636',
+    borderBottomColor: t.ink(0x36),
   },
   namesHeader: {
     justifyContent: 'center',
@@ -841,4 +844,4 @@ const styles = StyleSheet.create({
   rows: { flex: 1 },
   rowsContent: { paddingBottom: 8 },
   gridBody: { flexDirection: 'row', alignItems: 'flex-start' },
-});
+}));

@@ -1,8 +1,8 @@
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { Path, Rect, Text as SvgText } from 'react-native-svg';
 import { Text } from './Typography';
 import { ChartFrame, type ChartSlot } from './ChartFrame';
-import { checkmarkColor, colorOnBlack } from './colors';
+import { checkmarkColor } from './colors';
 import type { WeekStart } from './displayPreferences';
 import { dateKey } from './statistics';
 import { statisticSpanLabel, statisticTickLabel } from './statisticsFormatting';
@@ -12,10 +12,8 @@ import {
   type StreakRow as Row,
   type StreakRun,
 } from './statsSeries';
+import { themedStyles, useTheme } from './ThemeContext';
 
-const TRACK = '#171717';
-// Days of a first or last month that fall outside the selected period.
-const OUTSIDE = '#0C0C0C';
 const HEADING = 20;
 
 /** A bar with independently rounded left and right ends. */
@@ -67,6 +65,11 @@ export function StreakChart({
   today: string;
   weekStart: WeekStart;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
+  const track = theme.ink(0x17);
+  // Days of a first or last month that fall outside the selected period.
+  const outside = theme.ink(0x0c);
   const span = to - from + 1;
   const { unit, rows } = streakRows(from, to);
   const bar = unit === 'window' ? 26 : 18,
@@ -139,7 +142,7 @@ export function StreakChart({
     .sort((a, b) => b.length - a.length || b.to - a.to)
     .slice(0, 3);
   const longest = best[0]?.length ?? 0;
-  const faded = colorOnBlack(colour, 0.72);
+  const faded = theme.mix(colour, 0.72);
   return (
     <View style={{ gap: 14 }}>
       <ChartFrame
@@ -176,7 +179,7 @@ export function StreakChart({
                   y={heading.top + HEADING / 2 + 3}
                   fontSize={11}
                   fontWeight="700"
-                  fill="#9A9A9A"
+                  fill={theme.ink(0x9a)}
                 >
                   {String(heading.year)}
                 </SvgText>
@@ -191,7 +194,7 @@ export function StreakChart({
                   width={width}
                   height={bar}
                   rx={bar / 3.5}
-                  fill={OUTSIDE}
+                  fill={outside}
                 />,
                 <Rect
                   key={`track:${index}`}
@@ -200,7 +203,7 @@ export function StreakChart({
                   width={Math.max(1, px(row, row.to + 1) - px(row, row.from))}
                   height={bar}
                   rx={bar / 3.5}
-                  fill={TRACK}
+                  fill={track}
                 />,
               ])}
               {segments.map((segment) => {
@@ -299,16 +302,21 @@ export function StreakChart({
   );
 }
 
-const styles = StyleSheet.create({
-  heading: { color: '#9A9A9A', fontSize: 12, fontWeight: '600' },
+const useStyles = themedStyles((t) => ({
+  heading: { color: t.ink(0x9a), fontSize: 12, fontWeight: '600' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 28 },
-  track: { width: 64, height: 6, borderRadius: 3, backgroundColor: '#1E1E1E' },
+  track: {
+    width: 64,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: t.ink(0x1e),
+  },
   length: {
     width: 74,
-    color: '#E0E0E0',
+    color: t.ink(0xe0),
     fontSize: 14,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },
-  dates: { flex: 1, color: '#8E8E8E', fontSize: 13 },
-});
+  dates: { flex: 1, color: t.ink(0x8e), fontSize: 13 },
+}));

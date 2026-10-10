@@ -10,8 +10,8 @@ import {
   RangePicker,
   StatTiles,
   StatsSection,
-  statsStyles,
   streakTiles,
+  useStatsStyles,
   type StatTile,
 } from './StatsLayout';
 import {
@@ -50,6 +50,7 @@ import { StatsCalendar } from './StatsCalendar';
 import { InfoNote } from './InfoNote';
 import type { EntryDay } from './calendar';
 import { useSheetScroll } from './SheetModal';
+import { useTheme } from './ThemeContext';
 
 export const HabitStatsScreen = memo(function HabitStatsScreen({
   habit,
@@ -74,6 +75,9 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   bottomInset?: number;
   onGoalEdit: () => void;
 }) {
+  const theme = useTheme();
+  const statsStyles = useStatsStyles();
+  const colour = theme.colour(habit.color);
   const { fontScale } = useAppWindowDimensions();
   const [range, setRange] = useState<StatsRange>(30);
   const [offset, setOffset] = useState(0);
@@ -236,7 +240,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
         disabled={!editable}
       />
       {offset === 0 && (
-        <PeriodProgress data={stats.periodGoals} colour={habit.color} />
+        <PeriodProgress data={stats.periodGoals} colour={colour} />
       )}
       {stats.numeric && (
         <StatsSection
@@ -277,7 +281,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
       >
         <SuccessChart
           key={`${habit.id}:${range}:${offset}`}
-          colour={habit.color}
+          colour={colour}
           bins={binSeries(habit, days, successUnit(span), weekStart)}
           unit={successUnit(span)}
           observations={observed}
@@ -307,7 +311,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
       >
         <StreakChart
           key={`${habit.id}:${range}:${offset}`}
-          colour={habit.color}
+          colour={colour}
           runs={runs}
           noun={mode === 'period' ? periodNoun : 'days'}
           from={from}
@@ -374,7 +378,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
                     width: `${Math.max(0, ((day.value ?? 0) / maximum) * 100)}%`,
                     height: 5,
                     borderRadius: 3,
-                    backgroundColor: habit.color,
+                    backgroundColor: colour,
                   }}
                 />
               </View>
@@ -394,7 +398,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
       <TimeOfDayChart
         key={`${habit.id}:${range}:${offset}`}
         stats={timeOfDay}
-        colour={habit.color}
+        colour={colour}
       />
       <InfoNote
         label="How statistics work"

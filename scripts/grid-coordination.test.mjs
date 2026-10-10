@@ -9,6 +9,7 @@ import { createRoot } from 'react-dom/client';
 import { JSDOM } from 'jsdom';
 import * as calendar from '../src/calendar.ts';
 import * as navigation from '../src/gridNavigation.ts';
+import { themeContextModule } from './theme-fixture.mjs';
 
 function load(file, imports) {
   const module = { exports: {} };
@@ -288,6 +289,7 @@ test('context-menu measurement stays local, leaves the held name uncovered and c
     },
     './Typography': { Text: Container },
     './Icon': { Icon: () => null },
+    './ThemeContext': themeContextModule(),
     './motion': { appear: {}, disappear: {}, menuAppear: {} },
   });
   const anchor = { x: 0, y: 200, width: 120, height: 52 };

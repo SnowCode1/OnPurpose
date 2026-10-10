@@ -1,11 +1,12 @@
 import { useSyncExternalStore } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import Animated, { FadeOut, ReduceMotion } from 'react-native-reanimated';
 import { Text } from './Typography';
 import { Icon } from './Icon';
 import { feedback } from './haptics';
 import type { QuickUndo } from './quickUndo';
 import { appear } from './motion';
+import { themedStyles, useTheme } from './ThemeContext';
 
 const undoExit = FadeOut.duration(180).reduceMotion(ReduceMotion.System);
 export function QuickUndoActions({
@@ -21,6 +22,8 @@ export function QuickUndoActions({
   onToday: () => void;
   editable: boolean;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   const receipt = useSyncExternalStore(
     controller.subscribe,
     controller.getSnapshot,
@@ -56,7 +59,7 @@ export function QuickUndoActions({
           >
             {atToday ? (
               <>
-                <Icon name="undo" size={18} color="#D0D0D0" />
+                <Icon name="undo" size={18} color={theme.ink(0xd0)} />
                 <Text style={styles.text}>Undo</Text>
               </>
             ) : (
@@ -68,7 +71,7 @@ export function QuickUndoActions({
     </View>
   );
 }
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -83,7 +86,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 10,
     borderRadius: 12,
-    backgroundColor: '#121212',
+    backgroundColor: t.ink(0x12),
   },
   undo: {
     flexShrink: 0,
@@ -96,9 +99,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   text: {
-    color: '#D0D0D0',
+    color: t.ink(0xd0),
     fontSize: 13,
     fontWeight: '500',
     textAlign: 'center',
   },
-});
+}));

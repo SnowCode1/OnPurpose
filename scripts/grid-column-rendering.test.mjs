@@ -16,6 +16,7 @@ import * as selection from '../src/storage/selection.ts';
 import * as textLayout from '../src/gridEntryText.ts';
 import { createGridDayCache } from '../src/calendar.ts';
 import { gridColumnHit } from '../src/gridColumnHit.ts';
+import { themeContextModule } from './theme-fixture.mjs';
 
 function load(file, modules) {
   const code = ts.transpileModule(
@@ -149,6 +150,7 @@ test('native columns share controls/drawing while preserving dated input, access
       Path: svg('path'),
     },
     './Typography': { Text },
+    './ThemeContext': themeContextModule(),
     './ReorderRow': { ReorderRow: Row },
     './GridCheckboxMark': { GridCheckboxMark: Mark },
     './gridColumnHit': { gridColumnHit },

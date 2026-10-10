@@ -1,6 +1,5 @@
 import { Line, Rect } from 'react-native-svg';
 import { ChartFrame, type ChartSlot } from './ChartFrame';
-import { colorOnBlack } from './colors';
 import type { WeekStart } from './displayPreferences';
 import type { Habit } from './habits';
 import { levelFill, outcomeFill } from './outcomeColours';
@@ -18,6 +17,7 @@ import {
   type BinUnit,
   type SeriesBin,
 } from './statsSeries';
+import { useTheme } from './ThemeContext';
 
 const OUTCOME_TEXT: Record<string, string> = {
   met: 'goal met',
@@ -49,7 +49,8 @@ export function ValueChart({
   today: string;
   weekStart: WeekStart;
 }) {
-  const colour = habit.color,
+  const theme = useTheme();
+  const colour = theme.colour(habit.color),
     label = habit.unit ?? '',
     span = to - from + 1;
   const withUnit = (value: number) =>
@@ -74,9 +75,9 @@ export function ValueChart({
         : [];
     const fill =
       unit === 'day'
-        ? outcomeFill(colour, last.outcome)
+        ? outcomeFill(colour, last.outcome, theme)
         : bin.scheduled
-          ? levelFill(colour, bin.met / bin.scheduled)
+          ? levelFill(colour, bin.met / bin.scheduled, theme)
           : colour;
     return { bin, value, targets, fill };
   });
@@ -216,7 +217,7 @@ export function ValueChart({
               y={height - 2}
               width={(slots[selected].x1 - slots[selected].x0) * width}
               height={2}
-              fill={colorOnBlack(colour, 0.6)}
+              fill={theme.mix(colour, 0.6)}
             />
           )}
         </>

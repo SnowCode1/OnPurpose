@@ -15,12 +15,12 @@ once, not on every launch. Habit creation, renaming, units, icons, start dates, 
 Effective-dated success goals and weekday schedules also persist.
 Full-screen statistics are derived from saved values; comments remain later work. See [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md).
 
-`src/storage/model.ts` remains the public entry point for version-18 events and
+`src/storage/model.ts` remains the public entry point for version-19 events and
 deterministic replay, with backward-compatible interpretation of existing
-version-1–17 records. `types.ts` owns event/replay shapes, `validation.ts` owns
+version-1–18 records. `types.ts` owns event/replay shapes, `validation.ts` owns
 strict field/version checks, and `changeUtils.ts` owns classification, equality
 and inversion. These modules do not import replay at runtime. The version
-sections below describe when each field was introduced; new writes use v18.
+sections below describe when each field was introduced; new writes use v19.
 `repository.ts` implements the native database operations against a small SQL
 interface; `native.ts` connects it to Expo SQLite and native UUID/SHA-256 support.
 `store.ts` owns loading, immediate UI state, the serialized write queue, undo,
@@ -300,7 +300,7 @@ privacy/retention rules.
 Settings → Backups → Export backup opens the iOS share sheet; save the JSON to Files or
 another destination. The app first waits for pending saves and captures a stable
 log. The export is a readable JSON container of **changes**, not a replacement
-snapshot of habit/day values. See [the version-18 grid size example](examples/storage-v18.json),
+snapshot of habit/day values. See [the version-19 theme example](examples/storage-v19.json),
 [the version-12 deletion example](examples/storage-v12.json),
 [the version-11 goal timeline example](examples/storage-v11.json),
 [the version-10 synthetic example](examples/storage-v10.json),
@@ -505,3 +505,26 @@ correction groups, and use the ordinary serialized write/restore path. Current
 writers/exports use v18, retaining exact v1–v17 prefixes and SQL schema 1.
 Versions 1–17 reject the new kinds, and older events cannot follow v18 events.
 The [v18 example](examples/storage-v18.json) extends the exact v17 prefix.
+
+## Version 19: theme and backgrounds
+
+`themeMode` accepts exactly `system`, `dark` or `light`. `darkBackground` and
+`lightBackground` store a normalized uppercase `#RRGGBB`. As with the v18 grid
+sizes, `before` is `null` until the first choice, so the defaults are a
+rendering rule that can change without touching stored events. Absent fields
+currently display as Dark, black (`#000000`) and Paper (`#F6F3EC`). Development
+builds earlier on 10 October 2026 wrote that day's defaults (`system`,
+`#000000`, `#FFFFFF`) as the first `before`; replay accepts those too, so logs
+from that day still load.
+
+Validation checks only the stored shape. The readable lightness range for each
+scheme is also a rendering rule (`fitBackground` in `src/theme.ts`), so a later
+range change can never make an old event fail to replay.
+
+The preferences stay outside History/Undo, preserve Redo and correction groups,
+and use the ordinary serialized write/restore path. Saved habit colours are
+never rewritten: other backgrounds only change how a colour is displayed.
+Current writers/exports use v19, retaining exact v1–v18 prefixes and SQL schema
+1\. Versions 1–18 reject the new kinds, and older events cannot follow v19
+events. The [v19 example](examples/storage-v19.json) extends the exact v18 prefix
+with Light theme, a White light background and a Midnight dark background.

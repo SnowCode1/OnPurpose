@@ -10,6 +10,7 @@ import type { Habit } from './habits';
 import { Icon } from './Icon';
 import { HabitSymbol } from './HabitSymbol';
 import { ReorderRow, type RowMotion } from './ReorderRow';
+import { useTheme } from './ThemeContext';
 
 export type HabitAction =
   'colour' | 'edit' | 'reorder' | 'archive' | 'moveUp' | 'moveDown';
@@ -48,6 +49,8 @@ export function HabitName({
   onAction: (action: HabitAction) => void;
   onLayout: (event: LayoutChangeEvent) => void;
 }) {
+  const theme = useTheme();
+  const colour = theme.colour(habit.color);
   const view = useRef<View>(null);
   const held = useRef(false);
   const start = useRef(0);
@@ -152,25 +155,25 @@ export function HabitName({
           paddingVertical: height < 52 ? 4 : 8,
           paddingRight: 10,
           borderBottomWidth: 0.5,
-          borderBottomColor: `${habit.color}20`,
+          borderBottomColor: `${colour}20`,
           backgroundColor: motion.active
-            ? '#000000'
+            ? theme.background
             : selected
-              ? `${habit.color}20`
+              ? `${colour}20`
               : pressed
-                ? `${habit.color}15`
-                : '#000000',
+                ? `${colour}15`
+                : theme.background,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 8,
         })}
       >
-        {reorder && <Icon name="reorder" size={17} color={habit.color} />}
-        <HabitSymbol icon={habit.icon} colour={habit.color} />
+        {reorder && <Icon name="reorder" size={17} color={colour} />}
+        <HabitSymbol icon={habit.icon} colour={colour} />
         <View style={{ flex: 1, gap: 2 }}>
           <Text
             style={{
-              color: habit.color,
+              color: colour,
               fontSize: 15,
               lineHeight: 20,
               fontWeight: '500',
@@ -181,7 +184,7 @@ export function HabitName({
           {habit.unit && (
             <Text
               style={{
-                color: habit.color,
+                color: colour,
                 fontSize: 11,
                 lineHeight: 13,
                 opacity: 0.8,

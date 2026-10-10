@@ -3,7 +3,7 @@ body,
 #root {
   height: 100%;
   margin: 0;
-  background: #000;
+  background: var(--ink-00, #000);
   overflow: hidden;
 }
 * {
@@ -11,7 +11,7 @@ body,
 }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: #ddd;
+  color: var(--ink-dd, #ddd);
   -webkit-text-size-adjust: 100%;
 }
 .description-editor {
@@ -20,7 +20,7 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
-  background: #000;
+  background: var(--ink-00, #000);
   font-size: var(--note-size);
 }
 .editor-controls {
@@ -34,13 +34,13 @@ body {
   align-items: center;
   padding: 6px 12px calc(6px + env(safe-area-inset-bottom));
   gap: 2px;
-  border-top: 1px solid #252525;
-  background: #000;
+  border-top: 1px solid var(--ink-25, #252525);
+  background: var(--ink-00, #000);
   flex-shrink: 0;
 }
 button {
   font: inherit;
-  color: #bbb;
+  color: var(--ink-bb, #bbb);
   border: 0;
   background: transparent;
   border-radius: 8px;
@@ -54,7 +54,11 @@ button:disabled {
   cursor: default;
 }
 button[aria-pressed='true'] {
-  background: color-mix(in srgb, var(--note-colour) 18%, #171717);
+  background: color-mix(
+    in srgb,
+    var(--note-colour) 18%,
+    var(--ink-17, #171717)
+  );
   color: var(--note-link);
 }
 button:focus-visible,
@@ -77,7 +81,7 @@ input:focus-visible {
 .separator {
   height: 18px;
   width: 1px;
-  background: #303030;
+  background: var(--ink-30, #303030);
   margin: 0 3px;
 }
 .writing-area {
@@ -99,7 +103,7 @@ input:focus-visible {
 }
 .tiptap strong {
   font-weight: 700;
-  color: #eee;
+  color: var(--ink-ee, #eee);
 }
 .tiptap h1 {
   font-size: 1.7em;
@@ -128,10 +132,10 @@ input:focus-visible {
   margin: 0.15em 0;
 }
 .tiptap blockquote {
-  border-left: 2px solid #505050;
+  border-left: 2px solid var(--ink-50, #505050);
   margin: 0.75em 0;
   padding-left: 12px;
-  color: #c5c5c5;
+  color: var(--ink-c5, #c5c5c5);
 }
 .tiptap a {
   color: var(--note-link);
@@ -141,13 +145,13 @@ input:focus-visible {
   font:
     0.85em ui-monospace,
     monospace;
-  background: #202020;
+  background: var(--ink-20, #202020);
   border-radius: 3px;
   padding: 0.1em 0.2em;
 }
 .tiptap pre {
   padding: 12px;
-  background: #151515;
+  background: var(--ink-15, #151515);
   border-radius: 8px;
   overflow: auto;
 }
@@ -161,12 +165,12 @@ input:focus-visible {
 }
 .tiptap hr {
   border: 0;
-  border-top: 1px solid #303030;
+  border-top: 1px solid var(--ink-30, #303030);
   margin: 1em 0;
 }
 .tiptap p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
-  color: #666;
+  color: var(--ink-66, #666);
   float: left;
   height: 0;
   pointer-events: none;
@@ -176,9 +180,9 @@ input:focus-visible {
   bottom: calc(100% + 8px);
   left: 12px;
   right: 12px;
-  background: #171717;
+  background: var(--ink-17, #171717);
   padding: 8px;
-  border: 1px solid #303030;
+  border: 1px solid var(--ink-30, #303030);
   border-radius: 12px;
   flex-shrink: 0;
   max-height: var(--menu-height, max(0px, calc(100dvh - 88px)));
@@ -244,7 +248,7 @@ input:focus-visible {
   position: absolute;
   inset: 0;
   border-radius: 0;
-  background: #0007;
+  background: var(--scrim, #0007);
   cursor: default;
 }
 .link-panel {
@@ -254,9 +258,9 @@ input:focus-visible {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  border: 1px solid #333;
+  border: 1px solid var(--ink-33, #333);
   border-radius: 16px;
-  background: #171717;
+  background: var(--ink-17, #171717);
   overflow: hidden;
   font-size: 0.9em;
 }
@@ -271,16 +275,16 @@ input:focus-visible {
 }
 .link-panel h2 {
   margin: 0 0 2px;
-  color: #ddd;
+  color: var(--ink-dd, #ddd);
   font-size: 1em;
   font-weight: 600;
 }
 .link-panel input {
   width: 100%;
-  border: 1px solid #333;
+  border: 1px solid var(--ink-33, #333);
   border-radius: 8px;
-  background: #080808;
-  color: #ddd;
+  background: var(--ink-08, #080808);
+  color: var(--ink-dd, #ddd);
   padding: 12px;
   font: inherit;
   min-height: 44px;
@@ -294,17 +298,21 @@ input:focus-visible {
   padding: 8px 16px calc(20px + env(safe-area-inset-bottom));
 }
 .link-apply {
-  background: color-mix(in srgb, var(--note-colour) 18%, #252525);
+  background: color-mix(
+    in srgb,
+    var(--note-colour) 18%,
+    var(--ink-25, #252525)
+  );
   color: var(--note-link);
   min-width: 72px;
 }
 .link-error {
   margin: 0;
-  color: #dfae82;
+  color: var(--warning, #dfae82);
   font-size: 0.85em;
 }
 .image-note {
-  color: #aaa;
+  color: var(--ink-aa, #aaa);
 }
 
 .highlight-symbol {
@@ -319,16 +327,16 @@ input:focus-visible {
   right: 0;
   height: 3px;
   border-radius: 2px;
-  background: #5d5d5d;
+  background: var(--ink-5d, #5d5d5d);
 }
 .highlight-indicator.mixed {
   background: linear-gradient(
     90deg,
-    #f5df9a,
-    #bce8cd,
-    #b9d8ff,
-    #dcc5f6,
-    #f2bdda
+    var(--highlight-yellow-text, #f5df9a),
+    var(--highlight-green-text, #bce8cd),
+    var(--highlight-blue-text, #b9d8ff),
+    var(--highlight-purple-text, #dcc5f6),
+    var(--highlight-pink-text, #f2bdda)
   );
 }
 .link-inspector {
@@ -336,7 +344,7 @@ input:focus-visible {
 }
 .link-destination {
   font-size: 0.77em;
-  color: #bdbdbd;
+  color: var(--ink-bd, #bdbdbd);
   overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-line-clamp: 2;

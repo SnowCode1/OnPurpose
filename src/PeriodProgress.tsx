@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Text } from './Typography';
 import { Icon } from './Icon';
 import { periodSummary, periodMet } from './goalTiming';
 import type { periodStatistics, PeriodResult } from './periodStatistics';
+import { themedStyles, useTheme } from './ThemeContext';
 
 export function PeriodProgress({
   data,
@@ -12,6 +13,8 @@ export function PeriodProgress({
   data: ReturnType<typeof periodStatistics>;
   colour: string;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   const [expanded, setExpanded] = useState(false);
   if (!data.current && !data.recent.length) return null;
   const label = (date: string, withYear = true) =>
@@ -72,7 +75,7 @@ export function PeriodProgress({
             ? `Goal met in ${data.met} of ${data.eligible} finished periods`
             : 'No finished periods yet'}
         </Text>
-        <Icon name="chevron" color="#999999" size={16} />
+        <Icon name="chevron" color={theme.ink(0x99)} size={16} />
       </Pressable>
       {expanded && (
         <View style={{ gap: 14 }}>
@@ -94,14 +97,14 @@ export function PeriodProgress({
     </View>
   );
 }
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   section: {
     gap: 6,
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 2,
     borderRadius: 14,
-    backgroundColor: '#121212',
+    backgroundColor: t.ink(0x12),
   },
   headingRow: {
     flexDirection: 'row',
@@ -109,14 +112,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
   },
-  heading: { flex: 1, fontSize: 19, color: '#EDEDED', fontWeight: '600' },
+  heading: { flex: 1, fontSize: 19, color: t.ink(0xed), fontWeight: '600' },
   status: { fontSize: 13, fontWeight: '600' },
-  text: { fontSize: 14, color: '#CCCCCC' },
-  note: { fontSize: 12, color: '#999999' },
+  text: { fontSize: 14, color: t.ink(0xcc) },
+  note: { fontSize: 12, color: t.ink(0x99) },
   toggle: {
     minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-});
+}));

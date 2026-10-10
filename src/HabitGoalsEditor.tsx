@@ -8,7 +8,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   View,
   type TextProps,
 } from 'react-native';
@@ -33,8 +32,8 @@ import {
 } from './habitGoals';
 import { calendarDay, localDateKey } from './calendar';
 import { sameValue } from './storage/model';
-import { colorOnBlack } from './colors';
 import { appear } from './motion';
+import { themedStyles, useTheme } from './ThemeContext';
 
 const dateLabel = (date: string, today: string) =>
   new Date(`${date}T12:00:00`).toLocaleDateString(undefined, {
@@ -85,6 +84,9 @@ export function HabitGoalsEditor({
   onClose: () => void;
   onApply: (goals: HabitGoal[] | undefined) => boolean;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
+  const colour = theme.colour(habit.color);
   function newDraft(): HabitGoal {
     const current = goalAt(habit, initialDate);
     return {
@@ -239,7 +241,7 @@ export function HabitGoalsEditor({
                 contentContainerStyle={styles.body}
                 showsVerticalScrollIndicator={false}
               >
-                <Text style={[styles.habit, { color: habit.color }]}>
+                <Text style={[styles.habit, { color: colour }]}>
                   {habit.name}
                 </Text>
                 <Pressable
@@ -252,10 +254,8 @@ export function HabitGoalsEditor({
                     { opacity: !editable ? 0.4 : pressed ? 0.65 : 1 },
                   ]}
                 >
-                  <Icon name="plus" size={20} color={habit.color} />
-                  <Text
-                    style={[styles.control, { color: habit.color, flex: 1 }]}
-                  >
+                  <Icon name="plus" size={20} color={colour} />
+                  <Text style={[styles.control, { color: colour, flex: 1 }]}>
                     New goal
                   </Text>
                 </Pressable>
@@ -290,8 +290,8 @@ export function HabitGoalsEditor({
                               styles.dot,
                               {
                                 backgroundColor: current
-                                  ? habit.color
-                                  : '#626262',
+                                  ? colour
+                                  : theme.ink(0x62),
                               },
                             ]}
                           />
@@ -310,11 +310,8 @@ export function HabitGoalsEditor({
                                 style={[
                                   styles.badge,
                                   current && {
-                                    color: habit.color,
-                                    backgroundColor: colorOnBlack(
-                                      habit.color,
-                                      0.1,
-                                    ),
+                                    color: colour,
+                                    backgroundColor: theme.mix(colour, 0.1),
                                   },
                                 ]}
                               >
@@ -330,7 +327,11 @@ export function HabitGoalsEditor({
                             <Text style={[styles.note, { flex: 1 }]}>
                               {timingSummary(goal)}
                             </Text>
-                            <Icon name="edit" size={15} color="#777777" />
+                            <Icon
+                              name="edit"
+                              size={15}
+                              color={theme.ink(0x77)}
+                            />
                           </View>
                         </View>
                       </Pressable>
@@ -369,8 +370,8 @@ export function HabitGoalsEditor({
     </Modal>
   );
 }
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#0B0B0B' },
+const useStyles = themedStyles((t) => ({
+  screen: { flex: 1, backgroundColor: t.ink(0x0b) },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -379,9 +380,14 @@ const styles = StyleSheet.create({
     gap: 12,
     minHeight: 56,
   },
-  title: { fontSize: 17, color: '#E5E5E5', fontWeight: '600', flexShrink: 1 },
+  title: {
+    fontSize: 17,
+    color: t.ink(0xe5),
+    fontWeight: '600',
+    flexShrink: 1,
+  },
   action: { minHeight: 44, minWidth: 44, justifyContent: 'center' },
-  control: { color: '#DADADA', fontSize: 14 },
+  control: { color: t.ink(0xda), fontSize: 14 },
   body: {
     padding: 20,
     paddingTop: 12,
@@ -392,14 +398,14 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   habit: { fontSize: 16, fontWeight: '500' },
-  note: { color: '#999999', fontSize: 12, lineHeight: 17 },
-  error: { padding: 16, color: '#D99090', fontSize: 13 },
+  note: { color: t.ink(0x99), fontSize: 12, lineHeight: 17 },
+  error: { padding: 16, color: t.danger, fontSize: 13 },
   newGoal: {
     minHeight: 48,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: '#181818',
+    backgroundColor: t.ink(0x18),
     flexDirection: 'row',
     gap: 10,
     alignItems: 'center',
@@ -414,11 +420,11 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     marginTop: 8,
     borderWidth: 1,
-    borderColor: '#626262',
+    borderColor: t.ink(0x62),
   },
   line: {
     width: 1,
-    backgroundColor: '#303030',
+    backgroundColor: t.ink(0x30),
     flex: 1,
     marginTop: 6,
     marginBottom: 6,
@@ -430,14 +436,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
-  date: { fontSize: 12, color: '#999999', flexShrink: 1 },
+  date: { fontSize: 12, color: t.ink(0x99), flexShrink: 1 },
   badge: {
     fontSize: 11,
-    color: '#BBBBBB',
+    color: t.ink(0xbb),
     paddingVertical: 3,
     paddingHorizontal: 6,
-    backgroundColor: '#222222',
+    backgroundColor: t.ink(0x22),
     borderRadius: 5,
   },
-  rule: { fontSize: 15, color: '#DDDDDD' },
-});
+  rule: { fontSize: 15, color: t.ink(0xdd) },
+}));

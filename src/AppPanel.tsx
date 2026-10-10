@@ -3,14 +3,18 @@ import type { GridSize, GridSizeKind, GridSizing } from './gridSizing';
 import { useState, type ComponentType, type ReactNode } from 'react';
 import {
   SettingsScreen,
+  settingsParents,
   settingsTitles,
   type SettingsPage,
 } from './SettingsScreen';
+import type { ThemePreference } from './BackgroundSettings';
+import type { ThemeMode } from './theme';
+import { themedStyles } from './ThemeContext';
 import type { Habit } from './habits';
 import { ArchivedHabits } from './ArchivedHabits';
 import Animated from 'react-native-reanimated';
 import { appear } from './motion';
-import { Pressable, StyleSheet, type TextProps, View } from 'react-native';
+import { Pressable, type TextProps, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from './Icon';
 import { SheetModal } from './SheetModal';
@@ -42,6 +46,10 @@ export function AppPanel({
   onHideCompletedChange,
   hapticsEnabled,
   onHapticsChange,
+  themeMode,
+  darkBackground,
+  lightBackground,
+  onThemeChange,
   onClose,
   onDismiss,
   snapshot,
@@ -86,6 +94,10 @@ export function AppPanel({
   onHideCompletedChange: (value: boolean) => void;
   hapticsEnabled: boolean;
   onHapticsChange: (enabled: boolean) => void;
+  themeMode: ThemeMode;
+  darkBackground: string;
+  lightBackground: string;
+  onThemeChange: (preference: ThemePreference) => void;
   onClose: () => void;
   onDismiss: () => void;
   snapshot: StoreSnapshot;
@@ -98,6 +110,7 @@ export function AppPanel({
   onRecover: () => void;
   onRetry: () => void;
 }) {
+  const styles = useStyles();
   const editable = !snapshot.error && !snapshot.busy && !backupBusy;
   const context = visible ? page : 'closed';
   const [navigation, setNavigation] = useState<{
@@ -110,6 +123,7 @@ export function AppPanel({
     navigation.context === context ? navigation.page : 'index';
   const setSettingsPage = (next: SettingsPage) =>
     setNavigation({ context, page: next });
+  const parentPage = settingsParents[settingsPage] ?? 'index';
   return (
     <SheetModal visible={visible} onClose={onClose} onDismiss={onDismiss}>
       <SafeAreaProvider>
@@ -120,9 +134,13 @@ export function AppPanel({
                 (page === 'settings' && settingsPage !== 'index')) && (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Back to Settings"
+                  accessibilityLabel={`Back to ${
+                    page === 'archive' ? 'Settings' : settingsTitles[parentPage]
+                  }`}
                   onPress={
-                    page === 'archive' ? onBack : () => setSettingsPage('index')
+                    page === 'archive'
+                      ? onBack
+                      : () => setSettingsPage(parentPage)
                   }
                   style={styles.close}
                 >
@@ -205,6 +223,10 @@ export function AppPanel({
                   onHideCompletedChange={onHideCompletedChange}
                   hapticsEnabled={hapticsEnabled}
                   onHapticsChange={onHapticsChange}
+                  themeMode={themeMode}
+                  darkBackground={darkBackground}
+                  lightBackground={lightBackground}
+                  onThemeChange={onThemeChange}
                   onArchive={onArchive}
                   onRetry={onRetry}
                   onExport={onExport}
@@ -219,8 +241,8 @@ export function AppPanel({
     </SheetModal>
   );
 }
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#000000' },
+const useStyles = themedStyles((t) => ({
+  screen: { flex: 1, backgroundColor: t.background },
   content: { flex: 1, width: '100%', maxWidth: 560, alignSelf: 'center' },
   header: {
     minHeight: 72,
@@ -231,13 +253,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 16,
   },
-  title: { flex: 1, fontSize: 24, fontWeight: '600', color: '#E8E8E8' },
+  title: { flex: 1, fontSize: 24, fontWeight: '600', color: t.ink(0xe8) },
   close: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#151515',
+    backgroundColor: t.ink(0x15),
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));

@@ -4,9 +4,12 @@ import Animated from 'react-native-reanimated';
 import { appear } from './motion';
 import { Text } from './Typography';
 import { Icon } from './Icon';
+import { themedStyles, useTheme } from './ThemeContext';
 
 // Explanations are available without occupying space until requested.
 export function InfoNote({ label, text }: { label: string; text: string }) {
+  const theme = useTheme();
+  const styles = useStyles();
   const [expanded, setExpanded] = useState(false);
   return (
     <View style={styles.note}>
@@ -23,10 +26,10 @@ export function InfoNote({ label, text }: { label: string; text: string }) {
           opacity: pressed ? 0.6 : 1,
         })}
       >
-        <Icon name="info" size={17} color="#929292" />
+        <Icon name="info" size={17} color={theme.ink(0x92)} />
         <Text style={styles.label}>{label}</Text>
         <View style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}>
-          <Icon name="chevron" size={13} color="#777777" />
+          <Icon name="chevron" size={13} color={theme.ink(0x77)} />
         </View>
       </Pressable>
       {expanded && (
@@ -38,13 +41,13 @@ export function InfoNote({ label, text }: { label: string; text: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   note: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#282828',
+    borderTopColor: t.ink(0x28),
     paddingTop: 4,
   },
-  label: { color: '#929292', fontSize: 13, flex: 1 },
+  label: { color: t.ink(0x92), fontSize: 13, flex: 1 },
   explanation: { paddingLeft: 25, paddingBottom: 8 },
-  text: { color: '#AAAAAA', fontSize: 13, lineHeight: 19 },
-});
+  text: { color: t.ink(0xaa), fontSize: 13, lineHeight: 19 },
+}));

@@ -5,6 +5,7 @@ import { previewFeedback } from './previewHaptics';
 import { Text } from '../Typography';
 import { previewMotionDetector } from './previewMotion';
 import { sharePreview } from './previewCapture';
+import { useTheme } from '../ThemeContext';
 
 // Mount once above all app screens. Sensor callbacks never update React per frame.
 export function DevPreviewCapture() {
@@ -65,6 +66,7 @@ export function DevPreviewCapture() {
 
 export function DevPreviewControls() {
   const [sharing, setSharing] = useState(false);
+  const theme = useTheme();
   if (
     !__DEV__ ||
     process.env.EXPO_PUBLIC_DEV_PREVIEW !== 'true' ||
@@ -83,11 +85,11 @@ export function DevPreviewControls() {
           void sharePreview().finally(() => setSharing(false));
         }}
       >
-        <Text style={{ color: '#DDDDDD', fontSize: 17 }}>
+        <Text style={{ color: theme.ink(0xdd), fontSize: 17 }}>
           {sharing ? 'Sharing preview…' : 'Share preview'}
         </Text>
       </Pressable>
-      <Text style={{ color: '#969696', fontSize: 14, lineHeight: 21 }}>
+      <Text style={{ color: theme.ink(0x96), fontSize: 14, lineHeight: 21 }}>
         From any screen, turn the phone face down until a firm tap, then turn it
         back toward you and pause. Preview sharing is development only.
       </Text>

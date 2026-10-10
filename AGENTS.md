@@ -162,6 +162,25 @@ The requested preset icon update uses normal undoable edits in
   outline SVGs use the generated small `editorIconPaths.ts` subset; regenerate with
   `scripts/generate-editor-icons.mjs`, not a full catalogue import into the DOM.
 
+## Theme (v19)
+
+`src/theme.ts` (pure) derives all colours from one background; `ThemeContext.tsx`
+provides `useTheme` and per-theme cached `themedStyles`. Never hardcode interface
+colours: greys designed on black are `t.ink(0xNN)` (exact on black), dark tinted
+surfaces `t.tint(hex)`, accents `t.accent`/`t.link`/`t.danger`, and habit or other
+foreground colours `t.colour(hex)` (≥4.5:1, keeps hue). Display colours never
+enter saved data. Blend with `t.mix`, fade with `t.fade`, and pass `theme` to
+`createGridPalette`/`outcomeFill`/`categoryColours`/`dateTones`. Grid cells read
+backgrounds from their palette, not context. The grid theme defers with other
+presentation until Settings dismisses. The DOM editor gets CSS variables from
+`richText/editorTheme.ts`. `themeMode`/`darkBackground`/`lightBackground` are v19
+preferences outside History/Undo with `before: null` until first chosen; defaults
+(Dark, #000000, Paper #F6F3EC) are display rules in displayDefaults. Backgrounds are
+fitted to readable ranges at display time, never rejected. Current writers/exports
+are v19, retaining v1–v18 prefixes and SQL schema 1. Read docs/SETTINGS.md.
+The description editor uses `@expo/dom-webview`, falling back to
+`react-native-webview` where its native view is missing (Expo Go on Android).
+
 ## UI and accessibility
 
 Keep completed rows in place by default. Optional Hide completed today filters rows meeting their effective-dated goals at Today. Preserve Show completed and full rows when browsing other dates. Avoid gesture-only essential actions. Expose

@@ -342,7 +342,7 @@ receiver responded successfully to an authenticated health check.
   past-only dates, batch expansion without shifting existing day identities,
   leap days/month boundaries, Melbourne DST changes, and stable dates at rollover.
 - Entries use habit ID plus local date; virtualized columns never own entry state.
-- Main background is pure black; eight selectable habit colours apply to row
+- Main background was pure black at the time (now the default dark theme); eight selectable habit colours apply to row
   labels, units, checkbox states, numbers, and separators.
 - The founder shared a phone screenshot of the three-column version. Its main
   grid rendering was inspected; scroll interaction verification remains pending.
@@ -1784,3 +1784,21 @@ Phone checks after reload: rotate in both directions at an older date, fling
 through history and return to Today, pull into tomorrow, then hold a habit and
 continue dragging with its menu open. Verify names/cells stay aligned and retain
 the accepted animations. Local mocks/export do not establish native acceptance.
+
+## Themes and backgrounds (v19)
+
+- With Theme on System, switch the phone between light and dark mode while the
+  app is open: the grid, sheets and status bar follow without a restart.
+- Choose Dark and Light with the phone in the opposite mode; alerts (archive
+  Delete, restore), keyboards and date pickers should match the app.
+- Try each preset and a custom slider colour for both backgrounds. Confirm that
+  names, empty and filled cells, faded dates, Today, the week shading, Hide
+  completed, Quick Undo, History, statistics charts, goals, category and text
+  entry dialogs and the note editor (including highlights and links) all stay
+  readable.
+- Open Settings, change the background and dismiss: the grid should switch once,
+  after the sheet closes, keeping its scroll position.
+- Type an out-of-range hex (e.g. #808080) and check that it is adjusted, with
+  the note shown.
+- Reload and restore a backup: theme choices survive and do not appear in History
+  or consume Redo.

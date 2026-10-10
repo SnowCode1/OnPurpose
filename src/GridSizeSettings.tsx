@@ -17,6 +17,7 @@ import {
   type GridSizeKind,
   type GridSizing,
 } from './gridSizing';
+import { themedStyles, useTheme } from './ThemeContext';
 
 const labels: Record<GridSizeKind, string> = {
   gridNameWidth: 'Name column',
@@ -46,6 +47,8 @@ export function GridSizeSettings({
   editable: boolean;
   onChange: (kind: GridSizeKind, value: GridSize) => void;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   const window = useAppWindowDimensions();
   const width = gridWidth || Math.max(0, window.width - 36);
   const longSide = screenLongSide();
@@ -127,9 +130,9 @@ export function GridSizeSettings({
                 // The saved value, not the draft, so dragging does not jitter.
                 value={committed(kind)}
                 disabled={!editable}
-                minimumTrackTintColor="#74BBA5"
-                maximumTrackTintColor="#303030"
-                thumbTintColor="#EEEEEE"
+                minimumTrackTintColor={theme.accent}
+                maximumTrackTintColor={theme.ink(0x30)}
+                thumbTintColor={theme.ink(0xee)}
                 accessibilityLabel={`${labels[kind]} size`}
                 accessibilityValue={{
                   text: `${current} points${auto ? ', automatic' : ''}`,
@@ -156,6 +159,37 @@ export function GridSizeSettings({
   );
 }
 
+// The saved sizes drawn in the current theme, for previews elsewhere in
+// Settings (the background picker draws it in its draft theme).
+export function GridLivePreview({
+  sizing,
+  gridWidth,
+  habits,
+}: {
+  sizing: GridSizing;
+  gridWidth: number;
+  habits: readonly Habit[];
+}) {
+  const window = useAppWindowDimensions();
+  const width = gridWidth || Math.max(0, window.width - 36);
+  const layout = gridLayout(width, window.fontScale, sizing);
+  return (
+    <GridPreview
+      habits={habits.length ? habits.slice(0, 3) : demoHabits.slice(0, 3)}
+      width={width}
+      nameWidth={layout.nameWidth}
+      columnWidth={layout.columnWidth}
+      visibleDays={layout.visibleDays}
+      rowHeight={gridRowHeight(
+        sizing.rowHeight,
+        window.fontScale,
+        screenLongSide(),
+      )}
+      caption={false}
+    />
+  );
+}
+
 // A few rows drawn at the grid's real geometry, scaled down to fit the card.
 // Name cells mirror HabitName (icon, 8-point gap, 15-point name, unit, right
 // padding) so the name column looks exactly as roomy as it really is; rows grow
@@ -167,6 +201,7 @@ function GridPreview({
   columnWidth,
   visibleDays,
   rowHeight,
+  caption = true,
 }: {
   habits: readonly Habit[];
   width: number;
@@ -174,7 +209,10 @@ function GridPreview({
   columnWidth: number;
   visibleDays: number;
   rowHeight: number;
+  caption?: boolean;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   const [available, setAvailable] = useState(0);
   const [height, setHeight] = useState(0);
   const scale = available && width ? Math.min(1, available / width) : 1;
@@ -216,79 +254,79 @@ function GridPreview({
                 </View>
               ))}
             </View>
-            {habits.map((habit, row) => (
-              <View
-                key={habit.id}
-                style={[styles.previewRow, { minHeight: rowHeight }]}
-              >
+            {habits.map((habit, row) => {
+              const colour = theme.colour(habit.color);
+              return (
                 <View
-                  style={[
-                    styles.previewName,
-                    {
-                      width: nameWidth,
-                      paddingVertical: rowHeight < 52 ? 4 : 8,
-                    },
-                  ]}
+                  key={habit.id}
+                  style={[styles.previewRow, { minHeight: rowHeight }]}
                 >
-                  <HabitSymbol icon={habit.icon} colour={habit.color} />
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <Text
-                      style={[styles.previewNameText, { color: habit.color }]}
-                    >
-                      {habit.name}
-                    </Text>
-                    {habit.unit && (
-                      <Text
-                        style={[styles.previewUnit, { color: habit.color }]}
-                      >
-                        {habit.unit}
+                  <View
+                    style={[
+                      styles.previewName,
+                      {
+                        width: nameWidth,
+                        paddingVertical: rowHeight < 52 ? 4 : 8,
+                      },
+                    ]}
+                  >
+                    <HabitSymbol icon={habit.icon} colour={colour} />
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text style={[styles.previewNameText, { color: colour }]}>
+                        {habit.name}
                       </Text>
-                    )}
-                  </View>
-                </View>
-                {days.map((day) => {
-                  const pattern = checkedPatterns[row % checkedPatterns.length];
-                  const checked = pattern[day % pattern.length];
-                  return (
-                    <View
-                      key={day}
-                      style={[styles.previewCell, { width: columnWidth }]}
-                    >
-                      <View
-                        style={{
-                          width: box,
-                          height: box,
-                          borderRadius: box * 0.28,
-                          borderWidth: 2,
-                          borderColor: habit.color,
-                          backgroundColor: checked
-                            ? habit.color
-                            : 'transparent',
-                          opacity: checked ? 1 : 0.6,
-                        }}
-                      />
+                      {habit.unit && (
+                        <Text style={[styles.previewUnit, { color: colour }]}>
+                          {habit.unit}
+                        </Text>
+                      )}
                     </View>
-                  );
-                })}
-              </View>
-            ))}
+                  </View>
+                  {days.map((day) => {
+                    const pattern =
+                      checkedPatterns[row % checkedPatterns.length];
+                    const checked = pattern[day % pattern.length];
+                    return (
+                      <View
+                        key={day}
+                        style={[styles.previewCell, { width: columnWidth }]}
+                      >
+                        <View
+                          style={{
+                            width: box,
+                            height: box,
+                            borderRadius: box * 0.28,
+                            borderWidth: 2,
+                            borderColor: colour,
+                            backgroundColor: checked ? colour : 'transparent',
+                            opacity: checked ? 1 : 0.6,
+                          }}
+                        />
+                      </View>
+                    );
+                  })}
+                </View>
+              );
+            })}
           </View>
         )}
       </View>
-      <Text style={styles.caption}>
-        {visibleDays} {visibleDays === 1 ? 'day fits' : 'days fit'} on this
-        screen
-      </Text>
+      {caption && (
+        <Text style={styles.caption}>
+          {visibleDays} {visibleDays === 1 ? 'day fits' : 'days fit'} on this
+          screen
+        </Text>
+      )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   control: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#242424',
+    borderBottomColor: t.ink(0x24),
   },
   heading: {
     flexDirection: 'row',
@@ -296,13 +334,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 8,
   },
-  label: { color: '#DEDEDE', fontSize: 17 },
+  label: { color: t.ink(0xde), fontSize: 17 },
   reset: { minHeight: 44, justifyContent: 'center' },
-  resetText: { color: '#BBBBBB', fontSize: 13 },
+  resetText: { color: t.ink(0xbb), fontSize: 13 },
   sliderRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   slider: { flex: 1, minHeight: 44 },
   value: {
-    color: '#CCCCCC',
+    color: t.ink(0xcc),
     fontSize: 14,
     minWidth: 64,
     textAlign: 'right',
@@ -312,15 +350,15 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#242424',
+    borderBottomColor: t.ink(0x24),
   },
   previewHeading: { alignItems: 'center', justifyContent: 'center' },
-  previewDay: { color: '#BBBBBB', fontSize: 15, fontWeight: '600' },
+  previewDay: { color: t.ink(0xbb), fontSize: 15, fontWeight: '600' },
   previewRow: {
     flexDirection: 'row',
     alignItems: 'center',
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#222222',
+    borderTopColor: t.ink(0x22),
   },
   previewHeadings: { flexDirection: 'row', height: 44 },
   previewName: {
@@ -332,5 +370,5 @@ const styles = StyleSheet.create({
   previewNameText: { fontSize: 15, lineHeight: 20, fontWeight: '500' },
   previewUnit: { fontSize: 11, lineHeight: 13, opacity: 0.8 },
   previewCell: { alignItems: 'center', justifyContent: 'center' },
-  caption: { color: '#929292', fontSize: 13, textAlign: 'center' },
-});
+  caption: { color: t.ink(0x92), fontSize: 13, textAlign: 'center' },
+}));

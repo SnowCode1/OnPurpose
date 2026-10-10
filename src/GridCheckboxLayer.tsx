@@ -55,7 +55,7 @@ export const CheckboxGraphic = memo(function CheckboxGraphic({
         )
       : evaluateGoal(habit, value, day.key).met);
   const colour = met
-    ? habit.color
+    ? palette.colour
     : palette.tones[dayTone(day.daysAgo)].checkbox;
   const box = size * (22 / 28),
     stroke = Math.max(1.25, box * (1.5 / 22));

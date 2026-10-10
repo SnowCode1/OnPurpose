@@ -1,12 +1,5 @@
 import { useState } from 'react';
-import {
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Text, TextInput } from './Typography';
@@ -15,6 +8,7 @@ import { localDateKey } from './calendar';
 import { validTimingDate } from './goalTiming';
 import { DateCalendar } from './DateCalendar';
 import type { WeekStart } from './displayPreferences';
+import { themedStyles, useTheme } from './ThemeContext';
 
 export function DateNavigationSheet({
   date,
@@ -29,6 +23,8 @@ export function DateNavigationSheet({
   onClose: () => void;
   onChoose: (date: string) => void;
 }) {
+  const styles = useStyles();
+  const theme = useTheme();
   const [chosen, setChosen] = useState(date);
   const insets = useSafeAreaInsets();
   const valid = validTimingDate(chosen);
@@ -90,8 +86,8 @@ export function DateNavigationSheet({
                 value={new Date(`${chosen}T12:00:00`)}
                 mode="date"
                 display="inline"
-                themeVariant="dark"
-                accentColor="#DDDDDD"
+                themeVariant={theme.scheme}
+                accentColor={theme.ink(0xdd)}
                 onValueChange={(_, value) => setChosen(localDateKey(value))}
               />
             )}
@@ -120,7 +116,11 @@ export function DateNavigationSheet({
               ]}
             >
               <Text
-                style={{ color: '#000000', fontSize: 15, fontWeight: '600' }}
+                style={{
+                  color: theme.background,
+                  fontSize: 15,
+                  fontWeight: '600',
+                }}
               >
                 Go to date
               </Text>
@@ -131,19 +131,19 @@ export function DateNavigationSheet({
     </Modal>
   );
 }
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   overlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#00000099',
+    backgroundColor: t.scrim(0x99),
     paddingHorizontal: 18,
   },
   card: {
     width: '100%',
     maxWidth: 430,
     maxHeight: '100%',
-    backgroundColor: '#121212',
+    backgroundColor: t.ink(0x12),
     borderRadius: 20,
     overflow: 'hidden',
   },
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 6,
   },
-  title: { color: '#EEEEEE', fontSize: 19, fontWeight: '600', flexShrink: 1 },
+  title: { color: t.ink(0xee), fontSize: 19, fontWeight: '600', flexShrink: 1 },
   action: {
     minHeight: 44,
     minWidth: 60,
@@ -163,21 +163,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 14,
   },
-  secondary: { color: '#BBBBBB', fontSize: 15 },
+  secondary: { color: t.ink(0xbb), fontSize: 15 },
   actions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 12,
     padding: 16,
   },
-  primary: { backgroundColor: '#DDDDDD', borderRadius: 10 },
+  primary: { backgroundColor: t.ink(0xdd), borderRadius: 10 },
   input: {
     marginTop: 16,
-    color: '#EEEEEE',
+    color: t.ink(0xee),
     fontSize: 18,
-    backgroundColor: '#1C1C1C',
+    backgroundColor: t.ink(0x1c),
     borderRadius: 10,
     minHeight: 48,
     paddingHorizontal: 12,
   },
-});
+}));

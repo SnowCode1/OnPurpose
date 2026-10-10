@@ -1,9 +1,8 @@
 import { GoalChoice } from './GoalEditorControls';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Text, TextInput } from './Typography';
 import { StartDateField } from './StartDateField';
-import { colorOnBlack } from './colors';
 import { allWeekdays } from './habitGoals';
 import {
   weekAnchor,
@@ -12,6 +11,7 @@ import {
   type GoalPeriod,
 } from './goalTiming';
 import type { WeekStart } from './displayPreferences';
+import { themedStyles, useTheme } from './ThemeContext';
 
 function NumberField({
   label,
@@ -22,6 +22,7 @@ function NumberField({
   value: number;
   onChange: (value: number) => void;
 }) {
+  const styles = useStyles();
   return (
     <View style={{ flex: 1, minWidth: 85, gap: 6 }}>
       <Text style={styles.label}>{label}</Text>
@@ -55,6 +56,9 @@ export function GoalTimingFields({
   today: string;
   colour: string;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
+  const display = theme.colour(colour);
   const { period, cycle } = value;
   const anchorDate = validTimingDate(from) ? from : today;
   const [customCycle, setCustomCycle] = useState(
@@ -79,7 +83,7 @@ export function GoalTimingFields({
         options={options}
         value={selected}
         onChange={change}
-        colour={colour}
+        colour={display}
       />
     );
   }
@@ -139,8 +143,8 @@ export function GoalTimingFields({
                     styles.day,
                     {
                       backgroundColor: value.weekdays.includes(day)
-                        ? colorOnBlack(colour, 0.18)
-                        : '#222222',
+                        ? theme.mix(display, 0.18)
+                        : theme.ink(0x22),
                     },
                   ]}
                 >
@@ -149,8 +153,8 @@ export function GoalTimingFields({
                       styles.text,
                       {
                         color: value.weekdays.includes(day)
-                          ? colour
-                          : '#999999',
+                          ? display
+                          : theme.ink(0x99),
                       },
                     ]}
                   >
@@ -320,7 +324,7 @@ export function GoalTimingFields({
                 onChange={(anchor) =>
                   onChange({ ...value, cycle: { ...cycle, anchor } })
                 }
-                colour={colour}
+                colour={display}
                 weekStart={weekStart}
               />
             </View>
@@ -330,9 +334,9 @@ export function GoalTimingFields({
     </View>
   );
 }
-const styles = StyleSheet.create({
-  label: { fontSize: 12, color: '#999999' },
-  text: { fontSize: 14, color: '#DDDDDD' },
+const useStyles = themedStyles((t) => ({
+  label: { fontSize: 12, color: t.ink(0x99) },
+  text: { fontSize: 14, color: t.ink(0xdd) },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   day: {
     minWidth: 44,
@@ -346,8 +350,8 @@ const styles = StyleSheet.create({
     minHeight: 44,
     padding: 12,
     borderRadius: 10,
-    backgroundColor: '#222222',
+    backgroundColor: t.ink(0x22),
     fontSize: 17,
-    color: '#EEEEEE',
+    color: t.ink(0xee),
   },
-});
+}));

@@ -22,12 +22,13 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   View,
   type TextProps,
   type TextInput as NativeTextInput,
 } from 'react-native';
 import { ColourPicker } from './ColourPicker';
+import { normalizeHex } from './colors';
+import { themedStyles, useTheme } from './ThemeContext';
 import {
   habitType,
   habitTypeLabel,
@@ -65,6 +66,8 @@ export function HabitDialog({
   onColour: (colour: string) => boolean;
   editable: boolean;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   const [description, setDescription] = useState(habit.description);
   const descriptionText = useMemo(
     () => descriptionExcerpt(description ?? ''),
@@ -97,6 +100,9 @@ export function HabitDialog({
   const [colour, setColour] = useState(habit.color),
     [picker, setPicker] = useState(false),
     [pickerDraft, setPickerDraft] = useState(habit.color);
+  // Display only: drafts and saves keep the raw choice. An incomplete hex
+  // typed in colour mode passes through unchanged, as before.
+  const displayColour = normalizeHex(colour) ? theme.colour(colour) : colour;
   const [icon, setIcon] = useState(habit.icon);
   const [iconPicker, setIconPicker] = useState(false);
   const [iconDraft, setIconDraft] = useState<HabitIcon | undefined | null>(
@@ -163,7 +169,9 @@ export function HabitDialog({
       onPress={onPress}
       style={[styles.button, { opacity: disabled ? 0.35 : 1 }]}
     >
-      <Text style={[styles.buttonText, { color: colour, fontWeight: '600' }]}>
+      <Text
+        style={[styles.buttonText, { color: displayColour, fontWeight: '600' }]}
+      >
         {label}
       </Text>
     </Pressable>
@@ -177,7 +185,7 @@ export function HabitDialog({
       onRequestClose={discard}
     >
       <SafeAreaProvider>
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#000000' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
           <KeyboardAvoidingView
             style={styles.overlay}
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -240,14 +248,16 @@ export function HabitDialog({
                 )}
               </View>
               {(mode === 'colour' || picker || iconPicker) && (
-                <Heading style={[styles.title, { color: habit.color }]}>
+                <Heading
+                  style={[styles.title, { color: theme.colour(habit.color) }]}
+                >
                   {habit.name}
                 </Heading>
               )}
               {iconPicker ? (
                 <HabitIconPicker
                   icon={icon}
-                  colour={colour}
+                  colour={displayColour}
                   onChange={setIconDraft}
                 />
               ) : (
@@ -276,9 +286,9 @@ export function HabitDialog({
                           value={name}
                           onChangeText={setName}
                           style={styles.input}
-                          selectionColor={colour}
+                          selectionColor={displayColour}
                           placeholder="Read a little"
-                          placeholderTextColor="#666666"
+                          placeholderTextColor={theme.ink(0x66)}
                         />
                       </View>
                       {mode === 'create' ? (
@@ -312,7 +322,9 @@ export function HabitDialog({
                                   },
                                   {
                                     backgroundColor:
-                                      type === value ? '#303030' : '#181818',
+                                      type === value
+                                        ? theme.ink(0x30)
+                                        : theme.ink(0x18),
                                   },
                                 ]}
                               >
@@ -359,7 +371,7 @@ export function HabitDialog({
                                 : 'Add the options you want to track'}
                             </Text>
                           </View>
-                          <Icon name="edit" size={17} color="#888888" />
+                          <Icon name="edit" size={17} color={theme.ink(0x88)} />
                         </Pressable>
                       )}
                       {numeric && (
@@ -372,7 +384,7 @@ export function HabitDialog({
                             onChangeText={setUnit}
                             style={styles.input}
                             placeholder="minutes, pages, glasses…"
-                            placeholderTextColor="#666666"
+                            placeholderTextColor={theme.ink(0x66)}
                           />
                         </View>
                       )}
@@ -383,7 +395,7 @@ export function HabitDialog({
                             undefined,
                             mode === 'create' ? startDate : today,
                           )}
-                          colour={colour}
+                          colour={displayColour}
                           detail={
                             mode === 'create'
                               ? 'From the start date'
@@ -429,12 +441,12 @@ export function HabitDialog({
                               : 'Notes, motivation or a link · optional'}
                           </Text>
                         </View>
-                        <Icon name="edit" size={17} color="#888888" />
+                        <Icon name="edit" size={17} color={theme.ink(0x88)} />
                       </Pressable>
                       <StartDateField
                         value={startDate}
                         onChange={setStartDate}
-                        colour={colour}
+                        colour={displayColour}
                         weekStart={weekStart}
                       />
                       <View style={styles.appearance}>
@@ -456,11 +468,16 @@ export function HabitDialog({
                             {icon ? (
                               <HabitSymbol
                                 icon={icon}
-                                colour={colour}
+                                colour={displayColour}
                                 size={23}
                               />
                             ) : (
-                              <Text style={[styles.noIcon, { color: colour }]}>
+                              <Text
+                                style={[
+                                  styles.noIcon,
+                                  { color: displayColour },
+                                ]}
+                              >
                                 +
                               </Text>
                             )}
@@ -485,7 +502,7 @@ export function HabitDialog({
                             <View
                               style={[
                                 styles.colourSwatch,
-                                { backgroundColor: colour },
+                                { backgroundColor: displayColour },
                               ]}
                             />
                           </View>
@@ -500,7 +517,7 @@ export function HabitDialog({
             {categoriesOpen && (
               <CategoryEditor
                 categories={categories}
-                colour={colour}
+                colour={displayColour}
                 onClose={() => setCategoriesOpen(false)}
                 onApply={(next) => {
                   setCategories(next);
@@ -528,7 +545,7 @@ export function HabitDialog({
             {descriptionOpen && (
               <DescriptionEditor
                 title={name || 'New habit'}
-                colour={colour}
+                colour={displayColour}
                 initialValue={description ?? ''}
                 baseValue={habit.description ?? ''}
                 draftKey={draftKey}
@@ -549,8 +566,8 @@ export function HabitDialog({
     </Modal>
   );
 }
-const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: '#000000' },
+const useStyles = themedStyles((t) => ({
+  overlay: { flex: 1, backgroundColor: t.background },
   dialog: {
     flex: 1,
     width: '100%',
@@ -568,20 +585,20 @@ const styles = StyleSheet.create({
   headerAction: { minHeight: 44, justifyContent: 'center', flexShrink: 1 },
   headerDone: { minWidth: 55 },
   eyebrow: {
-    color: '#EEEEEE',
+    color: t.ink(0xee),
     fontSize: 17,
     fontWeight: '600',
     flexShrink: 1,
   },
   title: { fontSize: 26, fontWeight: '600', marginBottom: 18 },
-  label: { color: '#AAAAAA', fontSize: 12, marginBottom: 8 },
-  description: { color: '#999999', fontSize: 12, lineHeight: 18 },
+  label: { color: t.ink(0xaa), fontSize: 12, marginBottom: 8 },
+  description: { color: t.ink(0x99), fontSize: 12, lineHeight: 18 },
   input: {
-    backgroundColor: '#1C1C1C',
+    backgroundColor: t.ink(0x1c),
     borderRadius: 12,
     padding: 14,
     fontSize: 17,
-    color: '#E5E5E5',
+    color: t.ink(0xe5),
   },
   button: {
     minHeight: 44,
@@ -590,10 +607,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
   },
-  buttonText: { color: '#DDDDDD', fontSize: 15, fontWeight: '500' },
+  buttonText: { color: t.ink(0xdd), fontSize: 15, fontWeight: '500' },
   descriptionControl: {
     minHeight: 60,
-    backgroundColor: '#1C1C1C',
+    backgroundColor: t.ink(0x1c),
     borderRadius: 12,
     padding: 12,
     flexDirection: 'row',
@@ -610,10 +627,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#1C1C1C',
+    backgroundColor: t.ink(0x1c),
     borderRadius: 12,
   },
-  appearancePressed: { backgroundColor: '#303030' },
+  appearancePressed: { backgroundColor: t.ink(0x30) },
   appearancePreview: {
     width: 26,
     height: 28,
@@ -625,7 +642,7 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 1,
-    borderColor: '#FFFFFF30',
+    borderColor: t.overlay(0x30),
   },
   noIcon: { fontSize: 24, lineHeight: 28 },
   types: { flexWrap: 'wrap', flexDirection: 'row', gap: 8 },
@@ -639,4 +656,4 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 10,
   },
-});
+}));

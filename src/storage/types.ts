@@ -10,6 +10,7 @@ import type {
   WeekStart,
 } from '../displayPreferences.ts';
 import type { GridSize } from '../gridSizing.ts';
+import type { ThemeMode } from '../theme.ts';
 
 export type StoredState = {
   habits: Habit[];
@@ -29,6 +30,9 @@ export type StoredState = {
   tapAnimations?: boolean;
   textScale?: number;
   hideCompleted?: boolean;
+  themeMode?: ThemeMode;
+  darkBackground?: string;
+  lightBackground?: string;
 };
 export type DeletedHabit = {
   habit: Habit;
@@ -73,7 +77,12 @@ export type Change =
   | { kind: 'checkboxStyle'; before: CheckboxStyle; after: CheckboxStyle }
   | { kind: 'dateFading'; before: boolean; after: boolean }
   | { kind: 'textScale'; before: number; after: number }
-  | { kind: 'hideCompleted'; before: boolean; after: boolean };
+  | { kind: 'hideCompleted'; before: boolean; after: boolean }
+  // v19: appearance; backgrounds are normalized #RRGGBB.
+  // before is null until the first choice, so defaults can change freely.
+  | { kind: 'themeMode'; before: ThemeMode | null; after: ThemeMode }
+  | { kind: 'darkBackground'; before: string | null; after: string }
+  | { kind: 'lightBackground'; before: string | null; after: string };
 export type PreferenceChange = Extract<
   Change,
   {
@@ -92,7 +101,10 @@ export type PreferenceChange = Extract<
       | 'checkboxStyle'
       | 'dateFading'
       | 'textScale'
-      | 'hideCompleted';
+      | 'hideCompleted'
+      | 'themeMode'
+      | 'darkBackground'
+      | 'lightBackground';
   }
 >;
 export type HabitChange = Exclude<Change, PreferenceChange>;
@@ -115,7 +127,8 @@ export type EventMeta = {
     | 15
     | 16
     | 17
-    | 18;
+    | 18
+    | 19;
   id: string;
   sequence: number;
   recordedAt: string;
@@ -128,7 +141,24 @@ export type LegacyChangeEvent = EventMeta & { version: 1 } & (
   );
 export type CurrentChangeEvent = EventMeta & {
   version:
-    2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18;
+    | 2
+    | 3
+    | 4
+    | 5
+    | 6
+    | 7
+    | 8
+    | 9
+    | 10
+    | 11
+    | 12
+    | 13
+    | 14
+    | 15
+    | 16
+    | 17
+    | 18
+    | 19;
 } & (
     | { type: 'change'; groupId: string; change: HabitChange }
     | { type: 'undo' | 'redo'; targetId: string; change: HabitChange }
@@ -170,4 +200,5 @@ export type Replay = {
   hasV16: boolean;
   hasV17: boolean;
   hasV18: boolean;
+  hasV19: boolean;
 };

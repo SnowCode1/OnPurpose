@@ -26,7 +26,6 @@ import {
   type SuccessRule,
 } from './habitGoals';
 import { goalDraftIssue, parseGoalAmount } from './goalEditing';
-import { colorOnBlack } from './colors';
 import { sameValue } from './storage/model';
 import { appear } from './motion';
 import { GoalTimingFields } from './GoalTimingFields';
@@ -43,6 +42,7 @@ import {
   type GoalTiming,
 } from './goalTiming';
 import type { WeekStart } from './displayPreferences';
+import { themedStyles, useTheme } from './ThemeContext';
 
 function Disclosure({
   label,
@@ -57,6 +57,8 @@ function Disclosure({
   onPress: () => void;
   children: ReactNode;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   return (
     <View style={{ gap: expanded ? 12 : 0 }}>
       <Pressable
@@ -78,7 +80,7 @@ function Disclosure({
           )}
         </View>
         <View style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}>
-          <Icon name="chevron" size={16} color="#888888" />
+          <Icon name="chevron" size={16} color={theme.ink(0x88)} />
         </View>
       </Pressable>
       {expanded && (
@@ -121,6 +123,9 @@ export function GoalVersionForm({
   onTimeline: () => void;
   onDirtyChange: (dirty: boolean) => void;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
+  const colour = theme.colour(habit.color);
   const type = habitType(habit);
   const [section, setSection] = useState<
     'condition' | 'frequency' | 'cycle' | 'date' | null
@@ -229,7 +234,7 @@ export function GoalVersionForm({
         keyboardType={numeric ? 'decimal-pad' : 'default'}
         multiline={!numeric}
         maxLength={numeric ? 20 : 2400}
-        selectionColor={habit.color}
+        selectionColor={colour}
         style={styles.input}
       />
     </View>
@@ -265,8 +270,8 @@ export function GoalVersionForm({
               styles.chip,
               {
                 backgroundColor: selected.includes(option.id)
-                  ? colorOnBlack(habit.color, 0.18)
-                  : '#222222',
+                  ? theme.mix(colour, 0.18)
+                  : theme.ink(0x22),
                 opacity: pressed ? 0.65 : 1,
               },
             ]}
@@ -274,7 +279,7 @@ export function GoalVersionForm({
             <Text
               style={[
                 styles.control,
-                selected.includes(option.id) && { color: habit.color },
+                selected.includes(option.id) && { color: colour },
               ]}
             >
               {option.label}
@@ -347,9 +352,7 @@ export function GoalVersionForm({
           onPress={() => onSave(goal)}
           style={[styles.action, { opacity: valid && editable ? 1 : 0.35 }]}
         >
-          <Text
-            style={[styles.control, { color: habit.color, fontWeight: '600' }]}
-          >
+          <Text style={[styles.control, { color: colour, fontWeight: '600' }]}>
             Done
           </Text>
         </Pressable>
@@ -361,10 +364,8 @@ export function GoalVersionForm({
         contentContainerStyle={styles.body}
       >
         <View style={styles.identity}>
-          <HabitSymbol icon={habit.icon} colour={habit.color} size={23} />
-          <Text style={[styles.habit, { color: habit.color }]}>
-            {habit.name}
-          </Text>
+          <HabitSymbol icon={habit.icon} colour={colour} size={23} />
+          <Text style={[styles.habit, { color: colour }]}>{habit.name}</Text>
         </View>
         <GoalSection
           label="Success condition"
@@ -381,7 +382,7 @@ export function GoalVersionForm({
               <Choices
                 direct
                 label="Success condition"
-                colour={habit.color}
+                colour={colour}
                 value={kind}
                 onChange={(value) => setKind(value as SuccessRule['kind'])}
                 options={[
@@ -392,14 +393,14 @@ export function GoalVersionForm({
               <CheckboxDefaultField
                 checked={defaultChecked}
                 onChange={setDefaultChecked}
-                colour={habit.color}
+                colour={colour}
               />
             </>
           ) : (
             <Choices
               direct
               label="Success condition"
-              colour={habit.color}
+              colour={colour}
               value={kind}
               onChange={(value) => {
                 setKind(value as SuccessRule['kind']);
@@ -435,7 +436,7 @@ export function GoalVersionForm({
             <Animated.View entering={appear} style={styles.stack}>
               <Choices
                 label="Comparison"
-                colour={habit.color}
+                colour={colour}
                 value={operator}
                 onChange={(value) => setOperator(value as typeof operator)}
                 options={[
@@ -467,7 +468,7 @@ export function GoalVersionForm({
             <Animated.View entering={appear} style={styles.stack}>
               <Choices
                 label="Match"
-                colour={habit.color}
+                colour={colour}
                 value={match}
                 onChange={(value) => setMatch(value as typeof match)}
                 options={[
@@ -505,7 +506,7 @@ export function GoalVersionForm({
             <Animated.View entering={appear} style={styles.stack}>
               <Choices
                 label="Match text"
-                colour={habit.color}
+                colour={colour}
                 value={match}
                 onChange={(value) => setMatch(value as typeof match)}
                 options={[
@@ -536,7 +537,7 @@ export function GoalVersionForm({
             today={today}
             from={from}
             weekStart={weekStart}
-            colour={habit.color}
+            colour={colour}
             onChange={changeTiming}
           />
         </GoalSection>
@@ -558,7 +559,7 @@ export function GoalVersionForm({
             today={today}
             from={from}
             weekStart={weekStart}
-            colour={habit.color}
+            colour={colour}
             onChange={changeTiming}
           />
         </GoalSection>
@@ -576,7 +577,7 @@ export function GoalVersionForm({
               setFrom(date);
               setDateEdited(true);
             }}
-            colour={habit.color}
+            colour={colour}
           />
           {!!timing.period && !existing && !creating && (
             <View style={styles.wrap}>
@@ -645,12 +646,12 @@ export function GoalVersionForm({
             { opacity: pressed ? 0.65 : 1 },
           ]}
         >
-          <Icon name="history" size={20} color="#AAAAAA" />
+          <Icon name="history" size={20} color={theme.ink(0xaa)} />
           <View style={{ flex: 1, gap: 3 }}>
             <Text style={styles.control}>Goal timeline</Text>
           </View>
           <View style={{ transform: [{ rotate: '-90deg' }] }}>
-            <Icon name="chevron" size={16} color="#777777" />
+            <Icon name="chevron" size={16} color={theme.ink(0x77)} />
           </View>
         </Pressable>
         {existing && (
@@ -672,7 +673,7 @@ export function GoalVersionForm({
     </KeyboardAvoidingView>
   );
 }
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -681,14 +682,19 @@ const styles = StyleSheet.create({
     gap: 12,
     minHeight: 56,
   },
-  title: { fontSize: 17, color: '#E5E5E5', fontWeight: '600', flexShrink: 1 },
+  title: {
+    fontSize: 17,
+    color: t.ink(0xe5),
+    fontWeight: '600',
+    flexShrink: 1,
+  },
   action: { minHeight: 44, minWidth: 44, justifyContent: 'center' },
   smallAction: {
     minHeight: 44,
     justifyContent: 'center',
     paddingHorizontal: 3,
   },
-  control: { color: '#DADADA', fontSize: 14 },
+  control: { color: t.ink(0xda), fontSize: 14 },
   body: {
     padding: 16,
     paddingTop: 10,
@@ -708,8 +714,8 @@ const styles = StyleSheet.create({
   habit: { fontSize: 16, fontWeight: '500', flexShrink: 1 },
   group: { gap: 8 },
   stack: { gap: 14 },
-  label: { color: '#999999', fontSize: 12 },
-  note: { color: '#999999', fontSize: 12, lineHeight: 17 },
+  label: { color: t.ink(0x99), fontSize: 12 },
+  note: { color: t.ink(0x99), fontSize: 12, lineHeight: 17 },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: {
     minHeight: 44,
@@ -719,7 +725,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     maxWidth: '100%',
   },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#2A2A2A' },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: t.ink(0x2a) },
   disclosure: {
     minHeight: 44,
     flexDirection: 'row',
@@ -728,10 +734,10 @@ const styles = StyleSheet.create({
   },
   input: {
     minHeight: 44,
-    color: '#EEEEEE',
+    color: t.ink(0xee),
     fontSize: 17,
     padding: 12,
-    backgroundColor: '#242424',
+    backgroundColor: t.ink(0x24),
     borderRadius: 10,
   },
   timelineButton: {
@@ -745,8 +751,8 @@ const styles = StyleSheet.create({
   error: {
     fontSize: 13,
     lineHeight: 19,
-    color: '#EBAE9F',
+    color: t.colour('#EBAE9F'),
     paddingHorizontal: 4,
   },
-  destructive: { fontSize: 14, color: '#D99090' },
-});
+  destructive: { fontSize: 14, color: t.danger },
+}));

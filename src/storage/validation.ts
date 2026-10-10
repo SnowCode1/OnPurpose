@@ -16,6 +16,7 @@ import {
 } from '../displayPreferences.ts';
 import { isRowSpacing } from '../rowSpacing.ts';
 import { isGridSize } from '../gridSizing.ts';
+import { isThemeMode } from '../theme.ts';
 import { isHabitIcon } from '../habitIcons.ts';
 import { habitType, type Habit } from '../habits.ts';
 import { isPreference, sameValue } from './changeUtils.ts';
@@ -205,7 +206,7 @@ function dailyValue(value: unknown, version: number) {
 export function entryFits(
   habit: Habit,
   value: EntryValue | null,
-  version = 18,
+  version = 19,
 ) {
   if (value === null) return true;
   switch (habitType(habit)) {
@@ -226,7 +227,7 @@ export function entryFits(
 }
 export function validateChange(
   value: unknown,
-  version = 18,
+  version = 19,
 ): asserts value is Change {
   object(value);
   if (value.kind === 'entry') {
@@ -339,6 +340,28 @@ export function validateChange(
         isGridSize(value.kind, value.after),
       'Invalid grid size.',
     );
+  } else if (value.kind === 'themeMode') {
+    keys(value, ['kind', 'before', 'after']);
+    insist(version >= 19, 'Theme preferences require version 19.');
+    insist(
+      (value.before === null || isThemeMode(value.before)) &&
+        isThemeMode(value.after),
+      'Invalid theme.',
+    );
+  } else if (
+    value.kind === 'darkBackground' ||
+    value.kind === 'lightBackground'
+  ) {
+    keys(value, ['kind', 'before', 'after']);
+    insist(version >= 19, 'Theme preferences require version 19.');
+    // Only the stored shape is strict; display fits the colour to its range,
+    // so a later range change can never make old events unreplayable.
+    const hex = (background: unknown) =>
+      typeof background === 'string' && /^#[0-9A-F]{6}$/.test(background);
+    insist(
+      (value.before === null || hex(value.before)) && hex(value.after),
+      'Invalid background colour.',
+    );
   } else if (value.kind === 'weekDividers' || value.kind === 'tapAnimations') {
     keys(value, ['kind', 'before', 'after']);
     insist(version >= 16, 'Grid appearance toggles require version 16.');
@@ -415,7 +438,8 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
       value.version === 15 ||
       value.version === 16 ||
       value.version === 17 ||
-      value.version === 18,
+      value.version === 18 ||
+      value.version === 19,
     'Unsupported event version.',
   );
   id(value.id);

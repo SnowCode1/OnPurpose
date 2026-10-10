@@ -25,7 +25,11 @@ and uncertainty about whether something was saved.
   ordinary scrolling stops at today, with an intentional extra pull to reveal
   future dates. Future checkbox and numeric entries are allowed. This supersedes
   the initial past-only rule. Adaptive density replaces the three-column idea.
-- Use a pure black background and user-selectable habit colours across each row,
+- Offer System / Dark / Light themes; Dark and Light backgrounds are each
+  customisable (pure black and warm Paper by default), Dark is the default, and
+  the interface and habit colours adjust to stay readable on any chosen
+  background.
+- Use user-selectable habit colours across each row,
   including the habit name, checkboxes, and numeric entries. Provide more presets
   and a visual custom picker with optional hex input; use familiar user-facing
   labels rather than colour-space jargon.

@@ -18,7 +18,10 @@ export function isPreference(change: Change): change is PreferenceChange {
     change.kind === 'checkboxStyle' ||
     change.kind === 'dateFading' ||
     change.kind === 'textScale' ||
-    change.kind === 'hideCompleted'
+    change.kind === 'hideCompleted' ||
+    change.kind === 'themeMode' ||
+    change.kind === 'darkBackground' ||
+    change.kind === 'lightBackground'
   );
 }
 export function sameValue(left: unknown, right: unknown): boolean {

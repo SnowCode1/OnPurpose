@@ -4,6 +4,7 @@ import Animated from 'react-native-reanimated';
 import { Text } from './Typography';
 import { Icon } from './Icon';
 import { appear } from './motion';
+import { themedStyles, useTheme } from './ThemeContext';
 
 // A goal first reads as four decisions. Opening one reveals only its controls;
 // keep its content mounted so moving between sections cannot reset a draft.
@@ -20,6 +21,8 @@ export function GoalSection({
   onPress?: () => void;
   children?: ReactNode;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   const heading = (
     <>
       <View style={{ flex: 1, gap: 4 }}>
@@ -34,7 +37,7 @@ export function GoalSection({
       </View>
       {onPress && (
         <View style={{ transform: [{ rotate: expanded ? '180deg' : '0deg' }] }}>
-          <Icon name="chevron" size={16} color="#888888" />
+          <Icon name="chevron" size={16} color={theme.ink(0x88)} />
         </View>
       )}
     </>
@@ -88,6 +91,9 @@ export function GoalChoice({
   colour: string;
   direct?: boolean;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
+  const display = theme.colour(colour);
   const [open, setOpen] = useState(false);
   const selected = options.find(([id]) => id === value)?.[1] ?? 'Choose';
   return (
@@ -111,7 +117,7 @@ export function GoalChoice({
             <Text style={styles.control}>{selected}</Text>
           </View>
           <View style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }}>
-            <Icon name="chevron" size={14} color="#999999" />
+            <Icon name="chevron" size={14} color={theme.ink(0x99)} />
           </View>
         </Pressable>
       )}
@@ -136,12 +142,14 @@ export function GoalChoice({
                 style={[
                   styles.control,
                   { flex: 1 },
-                  value === id && { color: colour },
+                  value === id && { color: display },
                 ]}
               >
                 {title}
               </Text>
-              {value === id && <Icon name="checked" color={colour} size={18} />}
+              {value === id && (
+                <Icon name="checked" color={display} size={18} />
+              )}
             </Pressable>
           ))}
         </Animated.View>
@@ -149,8 +157,12 @@ export function GoalChoice({
     </View>
   );
 }
-const styles = StyleSheet.create({
-  section: { backgroundColor: '#141414', borderRadius: 14, overflow: 'hidden' },
+const useStyles = themedStyles((t) => ({
+  section: {
+    backgroundColor: t.ink(0x14),
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
   sectionHeading: {
     minHeight: 68,
     paddingHorizontal: 14,
@@ -161,15 +173,15 @@ const styles = StyleSheet.create({
   },
   sectionBody: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#292929',
+    borderTopColor: t.ink(0x29),
     marginHorizontal: 14,
     paddingVertical: 10,
     gap: 12,
   },
-  label: { fontSize: 12, color: '#929292' },
-  openLabel: { fontSize: 14, color: '#DDDDDD' },
-  summary: { fontSize: 16, color: '#E2E2E2' },
-  control: { fontSize: 14, color: '#DDDDDD' },
+  label: { fontSize: 12, color: t.ink(0x92) },
+  openLabel: { fontSize: 14, color: t.ink(0xdd) },
+  summary: { fontSize: 16, color: t.ink(0xe2) },
+  control: { fontSize: 14, color: t.ink(0xdd) },
   choiceHeading: {
     minHeight: 52,
     flexDirection: 'row',
@@ -178,7 +190,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   options: {
-    backgroundColor: '#1D1D1D',
+    backgroundColor: t.ink(0x1d),
     borderRadius: 10,
     paddingHorizontal: 12,
   },
@@ -189,4 +201,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-});
+}));

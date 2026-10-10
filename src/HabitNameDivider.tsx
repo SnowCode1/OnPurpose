@@ -1,5 +1,7 @@
 import { StyleSheet, View } from 'react-native';
+import { themedStyles } from './ThemeContext';
 export function HabitNameDivider() {
+  const styles = useStyles();
   return (
     <View
       testID="habit-name-divider"
@@ -11,13 +13,13 @@ export function HabitNameDivider() {
     />
   );
 }
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   names: {
     position: 'absolute',
     right: 0,
     top: 0,
     bottom: 0,
     width: StyleSheet.hairlineWidth,
-    backgroundColor: '#FFFFFF20',
+    backgroundColor: t.overlay(0x20),
   },
-});
+}));

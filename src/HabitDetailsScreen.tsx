@@ -11,7 +11,7 @@ import { HabitStatsScreen } from './HabitStatsScreen';
 import { ChartScrubLock } from './ChartFrame';
 import { HabitSymbol } from './HabitSymbol';
 import { Icon } from './Icon';
-import { colorOnBlack, contrastOnBlack } from './colors';
+import { themedStyles, useTheme } from './ThemeContext';
 import type { Habit } from './habits';
 import type { WeekStart } from './displayPreferences';
 import type { HistoryAction, StoredEvent } from './storage/model';
@@ -48,6 +48,8 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
   onCellPress: (habit: Habit, day: EntryDay) => void;
   editable: boolean;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   const StatsContent =
     habit.type === 'categorical' || habit.type === 'text'
       ? RecordStatsScreen
@@ -77,7 +79,7 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
     ],
   }));
   const bottomInset = islandHeight + 40;
-  const accent = contrastOnBlack(habit.color) >= 4.5 ? habit.color : '#DADADA';
+  const accent = theme.colour(habit.color);
   return (
     <View style={styles.screen} accessibilityViewIsModal>
       <View style={styles.header}>
@@ -90,7 +92,7 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
           <Icon name="close" />
         </Pressable>
         <View style={styles.title}>
-          <HabitSymbol icon={habit.icon} colour={habit.color} size={20} />
+          <HabitSymbol icon={habit.icon} colour={accent} size={20} />
           <Heading
             accessibilityRole="header"
             numberOfLines={1}
@@ -156,7 +158,7 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
                   {visited.notes && (
                     <DescriptionReader
                       description={habit.description}
-                      colour={habit.color}
+                      colour={accent}
                       editable={editable}
                       onEdit={onDescriptionEdit}
                       onVersions={onDescriptionVersions}
@@ -192,7 +194,11 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
               </Animated.ScrollView>
             </ChartScrubLock.Provider>
             <LinearGradient
-              colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.85)', '#000000']}
+              colors={[
+                `${theme.background}00`,
+                `${theme.background}D9`,
+                theme.background,
+              ]}
               locations={[0, 0.72, 1]}
               style={[styles.fade, { height: islandHeight + 48 }]}
               pointerEvents="none"
@@ -224,7 +230,7 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
                       left: islandInset,
                       top: islandInset,
                       bottom: islandInset,
-                      backgroundColor: colorOnBlack(habit.color, 0.16),
+                      backgroundColor: theme.mix(accent, 0.16),
                     },
                     selectionStyle,
                   ]}
@@ -244,7 +250,7 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
                     <Text
                       style={[
                         styles.tabText,
-                        { color: tab === value ? accent : '#A0A0A0' },
+                        { color: tab === value ? accent : theme.ink(0xa0) },
                       ]}
                     >
                       {value === 'notes' ? 'Notes' : 'Statistics'}
@@ -259,8 +265,8 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
     </View>
   );
 });
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#000000' },
+const useStyles = themedStyles((t) => ({
+  screen: { flex: 1, backgroundColor: t.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -289,9 +295,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 4,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#363636',
+    borderColor: t.ink(0x36),
     borderRadius: 18,
-    backgroundColor: '#181818',
+    backgroundColor: t.ink(0x18),
     shadowColor: '#000000',
     shadowOpacity: 0.5,
     shadowRadius: 16,
@@ -315,4 +321,4 @@ const styles = StyleSheet.create({
     borderRadius: 9,
   },
   tabText: { fontSize: 14, fontWeight: '600', textAlign: 'center' },
-});
+}));

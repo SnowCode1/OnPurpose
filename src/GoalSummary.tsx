@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Text } from './Typography';
 import type { Habit } from './habits';
 import {
@@ -10,7 +10,7 @@ import {
 } from './habitGoals';
 import { Icon } from './Icon';
 import { habitType } from './habits';
-import { colorOnBlack } from './colors';
+import { themedStyles, useTheme } from './ThemeContext';
 
 export function GoalSummary({
   habit,
@@ -26,6 +26,9 @@ export function GoalSummary({
   /** A slim row for statistics; the editor keeps the full card. */
   compact?: boolean;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
+  const colour = theme.colour(habit.color);
   const goal = goalAt(habit, date),
     summary = ruleSummary(habit, goal?.rule ?? defaultSuccessRule(habit));
   const schedule = timingSummary(goal ?? { weekdays: allWeekdays });
@@ -47,7 +50,7 @@ export function GoalSummary({
         style={[
           styles.symbol,
           compact && styles.compactSymbol,
-          { backgroundColor: colorOnBlack(habit.color, 0.12) },
+          { backgroundColor: theme.mix(colour, 0.12) },
         ]}
       >
         <Icon
@@ -60,7 +63,7 @@ export function GoalSummary({
                   ? 'categories'
                   : 'text'
           }
-          color={habit.color}
+          color={colour}
           size={compact ? 17 : 20}
         />
       </View>
@@ -78,16 +81,16 @@ export function GoalSummary({
         </Text>
       </View>
       <View style={{ transform: [{ rotate: '-90deg' }] }}>
-        <Icon name="chevron" size={16} color="#777777" />
+        <Icon name="chevron" size={16} color={theme.ink(0x77)} />
       </View>
     </Pressable>
   );
 }
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   row: {
     minHeight: 60,
     padding: 12,
-    backgroundColor: '#151515',
+    backgroundColor: t.ink(0x15),
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -97,11 +100,11 @@ const styles = StyleSheet.create({
     minHeight: 52,
     paddingVertical: 9,
     paddingHorizontal: 12,
-    backgroundColor: '#111111',
+    backgroundColor: t.ink(0x11),
     gap: 10,
   },
   compactSymbol: { width: 28, height: 28, borderRadius: 8 },
-  label: { fontSize: 12, color: '#999999' },
+  label: { fontSize: 12, color: t.ink(0x99) },
   symbol: {
     width: 34,
     height: 34,
@@ -109,6 +112,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  value: { fontSize: 15, color: '#DDDDDD' },
-  note: { fontSize: 12, color: '#888888' },
-});
+  value: { fontSize: 15, color: t.ink(0xdd) },
+  note: { fontSize: 12, color: t.ink(0x88) },
+}));

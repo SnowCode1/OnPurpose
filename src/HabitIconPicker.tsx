@@ -1,12 +1,6 @@
 import { TextInput, Text } from './Typography';
 import { useMemo, useState } from 'react';
-import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { FlatList, Pressable, View, useWindowDimensions } from 'react-native';
 import {
   habitIconLabel,
   habitIconPackLabel,
@@ -15,6 +9,7 @@ import {
 } from './habitIcons';
 import { searchHabitIcons, packIconCount } from './searchHabitIcons';
 import { HabitSymbol } from './HabitSymbol';
+import { themedStyles, useTheme } from './ThemeContext';
 
 const emojiChoices = [
   '🚶',
@@ -60,6 +55,9 @@ export function HabitIconPicker({
   colour: string;
   onChange: (icon: HabitIcon | undefined | null) => void;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
+  const accent = theme.colour(colour);
   const { height } = useWindowDimensions();
   const [width, setWidth] = useState(280);
   const [tab, setTab] = useState<'icons' | 'emoji' | 'none'>('icons');
@@ -160,7 +158,7 @@ export function HabitIconPicker({
                 <TextInput
                   accessibilityLabel="Search all icons in both Phosphor and Tabler"
                   placeholder={`Search all ${packIconCount.toLocaleString()} icons`}
-                  placeholderTextColor="#777777"
+                  placeholderTextColor={theme.ink(0x77)}
                   value={search}
                   onChangeText={setSearch}
                   autoCorrect={false}
@@ -229,7 +227,7 @@ export function HabitIconPicker({
                 <TextInput
                   accessibilityLabel="Habit emoji"
                   placeholder="Type or paste one emoji"
-                  placeholderTextColor="#777777"
+                  placeholderTextColor={theme.ink(0x77)}
                   value={emoji}
                   maxLength={64}
                   onChangeText={(text) => {
@@ -264,10 +262,10 @@ export function HabitIconPicker({
                 }}
                 style={[
                   styles.choice,
-                  { borderColor: selected === value ? colour : 'transparent' },
+                  { borderColor: selected === value ? accent : 'transparent' },
                 ]}
               >
-                <HabitSymbol icon={value} colour={colour} size={25} />
+                <HabitSymbol icon={value} colour={accent} size={25} />
               </Pressable>
             ))}
           </View>
@@ -276,12 +274,12 @@ export function HabitIconPicker({
     </View>
   );
 }
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   tabs: {
     flexDirection: 'row',
     padding: 3,
     borderRadius: 12,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: t.ink(0x1a),
   },
   tab: {
     flex: 1,
@@ -290,15 +288,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 9,
   },
-  active: { backgroundColor: '#343434' },
-  text: { color: '#DDDDDD', fontSize: 14, fontWeight: '500' },
-  description: { color: '#999999', fontSize: 12, lineHeight: 18 },
+  active: { backgroundColor: t.ink(0x34) },
+  text: { color: t.ink(0xdd), fontSize: 14, fontWeight: '500' },
+  description: { color: t.ink(0x99), fontSize: 12, lineHeight: 18 },
   empty: { paddingVertical: 22, gap: 12 },
   input: {
-    backgroundColor: '#1C1C1C',
+    backgroundColor: t.ink(0x1c),
     borderRadius: 12,
     padding: 12,
-    color: '#EEEEEE',
+    color: t.ink(0xee),
     fontSize: 16,
     minHeight: 48,
   },
@@ -309,7 +307,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   searchScope: { minHeight: 44, justifyContent: 'center', gap: 3 },
-  scopeText: { color: '#DDDDDD', fontSize: 12, fontWeight: '500' },
+  scopeText: { color: t.ink(0xdd), fontSize: 12, fontWeight: '500' },
   scope: {
     minHeight: 44,
     paddingHorizontal: 9,
@@ -323,7 +321,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
-    backgroundColor: '#1C1C1C',
+    backgroundColor: t.ink(0x1c),
     borderWidth: 1.5,
   },
-});
+}));

@@ -21,6 +21,7 @@ import { Icon } from './Icon';
 import { HabitSymbol } from './HabitSymbol';
 import { appear, disappear, rowTransition } from './motion';
 import { useSheetScroll } from './SheetModal';
+import { themedStyles, useTheme } from './ThemeContext';
 export function confirmArchivedHabitDeletion(
   habit: Habit,
   count: number,
@@ -68,6 +69,8 @@ export function ArchivedHabits({
   onDelete: (habit: Habit) => void;
   onRetry: () => void;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   const archived = useMemo(
     () => archivedHabitDetails(habits, values),
     [habits, values],
@@ -106,6 +109,7 @@ export function ArchivedHabits({
         </Pressable>
       )}
       {archived.map(({ habit, count, firstDate, lastDate }) => {
+        const colour = theme.colour(habit.color);
         return (
           <Animated.View
             key={habit.id}
@@ -117,14 +121,12 @@ export function ArchivedHabits({
             <View style={styles.rowHeading}>
               <View style={styles.symbol}>
                 {habit.icon ? (
-                  <HabitSymbol icon={habit.icon} colour={habit.color} />
+                  <HabitSymbol icon={habit.icon} colour={colour} />
                 ) : (
-                  <View
-                    style={[styles.dot, { backgroundColor: habit.color }]}
-                  />
+                  <View style={[styles.dot, { backgroundColor: colour }]} />
                 )}
               </View>
-              <Text style={[styles.name, { color: habit.color, flex: 1 }]}>
+              <Text style={[styles.name, { color: colour, flex: 1 }]}>
                 {habit.name}
               </Text>
             </View>
@@ -190,15 +192,15 @@ export function ArchivedHabits({
     </ScrollView>
   );
 }
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   body: { padding: 24, paddingTop: 12, gap: 16, flexGrow: 1 },
-  description: { color: '#909090', fontSize: 13, lineHeight: 20 },
-  status: { color: '#777777', fontSize: 12 },
+  description: { color: t.ink(0x90), fontSize: 13, lineHeight: 20 },
+  status: { color: t.ink(0x77), fontSize: 12 },
   row: {
     gap: 10,
     paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#242424',
+    borderBottomColor: t.ink(0x24),
   },
   rowHeading: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   symbol: {
@@ -209,14 +211,14 @@ const styles = StyleSheet.create({
   },
   dot: { width: 6, height: 6, borderRadius: 3 },
   details: { marginLeft: 34, gap: 5 },
-  dateRange: { color: '#777777', fontSize: 12, lineHeight: 18 },
-  note: { color: '#B2B2B2', fontSize: 13, lineHeight: 20, marginTop: 3 },
-  name: { color: '#DDDDDD', fontSize: 17, fontWeight: '500' },
+  dateRange: { color: t.ink(0x77), fontSize: 12, lineHeight: 18 },
+  note: { color: t.ink(0xb2), fontSize: 13, lineHeight: 20, marginTop: 3 },
+  name: { color: t.ink(0xdd), fontSize: 17, fontWeight: '500' },
   restore: {
     minHeight: 44,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: '#1B1B1B',
+    backgroundColor: t.ink(0x1b),
     justifyContent: 'center',
   },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
@@ -226,16 +228,16 @@ const styles = StyleSheet.create({
     minHeight: 44,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: '#1B1B1B',
+    backgroundColor: t.ink(0x1b),
     alignItems: 'center',
     justifyContent: 'center',
   },
-  deleteText: { color: '#FF9C9C', fontSize: 13, fontWeight: '600' },
-  restoreText: { color: '#D8D8D8', fontSize: 13, fontWeight: '600' },
+  deleteText: { color: t.colour('#FF9C9C'), fontSize: 13, fontWeight: '600' },
+  restoreText: { color: t.ink(0xd8), fontSize: 13, fontWeight: '600' },
   empty: {
     alignItems: 'center',
     gap: 16,
     paddingTop: 64,
     paddingHorizontal: 20,
   },
-});
+}));

@@ -18,8 +18,8 @@ import {
 import type { HistoryAction, StoredState } from './storage/model';
 import type { StoreSnapshot } from './storage/store';
 import { useLocalToday } from './useLocalToday';
-import { contrastOnBlack } from './colors';
 import { useSheetScroll } from './SheetModal';
+import { themedStyles, useTheme } from './ThemeContext';
 
 const HistoryRow = memo(function HistoryRow({
   event,
@@ -32,8 +32,10 @@ const HistoryRow = memo(function HistoryRow({
   pending: boolean;
   onDescriptionPress: (event: HistoryAction) => void;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   const row = historyPresentation(event, state);
-  const accent = contrastOnBlack(row.color) >= 3 ? row.color : '#B8B8B8';
+  const accent = theme.colour(row.color);
   const time = new Date(event.recordedAt).toLocaleTimeString(undefined, {
     hour: 'numeric',
     minute: '2-digit',
@@ -86,14 +88,17 @@ const HistoryRow = memo(function HistoryRow({
               <View
                 style={[
                   styles.swatch,
-                  { backgroundColor: event.change.before },
+                  { backgroundColor: theme.colour(event.change.before) },
                 ]}
               />
               <Text allowFontScaling={false} style={styles.swatchArrow}>
                 →
               </Text>
               <View
-                style={[styles.swatch, { backgroundColor: event.change.after }]}
+                style={[
+                  styles.swatch,
+                  { backgroundColor: theme.colour(event.change.after) },
+                ]}
               />
             </View>
           )}
@@ -113,6 +118,8 @@ function HistoryButton({
   onPress: () => void;
   disabled: boolean;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   return (
     <Pressable
       accessibilityRole="button"
@@ -127,7 +134,7 @@ function HistoryButton({
         { opacity: disabled ? 0.3 : pressed ? 0.55 : 1 },
       ]}
     >
-      <Icon name={kind} size={17} color="#CFCFCF" />
+      <Icon name={kind} size={17} color={theme.ink(0xcf)} />
       <Text style={styles.buttonLabel}>
         {kind === 'undo' ? 'Undo' : 'Redo'}
       </Text>
@@ -154,6 +161,8 @@ export function HistoryView({
   onRedo: () => void;
   onRetry: () => void;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   const [descriptionAction, setDescriptionAction] =
     useState<HistoryAction | null>(null);
   const today = useLocalToday();
@@ -192,10 +201,10 @@ export function HistoryView({
               styles.statusDot,
               {
                 backgroundColor: snapshot.error
-                  ? '#DFAE82'
+                  ? theme.colour('#DFAE82')
                   : snapshot.pending
-                    ? '#B8B8B8'
-                    : '#668C7B',
+                    ? theme.ink(0xb8)
+                    : theme.colour('#668C7B'),
               },
             ]}
           />
@@ -277,7 +286,7 @@ export function HistoryView({
         )}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Icon name="history" size={32} color="#747474" />
+            <Icon name="history" size={32} color={theme.ink(0x74)} />
             <Text style={styles.emptyTitle}>No active changes</Text>
             <Text style={styles.emptyDescription}>
               Your habit entries and edits will appear here.
@@ -299,7 +308,7 @@ export function HistoryView({
     </View>
   );
 }
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   container: { flex: 1 },
   controls: {
     paddingHorizontal: 24,
@@ -310,14 +319,14 @@ const styles = StyleSheet.create({
   },
   status: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
   statusDot: { width: 5, height: 5, borderRadius: 3 },
-  statusText: { color: '#858585', fontSize: 12, flexShrink: 1 },
+  statusText: { color: t.ink(0x85), fontSize: 12, flexShrink: 1 },
   buttons: { flexDirection: 'row', gap: 6, flexShrink: 1 },
   button: {
     minHeight: 44,
     paddingHorizontal: 11,
     paddingVertical: 10,
     borderRadius: 11,
-    backgroundColor: '#141414',
+    backgroundColor: t.ink(0x14),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -325,7 +334,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   buttonLabel: {
-    color: '#CFCFCF',
+    color: t.ink(0xcf),
     fontSize: 13,
     fontWeight: '500',
     flexShrink: 1,
@@ -335,27 +344,27 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontSize: 12,
     lineHeight: 17,
-    color: '#909090',
+    color: t.ink(0x90),
   },
   list: { flexGrow: 1, paddingBottom: 24 },
   dayHeading: {
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 8,
-    backgroundColor: '#000000',
+    backgroundColor: t.background,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
   dayTitle: {
-    color: '#909090',
+    color: t.ink(0x90),
     fontSize: 12,
     fontWeight: '600',
     flexShrink: 1,
   },
   dayRule: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#242424',
+    backgroundColor: t.ink(0x24),
     flex: 1,
   },
   row: {
@@ -370,15 +379,15 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 8,
-    backgroundColor: '#121212',
+    backgroundColor: t.ink(0x12),
     alignItems: 'center',
     justifyContent: 'center',
   },
   rowContent: { flex: 1, gap: 3 },
   rowHeading: { flexDirection: 'row', alignItems: 'baseline', gap: 12 },
-  habitName: { color: '#DDDDDD', fontSize: 14, fontWeight: '500', flex: 1 },
+  habitName: { color: t.ink(0xdd), fontSize: 14, fontWeight: '500', flex: 1 },
   time: {
-    color: '#777777',
+    color: t.ink(0x77),
     fontSize: 11,
     fontVariant: ['tabular-nums'],
     flexShrink: 0,
@@ -390,28 +399,28 @@ const styles = StyleSheet.create({
     columnGap: 8,
     rowGap: 3,
   },
-  detail: { color: '#949494', fontSize: 12, flexShrink: 1 },
-  pending: { fontSize: 10, color: '#A6A6A6' },
+  detail: { color: t.ink(0x94), fontSize: 12, flexShrink: 1 },
+  pending: { fontSize: 10, color: t.ink(0xa6) },
   swatches: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   swatch: {
     width: 10,
     height: 10,
     borderRadius: 5,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#666666',
+    borderColor: t.ink(0x66),
   },
-  swatchArrow: { fontSize: 11, color: '#747474' },
+  swatchArrow: { fontSize: 11, color: t.ink(0x74) },
   empty: { alignItems: 'center', padding: 36, paddingTop: 60, gap: 12 },
-  emptyTitle: { color: '#DDDDDD', fontSize: 18, fontWeight: '500' },
-  emptyDescription: { color: '#969696', fontSize: 13, textAlign: 'center' },
+  emptyTitle: { color: t.ink(0xdd), fontSize: 18, fontWeight: '500' },
+  emptyDescription: { color: t.ink(0x96), fontSize: 13, textAlign: 'center' },
   error: {
     marginHorizontal: 24,
     marginBottom: 8,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: '#251C16',
+    backgroundColor: t.tint('#251C16'),
   },
-  errorText: { color: '#C9B5A6', fontSize: 13 },
+  errorText: { color: t.colour('#C9B5A6'), fontSize: 13 },
   retry: { minHeight: 44, justifyContent: 'center', paddingTop: 8 },
   more: {
     minHeight: 48,
@@ -420,6 +429,6 @@ const styles = StyleSheet.create({
     margin: 24,
     marginBottom: 0,
     borderRadius: 12,
-    backgroundColor: '#141414',
+    backgroundColor: t.ink(0x14),
   },
-});
+}));

@@ -21,8 +21,8 @@ import {
   RangePicker,
   StatTiles,
   StatsSection,
-  statsStyles,
   streakTiles,
+  useStatsStyles,
   type StatTile,
 } from './StatsLayout';
 import {
@@ -31,7 +31,6 @@ import {
   statisticSpanLabel,
 } from './statisticsFormatting';
 import type { WeekStart } from './displayPreferences';
-import { colorOnBlack } from './colors';
 import { InfoNote } from './InfoNote';
 import { GoalSummary } from './GoalSummary';
 import { useSheetScroll } from './SheetModal';
@@ -53,6 +52,7 @@ import { StreakChart } from './StreakChart';
 import { StatsCalendar } from './StatsCalendar';
 import { CategoryMatrix } from './CategoryMatrix';
 import { categoryColours } from './categoryColours';
+import { themedStyles, useTheme } from './ThemeContext';
 
 type JournalRow =
   | { kind: 'month'; key: string; label: string; count: number }
@@ -81,6 +81,10 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
   bottomInset: number;
   onGoalEdit: () => void;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
+  const statsStyles = useStatsStyles();
+  const habitColour = theme.colour(habit.color);
   const [range, setRange] = useState<StatsRange>(30);
   const [offset, setOffset] = useState(0);
   const [category, setCategory] = useState<string | null>(null);
@@ -143,7 +147,7 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
     [habit, values, actions, from, end],
   );
   const minutes = useMemo(() => entryMinutes(habit, actions), [habit, actions]);
-  const colours = useMemo(() => categoryColours(habit), [habit]);
+  const colours = useMemo(() => categoryColours(habit, theme), [habit, theme]);
   const goalShown = stats.completion.active || stats.completion.eligible > 0;
   const plural = (count: number, noun = 'day') =>
     `${count} ${count === 1 ? noun : `${noun}s`}`;
@@ -269,7 +273,7 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
         disabled={!editable}
       />
       {offset === 0 && (
-        <PeriodProgress data={stats.periodGoals} colour={habit.color} />
+        <PeriodProgress data={stats.periodGoals} colour={habitColour} />
       )}
       {habit.type === 'categorical' && (
         <StatsSection
@@ -308,7 +312,7 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
       >
         <SuccessChart
           key={`${habit.id}:${range}:${offset}`}
-          colour={habit.color}
+          colour={habitColour}
           bins={binSeries(habit, days, successUnit(span), weekStart)}
           unit={successUnit(span)}
           observations={observed}
@@ -338,7 +342,7 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
       >
         <StreakChart
           key={`${habit.id}:${range}:${offset}`}
-          colour={habit.color}
+          colour={habitColour}
           runs={runs}
           noun={mode === 'period' ? periodNoun : 'days'}
           from={from}
@@ -373,7 +377,7 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
       <TimeOfDayChart
         key={`${habit.id}:${range}:${offset}`}
         stats={timeOfDay}
-        colour={habit.color}
+        colour={habitColour}
       />
       <StatsSection
         title="Entries"
@@ -393,8 +397,8 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
               style={({ pressed }) => [
                 styles.filter,
                 {
-                  backgroundColor: colorOnBlack(
-                    colours.get(category!) ?? habit.color,
+                  backgroundColor: theme.mix(
+                    colours.get(category!) ?? habitColour,
                     0.2,
                   ),
                   opacity: pressed ? 0.6 : 1,
@@ -404,12 +408,12 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
               <Text
                 style={[
                   styles.filterText,
-                  { color: colours.get(category!) ?? habit.color },
+                  { color: colours.get(category!) ?? habitColour },
                 ]}
               >
                 {selectedLabel}
               </Text>
-              <Icon name="close" size={13} color="#BBBBBB" />
+              <Icon name="close" size={13} color={theme.ink(0xbb)} />
             </Pressable>
           ) : undefined
         }
@@ -469,7 +473,7 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
               {Array.isArray(item.value) ? (
                 <View style={styles.chips}>
                   {item.value.map((id) => {
-                    const colour = colours.get(id) ?? habit.color;
+                    const colour = colours.get(id) ?? habitColour;
                     const label =
                       habit.categories?.find((option) => option.id === id)
                         ?.label ?? id;
@@ -479,7 +483,7 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
                         style={[
                           styles.chip,
                           {
-                            backgroundColor: colorOnBlack(colour, 0.18),
+                            backgroundColor: theme.mix(colour, 0.18),
                             opacity: !category || category === id ? 1 : 0.45,
                           },
                         ]}
@@ -503,8 +507,8 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
                       style={[
                         styles.goalDot,
                         met
-                          ? { backgroundColor: habit.color }
-                          : { borderWidth: 1, borderColor: '#666666' },
+                          ? { backgroundColor: habitColour }
+                          : { borderWidth: 1, borderColor: theme.ink(0x66) },
                       ]}
                     />
                   )}
@@ -540,7 +544,7 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
     />
   );
 });
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   body: {
     paddingHorizontal: 20,
     paddingTop: 8,
@@ -550,7 +554,7 @@ const styles = StyleSheet.create({
   },
   header: { gap: 22, paddingBottom: 4 },
   month: {
-    color: '#8A8A8A',
+    color: t.ink(0x8a),
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.6,
@@ -563,23 +567,23 @@ const styles = StyleSheet.create({
     gap: 14,
     paddingVertical: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#222222',
+    borderTopColor: t.ink(0x22),
   },
   when: { width: 38, alignItems: 'center', paddingTop: 1 },
   dayNumber: {
-    color: '#E4E4E4',
+    color: t.ink(0xe4),
     fontSize: 19,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },
-  weekday: { color: '#7E7E7E', fontSize: 11 },
-  entryText: { color: '#D6D6D6', fontSize: 15, lineHeight: 22 },
+  weekday: { color: t.ink(0x7e), fontSize: 11 },
+  entryText: { color: t.ink(0xd6), fontSize: 15, lineHeight: 22 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4 },
   chipText: { fontSize: 13, fontWeight: '600' },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   goalDot: { width: 7, height: 7, borderRadius: 4 },
-  metaText: { color: '#7E7E7E', fontSize: 12 },
+  metaText: { color: t.ink(0x7e), fontSize: 12 },
   filter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -589,5 +593,5 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   filterText: { fontSize: 13, fontWeight: '600' },
-  empty: { color: '#8E8E8E', fontSize: 13, paddingVertical: 12 },
-});
+  empty: { color: t.ink(0x8e), fontSize: 13, paddingVertical: 12 },
+}));

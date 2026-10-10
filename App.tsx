@@ -18,6 +18,10 @@ import { useGridDisplayPreferences } from './src/useGridDisplayPreferences';
 import { gridSizing } from './src/gridSizing';
 import { habitTrackingStart } from './src/statistics';
 import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
+import { blackTheme, themeFor, type Theme } from './src/theme';
+import { ThemeProvider, themedStyles } from './src/ThemeContext';
+import type { ThemePreference } from './src/BackgroundSettings';
 import {
   type ComponentType,
   type ReactNode,
@@ -29,10 +33,11 @@ import {
 import {
   ActivityIndicator,
   Alert,
+  Appearance,
   Pressable,
   type PressableProps,
-  StyleSheet,
   type TextProps,
+  useColorScheme,
   View,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -114,18 +119,33 @@ function StoreApp() {
   if (!store) return <StorageGate error={error} onRetry={retry} />;
   if (SampleDataMode)
     return (
-      <SampleDataMode store={store}>
-        {(activeStore, sampleData, developmentControls) => (
-          <PersistentApp
-            key={sampleData ? 'sample' : 'real'}
-            store={activeStore}
-            sampleData={sampleData}
-            developmentControls={developmentControls}
-          />
-        )}
-      </SampleDataMode>
+      <ThemeProvider theme={blackTheme}>
+        <SampleDataMode store={store}>
+          {(activeStore, sampleData, developmentControls) => (
+            <PersistentApp
+              key={sampleData ? 'sample' : 'real'}
+              store={activeStore}
+              sampleData={sampleData}
+              developmentControls={developmentControls}
+            />
+          )}
+        </SampleDataMode>
+      </ThemeProvider>
     );
   return <PersistentApp store={store} />;
+}
+
+// Native controls (alerts, keyboards, date pickers) follow the app's theme;
+// System hands the choice back to the phone. The root view colour shows
+// briefly behind keyboards and rotation.
+function useNativeAppearance(theme: Theme, followSystem: boolean) {
+  useEffect(() => {
+    if (typeof Appearance.setColorScheme === 'function')
+      Appearance.setColorScheme(followSystem ? 'unspecified' : theme.scheme);
+  }, [followSystem, theme.scheme]);
+  useEffect(() => {
+    SystemUI.setBackgroundColorAsync(theme.background).catch(() => {});
+  }, [theme.background]);
 }
 
 function StorageGate({
@@ -135,36 +155,42 @@ function StorageGate({
   error: boolean;
   onRetry: () => void;
 }) {
+  // Saved preferences are not readable yet: use the default dark theme.
+  const theme = blackTheme;
+  const styles = useStyles.get(theme);
   return (
-    <SafeAreaProvider>
-      <SafeAreaView
-        style={[
-          styles.screen,
-          { justifyContent: 'center', padding: 24, gap: 16 },
-        ]}
-      >
-        <StatusBar style="light" />
-        {error ? (
-          <>
-            <Text style={styles.secondary}>
-              Saved data could not be opened. Your database has not been reset.
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              style={styles.action}
-              onPress={onRetry}
-            >
-              <Text style={styles.actionText}>Retry</Text>
-            </Pressable>
-          </>
-        ) : (
-          <ActivityIndicator
-            color="#888888"
-            accessibilityLabel="Opening saved habits"
-          />
-        )}
-      </SafeAreaView>
-    </SafeAreaProvider>
+    <ThemeProvider theme={theme}>
+      <SafeAreaProvider>
+        <SafeAreaView
+          style={[
+            styles.screen,
+            { justifyContent: 'center', padding: 24, gap: 16 },
+          ]}
+        >
+          <StatusBar style={theme.statusBar} />
+          {error ? (
+            <>
+              <Text style={styles.secondary}>
+                Saved data could not be opened. Your database has not been
+                reset.
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                style={styles.action}
+                onPress={onRetry}
+              >
+                <Text style={styles.actionText}>Retry</Text>
+              </Pressable>
+            </>
+          ) : (
+            <ActivityIndicator
+              color={theme.ink(0x88)}
+              accessibilityLabel="Opening saved habits"
+            />
+          )}
+        </SafeAreaView>
+      </SafeAreaProvider>
+    </ThemeProvider>
   );
 }
 
@@ -195,7 +221,18 @@ function PersistentApp({
     tapAnimations = displayDefaults.tapAnimations,
     hideCompleted = displayDefaults.hideCompleted,
     textScale = displayDefaults.textScale,
+    themeMode = displayDefaults.themeMode,
+    darkBackground = displayDefaults.darkBackground,
+    lightBackground = displayDefaults.lightBackground,
   } = snapshot.replay.state;
+  const theme = themeFor(
+    themeMode,
+    useColorScheme(),
+    darkBackground,
+    lightBackground,
+  );
+  useNativeAppearance(theme, themeMode === 'system');
+  const styles = useStyles.get(theme);
   const { nameWidth, nameFactor, columnWidth, rowHeight } = gridSizing(
     snapshot.replay.state,
     effectiveColumnSpacing(snapshot.replay.state),
@@ -220,6 +257,7 @@ function PersistentApp({
   }>({ page: 'history', visible: false, deferGrid: false });
   const gridDisplay = useGridDisplayPreferences(
     {
+      theme,
       nameWidth,
       nameFactor,
       columnWidth,
@@ -671,6 +709,22 @@ function PersistentApp({
         }}
         hapticsEnabled={hapticsEnabled}
         onHapticsChange={changeHaptics}
+        themeMode={themeMode}
+        darkBackground={darkBackground}
+        lightBackground={lightBackground}
+        onThemeChange={(preference: ThemePreference) => {
+          if (!editable) return;
+          const before =
+            store.getSnapshot().replay.state[preference.kind] ?? null;
+          if (
+            store.change({
+              kind: preference.kind,
+              before,
+              after: preference.value,
+            } as Change)
+          )
+            feedback('selection');
+        }}
         onClose={() =>
           setPanel((previous) => ({ ...previous, visible: false }))
         }
@@ -691,7 +745,7 @@ function PersistentApp({
       style={{
         paddingHorizontal: 18,
         paddingVertical: 8,
-        backgroundColor: '#251C16',
+        backgroundColor: theme.tint('#251C16'),
       }}
     >
       <Text style={styles.secondary}>{snapshot.error}</Text>
@@ -707,107 +761,118 @@ function PersistentApp({
     </View>
   );
 
+  // Sheets and dialogs use the current theme at once; the grid region keeps its
+  // displayed theme until Settings finishes dismissing, like other presentation.
   return (
-    <TypographyProvider scale={textScale}>
-      <SafeAreaProvider>
-        <SafeAreaView style={styles.screen}>
-          <StatusBar style="light" />
-          {!statsHabit && saveError}
-          <View style={{ flex: 1 }}>
-            <View
-              style={styles.content}
-              pointerEvents={statsHabit ? 'none' : 'auto'}
-              accessibilityElementsHidden={!!statsHabit}
-              importantForAccessibility={
-                statsHabit ? 'no-hide-descendants' : 'auto'
-              }
-            >
-              <TypographyProvider scale={gridDisplay.textScale}>
-                <PerformanceBoundary name="grid">
-                  <HabitGrid
-                    nameWidth={gridDisplay.nameWidth}
-                    nameFactor={gridDisplay.nameFactor}
-                    columnWidth={gridDisplay.columnWidth}
-                    rowHeight={gridDisplay.rowHeight}
-                    onWidthChange={setGridWidth}
-                    weekDividers={gridDisplay.weekDividers}
-                    tapAnimations={gridDisplay.tapAnimations}
-                    checkboxStyle={gridDisplay.checkboxStyle}
-                    weekStart={gridDisplay.weekStart}
-                    dateFading={gridDisplay.dateFading}
-                    hideCompleted={gridDisplay.hideCompleted}
-                    sampleData={sampleData}
-                    HeadingComponent={PreviewHeading}
-                    DateButtonComponent={PreviewDateButton}
-                    key={today}
-                    today={today}
-                    habits={activeHabits}
-                    editable={editable}
-                    onHabitAction={habitAction}
-                    onReorder={reorderHabits}
-                    store={store}
-                    onHabitPress={openDetails}
-                    quickUndo={quickUndo}
-                    onCellPress={pressCell}
-                    onHistoryPress={openHistory}
-                    onSettingsPress={openSettings}
-                    onAddHabit={addHabit}
-                  />
-                </PerformanceBoundary>
-              </TypographyProvider>
-            </View>
-            {statsHabit && (
-              <SheetModal onClose={closeStats}>
-                <SafeAreaProvider>
-                  <SafeAreaView style={styles.screen}>
-                    {saveError}
-                    <PerformanceBoundary name="statistics">
-                      <HabitDetailsScreen
-                        weekStart={weekStart}
-                        key={statsHabit.id}
-                        habit={statsHabit}
-                        values={values}
-                        events={snapshot.events}
-                        actions={snapshot.replay.undo}
+    <ThemeProvider theme={theme}>
+      <TypographyProvider scale={textScale}>
+        <SafeAreaProvider>
+          <SafeAreaView
+            style={[
+              styles.screen,
+              { backgroundColor: gridDisplay.theme.background },
+            ]}
+          >
+            <StatusBar style={theme.statusBar} />
+            {!statsHabit && saveError}
+            <View style={{ flex: 1 }}>
+              <View
+                style={styles.content}
+                pointerEvents={statsHabit ? 'none' : 'auto'}
+                accessibilityElementsHidden={!!statsHabit}
+                importantForAccessibility={
+                  statsHabit ? 'no-hide-descendants' : 'auto'
+                }
+              >
+                <ThemeProvider theme={gridDisplay.theme}>
+                  <TypographyProvider scale={gridDisplay.textScale}>
+                    <PerformanceBoundary name="grid">
+                      <HabitGrid
+                        nameWidth={gridDisplay.nameWidth}
+                        nameFactor={gridDisplay.nameFactor}
+                        columnWidth={gridDisplay.columnWidth}
+                        rowHeight={gridDisplay.rowHeight}
+                        onWidthChange={setGridWidth}
+                        weekDividers={gridDisplay.weekDividers}
+                        tapAnimations={gridDisplay.tapAnimations}
+                        checkboxStyle={gridDisplay.checkboxStyle}
+                        weekStart={gridDisplay.weekStart}
+                        dateFading={gridDisplay.dateFading}
+                        hideCompleted={gridDisplay.hideCompleted}
+                        sampleData={sampleData}
+                        HeadingComponent={PreviewHeading}
+                        DateButtonComponent={PreviewDateButton}
+                        key={today}
                         today={today}
-                        Heading={PreviewHeading}
+                        habits={activeHabits}
                         editable={editable}
-                        onBack={closeStats}
+                        onHabitAction={habitAction}
+                        onReorder={reorderHabits}
+                        store={store}
+                        onHabitPress={openDetails}
+                        quickUndo={quickUndo}
                         onCellPress={pressCell}
-                        onDescriptionEdit={() =>
-                          setDescriptionId(statsHabit.id)
-                        }
-                        onDescriptionVersions={
-                          versions.length
-                            ? () => setVersionsId(statsHabit.id)
-                            : undefined
-                        }
-                        onEdit={editStats}
-                        onGoalEdit={() => setGoalsId(statsHabit.id)}
+                        onHistoryPress={openHistory}
+                        onSettingsPress={openSettings}
+                        onAddHabit={addHabit}
                       />
                     </PerformanceBoundary>
-                    {overlays}
-                  </SafeAreaView>
-                </SafeAreaProvider>
-              </SheetModal>
-            )}
-          </View>
-          {!statsHabit && overlays}
-        </SafeAreaView>
-      </SafeAreaProvider>
-    </TypographyProvider>
+                  </TypographyProvider>
+                </ThemeProvider>
+              </View>
+              {statsHabit && (
+                <SheetModal onClose={closeStats}>
+                  <SafeAreaProvider>
+                    <SafeAreaView style={styles.screen}>
+                      {saveError}
+                      <PerformanceBoundary name="statistics">
+                        <HabitDetailsScreen
+                          weekStart={weekStart}
+                          key={statsHabit.id}
+                          habit={statsHabit}
+                          values={values}
+                          events={snapshot.events}
+                          actions={snapshot.replay.undo}
+                          today={today}
+                          Heading={PreviewHeading}
+                          editable={editable}
+                          onBack={closeStats}
+                          onCellPress={pressCell}
+                          onDescriptionEdit={() =>
+                            setDescriptionId(statsHabit.id)
+                          }
+                          onDescriptionVersions={
+                            versions.length
+                              ? () => setVersionsId(statsHabit.id)
+                              : undefined
+                          }
+                          onEdit={editStats}
+                          onGoalEdit={() => setGoalsId(statsHabit.id)}
+                        />
+                      </PerformanceBoundary>
+                      {overlays}
+                    </SafeAreaView>
+                  </SafeAreaProvider>
+                </SheetModal>
+              )}
+            </View>
+            {!statsHabit && overlays}
+          </SafeAreaView>
+        </SafeAreaProvider>
+      </TypographyProvider>
+    </ThemeProvider>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#000000' },
+const useStyles = themedStyles((t) => ({
+  screen: { flex: 1, backgroundColor: t.background },
   content: {
     flex: 1,
     width: '100%',
     alignSelf: 'center',
     paddingHorizontal: 18,
   },
-  secondary: { color: '#A1A1A1', fontSize: 13, lineHeight: 20 },
+  secondary: { color: t.ink(0xa1), fontSize: 13, lineHeight: 20 },
   action: {
     minHeight: 48,
     justifyContent: 'center',
@@ -815,5 +880,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  actionText: { color: '#D0D0D0' },
-});
+  actionText: { color: t.ink(0xd0) },
+}));

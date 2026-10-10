@@ -28,9 +28,12 @@ import {
 } from './richText/extensions';
 import { clearDescriptionFormatting } from './richText/clearFormatting';
 import { markdownDocument } from './richText/markdownDocument';
-import { highlightColours, type HighlightColour } from './richText/highlights';
+import {
+  highlightColours,
+  highlightVariable,
+  type HighlightColour,
+} from './richText/highlights';
 import { descriptionLink } from './description';
-import { contrastOnBlack } from './colors';
 import {
   editorPosition,
   useEditorPosition,
@@ -49,6 +52,7 @@ export default function RichDescription({
   initialValue,
   initialPosition,
   colour,
+  palette,
   fontScale,
   editable,
   onChange,
@@ -61,7 +65,10 @@ export default function RichDescription({
   ref: Ref<RichDescriptionRef>;
   initialValue: string;
   initialPosition?: DescriptionPosition;
+  /** The habit colour already made readable on the current background. */
   colour: string;
+  /** Theme CSS variables from editorPalette; see richText/editorTheme.ts. */
+  palette: Record<string, string>;
   fontScale: number;
   editable: boolean;
   onChange: (markdown: string, position: DescriptionPosition) => Promise<void>;
@@ -77,6 +84,12 @@ export default function RichDescription({
   dom?: DOMProps;
 }) {
   const [menu, setMenu] = useState<'text' | 'colour' | 'link' | null>(null);
+  // The page background and body text live outside the editor container.
+  useEffect(() => {
+    const root = document.documentElement.style;
+    for (const [name, value] of Object.entries(palette))
+      root.setProperty(name, value);
+  }, [palette]);
   const writing = useRef<HTMLDivElement>(null);
   const container = useRef<HTMLDivElement>(null),
     controls = useRef<HTMLDivElement>(null);
@@ -337,7 +350,8 @@ export default function RichDescription({
         {
           '--note-size': `${17 * fontScale}px`,
           '--note-colour': colour,
-          '--note-link': contrastOnBlack(colour) >= 4.5 ? colour : '#B7DCCF',
+          '--note-link': colour,
+          ...palette,
         } as CSSProperties
       }
     >
@@ -418,7 +432,7 @@ export default function RichDescription({
                 className={`highlight-indicator${highlight?.mixed ? ' mixed' : ''}`}
                 style={{
                   backgroundColor: highlight?.colour
-                    ? highlightColours[highlight.colour].text
+                    ? highlightVariable(highlight.colour, 'text')
                     : undefined,
                 }}
               />
@@ -606,8 +620,8 @@ export default function RichDescription({
                 <span
                   className="swatch"
                   style={{
-                    background: highlightColours[id].background,
-                    color: highlightColours[id].text,
+                    background: highlightVariable(id, 'bg'),
+                    color: highlightVariable(id, 'text'),
                   }}
                 >
                   A

@@ -1,6 +1,5 @@
 import { Path, Rect } from 'react-native-svg';
 import { ChartFrame, type ChartSlot } from './ChartFrame';
-import { colorOnBlack } from './colors';
 import type { WeekStart } from './displayPreferences';
 import { dateKey } from './statistics';
 import {
@@ -15,6 +14,7 @@ import {
   type SeriesBin,
   type SuccessMode,
 } from './statsSeries';
+import { useTheme } from './ThemeContext';
 
 const percent = (rate: number) => `${Math.round(rate * 100)}%`;
 
@@ -48,6 +48,7 @@ export function SuccessChart({
   today: string;
   weekStart: WeekStart;
 }) {
+  const theme = useTheme();
   const span = to - from + 1;
   const columns = bins.map((bin) => {
     const inside = observations.filter(
@@ -144,7 +145,7 @@ export function SuccessChart({
                   width={Math.max(1, slotWidth - gap * 2)}
                   height={barHeight}
                   rx={Math.min(3, slotWidth * 0.15)}
-                  fill={colorOnBlack(colour, selected === index ? 0.42 : 0.24)}
+                  fill={theme.mix(colour, selected === index ? 0.42 : 0.24)}
                 />
               );
             })}

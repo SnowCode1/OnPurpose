@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { Text, useAppWindowDimensions } from './Typography';
 import { Icon } from './Icon';
 import { entryDay, type EntryDay } from './calendar';
-import { checkmarkColor, colorOnBlack, contrastOnBlack } from './colors';
+import { checkmarkColor } from './colors';
 import { weekDayOrder, type WeekStart } from './displayPreferences';
 import { cellEntryLabel, entryLabel } from './entries';
 import { habitType, type Habit } from './habits';
@@ -21,6 +21,8 @@ import {
   type Outcome,
   type SeriesDay,
 } from './statsSeries';
+import { themedStyles, useTheme } from './ThemeContext';
+import type { Theme } from './theme';
 
 type CellState = Outcome | 'beyond';
 type Cell = {
@@ -44,24 +46,27 @@ function dayFill(
   cell: Cell,
   colour: string,
   numericMax: number,
+  theme: Theme,
 ): string {
   const recorded = isRecorded(habit, cell.item?.value),
     plain = habitType(habit) === 'categorical' || habitType(habit) === 'text';
   switch (cell.state) {
     case 'met':
-      return plain ? colorOnBlack(colour, 0.42) : colour;
+      return plain ? theme.mix(colour, 0.42) : colour;
     // A missed day keeps a faint tint ("expected, not done"); a day off
     // stays black, and today stays neutral until it is done.
     case 'missed':
-      return colorOnBlack(colour, recorded ? MISSED_OPACITY * 0.7 : 0.13);
+      return theme.mix(colour, recorded ? MISSED_OPACITY * 0.7 : 0.13);
     case 'open':
-      return recorded ? colorOnBlack(colour, MISSED_OPACITY * 0.7) : '#1A1A1A';
+      return recorded
+        ? theme.mix(colour, MISSED_OPACITY * 0.7)
+        : theme.ink(0x1a);
     case 'off':
-      return recorded ? '#2A2A2A' : '#0B0B0B';
+      return recorded ? theme.ink(0x2a) : theme.ink(0x0b);
     case 'track': {
-      if (!recorded) return '#171717';
+      if (!recorded) return theme.ink(0x17);
       const value = cell.item?.value;
-      return colorOnBlack(
+      return theme.mix(
         colour,
         typeof value === 'number'
           ? 0.3 + 0.45 * Math.min(1, value / Math.max(1, numericMax))
@@ -69,7 +74,7 @@ function dayFill(
       );
     }
     case 'future':
-      return '#0C0C0C';
+      return theme.ink(0x0c);
     default:
       return 'transparent';
   }
@@ -152,8 +157,10 @@ function WeekRows({
   categoryColours,
   highlight,
 }: Parameters<typeof StatsCalendar>[0]) {
+  const theme = useTheme();
+  const styles = useStyles();
   const { fontScale } = useAppWindowDimensions();
-  const colour = habit.color,
+  const colour = theme.colour(habit.color),
     unit = habit.unit ?? '',
     type = habitType(habit),
     start = weekStartOf(from, weekStart),
@@ -194,19 +201,19 @@ function WeekRows({
                 left = inRun && joined(i - 1),
                 right = inRun && joined(i + 1),
                 fill = bridged[i]
-                  ? colorOnBlack(colour, 0.38)
-                  : dayFill(habit, cell, colour, numericMax),
+                  ? theme.mix(colour, 0.38)
+                  : dayFill(habit, cell, colour, numericMax, theme),
                 strong =
                   fill.startsWith('#') &&
                   fill.length === 7 &&
-                  contrastOnBlack(fill) > 7,
+                  theme.contrast(fill) > 7,
                 text = strong
                   ? checkmarkColor(fill)
                   : cell.state === 'beyond'
-                    ? '#3C3C3C'
+                    ? theme.ink(0x3c)
                     : cell.state === 'future' || cell.state === 'outside'
-                      ? '#5C5C5C'
-                      : '#A8A8A8',
+                      ? theme.ink(0x5c)
+                      : theme.ink(0xa8),
                 firstLabel =
                   cell.date.endsWith('-01') ||
                   (cell.day === from && cell.item !== null),
@@ -326,7 +333,9 @@ function MonthGrid({
 }: Parameters<typeof StatsCalendar>[0]) {
   const [width, setWidth] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
-  const colour = habit.color,
+  const theme = useTheme();
+  const styles = useStyles();
+  const colour = theme.colour(habit.color),
     unit = habit.unit ?? '';
   const numericMax = Math.max(
     1,
@@ -359,8 +368,8 @@ function MonthGrid({
     )
       return value.includes(highlight)
         ? (categoryColours?.get(highlight) ?? colour)
-        : '#171717';
-    return dayFill(habit, cell, colour, numericMax);
+        : theme.ink(0x17);
+    return dayFill(habit, cell, colour, numericMax, theme);
   };
   return (
     <View
@@ -451,8 +460,10 @@ function MonthGrid({
                           width={size}
                           height={size}
                           rx={Math.min(3, size * 0.25)}
-                          fill={fill === 'transparent' ? '#0B0B0B' : fill}
-                          stroke={cell.day === selected ? '#FFFFFF' : undefined}
+                          fill={fill === 'transparent' ? theme.ink(0x0b) : fill}
+                          stroke={
+                            cell.day === selected ? theme.ink(0xff) : undefined
+                          }
                           strokeWidth={cell.day === selected ? 1.5 : 0}
                         />
                       );
@@ -488,7 +499,7 @@ function MonthGrid({
                   { opacity: pressed ? 0.5 : 1 },
                 ]}
               >
-                <Icon name="edit" size={17} color="#C8C8C8" />
+                <Icon name="edit" size={17} color={theme.ink(0xc8)} />
               </Pressable>
             )}
             <Pressable
@@ -500,7 +511,7 @@ function MonthGrid({
                 { opacity: pressed ? 0.5 : 1 },
               ]}
             >
-              <Icon name="close" size={16} color="#9A9A9A" />
+              <Icon name="close" size={16} color={theme.ink(0x9a)} />
             </Pressable>
           </>
         )}
@@ -516,12 +527,12 @@ function nextMonth(month: string) {
     : `${year}-${String(number + 1).padStart(2, '0')}`;
 }
 
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   headings: { flexDirection: 'row', paddingBottom: 6 },
   heading: {
     flex: 1,
     textAlign: 'center',
-    color: '#777777',
+    color: t.ink(0x77),
     fontSize: 11,
   },
   row: { flexDirection: 'row' },
@@ -539,14 +550,14 @@ const styles = StyleSheet.create({
   dots: { flexDirection: 'row', gap: 2 },
   dot: { width: 5, height: 5, borderRadius: 3 },
   months: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 14, rowGap: 14 },
-  monthLabel: { color: '#9A9A9A', fontSize: 12, fontWeight: '600' },
+  monthLabel: { color: t.ink(0x9a), fontSize: 12, fontWeight: '600' },
   readout: { flexDirection: 'row', alignItems: 'center', minHeight: 44 },
-  caption: { color: '#A0A0A0', fontSize: 13, lineHeight: 19 },
-  small: { color: '#858585', fontSize: 12, lineHeight: 18 },
+  caption: { color: t.ink(0xa0), fontSize: 13, lineHeight: 19 },
+  small: { color: t.ink(0x85), fontSize: 12, lineHeight: 18 },
   control: {
     width: 40,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
-});
+}));

@@ -6,6 +6,8 @@ fading are the assistant's choices within that scope, awaiting phone review.
 
 | Control              | Default  | Purpose                                                                                                                                                           |
 | -------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Theme                | Dark     | System / Dark / Light. System follows the phone’s light or dark mode.                                                                                             |
+| Dark background      | Black    | Presets or a custom colour within a readable dark range; Light background is the same, defaulting to Paper.                                                       |
 | Text size            | 100%     | One app-wide slider, 85–150% in 5% steps, with Reset to 100%. Includes descriptions and their editor.                                                             |
 | Name column width    | Standard | Narrow / Standard / Wide at 80/100/120% of the adaptive name width, with text wrapping and full cell targets.                                                     |
 | Row spacing          | Standard | Compact / Standard / Roomy minimum heights of 44 / 52 / 64 points. Larger text and measured content can grow.                                                     |
@@ -190,3 +192,60 @@ A 402-point iPhone 16 Pro keeps its earlier 146-point names, 48-point days and
 52-point rows. A 360-point Galaxy S21 now gets 130-point names, four days and
 48-point rows instead of three days and 52-point rows. The physical screen, not
 the app window, sets row height, because Android windows exclude system bars.
+
+## Theme and backgrounds (v19)
+
+Founder request (10 October 2026): a dark / system / light theme whose
+background can be customised, with the rest of the app adjusting so it stays
+readable. The founder chose to make **both** Dark and Light customisable (System
+switches between the two). After trying it, the founder set the defaults to
+**Dark**, with **Paper** (`#F6F3EC`, a warm off-white) as the light background.
+Older logs and new installs show those until a choice is made.
+
+Appearance now starts with **Theme** (System / Dark / Light), then **Dark
+background** and **Light background** rows showing the current name and swatch.
+Each opens a page with a live grid preview drawn in the draft colour, six
+presets, Hue / Colourfulness / Lightness sliders (the OKLCH sliders from the
+habit colour picker), hex entry and Reset. Sliders preview while dragging and
+save once on release; presets and hex save immediately. Lightness is limited to
+a readable range for each scheme (dark at most OKLCH 0.34, light at least 0.86,
+colourfulness at most 0.12). A typed colour outside it moves to the nearest
+readable colour, with a note saying so. The page also says whether that
+background is in use now.
+
+How colours adapt (assistant design, `src/theme.ts`):
+
+- Every interface grey was designed on black. `ink(level)` keeps each grey at
+  the same relative contrast against the active background, on a log contrast
+  scale between the background and the opposite pole. On black every grey and
+  colour is exactly the original, so the default dark look is unchanged.
+- Surfaces near a tinted background carry its hue; text tends to neutral.
+- Habit and accent colours are shown with at least 4.5:1 contrast. Only OKLCH
+  lightness moves, so hue and colourfulness are kept. All presets are unchanged
+  on black. A custom colour that was too dark to read on black is now shown
+  lighter instead of falling back to grey in some places. The saved colour is
+  never changed: the colour picker shows the adjusted colour and says so.
+- Empty-cell blends, tinted completed cells and chart fills are mixed against
+  the active background. Distant-date fading darkens towards dark backgrounds
+  (the original rule) and blends towards light ones, reducing contrast by up to
+  40% (less for date headings).
+- Marks on filled colours are white when white reaches 3:1, otherwise black.
+  This gives white ticks on the deeper light-theme colours; presets on black
+  keep black ticks.
+- Note highlights switch to pale marks with dark text on light backgrounds. The
+  DOM editor receives the theme as CSS variables (`richText/editorTheme.ts`).
+- Native alerts, keyboards and date pickers follow the theme through
+  `Appearance.setColorScheme` (System hands control back to the phone), and
+  `app.json` now uses `userInterfaceStyle: automatic`.
+
+As with other presentation settings, the mounted grid keeps its theme while
+Settings is open and switches when the sheet finishes dismissing. Settings,
+History, statistics and dialogs use the new theme at once. The preferences are
+saved, backed up and kept outside History/Undo like the others. Sample mode
+keeps them for the session only.
+
+Phone checks still needed: System switching with the app open, Dark/Light
+overrides of native alerts, keyboards and date pickers (especially Android,
+where the override goes through AppCompat night mode), status bar contrast, the
+note editor in each theme, and the first-launch colour behind the splash
+(`app.json` still paints black before JavaScript runs).

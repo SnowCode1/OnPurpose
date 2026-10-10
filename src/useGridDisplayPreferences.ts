@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import type { CheckboxStyle, WeekStart } from './displayPreferences.ts';
 import type { GridSize } from './gridSizing.ts';
+import type { Theme } from './theme.ts';
 
 export type GridDisplayPreferences = {
+  // Themes are cached by background, so an unchanged theme keeps its identity.
+  theme: Theme;
   nameWidth: GridSize;
   nameFactor: number;
   columnWidth: GridSize;

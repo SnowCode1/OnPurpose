@@ -51,6 +51,7 @@ export const emptyReplay = (): Replay => ({
   hasV16: false,
   hasV17: false,
   hasV18: false,
+  hasV19: false,
 });
 export const GROUP_INACTIVITY_MS = 2 * 60 * 1000;
 
@@ -177,6 +178,7 @@ function reduceEvent(
       hasV16: event.version >= 16,
       hasV17: event.version >= 17,
       hasV18: event.version >= 18,
+      hasV19: event.version >= 19,
     };
   }
   insist(
@@ -222,6 +224,10 @@ function reduceEvent(
   insist(
     !previous.hasV11 || event.version >= 11,
     'Older events cannot follow version-11 events.',
+  );
+  insist(
+    !previous.hasV19 || event.version >= 19,
+    'Older events cannot follow version-19 events.',
   );
   insist(
     !previous.hasV18 || event.version >= 18,
@@ -402,8 +408,14 @@ function reduceEvent(
     hasV16: previous.hasV16 || event.version >= 16,
     hasV17: previous.hasV17 || event.version >= 17,
     hasV18: previous.hasV18 || event.version >= 18,
+    hasV19: previous.hasV19 || event.version >= 19,
   };
 }
+const firstThemeDefaults = {
+  themeMode: 'system',
+  darkBackground: '#000000',
+  lightBackground: '#FFFFFF',
+} as const;
 export function applyChange(state: StoredState, change: Change): StoredState {
   return reduceChange(state, change, false);
 }
@@ -411,7 +423,7 @@ function reduceChange(
   state: StoredState,
   change: Change,
   mutable: boolean,
-  version = 18,
+  version = 19,
 ): StoredState {
   validateChange(change, version);
   let next: StoredState;
@@ -434,6 +446,23 @@ function reduceChange(
           ? effectiveColumnSpacing(state)
           : (state[change.kind] ?? displayDefaults[change.kind])) ===
         change.before,
+      'Preference precondition failed.',
+    );
+    next = { ...state, [change.kind]: change.after };
+  } else if (
+    change.kind === 'themeMode' ||
+    change.kind === 'darkBackground' ||
+    change.kind === 'lightBackground'
+  ) {
+    // Like grid sizes, `before` is null until the first choice. Development
+    // builds on 10 October 2026 briefly wrote that era's defaults instead;
+    // accept those so logs from that day still replay.
+    const stored = state[change.kind];
+    insist(
+      stored === undefined
+        ? change.before === null ||
+            change.before === firstThemeDefaults[change.kind]
+        : stored === change.before,
       'Preference precondition failed.',
     );
     next = { ...state, [change.kind]: change.after };
@@ -611,6 +640,11 @@ export function replayEvents(input: unknown): {
   return { events, replay };
 }
 export function describeChange(change: Change, state: StoredState): string {
+  if (change.kind === 'themeMode') return `Theme · ${change.after}`;
+  if (change.kind === 'darkBackground')
+    return `Dark background · ${change.after}`;
+  if (change.kind === 'lightBackground')
+    return `Light background · ${change.after}`;
   if (
     change.kind === 'gridNameWidth' ||
     change.kind === 'gridColumnWidth' ||

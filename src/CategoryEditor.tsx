@@ -3,7 +3,6 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  StyleSheet,
   View,
   KeyboardAvoidingView,
   Platform,
@@ -12,6 +11,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { randomUUID } from 'expo-crypto';
 import { Text, TextInput, useAppWindowDimensions } from './Typography';
 import { Icon } from './Icon';
+import { themedStyles, useTheme } from './ThemeContext';
 import type { HabitCategory } from './habits';
 import {
   MAX_CATEGORIES,
@@ -30,6 +30,9 @@ export function CategoryEditor({
   onClose: () => void;
   onApply: (categories: HabitCategory[]) => void;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
+  const accent = theme.colour(colour);
   const [options, setOptions] = useState(categories);
   const { width, fontScale } = useAppWindowDimensions();
   const stacked = width < 360 || fontScale > 1.3;
@@ -89,7 +92,7 @@ export function CategoryEditor({
                 <Text
                   style={[
                     styles.control,
-                    { color: colour, opacity: valid ? 1 : 0.35 },
+                    { color: accent, opacity: valid ? 1 : 0.35 },
                   ]}
                 >
                   Done
@@ -120,9 +123,9 @@ export function CategoryEditor({
                       maxLength={MAX_CATEGORY_LABEL}
                       onChangeText={(label) => update(option.id, { label })}
                       placeholder="Category name"
-                      placeholderTextColor="#707070"
+                      placeholderTextColor={theme.ink(0x70)}
                       style={[styles.name, !stacked && { flex: 1 }]}
-                      selectionColor={colour}
+                      selectionColor={accent}
                     />
                     <TextInput
                       accessibilityLabel={`Short grid label for ${option.label || 'new category'}`}
@@ -133,12 +136,12 @@ export function CategoryEditor({
                       }
                       placeholder="Short label"
                       accessibilityHint="Optional abbreviation shown in grid cells"
-                      placeholderTextColor="#707070"
+                      placeholderTextColor={theme.ink(0x70)}
                       style={[
                         styles.short,
                         !stacked && { width: 90 * fontScale },
                       ]}
-                      selectionColor={colour}
+                      selectionColor={accent}
                     />
                   </View>
                   <Pressable
@@ -156,7 +159,7 @@ export function CategoryEditor({
                     <Icon
                       name={option.archived ? 'undo' : 'archive'}
                       size={18}
-                      color={option.archived ? colour : '#999999'}
+                      color={option.archived ? accent : theme.ink(0x99)}
                     />
                   </Pressable>
                 </View>
@@ -176,8 +179,8 @@ export function CategoryEditor({
                 }
                 style={styles.add}
               >
-                <Icon name="plus" color={colour} size={18} />
-                <Text style={[styles.control, { color: colour }]}>
+                <Icon name="plus" color={accent} size={18} />
+                <Text style={[styles.control, { color: accent }]}>
                   Add category
                 </Text>
               </Pressable>
@@ -188,8 +191,8 @@ export function CategoryEditor({
     </Modal>
   );
 }
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#000000' },
+const useStyles = themedStyles((t) => ({
+  screen: { flex: 1, backgroundColor: t.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -200,12 +203,12 @@ const styles = StyleSheet.create({
   heading: {
     flex: 1,
     textAlign: 'center',
-    color: '#DDDDDD',
+    color: t.ink(0xdd),
     fontSize: 17,
     fontWeight: '600',
   },
   action: { minHeight: 44, minWidth: 48, justifyContent: 'center' },
-  control: { color: '#BBBBBB', fontSize: 15 },
+  control: { color: t.ink(0xbb), fontSize: 15 },
   body: {
     padding: 20,
     paddingBottom: 36,
@@ -219,7 +222,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     padding: 8,
-    backgroundColor: '#151515',
+    backgroundColor: t.ink(0x15),
     borderRadius: 14,
   },
   fields: { flex: 1, gap: 4 },
@@ -227,14 +230,14 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: 8,
     paddingVertical: 10,
-    color: '#EEEEEE',
+    color: t.ink(0xee),
     fontSize: 16,
   },
   short: {
     minHeight: 44,
     paddingHorizontal: 8,
     paddingVertical: 10,
-    color: '#AAAAAA',
+    color: t.ink(0xaa),
     fontSize: 13,
   },
   icon: {
@@ -244,4 +247,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   add: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 48 },
-});
+}));

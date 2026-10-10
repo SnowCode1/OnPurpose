@@ -2,6 +2,7 @@ import { TextInput, Text } from './Typography';
 import { View } from 'react-native';
 import { validDate } from './storage/model';
 import type { StartDateFieldProps } from './StartDateField';
+import { useTheme } from './ThemeContext';
 
 export function StartDateField({
   value,
@@ -10,10 +11,11 @@ export function StartDateField({
   label = 'Start date',
   help = 'Choose an earlier date to fill in old records. Statistics begin here.',
 }: StartDateFieldProps) {
+  const theme = useTheme();
   const valid = validDate(value);
   return (
     <View style={{ gap: 8 }}>
-      <Text style={{ color: '#AAAAAA', fontSize: 12 }}>
+      <Text style={{ color: theme.ink(0xaa), fontSize: 12 }}>
         {label} · YYYY-MM-DD
       </Text>
       <TextInput
@@ -24,20 +26,20 @@ export function StartDateField({
         onChangeText={onChange}
         maxLength={10}
         autoCorrect={false}
-        selectionColor={colour}
+        selectionColor={theme.colour(colour)}
         style={{
           minHeight: 44,
           borderRadius: 12,
           padding: 14,
-          color: '#E5E5E5',
-          backgroundColor: '#1C1C1C',
+          color: theme.ink(0xe5),
+          backgroundColor: theme.ink(0x1c),
           fontSize: 17,
         }}
       />
       {(!valid || !!help) && (
         <Text
           style={{
-            color: valid ? '#999999' : '#F0A798',
+            color: valid ? theme.ink(0x99) : theme.colour('#F0A798'),
             fontSize: 12,
             lineHeight: 18,
           }}

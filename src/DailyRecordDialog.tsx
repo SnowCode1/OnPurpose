@@ -31,7 +31,7 @@ import { Text, TextInput } from './Typography';
 import { useKeyboardFocus } from './useKeyboardFocus';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from './Icon';
-import { colorOnBlack, contrastOnBlack } from './colors';
+import { themedStyles, useTheme } from './ThemeContext';
 import type { Habit, HabitCategory } from './habits';
 import type { EntryDay } from './calendar';
 import {
@@ -71,6 +71,8 @@ export function DailyRecordDialog({
   onSave: (value: EntryValue | null) => boolean;
   onAddCategories?: (categories: HabitCategory[]) => boolean;
 }) {
+  const styles = useStyles();
+  const theme = useTheme();
   const { height } = useWindowDimensions();
   const [text, setText] = useState(typeof value === 'string' ? value : '');
   const textFocus = useKeyboardFocus<NativeTextInput>();
@@ -81,7 +83,7 @@ export function DailyRecordDialog({
   const [newLabel, setNewLabel] = useState<string | null>(null);
   const newFocus = useKeyboardFocus<NativeTextInput>(newLabel !== null);
   const categorical = habit.type === 'categorical';
-  const accent = contrastOnBlack(habit.color) >= 4.5 ? habit.color : '#DDDDDD';
+  const accent = theme.colour(habit.color);
   const options = [
     ...(habit.categories ?? []).filter(
       (option) =>
@@ -254,23 +256,25 @@ export function DailyRecordDialog({
                                   styles.option,
                                   {
                                     borderColor: checked
-                                      ? `${habit.color}66`
-                                      : '#303030',
+                                      ? `${accent}66`
+                                      : theme.ink(0x30),
                                     backgroundColor: checked
-                                      ? colorOnBlack(habit.color, 0.15)
-                                      : '#191919',
+                                      ? theme.mix(accent, 0.15)
+                                      : theme.ink(0x19),
                                   },
                                 ]}
                               >
                                 <Icon
                                   name={checked ? 'checked' : 'unchecked'}
-                                  color={checked ? accent : '#777777'}
+                                  color={checked ? accent : theme.ink(0x77)}
                                   size={18}
                                 />
                                 <Text
                                   style={[
                                     styles.optionLabel,
-                                    { color: checked ? accent : '#C0C0C0' },
+                                    {
+                                      color: checked ? accent : theme.ink(0xc0),
+                                    },
                                   ]}
                                 >
                                   {option.label}
@@ -285,7 +289,11 @@ export function DailyRecordDialog({
                               onPress={() => setNewLabel('')}
                               style={[styles.option, styles.addOption]}
                             >
-                              <Icon name="plus" color="#909090" size={18} />
+                              <Icon
+                                name="plus"
+                                color={theme.ink(0x90)}
+                                size={18}
+                              />
                               <Text
                                 style={[styles.optionLabel, styles.addLabel]}
                               >
@@ -304,9 +312,9 @@ export function DailyRecordDialog({
                           value={text}
                           onChangeText={setText}
                           maxLength={MAX_ENTRY_TEXT}
-                          selectionColor={habit.color}
+                          selectionColor={accent}
                           placeholder="Write an entry…"
-                          placeholderTextColor="#666666"
+                          placeholderTextColor={theme.ink(0x66)}
                           style={styles.input}
                           textAlignVertical="top"
                         />
@@ -322,9 +330,9 @@ export function DailyRecordDialog({
                             submitBehavior="submit"
                             returnKeyType="done"
                             maxLength={MAX_CATEGORY_LABEL}
-                            selectionColor={habit.color}
+                            selectionColor={accent}
                             placeholder="Category name"
-                            placeholderTextColor="#666666"
+                            placeholderTextColor={theme.ink(0x66)}
                             style={styles.newInput}
                           />
                           <Pressable
@@ -370,7 +378,7 @@ export function DailyRecordDialog({
                         }}
                         style={styles.clear}
                       >
-                        <Icon name="erase" size={17} color="#909090" />
+                        <Icon name="erase" size={17} color={theme.ink(0x90)} />
                         <Text style={styles.clearLabel}>Clear entry</Text>
                       </Pressable>
                     </SheetScrollView>
@@ -384,16 +392,16 @@ export function DailyRecordDialog({
     </Modal>
   );
 }
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   root: { flex: 1 },
   handleArea: { height: 14, alignItems: 'center', justifyContent: 'center' },
   handle: {
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#3A3A3A',
+    backgroundColor: t.ink(0x3a),
   },
-  backdrop: { flex: 1, backgroundColor: '#00000099' },
+  backdrop: { flex: 1, backgroundColor: t.scrim(0x99) },
   overlay: { flex: 1, justifyContent: 'flex-end' },
   sheetFrame: {
     maxHeight: '85%',
@@ -402,7 +410,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   sheet: {
-    backgroundColor: '#101010',
+    backgroundColor: t.ink(0x10),
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 4,
@@ -415,10 +423,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   action: { minHeight: 48, minWidth: 44, justifyContent: 'center' },
-  control: { color: '#B8B8B8', fontSize: 15 },
+  control: { color: t.ink(0xb8), fontSize: 15 },
   title: { flex: 1, gap: 3, alignItems: 'center' },
   name: { fontSize: 17, fontWeight: '600' },
-  date: { fontSize: 11, color: '#818181', textAlign: 'center' },
+  date: { fontSize: 11, color: t.ink(0x81), textAlign: 'center' },
   body: { padding: 20, paddingBottom: 24, gap: 12 },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   option: {
@@ -434,17 +442,17 @@ const styles = StyleSheet.create({
   },
   optionLabel: { fontSize: 15, flexShrink: 1 },
   addOption: {
-    borderColor: '#3A3A3A',
+    borderColor: t.ink(0x3a),
     borderStyle: 'dashed',
     borderWidth: 1,
     backgroundColor: 'transparent',
   },
-  addLabel: { color: '#A0A0A0' },
+  addLabel: { color: t.ink(0xa0) },
   newRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   newInput: {
     flex: 1,
-    color: '#DDDDDD',
-    backgroundColor: '#191919',
+    color: t.ink(0xdd),
+    backgroundColor: t.ink(0x19),
     borderRadius: 13,
     paddingHorizontal: 14,
     minHeight: 48,
@@ -458,8 +466,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   input: {
-    color: '#DDDDDD',
-    backgroundColor: '#191919',
+    color: t.ink(0xdd),
+    backgroundColor: t.ink(0x19),
     borderRadius: 14,
     padding: 14,
     fontSize: 17,
@@ -467,5 +475,5 @@ const styles = StyleSheet.create({
     maxHeight: 320,
   },
   clear: { minHeight: 44, flexDirection: 'row', gap: 8, alignItems: 'center' },
-  clearLabel: { color: '#909090', fontSize: 13 },
-});
+  clearLabel: { color: t.ink(0x90), fontSize: 13 },
+}));

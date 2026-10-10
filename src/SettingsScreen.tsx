@@ -11,18 +11,33 @@ import {
   type WeekStart,
 } from './displayPreferences';
 import type { GridSize, GridSizeKind, GridSizing } from './gridSizing';
-import { GridSizeSettings } from './GridSizeSettings';
+import { GridLivePreview, GridSizeSettings } from './GridSizeSettings';
 import type { StoreSnapshot } from './storage/store';
 import { useSheetScroll } from './SheetModal';
+import { BackgroundSettings, type ThemePreference } from './BackgroundSettings';
+import {
+  backgroundName,
+  fitBackground,
+  themeModeOptions,
+  type ThemeMode,
+} from './theme';
+import { themedStyles, useTheme } from './ThemeContext';
 
 export const settingsTitles = {
   index: 'Settings',
   appearance: 'Appearance',
+  darkBackground: 'Dark background',
+  lightBackground: 'Light background',
   tracking: 'Daily tracking',
   backup: 'Backups',
   development: 'Development',
 };
 export type SettingsPage = keyof typeof settingsTitles;
+// Pages below the index return to their parent page.
+export const settingsParents: Partial<Record<SettingsPage, SettingsPage>> = {
+  darkBackground: 'appearance',
+  lightBackground: 'appearance',
+};
 type Props = {
   page: SettingsPage;
   onPage: (page: SettingsPage) => void;
@@ -49,6 +64,10 @@ type Props = {
   onHideCompletedChange: (value: boolean) => void;
   hapticsEnabled: boolean;
   onHapticsChange: (value: boolean) => void;
+  themeMode: ThemeMode;
+  darkBackground: string;
+  lightBackground: string;
+  onThemeChange: (preference: ThemePreference) => void;
   onArchive: () => void;
   onRetry: () => void;
   onExport: () => void;
@@ -56,6 +75,7 @@ type Props = {
   onRecover: () => void;
 };
 function Group({ title, children }: { title?: string; children: ReactNode }) {
+  const styles = useStyles();
   return (
     <View style={{ gap: 8 }}>
       {title && <Text style={styles.groupTitle}>{title}</Text>}
@@ -68,6 +88,7 @@ function Row({
   detail,
   value,
   icon,
+  swatch,
   onPress,
   disabled = false,
 }: {
@@ -75,9 +96,12 @@ function Row({
   detail?: string;
   value?: string;
   icon?: IconName;
+  swatch?: string;
   onPress: () => void;
   disabled?: boolean;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   return (
     <Pressable
       accessibilityRole="button"
@@ -90,14 +114,15 @@ function Row({
         { opacity: disabled ? 0.4 : pressed ? 0.6 : 1 },
       ]}
     >
-      {icon && <Icon name={icon} size={20} color="#999999" />}
+      {icon && <Icon name={icon} size={20} color={theme.ink(0x99)} />}
       <View style={{ flex: 1, gap: 3 }}>
         <Text style={styles.label}>{label}</Text>
         {detail && <Text style={styles.note}>{detail}</Text>}
       </View>
       {value && <Text style={styles.value}>{value}</Text>}
+      {swatch && <View style={[styles.swatch, { backgroundColor: swatch }]} />}
       <View style={{ transform: [{ rotate: '-90deg' }] }}>
-        <Icon name="chevron" size={16} color="#777777" />
+        <Icon name="chevron" size={16} color={theme.ink(0x77)} />
       </View>
     </Pressable>
   );
@@ -113,6 +138,8 @@ function Toggle({
   onChange: (value: boolean) => void;
   disabled: boolean;
 }) {
+  const theme = useTheme();
+  const styles = useStyles();
   return (
     <View style={styles.row}>
       <Text style={[styles.label, { flex: 1 }]}>{label}</Text>
@@ -121,9 +148,9 @@ function Toggle({
         disabled={disabled}
         value={value}
         onValueChange={onChange}
-        trackColor={{ false: '#303030', true: '#74BBA5' }}
+        trackColor={{ false: theme.ink(0x30), true: theme.accent }}
         thumbColor="#FFFFFF"
-        ios_backgroundColor="#303030"
+        ios_backgroundColor={theme.ink(0x30)}
       />
     </View>
   );
@@ -142,6 +169,8 @@ function Choice<T extends string>({
   disabled: boolean;
 }) {
   const { fontScale } = useAppWindowDimensions();
+  const theme = useTheme();
+  const styles = useStyles();
   return (
     <View style={styles.control}>
       <Text style={styles.label}>{label}</Text>
@@ -163,14 +192,16 @@ function Choice<T extends string>({
               borderRadius: 8,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: value === option.value ? '#74BBA520' : '#1B1B1B',
+              backgroundColor:
+                value === option.value ? `${theme.accent}20` : theme.ink(0x1b),
               opacity: disabled ? 0.4 : pressed ? 0.6 : 1,
             })}
           >
             <Text
               style={{
                 fontSize: 14,
-                color: value === option.value ? '#9BDBBE' : '#AAAAAA',
+                color:
+                  value === option.value ? theme.accentText : theme.ink(0xaa),
               }}
             >
               {option.label}
@@ -185,6 +216,13 @@ export function SettingsScreen(p: Props) {
   const disabled = !!p.snapshot.error || p.snapshot.busy || p.backupBusy;
   const count = p.snapshot.replay.state.habits.filter((h) => h.archived).length;
   const sheetScroll = useSheetScroll();
+  const styles = useStyles();
+  const backgroundScheme =
+    p.page === 'darkBackground'
+      ? 'dark'
+      : p.page === 'lightBackground'
+        ? 'light'
+        : null;
   return (
     <ScrollView
       {...sheetScroll}
@@ -206,7 +244,7 @@ export function SettingsScreen(p: Props) {
             <Row
               icon="palette"
               label="Appearance"
-              detail="Text size and grid spacing"
+              detail="Theme, text size and grid spacing"
               onPress={() => p.onPage('appearance')}
             />
             <Row
@@ -249,6 +287,29 @@ export function SettingsScreen(p: Props) {
       )}
       {p.page === 'appearance' && (
         <>
+          <Group>
+            <Choice
+              label="Theme"
+              value={p.themeMode}
+              options={themeModeOptions}
+              onChange={(value) =>
+                p.onThemeChange({ kind: 'themeMode', value })
+              }
+              disabled={disabled}
+            />
+            <Row
+              label="Dark background"
+              value={backgroundName('dark', p.darkBackground)}
+              swatch={fitBackground('dark', p.darkBackground)}
+              onPress={() => p.onPage('darkBackground')}
+            />
+            <Row
+              label="Light background"
+              value={backgroundName('light', p.lightBackground)}
+              swatch={fitBackground('light', p.lightBackground)}
+              onPress={() => p.onPage('lightBackground')}
+            />
+          </Group>
           <Group>
             <GridSizeSettings
               sizing={p.sizing}
@@ -298,9 +359,38 @@ export function SettingsScreen(p: Props) {
           </Group>
           <InfoNote
             label="About appearance"
-            text="Automatic sizes adapt to this screen; moving a slider sets an exact size, and Reset returns to automatic. Text size applies everywhere and follows your phone’s text size too. Recorded entries stay bright when dates fade."
+            text="System follows your phone’s light or dark mode. Text, controls and habit colours adjust to each background; your saved habit colours never change. Automatic sizes adapt to this screen; moving a slider sets an exact size, and Reset returns to automatic. Text size applies everywhere and follows your phone’s text size too. Recorded entries stay bright when dates fade."
           />
         </>
+      )}
+      {backgroundScheme && (
+        <BackgroundSettings
+          key={backgroundScheme}
+          scheme={backgroundScheme}
+          saved={
+            backgroundScheme === 'dark' ? p.darkBackground : p.lightBackground
+          }
+          mode={p.themeMode}
+          editable={!disabled}
+          onChange={(value) =>
+            p.onThemeChange({
+              kind:
+                backgroundScheme === 'dark'
+                  ? 'darkBackground'
+                  : 'lightBackground',
+              value,
+            })
+          }
+          preview={
+            <GridLivePreview
+              sizing={p.sizing}
+              gridWidth={p.gridWidth}
+              habits={p.snapshot.replay.state.habits.filter(
+                (habit) => !habit.archived,
+              )}
+            />
+          }
+        />
       )}
       {p.page === 'tracking' && (
         <>
@@ -384,7 +474,7 @@ export function SettingsScreen(p: Props) {
     </ScrollView>
   );
 }
-const styles = StyleSheet.create({
+const useStyles = themedStyles((t) => ({
   body: {
     padding: 20,
     paddingTop: 12,
@@ -394,8 +484,8 @@ const styles = StyleSheet.create({
     maxWidth: 660,
     alignSelf: 'center',
   },
-  groupTitle: { color: '#888888', fontSize: 13, paddingHorizontal: 4 },
-  group: { backgroundColor: '#111111', borderRadius: 14, overflow: 'hidden' },
+  groupTitle: { color: t.ink(0x88), fontSize: 13, paddingHorizontal: 4 },
+  group: { backgroundColor: t.ink(0x11), borderRadius: 14, overflow: 'hidden' },
   row: {
     minHeight: 56,
     paddingHorizontal: 16,
@@ -404,22 +494,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#242424',
+    borderBottomColor: t.ink(0x24),
   },
   control: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#242424',
+    borderBottomColor: t.ink(0x24),
   },
-  label: { color: '#DEDEDE', fontSize: 17 },
+  label: { color: t.ink(0xde), fontSize: 17 },
   value: {
-    color: '#999999',
+    color: t.ink(0x99),
     fontSize: 14,
     fontVariant: ['tabular-nums'],
     flexShrink: 1,
   },
-  note: { color: '#929292', fontSize: 13, lineHeight: 19 },
-  footer: { color: '#666666', fontSize: 12, paddingHorizontal: 4 },
-});
+  note: { color: t.ink(0x92), fontSize: 13, lineHeight: 19 },
+  footer: { color: t.ink(0x66), fontSize: 12, paddingHorizontal: 4 },
+  swatch: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: t.ink(0x44),
+  },
+}));
