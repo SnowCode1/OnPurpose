@@ -21,7 +21,7 @@ import { browserRepository } from '../src/storage/browserRepository.ts';
 import { replayEvents, applyEvent } from '../src/storage/model.ts';
 import { encodeArchive, decodeArchive } from '../src/storage/archive.ts';
 import { applyPlaceholderDescriptions } from '../src/storage/presetDescriptions.ts';
-import { descriptionVersions } from '../src/descriptionVersions.ts';
+import { descriptionVersions } from '../src/descriptionVersionFilter.ts';
 import { historyPresentation } from '../src/history.ts';
 
 let counter = 0;

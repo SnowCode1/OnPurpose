@@ -6,7 +6,7 @@ import { DailyRecordDialog } from './src/DailyRecordDialog';
 import { HabitGoalsEditor } from './src/HabitGoalsEditor';
 import { TypographyProvider, Text } from './src/Typography';
 import { DescriptionVersions } from './src/DescriptionVersions';
-import { descriptionVersions } from './src/descriptionVersions';
+import { descriptionVersions } from './src/descriptionVersionFilter';
 import { DescriptionEditor } from './src/DescriptionEditor';
 import { descriptionDraftKey } from './src/descriptionDrafts';
 import { applyPlaceholderDescriptions } from './src/storage/presetDescriptions';

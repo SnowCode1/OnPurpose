@@ -66,7 +66,7 @@ The requested preset icon update uses normal undoable edits in
   `src/HabitDetailsScreen.tsx`, `src/DescriptionReader.tsx`, `src/DescriptionEditor.tsx` and `src/DescriptionHistory.tsx`
   own description reading, full-screen draft editing and Before/After restore.
   `src/DescriptionVersions.tsx` lists that habit's active note actions using the pure
-  `descriptionVersions.ts` filter; retain repeated content and reverse sequence order.
+  `descriptionVersionFilter.ts` filter; retain repeated content and reverse sequence order.
   Restore only description onto the current definition. `richText/selection.ts`
   reads whole-selection highlight/link state; `descriptionLinks.ts` shares explicit
   native opening between reader/editor. `descriptionDiff.ts` compares intact Markdown
