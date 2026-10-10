@@ -293,6 +293,7 @@ export const backgroundPresets: Record<
     { name: 'Graphite', value: '#161616' },
     { name: 'Midnight', value: '#0B1424' },
     { name: 'Forest', value: '#0B1A14' },
+    { name: 'Dark forest', value: '#0D2B15' },
     { name: 'Plum', value: '#1A1120' },
     { name: 'Espresso', value: '#1C1611' },
   ],

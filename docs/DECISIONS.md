@@ -1531,7 +1531,7 @@ signing and device enrolment are still prerequisites, not completed deployment.
   and colourfulness and only lighten or darken to reach 4.5:1. Saved habit
   colours are never rewritten. Backgrounds are limited to a readable lightness
   range per scheme, which is applied at display time rather than in validation.
-  The pages offer six presets per scheme. Light themes use white ticks on
+  The pages offer six presets per scheme (the founder later added Dark forest). Light themes use white ticks on
   filled colours and pale note highlights. The mounted grid switches theme when
   Settings dismisses, like other presentation settings.
 - Behaviour change on black: a custom habit colour below 4.5:1 is now shown
