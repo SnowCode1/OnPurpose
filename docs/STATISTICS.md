@@ -146,6 +146,7 @@ month-arrow details in Screen above; calculation rules below are unchanged.
   day 1 at the left (days 1–31 line up down the rows); days outside the period
   or month stay darker; labels are short months in the same 30-point column as
   every other chart, with a year heading where rows cross into a new year. A
+  single row (up to about six weeks) has no labels and uses the full width. A
   streak crossing rows is one shape per row with square ends at the join, and
   shows its length on its last part.
 - **Calendar:** up to ~3 months, continuous rows of weeks (values inside number

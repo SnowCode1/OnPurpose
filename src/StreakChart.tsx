@@ -148,7 +148,9 @@ export function StreakChart({
         slots={slots}
         height={height}
         gridLines={false}
-        reserveAxis
+        // Month and quarter rows need their label column; a single row has
+        // no labels, so it uses the full width.
+        reserveAxis={unit !== 'window'}
         axis={
           unit === 'window'
             ? []
