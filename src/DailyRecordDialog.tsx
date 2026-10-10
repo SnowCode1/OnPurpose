@@ -192,7 +192,7 @@ export function DailyRecordDialog({
                       onPress={dismiss}
                       style={styles.action}
                     >
-                      <Text style={styles.control}>Close</Text>
+                      <Icon name="close" />
                     </Pressable>
                     <View style={styles.title}>
                       <Heading

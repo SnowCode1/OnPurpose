@@ -14,11 +14,11 @@ export function PeriodProgress({
 }) {
   const [expanded, setExpanded] = useState(false);
   if (!data.current && !data.recent.length) return null;
-  const label = (date: string) =>
+  const label = (date: string, withYear = true) =>
     new Date(`${date}T12:00:00`).toLocaleDateString(undefined, {
       day: 'numeric',
       month: 'short',
-      year: 'numeric',
+      ...(withYear ? { year: 'numeric' as const } : {}),
     });
   const status = (row: PeriodResult) =>
     row.status === 'rest'
@@ -40,17 +40,23 @@ export function PeriodProgress({
   return (
     <View style={styles.section}>
       {data.current && (
-        <View style={{ gap: 5 }}>
-          <Text style={styles.heading}>
-            {data.current.count} {data.current.count === 1 ? 'day' : 'days'} so
-            far
-          </Text>
-          <Text style={styles.text}>{periodSummary(data.current.period)}</Text>
+        <View style={{ gap: 4 }}>
+          <View style={styles.headingRow}>
+            <Text style={styles.heading}>
+              {data.current.count} {data.current.count === 1 ? 'day' : 'days'}{' '}
+              so far
+            </Text>
+            <Text style={[styles.status, { color: colour }]}>
+              {status(data.current)}
+            </Text>
+          </View>
           <Text style={styles.note}>
-            {label(data.current.start)} – {label(data.current.end)}
-          </Text>
-          <Text style={[styles.text, { color: colour }]}>
-            {status(data.current)}
+            {periodSummary(data.current.period)} ·{' '}
+            {label(
+              data.current.start,
+              data.current.start.slice(0, 4) !== data.current.end.slice(0, 4),
+            )}{' '}
+            – {label(data.current.end, false)}
           </Text>
         </View>
       )}
@@ -89,8 +95,22 @@ export function PeriodProgress({
   );
 }
 const styles = StyleSheet.create({
-  section: { gap: 8, paddingVertical: 12 },
-  heading: { fontSize: 20, color: '#EEEEEE', fontWeight: '600' },
+  section: {
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 2,
+    borderRadius: 14,
+    backgroundColor: '#121212',
+  },
+  headingRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  heading: { flex: 1, fontSize: 19, color: '#EDEDED', fontWeight: '600' },
+  status: { fontSize: 13, fontWeight: '600' },
   text: { fontSize: 14, color: '#CCCCCC' },
   note: { fontSize: 12, color: '#999999' },
   toggle: {

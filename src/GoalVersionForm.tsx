@@ -333,9 +333,11 @@ export function GoalVersionForm({
           onPress={onClose}
           style={styles.action}
         >
-          <Text style={styles.control}>
-            {parentLabel ? `‹ ${parentLabel}` : 'Close'}
-          </Text>
+          {parentLabel ? (
+            <Text style={styles.control}>‹ {parentLabel}</Text>
+          ) : (
+            <Icon name="close" />
+          )}
         </Pressable>
         <Heading style={styles.title}>{title}</Heading>
         <Pressable

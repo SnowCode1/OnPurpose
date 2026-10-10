@@ -1,4 +1,5 @@
 import { Text } from './Typography';
+import { Icon } from './Icon';
 import { useState, type ComponentType } from 'react';
 import {
   FlatList,
@@ -52,10 +53,11 @@ export function DescriptionVersions({
           <View style={styles.header}>
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel="Close"
               onPress={onClose}
               style={styles.close}
             >
-              <Text style={styles.closeText}>Close</Text>
+              <Icon name="close" />
             </Pressable>
             <View style={styles.title}>
               <Heading
@@ -141,7 +143,6 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   close: { minWidth: 60, minHeight: 48, justifyContent: 'center' },
-  closeText: { color: '#BBBBBB', fontSize: 15 },
   title: { flex: 1, alignItems: 'center', paddingHorizontal: 8 },
   heading: { color: '#DDDDDD', fontSize: 15, fontWeight: '600' },
   subtitle: { color: '#777777', fontSize: 12, marginTop: 3 },

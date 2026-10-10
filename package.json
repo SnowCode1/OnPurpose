@@ -63,7 +63,7 @@
     "doctor": "npx expo-doctor@latest",
     "export:ios": "expo export --platform ios",
     "export:android": "expo export --platform android",
-    "android:screenshot": "mkdir -p .dev/android && adb exec-out screencap -p > .dev/android/latest.png",
+    "android:screenshot": "node scripts/android-screenshot.mjs",
     "preview:server": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/preview-server.mjs",
     "test:preview": "node --max-old-space-size=256 --test --test-timeout=15000 scripts/preview-receiver.test.mjs",
     "test:calendar": "node --max-old-space-size=256 --test --test-timeout=15000 scripts/calendar.test.mjs",

@@ -41,7 +41,8 @@ The requested preset icon update uses normal undoable edits in
   dialogs inside the current native statistics presentation when open.
   `useBackupActions.ts` owns native confirmation/errors and the in-flight busy
   guard; exclusive restore and pre-restore copies remain in ChangeStore/adapters.
-  Both statistics screens import `StatsChart.tsx` and `TimeOfDayChart.tsx`
+  Both statistics screens import `StatsChart.tsx`, `TimeOfDayChart.tsx` and
+  `StatsLayout.tsx` (range tabs, titled sections with (i) explanations, tiles)
   (pure `timeOfDay.ts`, same-day entries from active History actions only),
   never each other's screen for
   shared chart controls. `statisticsFormatting.ts` owns shared display helpers.

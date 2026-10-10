@@ -84,7 +84,7 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
           accessibilityLabel="Close habit details and return to habit grid"
           style={styles.nav}
         >
-          <Text style={styles.navText}>Close</Text>
+          <Icon name="close" />
         </Pressable>
         <View style={styles.title}>
           <HabitSymbol icon={habit.icon} colour={habit.color} size={20} />
@@ -109,11 +109,7 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
             { alignItems: 'flex-end', opacity: editable ? 1 : 0.35 },
           ]}
         >
-          {tab === 'notes' ? (
-            <Text style={styles.navText}>Edit</Text>
-          ) : (
-            <Icon name="edit" />
-          )}
+          <Icon name="edit" />
         </Pressable>
       </View>
       <View
@@ -267,7 +263,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   nav: { minHeight: 44, minWidth: 60, justifyContent: 'center' },
-  navText: { color: '#BBBBBB', fontSize: 15 },
   title: {
     flex: 1,
     flexDirection: 'row',

@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Text, TextInput } from './Typography';
+import { Icon } from './Icon';
 import { localDateKey } from './calendar';
 import { validTimingDate } from './goalTiming';
 import { DateCalendar } from './DateCalendar';
@@ -59,7 +60,7 @@ export function DateNavigationSheet({
               onPress={onClose}
               style={styles.action}
             >
-              <Text style={styles.secondary}>Close</Text>
+              <Icon name="close" />
             </Pressable>
           </View>
           <ScrollView

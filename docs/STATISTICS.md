@@ -71,6 +71,33 @@ blank-to-clear, and Cancel retain their grid meanings. Save failures disable edi
 and expose the existing retry banner. Calendar checkboxes expose their checked state
 to VoiceOver; numeric days announce the full date and recorded value.
 
+## Layout revision (10 October 2026)
+
+The founder found the screen cluttered, especially the goal card at the top, and
+asked for chart explanations to move behind an information control because the
+screen is visited daily. Assistant implementation, reviewed on the Android
+phone; iPhone review pending. It supersedes the ordering and caption details
+above; calculations are unchanged.
+
+- Order: range tabs, period dates, one large headline with a short note, a
+  two-column grid of number tiles, a slim goal row, period progress, then the
+  charts, time of day, calendar and How statistics work.
+- Tiles keep an even grid: when the count would be odd, current and longest
+  streak share one tile. The goal row (`GoalSummary compact`) keeps the same
+  editor entry point; the habit editor keeps the full card.
+- Every chart section has a title and an (i) button that expands its
+  explanation; nothing explanatory is shown by default. Live one-line facts,
+  such as Most often 9 pm–10 pm, stay visible.
+- Charts no longer show a unit line above or Tap a bar hints below. One reserved
+  line under each chart names what the bars measure and becomes the selected
+  bar's date and value, with an X icon to clear it, so selection never shifts
+  the screen.
+- `src/StatsLayout.tsx` owns the shared range tabs, sections, tiles and month
+  arrows used by both statistics screens. Period progress is a compact card.
+- Header Close and Edit are icons (X and pencil) in Notes and Statistics, and
+  header Close is an X in the other full-screen editors and sheets. Paired
+  bottom actions (Close/Done in the numeric dialog) and back links keep text.
+
 ## Calculation rules
 
 - Read current values from the replayed projection, not a count of raw edit events.

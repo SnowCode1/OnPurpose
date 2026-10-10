@@ -1,14 +1,9 @@
 import { useState } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  View,
-  type StyleProp,
-  type TextStyle,
-  type ViewStyle,
-} from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Line, Rect } from 'react-native-svg';
 import { Text } from './Typography';
+import { Icon } from './Icon';
+import { StatsSection } from './StatsLayout';
 import type { TimeOfDayStatistics } from './timeOfDay';
 
 const HEIGHT = 110;
@@ -18,36 +13,31 @@ const hourRange = (hour: number) =>
   `${hourLabel(hour)}–${hourLabel((hour + 1) % 24)}`;
 const days = (count: number) => `${count} ${count === 1 ? 'day' : 'days'}`;
 
-// Shared by both statistics screens; each owns its section/heading styles.
+// Shared by both statistics screens, including its section heading.
 export function TimeOfDayChart({
   stats,
   colour,
-  sectionStyle,
-  headingStyle,
 }: {
   stats: TimeOfDayStatistics;
   colour: string;
-  sectionStyle: StyleProp<ViewStyle>;
-  headingStyle: StyleProp<TextStyle>;
 }) {
   const [width, setWidth] = useState(300);
   const [selected, setSelected] = useState<number | null>(null);
   const step = width / 24;
   const max = Math.max(1, ...stats.hours);
-  const detail =
-    selected === null
-      ? { period: 'Tap a bar to inspect', value: 'Tap it again to clear' }
-      : { period: hourRange(selected), value: days(stats.hours[selected]) };
+  const left = stats.recorded - stats.counted;
   return (
-    <View style={sectionStyle}>
-      <Text accessibilityRole="header" style={headingStyle}>
-        Time of day
-      </Text>
-      {stats.peak !== null && (
-        <Text style={styles.caption}>
-          Most often {hourRange(stats.peak)} · selected period
-        </Text>
-      )}
+    <StatsSection
+      title="Time of day"
+      subtitle={
+        stats.peak !== null
+          ? `Most often ${hourRange(stats.peak)}`
+          : stats.recorded
+            ? 'No same-day entries in this period'
+            : 'Nothing recorded in this period'
+      }
+      info={`Each bar counts days by the hour their entry was first made, in the local time where it was made. Only entries made on the day they belong to count: this period has ${stats.counted} of ${days(stats.recorded)}${left ? `; ${left} added on a later day ${left === 1 ? 'is' : 'are'} left out` : ''}. Corrections keep the original time and undone changes never count. Tap a bar to see its hour.`}
+    >
       {stats.counted > 0 && (
         <View style={{ gap: 8 }}>
           <Pressable
@@ -57,7 +47,7 @@ export function TimeOfDayChart({
               text:
                 selected === null
                   ? 'No hour selected'
-                  : `${detail.period}: ${detail.value}`,
+                  : `${hourRange(selected)}: ${days(stats.hours[selected])}`,
             }}
             accessibilityHint="Adjust to inspect hours. Use Clear selection to show all bars."
             accessibilityActions={[
@@ -149,13 +139,17 @@ export function TimeOfDayChart({
             ))}
           </View>
           <View style={styles.detail}>
-            <View style={{ flex: 1, gap: 2 }} accessibilityLiveRegion="polite">
-              <Text style={styles.caption}>{detail.period}</Text>
-              <Text
-                style={[styles.small, selected !== null && { color: colour }]}
-              >
-                {detail.value}
-              </Text>
+            <View style={{ flex: 1 }} accessibilityLiveRegion="polite">
+              {selected === null ? (
+                <Text style={styles.small}>Days per hour</Text>
+              ) : (
+                <Text style={styles.caption}>
+                  {hourRange(selected)} ·{' '}
+                  <Text style={{ color: colour }}>
+                    {days(stats.hours[selected])}
+                  </Text>
+                </Text>
+              )}
             </View>
             <Pressable
               accessibilityRole="button"
@@ -171,19 +165,12 @@ export function TimeOfDayChart({
                 { opacity: selected === null ? 0 : pressed ? 0.5 : 1 },
               ]}
             >
-              <Text style={styles.caption}>Clear</Text>
+              <Icon name="close" size={16} color="#9A9A9A" />
             </Pressable>
           </View>
         </View>
       )}
-      <Text style={styles.caption}>
-        {stats.counted === 0
-          ? stats.recorded
-            ? 'No entries in this period were recorded on the day they belong to.'
-            : 'Nothing recorded in this period.'
-          : `Based on ${stats.counted} of ${days(stats.recorded)} recorded.${stats.counted < stats.recorded ? ' Entries added on a later day are left out.' : ''}`}
-      </Text>
-    </View>
+    </StatsSection>
   );
 }
 
@@ -200,11 +187,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    minHeight: 48,
+    minHeight: 44,
   },
   clear: {
     minHeight: 44,
-    minWidth: 52,
+    minWidth: 44,
     alignItems: 'flex-end',
     justifyContent: 'center',
   },

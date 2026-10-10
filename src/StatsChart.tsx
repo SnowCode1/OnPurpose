@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Line, Rect } from 'react-native-svg';
 import { Text } from './Typography';
+import { Icon } from './Icon';
 import type { StatsBucket } from './statistics';
 import { formatStatistic, statisticDateLabel } from './statisticsFormatting';
 
@@ -12,7 +13,10 @@ export function StatsChart({
   unit,
   recording = false,
   targets,
+  legend,
 }: {
+  /** What the bars measure, shown while no bar is selected. */
+  legend?: string;
   recording?: boolean;
   targets?: number[][];
   buckets: StatsBucket[];
@@ -41,21 +45,19 @@ export function StatsChart({
     buckets[0]?.start.slice(0, 4) !== buckets.at(-1)?.end.slice(0, 4);
   const period = current
     ? `${statisticDateLabel(current.start, showYear)}${current.end !== current.start ? ` – ${statisticDateLabel(current.end, showYear)}` : ''}`
-    : 'Tap a bar to inspect';
+    : '';
   const value = current
     ? current.value === null
       ? 'No records'
       : `${formatStatistic(current.value)}${numeric ? (unit ? ` ${unit}` : '') : recording ? '% recorded' : '% completed'}`
-    : 'Tap it again to clear';
+    : '';
+  const fallbackLegend = numeric
+    ? `${unit || 'Total'} per bar`
+    : recording
+      ? 'Days recorded (%)'
+      : 'Days completed (%)';
   return (
     <View style={{ gap: 10 }}>
-      <Text style={styles.small}>
-        {numeric
-          ? unit || 'total'
-          : recording
-            ? 'days recorded (%)'
-            : 'completion (%)'}
-      </Text>
       <View style={styles.chartPlot}>
         <View style={styles.chartScale} accessible={false}>
           <Text style={styles.small}>{formatStatistic(max)}</Text>
@@ -182,11 +184,16 @@ export function StatsChart({
         </View>
       </View>
       <View style={styles.chartDetail}>
-        <View style={{ flex: 1, gap: 2 }} accessibilityLiveRegion="polite">
-          <Text style={styles.caption}>{period}</Text>
-          <Text style={[styles.small, current && { color: colour }]}>
-            {value}
-          </Text>
+        <View style={{ flex: 1 }} accessibilityLiveRegion="polite">
+          {current ? (
+            <Text numberOfLines={2} style={styles.caption}>
+              {period} · <Text style={{ color: colour }}>{value}</Text>
+            </Text>
+          ) : (
+            <Text numberOfLines={2} style={styles.small}>
+              {legend ?? fallbackLegend}
+            </Text>
+          )}
         </View>
         <Pressable
           accessibilityRole="button"
@@ -200,7 +207,7 @@ export function StatsChart({
             { opacity: !current ? 0 : pressed ? 0.5 : 1 },
           ]}
         >
-          <Text style={styles.caption}>Clear</Text>
+          <Icon name="close" size={16} color="#9A9A9A" />
         </Pressable>
       </View>
     </View>
@@ -232,11 +239,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    minHeight: 48,
+    minHeight: 44,
   },
   clearSelection: {
     minHeight: 44,
-    minWidth: 52,
+    minWidth: 44,
     alignItems: 'flex-end',
     justifyContent: 'center',
   },

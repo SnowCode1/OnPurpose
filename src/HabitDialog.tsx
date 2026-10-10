@@ -194,11 +194,13 @@ export function HabitDialog({
                   }}
                   style={styles.headerAction}
                 >
-                  <Text style={styles.buttonText}>
-                    {iconPicker || picker
-                      ? `‹ ${mode === 'create' ? 'New habit' : 'Edit habit'}`
-                      : 'Close'}
-                  </Text>
+                  {iconPicker || picker ? (
+                    <Text style={styles.buttonText}>
+                      ‹ {mode === 'create' ? 'New habit' : 'Edit habit'}
+                    </Text>
+                  ) : (
+                    <Icon name="close" />
+                  )}
                 </Pressable>
                 <Heading style={styles.eyebrow}>
                   {iconPicker

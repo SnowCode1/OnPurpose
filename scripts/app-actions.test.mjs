@@ -465,6 +465,7 @@ test('the independent statistics chart preserves tap-to-clear, accessible select
       __esModule: true,
     },
     './Typography': { Text },
+    './Icon': { Icon: () => null },
     './statisticsFormatting': formatting,
   });
   const first = { start: '2026-10-01', end: '2026-10-01', value: 40 };

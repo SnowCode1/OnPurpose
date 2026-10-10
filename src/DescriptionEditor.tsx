@@ -1,4 +1,5 @@
 import { Text, useAppWindowDimensions } from './Typography';
+import { Icon } from './Icon';
 import {
   useCallback,
   useEffect,
@@ -418,6 +419,7 @@ function EditorAction({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
@@ -426,9 +428,15 @@ function EditorAction({
         { opacity: disabled ? 0.35 : pressed ? 0.6 : 1 },
       ]}
     >
-      <Text style={[styles.actionText, label === 'Done' && { color: colour }]}>
-        {label}
-      </Text>
+      {label === 'Close' ? (
+        <Icon name="close" />
+      ) : (
+        <Text
+          style={[styles.actionText, label === 'Done' && { color: colour }]}
+        >
+          {label}
+        </Text>
+      )}
     </Pressable>
   );
 }

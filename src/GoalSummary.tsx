@@ -17,11 +17,14 @@ export function GoalSummary({
   date,
   onPress,
   disabled = false,
+  compact = false,
 }: {
   habit: Habit;
   date: string;
   onPress: () => void;
   disabled?: boolean;
+  /** A slim row for statistics; the editor keeps the full card. */
+  compact?: boolean;
 }) {
   const goal = goalAt(habit, date),
     summary = ruleSummary(habit, goal?.rule ?? defaultSuccessRule(habit));
@@ -36,12 +39,14 @@ export function GoalSummary({
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
+        compact && styles.compactRow,
         { opacity: disabled ? 0.4 : pressed ? 0.6 : 1 },
       ]}
     >
       <View
         style={[
           styles.symbol,
+          compact && styles.compactSymbol,
           { backgroundColor: colorOnBlack(habit.color, 0.12) },
         ]}
       >
@@ -56,12 +61,13 @@ export function GoalSummary({
                   : 'text'
           }
           color={habit.color}
-          size={20}
+          size={compact ? 17 : 20}
         />
       </View>
-      <View style={{ flex: 1, gap: 3 }}>
-        <Text style={styles.label}>Goal</Text>
+      <View style={{ flex: 1, gap: compact ? 1 : 3 }}>
+        {!compact && <Text style={styles.label}>Goal</Text>}
         <Text numberOfLines={2} style={styles.value}>
+          {compact && <Text style={styles.label}>Goal </Text>}
           {summary}
         </Text>
         <Text style={styles.note}>
@@ -87,6 +93,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
+  compactRow: {
+    minHeight: 52,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    backgroundColor: '#111111',
+    gap: 10,
+  },
+  compactSymbol: { width: 28, height: 28, borderRadius: 8 },
   label: { fontSize: 12, color: '#999999' },
   symbol: {
     width: 34,

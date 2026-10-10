@@ -60,10 +60,11 @@ export function CategoryEditor({
             <View style={styles.header}>
               <Pressable
                 accessibilityRole="button"
+                accessibilityLabel="Close categories"
                 onPress={onClose}
                 style={styles.action}
               >
-                <Text style={styles.control}>Close</Text>
+                <Icon name="close" />
               </Pressable>
               <Text accessibilityRole="header" style={styles.heading}>
                 Categories

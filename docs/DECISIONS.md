@@ -1449,3 +1449,15 @@ signing and device enrolment are still prerequisites, not completed deployment.
   went from empty to recorded; corrections keep it. Checkbox Off is not an entry.
 - Read from active History actions rather than raw events, so Undo/Redo rules
   stay identical to History. No storage or backup change. See STATISTICS.md.
+
+## 10 October 2026: statistics layout and icon buttons
+
+- Founder requests: icon Close/Edit buttons wherever needed; a less cluttered
+  statistics screen, especially the goal at the top; chart explanations behind
+  an information control rather than shown every day.
+- Assistant implementation: range tabs first, a single headline, number tiles,
+  a slim goal row below them, and an (i) button per chart. Calculations, goals
+  editing, accessibility actions and stable chart selection are unchanged. See
+  STATISTICS.md. Reviewed on the Android phone; iPhone review pending.
+- `npm run android:screenshot` now runs a small Node script so it also works on
+  Windows, where npm scripts run in cmd.exe.

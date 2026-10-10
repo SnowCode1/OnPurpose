@@ -1,4 +1,5 @@
 import { Text } from './Typography';
+import { Icon } from './Icon';
 import {
   useMemo,
   useState,
@@ -97,10 +98,11 @@ export function DescriptionHistory({
           >
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel="Close"
               onPress={onClose}
               style={{ minWidth: 60, minHeight: 48, justifyContent: 'center' }}
             >
-              <Text style={{ color: '#BBBBBB', fontSize: 15 }}>Close</Text>
+              <Icon name="close" />
             </Pressable>
             <View
               style={{ flex: 1, alignItems: 'center', paddingHorizontal: 8 }}
