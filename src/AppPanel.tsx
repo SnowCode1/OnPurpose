@@ -1,10 +1,5 @@
-import {
-  type CheckboxStyle,
-  type ColumnSpacing,
-  type NameColumnWidth,
-  type WeekStart,
-} from './displayPreferences';
-import { type RowSpacing } from './rowSpacing';
+import { type CheckboxStyle, type WeekStart } from './displayPreferences';
+import type { GridSize, GridSizeKind, GridSizing } from './gridSizing';
 import { useState, type ComponentType, type ReactNode } from 'react';
 import {
   SettingsScreen,
@@ -15,15 +10,10 @@ import type { Habit } from './habits';
 import { ArchivedHabits } from './ArchivedHabits';
 import Animated from 'react-native-reanimated';
 import { appear } from './motion';
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  type TextProps,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, type TextProps, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from './Icon';
+import { SheetModal } from './SheetModal';
 import { HistoryView } from './HistoryView';
 import type { StoreSnapshot } from './storage/store';
 
@@ -33,10 +23,9 @@ export function AppPanel({
   page,
   visible,
   HeadingComponent,
-  columnSpacing,
-  nameColumnWidth,
-  onNameColumnWidthChange,
-  onColumnSpacingChange,
+  gridWidth,
+  sizing,
+  onGridSizeChange,
   weekStart,
   onWeekStartChange,
   weekDividers,
@@ -49,8 +38,6 @@ export function AppPanel({
   onDateFadingChange,
   textScale,
   onTextScaleChange,
-  rowSpacing,
-  onRowSpacingChange,
   hideCompleted,
   onHideCompletedChange,
   hapticsEnabled,
@@ -80,10 +67,9 @@ export function AppPanel({
   onDeleteHabit: (habit: Habit) => void;
   visible: boolean;
   HeadingComponent: ComponentType<TextProps>;
-  columnSpacing: ColumnSpacing;
-  nameColumnWidth: NameColumnWidth;
-  onColumnSpacingChange: (value: ColumnSpacing) => void;
-  onNameColumnWidthChange: (value: NameColumnWidth) => void;
+  gridWidth: number;
+  sizing: GridSizing;
+  onGridSizeChange: (kind: GridSizeKind, value: GridSize) => void;
   weekStart: WeekStart;
   onWeekStartChange: (value: WeekStart) => void;
   weekDividers: boolean;
@@ -96,8 +82,6 @@ export function AppPanel({
   onDateFadingChange: (value: boolean) => void;
   textScale: number;
   onTextScaleChange: (value: number) => void;
-  rowSpacing: RowSpacing;
-  onRowSpacingChange: (value: RowSpacing) => void;
   hideCompleted: boolean;
   onHideCompletedChange: (value: boolean) => void;
   hapticsEnabled: boolean;
@@ -127,16 +111,7 @@ export function AppPanel({
   const setSettingsPage = (next: SettingsPage) =>
     setNavigation({ context, page: next });
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      allowSwipeDismissal
-      supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}
-      onRequestClose={onClose}
-      onDismiss={onDismiss}
-      backdropColor="#000000"
-    >
+    <SheetModal visible={visible} onClose={onClose} onDismiss={onDismiss}>
       <SafeAreaProvider>
         <SafeAreaView style={styles.screen}>
           <View accessibilityViewIsModal style={styles.content}>
@@ -213,12 +188,9 @@ export function AppPanel({
                   backupBusy={backupBusy}
                   textScale={textScale}
                   onTextScaleChange={onTextScaleChange}
-                  rowSpacing={rowSpacing}
-                  onRowSpacingChange={onRowSpacingChange}
-                  columnSpacing={columnSpacing}
-                  nameColumnWidth={nameColumnWidth}
-                  onNameColumnWidthChange={onNameColumnWidthChange}
-                  onColumnSpacingChange={onColumnSpacingChange}
+                  gridWidth={gridWidth}
+                  sizing={sizing}
+                  onGridSizeChange={onGridSizeChange}
                   weekStart={weekStart}
                   onWeekStartChange={onWeekStartChange}
                   weekDividers={weekDividers}
@@ -244,7 +216,7 @@ export function AppPanel({
           </View>
         </SafeAreaView>
       </SafeAreaProvider>
-    </Modal>
+    </SheetModal>
   );
 }
 const styles = StyleSheet.create({

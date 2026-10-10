@@ -9,6 +9,9 @@ export function isPreference(change: Change): change is PreferenceChange {
     change.kind === 'columnSpacing' ||
     change.kind === 'columnDensity' ||
     change.kind === 'nameColumnWidth' ||
+    change.kind === 'gridNameWidth' ||
+    change.kind === 'gridColumnWidth' ||
+    change.kind === 'gridRowHeight' ||
     change.kind === 'weekStart' ||
     change.kind === 'weekDividers' ||
     change.kind === 'tapAnimations' ||

@@ -15,12 +15,12 @@ once, not on every launch. Habit creation, renaming, units, icons, start dates, 
 Effective-dated success goals and weekday schedules also persist.
 Full-screen statistics are derived from saved values; comments remain later work. See [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md).
 
-`src/storage/model.ts` remains the public entry point for version-17 events and
+`src/storage/model.ts` remains the public entry point for version-18 events and
 deterministic replay, with backward-compatible interpretation of existing
-version-1–16 records. `types.ts` owns event/replay shapes, `validation.ts` owns
+version-1–17 records. `types.ts` owns event/replay shapes, `validation.ts` owns
 strict field/version checks, and `changeUtils.ts` owns classification, equality
 and inversion. These modules do not import replay at runtime. The version
-sections below describe when each field was introduced; new writes use v17.
+sections below describe when each field was introduced; new writes use v18.
 `repository.ts` implements the native database operations against a small SQL
 interface; `native.ts` connects it to Expo SQLite and native UUID/SHA-256 support.
 `store.ts` owns loading, immediate UI state, the serialized write queue, undo,
@@ -85,7 +85,7 @@ Every event carries:
 
 | Field              | Meaning                                                                          |
 | ------------------ | -------------------------------------------------------------------------------- |
-| `version`          | Event schema version, currently `17`; existing `1`–`16` records remain supported |
+| `version`          | Event schema version, currently `18`; existing `1`–`17` records remain supported |
 | `id`               | Stable UUID generated once, retained on save retry                               |
 | `sequence`         | Contiguous order starting at `1`; authoritative even if the clock changes        |
 | `recordedAt`       | UTC edit instant in ISO form with milliseconds                                   |
@@ -104,7 +104,7 @@ Redo targets its latest undo event ID and restores the original action.
 Existing version-1 logs retain their original interpretation, including historical
 preference undo/redo and abandoned redo branches. Their habit edits remain
 individual undo steps, with settings and undo/redo rows filtered from the view.
-New events use version 17. A log can progress from versions 1 through 17, skipping
+New events use version 18. A log can progress from versions 1 through 18, skipping
 versions if needed, but never downgrade. New habit-definition changes record
 `habitId`, `index`, and `before`/`after` definitions (null for creation/removal).
 Order changes record exact before/after ID arrays. Definitions may include an
@@ -295,12 +295,13 @@ raw edits, earlier notes/values, recoverable local description drafts/bookmarks,
 backups and pre-restore copies remain. Permanent erasure still needs its own
 privacy/retention rules.
 
-## Portable backup version 17
+## Portable backup version 18
 
 Settings → Backups → Export backup opens the iOS share sheet; save the JSON to Files or
 another destination. The app first waits for pending saves and captures a stable
 log. The export is a readable JSON container of **changes**, not a replacement
-snapshot of habit/day values. See [the version-12 deletion example](examples/storage-v12.json),
+snapshot of habit/day values. See [the version-18 grid size example](examples/storage-v18.json),
+[the version-12 deletion example](examples/storage-v12.json),
 [the version-11 goal timeline example](examples/storage-v11.json),
 [the version-10 synthetic example](examples/storage-v10.json),
 [the version-9 synthetic example](examples/storage-v9.json),
@@ -313,13 +314,13 @@ snapshot of habit/day values. See [the version-12 deletion example](examples/sto
 [version-2 fixture](examples/storage-v2.json), and
 [the unchanged version-1 fixture](examples/storage-v1.json).
 
-The container has `format: "onpurpose.changes"`, `version: 13`, `exportedAt`,
+The container has `format: "onpurpose.changes"`, `version: 18`, `exportedAt`,
 `eventCount`, `sha256`, and `events`. The digest is SHA-256 of UTF-8
 `JSON.stringify(events)` with its existing property order. It detects accidental
 modification/incompleteness; it is not an authenticated signature. Exports are not
 encrypted and may reveal habit names, descriptions, dated values, colours, and preference/edit
 metadata. Pre-restore copies are not bundled into the active export. The exporter
-always writes container version 13. The importer accepts versions 1–13;
+always writes container version 18. The importer accepts versions 1–18;
 a container cannot contain events newer than its own version. New containers can
 retain legacy prefixes, including full raw edits and undo/redo operations that
 are omitted from the active History view.
@@ -486,3 +487,21 @@ all 26 moved/retained storage function bodies identical, and the public runtime
 export list unchanged. All historical replay/export fixtures and the full test
 suite pass. This is a responsibility refactor, not a storage-engine optimization;
 there is no schema migration, event rewrite, reseed or altered write queue.
+
+## Version 18: grid size sliders
+
+`gridNameWidth`, `gridColumnWidth` and `gridRowHeight` replace the three-choice
+geometry controls with stepped sizes in points at 100% text, or `auto`. Ranges:
+name 96–240 in 4-point steps; day columns and rows 40–80 in 2-point steps.
+`before` is `null` until the first v18 choice for that size, so Reset to
+automatic works even after an earlier Compact/Narrow choice. Absent v18 fields
+keep honouring earlier events: Compact/Roomy map to 44/64 points, Narrow/Wide to
+80%/120% of the automatic name width, and Standard means automatic. Old events
+are not rewritten; their preconditions and raw values are unchanged.
+
+Automatic sizes adapt to the device (see SETTINGS.md), which is a rendering rule,
+not stored data. The preferences stay outside History/Undo, preserve Redo and
+correction groups, and use the ordinary serialized write/restore path. Current
+writers/exports use v18, retaining exact v1–v17 prefixes and SQL schema 1.
+Versions 1–17 reject the new kinds, and older events cannot follow v18 events.
+The [v18 example](examples/storage-v18.json) extends the exact v17 prefix.

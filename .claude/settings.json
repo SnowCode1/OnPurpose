@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run check)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run lint)",
+      "Bash(npm run format:check)",
+      "Bash(npm test)",
+      "Bash(npm test:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm run doctor)",
+      "Bash(npm run export:ios)",
+      "Bash(npm run export:android)",
+      "Bash(npm run android:screenshot)",
+      "Bash(adb devices:*)",
+      "Bash(adb logcat -d:*)",
+      "Bash(adb shell getprop:*)",
+      "Bash(adb exec-out screencap:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)"
+    ]
+  }
+}

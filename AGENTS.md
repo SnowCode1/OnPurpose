@@ -101,10 +101,23 @@ The requested preset icon update uses normal undoable edits in
   values together. Keep the mounted grid and its inner TypographyProvider stable.
   Do not defer durable writes, unmount the grid, or rebuild hidden day lists on
   every spacing/text-size choice.
-- `src/rowSpacing.ts` owns saved Compact/Standard/Roomy geometry; preserve font scaling and measured row heights.
+- `src/gridSizing.ts` owns v18 grid sizes (points or `auto`), legacy mapping and
+  automatic rules; `gridLayout.ts`/`rowSpacing.ts` turn them into geometry with font
+  scaling and measured row heights. `screenSize.ts` reads the physical screen for
+  automatic rows; keep React Native imports out of gridSizing (storage imports it).
+  `GridSizeSettings.tsx` owns the sliders and live preview; save on release only.
+- Android has no inline system date picker and Expo Go's dialog is light, so
+  DateNavigationSheet and StartDateField show the dark `DateCalendar.tsx` there;
+  iOS keeps its native inline/compact pickers. `useKeyboardFocus.ts` replaces
+  autoFocus in Android dialogs, where autoFocus inside a Modal shows no keyboard.
 - `src/StartDateField.tsx` owns the native draft date picker; existing dates remain inferred until edited. Explicit start dates bound statistics without deleting entries. New edits/exports use v12, retaining v1–v11 replay.
 - Statistics uses the same native pageSheet/slide/swipe dismissal as History and
-  Settings; UIKit owns its gesture. `App.tsx` nests numeric, habit, description
+  Settings; UIKit owns its gesture on iOS. `SheetModal.tsx` keeps that iOS Modal
+  unchanged and gives Android a react-native-gesture-handler sheet: a downward
+  drag closes it when the touched content is at its top. Every vertical list in a
+  sheet must spread `useSheetScroll()` (it reports scroll position; unknown waits,
+  scrolled fails). React Native's Modal `onDismiss` is iOS-only, so SheetModal
+  reports Android dismissal itself. `App.tsx` nests numeric, habit, description
   and version dialogs inside the statistics presentation and preserves visible
   save failure/retry. Keep an accessible Close button and the underlying grid.
   Do not reintroduce sideways entry or a separate JS overscroll threshold.
@@ -119,6 +132,8 @@ The requested preset icon update uses normal undoable edits in
 - `src/habits.ts` contains demo habits/colours. `index.ts` registers the app.
 - `app.json` owns Expo configuration. Generated native folders stay ignored.
 - Linux is the development host; a physical iPhone is the primary test device.
+  Android testing over USB/adb started 8 October 2026; iOS remains the release
+  target. Keep iOS behaviour unchanged when adapting a screen for Android.
 - Use `npx expo install <package>` for Expo/native dependencies to match the SDK.
 - Keep dependencies and architecture small. Add structure when a feature needs it.
 - Use functional state updates when new state depends on previous state.
@@ -153,6 +168,11 @@ Run `npm run check` and relevant `npm test` suites after code changes, and `npm 
 native-facing imports or Expo config. Web preview helps layout checks but is not
 evidence that iOS runs correctly. Report actual checks and any unverified device
 behaviour. Follow `docs/TESTING.md` for phone and release testing.
+Run `npm run export:android` as well when changing platform-specific code. With an
+Android phone on adb, take your own screenshots with `npm run android:screenshot`
+(read `.dev/android/latest.png`) and crash logs with `adb logcat -d`; see
+"Android phone over USB" in `docs/DEVELOPMENT.md`. Do not install, uninstall or
+clear app data on the phone without asking; it may hold the founder's real data.
 Keep the npm test heap/concurrency/time limits. Diagnose runaway tests under a
 hard memory limit; avoid DOM assertions that print entire jsdom browser graphs.
 Add focused tests when persistence, date logic, event replay/export, or other consequential behaviour
@@ -220,7 +240,9 @@ area. Opening editor feedback must stop on readiness or an explicit load error.
 multi-selection, labels and bounded cell previews. `CategoryEditor.tsx` drafts
 stable category IDs/labels/short labels and archives options without erasing
 records. `DailyRecordDialog.tsx` applies text/multiple selections only on Done;
-Close cancels. `RecordStatsScreen.tsx` and pure `recordStatistics.ts` show logging
+Close, Back and backdrop taps cancel. Its backdrop fades while the sheet slides.
+Categories added there stay drafts until Done, which appends the still-selected
+ones as one ordinary habit edit before saving the entry. `RecordStatsScreen.tsx` and pure `recordStatistics.ts` show logging
 counts/streaks, category frequency, editable calendar and virtualized entries,
 without claiming completion. `habitCompletion.ts` delegates all four types to effective-dated conditions in
 `habitGoals.ts`; absent non-checkbox goals remain Track only. `sampleRecords.ts` appends
@@ -306,12 +328,12 @@ Never reintroduce full-height week lines. The name/day separator is an overlay,
 independent of the week toggle. Gate tap-only pulses with tapAnimations while
 retaining Reduce Motion and immediate saves; haptics remains a separate setting.
 
-Current writers/exports are v17. `nameColumnWidth` and `columnDensity` are strict
-preferences outside History/Undo, preserving Redo, schema 1 and exact v1–v16
-prefixes. Read docs/SETTINGS.md and STORAGE.md. New column sizes are 44/48/64
-(Standard default); `effectiveColumnSpacing` maps old Compact/absent to Standard,
-old Standard/Roomy to Roomy without rewriting old `columnSpacing` events or their
-preconditions. Order geometry controls Name width, Column spacing, Row spacing.
+Current writers/exports are v18. `gridNameWidth`, `gridColumnWidth` and
+`gridRowHeight` are stepped point sizes or `auto`, outside History/Undo, preserving
+Redo, schema 1 and exact v1–v17 prefixes; `before` is null until first chosen.
+Absent v18 fields still honour v5–v17 `rowSpacing`, `columnSpacing`/`columnDensity`
+(via `effectiveColumnSpacing`) and `nameColumnWidth`, whose Standard means
+automatic. Read docs/SETTINGS.md and STORAGE.md before changing sizing.
 
 `DateNavigationSheet.tsx` owns the native date-picker draft. `useGridDates.ts`
 owns signed-origin date windows, Today/future navigation, native generation frames,
@@ -320,6 +342,8 @@ reorder cancellation; call prepareResize before changing that width. Keep the
 controller in the same mounted grid, not a conditional component. Preserve the
 existing discrete callbacks into useGridScroll; keep old/future entry keys
 exact, date identities shared and windows compact only at final native settling.
+Android FlashList re-applies its initial index after first layout, so far
+navigation on Android lands directly instead of animating its final columns.
 `DateColumns.tsx` owns native FlashList 2.3.3/web FlatList adaptation and the
 frozen native initial index; list keys still reset width/range generations.
 `HabitContextMenu.tsx` owns menu measurement/placement, staying mounted when closed

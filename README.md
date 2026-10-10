@@ -34,13 +34,15 @@ npm start
 Install Expo Go on your iPhone, sign in to Expo on the computer and phone with
 the same account, and scan the terminal QR code with the iPhone Camera. Keep
 both devices on the same Wi-Fi. See [development setup](docs/DEVELOPMENT.md) for
-the full first-run steps and troubleshooting.
+the full first-run steps and troubleshooting. For an Android phone over USB, see
+[Android phone over USB](docs/DEVELOPMENT.md#android-phone-over-usb).
 
 ```sh
 npm run web          # browser preview on Linux
 npm run check        # TypeScript, lint, and formatting
 npm test             # storage/replay/recovery, calendar, layout, colour, receiver tests
 npm run export:ios   # verify the iOS JS bundle; not a signed iOS build
+npm run export:android  # verify the Android JS bundle
 ```
 
 For gesture-based screenshot sharing from the iPhone, enable the settings from

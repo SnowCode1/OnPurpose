@@ -1,26 +1,42 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  columnSpacingOptions,
-  weekDayOrder,
-} from '../src/displayPreferences.ts';
+import { weekDayOrder } from '../src/displayPreferences.ts';
 import { gridLayout } from '../src/gridLayout.ts';
+import { autoNameWidth } from '../src/gridSizing.ts';
 import { createGridPalette } from '../src/gridAppearance.ts';
 import { monthDays } from '../src/statistics.ts';
 
-test('column spacing fits whole dates and preserves name width across orientations and text sizes', () => {
+test('column widths fit whole dates and preserve name width across orientations and text sizes', () => {
+  const sizes = [
+    { columnWidth: 44, points: 44 },
+    { columnWidth: 'auto', points: 48 },
+    { columnWidth: 64, points: 64 },
+  ];
+  const sizing = (columnWidth) => ({
+    nameWidth: 'auto',
+    nameFactor: 1,
+    columnWidth,
+  });
   for (const width of [284, 339, 366, 404, 680, 716, 812]) {
     for (const scale of [1, 1.3, 2, 3]) {
-      const compact = gridLayout(width, scale);
       let previousDays = Infinity;
-      for (const option of columnSpacingOptions) {
-        const layout = gridLayout(width, scale, option.value);
-        assert.equal(layout.nameWidth, compact.nameWidth);
+      for (const size of sizes) {
+        const layout = gridLayout(width, scale, sizing(size.columnWidth));
+        // Names keep the automatic width unless one whole day needs the room.
+        assert.equal(
+          layout.nameWidth,
+          Math.max(
+            0,
+            Math.min(
+              Math.round(autoNameWidth(width, Math.max(1, scale))),
+              width - size.points * Math.max(1, scale),
+            ),
+          ),
+        );
         assert.ok(Number.isInteger(layout.visibleDays));
         assert.ok(layout.visibleDays <= previousDays);
         assert.ok(
-          layout.columnWidth >=
-            Math.min(layout.dateWidth, option.width * scale),
+          layout.columnWidth >= Math.min(layout.dateWidth, size.points * scale),
         );
         assert.ok(
           Math.abs(
@@ -32,14 +48,14 @@ test('column spacing fits whole dates and preserves name width across orientatio
     }
   }
   assert.deepEqual(
-    columnSpacingOptions.map(
-      (option) => gridLayout(366, 1, option.value).visibleDays,
+    sizes.map(
+      (size) => gridLayout(366, 1, sizing(size.columnWidth)).visibleDays,
     ),
     [5, 4, 3],
   );
   for (const width of [0, 20, 100])
-    for (const option of columnSpacingOptions) {
-      const layout = gridLayout(width, 1, option.value);
+    for (const size of sizes) {
+      const layout = gridLayout(width, 1, sizing(size.columnWidth));
       assert.ok(layout.columnWidth >= 0 && Number.isFinite(layout.columnWidth));
       assert.ok(layout.nameWidth >= 0 && layout.visibleDays >= 1);
     }

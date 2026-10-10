@@ -12,7 +12,7 @@ import type { EventMeta } from './model';
 function metadata(sequence: number): EventMeta {
   const now = new Date();
   return {
-    version: 17,
+    version: 18,
     id: randomUUID(),
     sequence,
     recordedAt: now.toISOString(),

@@ -18,6 +18,7 @@ import { habitStatistics, monthDays, type StatsRange } from './statistics';
 import { InfoNote } from './InfoNote';
 import { checkmarkColor, colorOnBlack } from './colors';
 import { entryDay, type EntryDay } from './calendar';
+import { useSheetScroll } from './SheetModal';
 
 function Metric({
   value,
@@ -84,8 +85,10 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
       return date.toISOString().slice(0, 7);
     });
   }
+  const sheetScroll = useSheetScroll();
   return (
     <ScrollView
+      {...sheetScroll}
       testID="habit-statistics"
       alwaysBounceVertical
       directionalLockEnabled

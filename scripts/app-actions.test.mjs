@@ -178,6 +178,10 @@ test('numeric drafts stay local; Close cancels, invalid input cannot save, and D
     './colors': colors,
     './numericSuggestions': suggestions,
     './haptics': { feedback: () => {} },
+    './useKeyboardFocus': load('useKeyboardFocus.ts', {
+      ...common,
+      'react-native': { Platform: { OS: 'ios' } },
+    }),
   });
   function Host() {
     const controller = useDailyEntryActions(store, capture);

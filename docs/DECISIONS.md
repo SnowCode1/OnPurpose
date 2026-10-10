@@ -1348,3 +1348,68 @@ signing and device enrolment are still prerequisites, not completed deployment.
 - Function comparison found all 26 storage and 11 moved grid-handler bodies
   identical. New controller tests cover real hook transitions with bounded mocks;
   these checks do not prove phone layout/gesture or frame-rate behaviour.
+
+## 8 October 2026: Android testing support
+
+- Founder asked to support porting and testing on Android, starting with an
+  older Android phone over USB alongside the iPhone. Release scope is unchanged:
+  iOS remains the committed target until the founder decides on Android release.
+- Assistant setup: Expo Go on Android for the first runs, with `adb` for
+  screenshots and crash logs from Linux. Added `export:android`, `android` and
+  `android:screenshot` scripts and an Android checklist in TESTING.md. No native
+  folders, dependencies, storage or app code changed.
+- SDK 57 requires Android 7.0 (API 24) or later. The Android JavaScript bundle
+  exported successfully. The same day it opened in Expo Go on a Galaxy S21
+  (Android 15) over USB; Wi-Fi loading failed, so `npm run android` uses the
+  `adb reverse` USB route by default.
+- Unlike iOS, signed Android builds can later be compiled locally on Linux
+  (`npx expo run:android` with the Android SDK and a JDK) as well as through EAS.
+  Not set up yet.
+
+## 8 October 2026: first Android fixes
+
+- Founder reports from the Galaxy S21: the grid stayed at 3 columns, sheets
+  could not be swiped closed (founder: "needs fixing"), and the date picker
+  looked out of place. Founder chose a dark in-app calendar over Android's
+  system dialog, which Expo Go always shows in a light theme.
+- Assistant implementation, iOS unchanged: `SheetModal` gives Android sheets a
+  handle and title-bar drag dismissal and emulates the iOS-only Modal
+  `onDismiss`, which also releases deferred grid settings. Dragging scrolling
+  content does not dismiss Android sheets; matching iOS there would need
+  react-native-gesture-handler coordination and is deferred.
+- `DateCalendar` (dark month grid, month/year chooser) replaces the Android
+  pickers. Android far date jumps land without the final slide because FlashList
+  re-applies its initial index. `useKeyboardFocus` opens the keyboard in Android
+  dialogs. No dependency, storage or event-version changes.
+
+## 9 October 2026: gesture sheets and category entry
+
+- Founder: the Android handle/title-bar swipe was poor; use real gestures.
+  Assistant implementation: react-native-gesture-handler ~2.32.0 (bundled in
+  Expo Go 57). The Android sheet's pan activates only on a downward drag whose
+  touched list is at its top; lists report position via `useSheetScroll`. On a
+  quick flick the pan waits for that report rather than guessing. iOS unchanged.
+- Founder: the category entry sheet's dark overlay slid with it, outside taps did
+  nothing, and new categories could not be added there. Now the backdrop fades,
+  the sheet slides, outside taps cancel, and "New category" stages labels until
+  Done (existing active labels are reused; 40-category limit respected). This
+  dialog is shared, so iOS changes too; iOS is not yet checked.
+- Founder asked whether sliders would suit grid sizing; the assistant proposed
+  stepped sliders with a live preview as a new event version (see below).
+
+## 9 October 2026: grid size sliders and adaptive defaults (v18)
+
+- Founder approved the slider proposal and asked that the Galaxy S21 default to
+  four columns and slightly denser rows, with one system serving both phones.
+- Assistant implementation: v18 point-or-automatic preferences for name width,
+  day columns and rows; live preview and per-slider Reset in Appearance.
+  Automatic sizes follow the device (rules in SETTINGS.md). The iPhone 16 Pro's
+  geometry is unchanged; the S21 gets four days and 48-point rows. Earlier
+  Compact/Roomy/Narrow/Wide choices keep applying until a slider is moved.
+- Founder asked for the category entry sheet to swipe closed too. It now shares
+  the sheet gesture (`useSwipeDismiss`) and shows a handle.
+- The founder's PC crashed repeatedly during phone work. Kernel logs showed AMD
+  integrated GPU ring timeouts (VS Code, plasmashell, kwin_wayland) and resets,
+  not memory exhaustion or USB faults. Assistant suggestion: drive displays from
+  the NVIDIA GPU or test VS Code with `--disable-gpu`; screenshots are now taken
+  sparingly in favour of UI text dumps.

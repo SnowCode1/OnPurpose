@@ -8,8 +8,10 @@ import {
   StyleSheet,
   View,
   type TextProps,
+  type TextInput as NativeTextInput,
 } from 'react-native';
 import { Text, TextInput } from './Typography';
+import { useKeyboardFocus } from './useKeyboardFocus';
 import type { EntryDay } from './calendar';
 import type { EntryValues } from './entries';
 import type { Habit } from './habits';
@@ -38,6 +40,7 @@ export function NumericRecordDialog({
   onClose: () => void;
   onSave: (value: number | null) => boolean;
 }) {
+  const inputFocus = useKeyboardFocus<NativeTextInput>();
   const [input, setInput] = useState(
     initialValue === null ? '' : String(initialValue),
   );
@@ -82,7 +85,7 @@ export function NumericRecordDialog({
               <Text style={styles.secondary}>{day.fullLabel}</Text>
               <View style={styles.inputRow}>
                 <TextInput
-                  autoFocus
+                  {...inputFocus}
                   keyboardType="decimal-pad"
                   accessibilityLabel={`Daily total${habit.unit ? ` in ${habit.unit}` : ''}`}
                   value={input}

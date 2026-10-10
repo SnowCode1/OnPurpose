@@ -1,7 +1,7 @@
 import { useQuickUndo } from './src/useQuickUndo';
 import { useDailyEntryActions } from './src/useDailyEntryActions';
 import { NumericRecordDialog } from './src/NumericRecordDialog';
-import { sameValue } from './src/storage/model';
+import { sameValue, type Change } from './src/storage/model';
 import { DailyRecordDialog } from './src/DailyRecordDialog';
 import { HabitGoalsEditor } from './src/HabitGoalsEditor';
 import { TypographyProvider, Text } from './src/Typography';
@@ -15,7 +15,7 @@ import {
   effectiveColumnSpacing,
 } from './src/displayPreferences';
 import { useGridDisplayPreferences } from './src/useGridDisplayPreferences';
-import type { RowSpacing } from './src/rowSpacing';
+import { gridSizing } from './src/gridSizing';
 import { habitTrackingStart } from './src/statistics';
 import { StatusBar } from 'expo-status-bar';
 import {
@@ -29,7 +29,6 @@ import {
 import {
   ActivityIndicator,
   Alert,
-  Modal,
   Pressable,
   type PressableProps,
   StyleSheet,
@@ -41,7 +40,7 @@ import { PerformanceBoundary } from './src/PerformanceBoundary';
 import { developmentToolsEnabled } from './src/developmentFeatures';
 import { HabitDetailsScreen } from './src/HabitDetailsScreen';
 import { HabitGrid } from './src/HabitGrid';
-import { habitType, type Habit } from './src/habits';
+import { habitType, type Habit, type HabitCategory } from './src/habits';
 import { randomUUID } from 'expo-crypto';
 import { HabitDialog, type HabitDialogMode } from './src/HabitDialog';
 import { displayedHabitOrder, moveHabit } from './src/habitOrdering';
@@ -49,6 +48,7 @@ import type { HabitAction } from './src/HabitName';
 import { useLocalToday } from './src/useLocalToday';
 import { feedback, setHapticsEnabled } from './src/haptics';
 import { AppPanel } from './src/AppPanel';
+import { SheetModal } from './src/SheetModal';
 import { usePersistentStore, useStoreOpening } from './src/usePersistentStore';
 import type { ChangeStore } from './src/storage/store';
 import { applyPresetIcons } from './src/storage/presetIcons';
@@ -188,8 +188,6 @@ function PersistentApp({
     habits,
     values,
     hapticsEnabled,
-    rowSpacing = 'standard',
-    nameColumnWidth = displayDefaults.nameColumnWidth,
     weekStart = displayDefaults.weekStart,
     dateFading = displayDefaults.dateFading,
     checkboxStyle = displayDefaults.checkboxStyle,
@@ -198,7 +196,11 @@ function PersistentApp({
     hideCompleted = displayDefaults.hideCompleted,
     textScale = displayDefaults.textScale,
   } = snapshot.replay.state;
-  const columnSpacing = effectiveColumnSpacing(snapshot.replay.state);
+  const { nameWidth, nameFactor, columnWidth, rowHeight } = gridSizing(
+    snapshot.replay.state,
+    effectiveColumnSpacing(snapshot.replay.state),
+  );
+  const [gridWidth, setGridWidth] = useState(0);
   const activeHabits = useMemo(
     () => habits.filter((habit) => !habit.archived),
     [habits],
@@ -218,9 +220,10 @@ function PersistentApp({
   }>({ page: 'history', visible: false, deferGrid: false });
   const gridDisplay = useGridDisplayPreferences(
     {
-      rowSpacing,
-      columnSpacing,
-      nameColumnWidth,
+      nameWidth,
+      nameFactor,
+      columnWidth,
+      rowHeight,
       textScale,
       dateFading,
       hideCompleted,
@@ -337,6 +340,26 @@ function PersistentApp({
       return accepted;
     },
     [store, captureQuickUndo],
+  );
+  // Categories added from the daily entry sheet: an ordinary undoable habit
+  // edit, applied just before that entry is saved (which gives the feedback).
+  const addCategories = useCallback(
+    (habitId: string, added: HabitCategory[]): boolean => {
+      const current = store.getSnapshot().replay.state.habits;
+      const before = current.find((habit) => habit.id === habitId);
+      if (!before) return false;
+      return store.change({
+        kind: 'habit',
+        habitId,
+        index: current.indexOf(before),
+        before,
+        after: {
+          ...before,
+          categories: [...(before.categories ?? []), ...added],
+        },
+      });
+    },
+    [store],
   );
   const restoreDescription = useCallback(
     (id: string, description: string | undefined) => {
@@ -510,6 +533,7 @@ function PersistentApp({
           Heading={PreviewHeading}
           onClose={closeRecord}
           onSave={saveRecord}
+          onAddCategories={(added) => addCategories(recording.habit.id, added)}
         />
       )}
       {habitDialog}
@@ -574,16 +598,14 @@ function PersistentApp({
         onRetry={() => {
           void store.retry();
         }}
-        nameColumnWidth={nameColumnWidth}
-        onNameColumnWidthChange={(after) => {
+        gridWidth={gridWidth}
+        sizing={{ nameWidth, nameFactor, columnWidth, rowHeight }}
+        onGridSizeChange={(kind, after) => {
           if (!editable) return;
-          const before =
-            store.getSnapshot().replay.state.nameColumnWidth ??
-            displayDefaults.nameColumnWidth;
-          if (store.change({ kind: 'nameColumnWidth', before, after }))
+          const before = store.getSnapshot().replay.state[kind] ?? null;
+          if (store.change({ kind, before, after } as Change))
             feedback('selection');
         }}
-        columnSpacing={columnSpacing}
         weekStart={weekStart}
         hideCompleted={hideCompleted}
         onHideCompletedChange={(after) => {
@@ -622,14 +644,6 @@ function PersistentApp({
             feedback('selection');
         }}
         dateFading={dateFading}
-        onColumnSpacingChange={(after) => {
-          if (!editable) return;
-          const before = effectiveColumnSpacing(
-            store.getSnapshot().replay.state,
-          );
-          if (store.change({ kind: 'columnDensity', before, after }))
-            feedback('selection');
-        }}
         onWeekStartChange={(after) => {
           if (!editable) return;
           const before =
@@ -653,14 +667,6 @@ function PersistentApp({
             store.getSnapshot().replay.state.textScale ??
             displayDefaults.textScale;
           if (store.change({ kind: 'textScale', before, after }))
-            feedback('selection');
-        }}
-        rowSpacing={rowSpacing}
-        onRowSpacingChange={(after: RowSpacing) => {
-          if (!editable) return;
-          const before =
-            store.getSnapshot().replay.state.rowSpacing ?? 'standard';
-          if (store.change({ kind: 'rowSpacing', before, after }))
             feedback('selection');
         }}
         hapticsEnabled={hapticsEnabled}
@@ -719,15 +725,17 @@ function PersistentApp({
               <TypographyProvider scale={gridDisplay.textScale}>
                 <PerformanceBoundary name="grid">
                   <HabitGrid
-                    columnSpacing={gridDisplay.columnSpacing}
-                    nameColumnWidth={gridDisplay.nameColumnWidth}
+                    nameWidth={gridDisplay.nameWidth}
+                    nameFactor={gridDisplay.nameFactor}
+                    columnWidth={gridDisplay.columnWidth}
+                    rowHeight={gridDisplay.rowHeight}
+                    onWidthChange={setGridWidth}
                     weekDividers={gridDisplay.weekDividers}
                     tapAnimations={gridDisplay.tapAnimations}
                     checkboxStyle={gridDisplay.checkboxStyle}
                     weekStart={gridDisplay.weekStart}
                     dateFading={gridDisplay.dateFading}
                     hideCompleted={gridDisplay.hideCompleted}
-                    rowSpacing={gridDisplay.rowSpacing}
                     sampleData={sampleData}
                     HeadingComponent={PreviewHeading}
                     DateButtonComponent={PreviewDateButton}
@@ -749,19 +757,7 @@ function PersistentApp({
               </TypographyProvider>
             </View>
             {statsHabit && (
-              <Modal
-                visible
-                animationType="slide"
-                presentationStyle="pageSheet"
-                allowSwipeDismissal
-                supportedOrientations={[
-                  'portrait',
-                  'landscape-left',
-                  'landscape-right',
-                ]}
-                onRequestClose={closeStats}
-                backdropColor="#000000"
-              >
+              <SheetModal onClose={closeStats}>
                 <SafeAreaProvider>
                   <SafeAreaView style={styles.screen}>
                     {saveError}
@@ -792,7 +788,7 @@ function PersistentApp({
                     {overlays}
                   </SafeAreaView>
                 </SafeAreaProvider>
-              </Modal>
+              </SheetModal>
             )}
           </View>
           {!statsHabit && overlays}

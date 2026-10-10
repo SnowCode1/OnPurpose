@@ -19,6 +19,7 @@ import type { HistoryAction, StoredState } from './storage/model';
 import type { StoreSnapshot } from './storage/store';
 import { useLocalToday } from './useLocalToday';
 import { contrastOnBlack } from './colors';
+import { useSheetScroll } from './SheetModal';
 
 const HistoryRow = memo(function HistoryRow({
   event,
@@ -181,6 +182,7 @@ export function HistoryView({
         )
       : null;
   const savedCount = snapshot.events.length - snapshot.pending;
+  const sheetScroll = useSheetScroll();
   return (
     <View style={styles.container}>
       <View style={styles.controls}>
@@ -248,6 +250,7 @@ export function HistoryView({
         />
       )}
       <SectionList
+        {...sheetScroll}
         sections={sections}
         extraData={snapshot}
         keyExtractor={(event) => event.id}

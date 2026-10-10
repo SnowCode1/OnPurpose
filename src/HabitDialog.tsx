@@ -13,6 +13,7 @@ import { DescriptionEditor } from './DescriptionEditor';
 import { descriptionExcerpt } from './descriptionReading';
 import { draftsFor, descriptionDraftKey } from './descriptionDrafts';
 import { StartDateField } from './StartDateField';
+import { useKeyboardFocus } from './useKeyboardFocus';
 import { validDate } from './storage/model';
 import { useMemo, useState, type ComponentType } from 'react';
 import {
@@ -24,6 +25,7 @@ import {
   StyleSheet,
   View,
   type TextProps,
+  type TextInput as NativeTextInput,
 } from 'react-native';
 import { ColourPicker } from './ColourPicker';
 import {
@@ -83,6 +85,7 @@ export function HabitDialog({
   const [startDate, setStartDate] = useState(
     habit.startDate ?? initialStartDate,
   );
+  const nameFocus = useKeyboardFocus<NativeTextInput>(mode === 'create');
   const [name, setName] = useState(habit.name),
     [unit, setUnit] = useState(habit.unit ?? ''),
     [type, setType] = useState<HabitType>(habitType(habit));
@@ -265,7 +268,7 @@ export function HabitDialog({
                       <View>
                         <Text style={styles.label}>Name</Text>
                         <TextInput
-                          autoFocus={mode === 'create'}
+                          {...nameFocus}
                           accessibilityLabel="Habit name"
                           maxLength={200}
                           value={name}
@@ -430,6 +433,7 @@ export function HabitDialog({
                         value={startDate}
                         onChange={setStartDate}
                         colour={colour}
+                        weekStart={weekStart}
                       />
                       <View style={styles.appearance}>
                         <Pressable

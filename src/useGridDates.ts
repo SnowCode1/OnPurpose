@@ -204,11 +204,14 @@ export function useGridDates({
     // Start close enough to animate arrival without mounting intervening years.
     const nextOrigin =
       day === 0 ? 0 : day > 30 ? day - 30 : day < 0 ? day - 30 : 0;
-    pendingNavigation.current = day;
+    // Android FlashList re-applies its initial index for ~100 ms after first
+    // layout, overriding an arrival animation started at readiness; land there.
+    const animateArrival = Platform.OS !== 'android';
+    pendingNavigation.current = animateArrival ? day : null;
     setOrigin(nextOrigin);
     setFutureCount(0);
     setDayCount(120);
-    setRightmostDay(day + visibleDays);
+    setRightmostDay(animateArrival ? day + visibleDays : day);
     setRangeReset((value) => value + 1);
   }
 

@@ -6,16 +6,13 @@ import { DateNavigationSheet } from './DateNavigationSheet';
 import { ordinal, timingDate } from './goalTiming';
 import { useDelayedCompletionMask } from './useDelayedCompletionMask';
 import { HabitNameDivider } from './HabitNameDivider';
-import type {
-  CheckboxStyle,
-  WeekStart,
-  ColumnSpacing,
-  NameColumnWidth,
-} from './displayPreferences';
+import type { CheckboxStyle, WeekStart } from './displayPreferences';
+import type { GridSize } from './gridSizing';
 import { Text, useAppWindowDimensions } from './Typography';
 import { completedHabitsSelection } from './storage/selection';
 import { visibleHabitRows } from './habitCompletion';
-import { gridRowHeight, type RowSpacing } from './rowSpacing';
+import { gridRowHeight } from './rowSpacing';
+import { screenLongSide } from './screenSize';
 import {
   type ComponentType,
   memo,
@@ -60,13 +57,16 @@ import { rowTransition } from './motion';
 import { HabitContextMenu } from './HabitContextMenu';
 
 type Props = {
-  rowSpacing: RowSpacing;
+  nameWidth: GridSize;
+  nameFactor: number;
+  columnWidth: GridSize;
+  rowHeight: GridSize;
   checkboxStyle: CheckboxStyle;
   weekDividers: boolean;
   tapAnimations: boolean;
   weekStart: WeekStart;
-  columnSpacing: ColumnSpacing;
-  nameColumnWidth: NameColumnWidth;
+  // Reports the measured grid width so Settings can preview it exactly.
+  onWidthChange?: (width: number) => void;
   dateFading: boolean;
   hideCompleted: boolean;
   sampleData?: boolean;
@@ -87,13 +87,15 @@ type Props = {
 };
 
 export const HabitGrid = memo(function HabitGrid({
-  rowSpacing,
+  nameWidth: nameWidthSize,
+  nameFactor,
+  columnWidth: columnWidthSize,
+  rowHeight: rowHeightSize,
   checkboxStyle,
   weekDividers,
   tapAnimations,
   weekStart,
-  columnSpacing,
-  nameColumnWidth,
+  onWidthChange,
   dateFading,
   hideCompleted,
   sampleData = false,
@@ -122,8 +124,7 @@ export const HabitGrid = memo(function HabitGrid({
   const { visibleDays, nameWidth, dateWidth, columnWidth } = gridLayout(
     width,
     fontScale,
-    columnSpacing,
-    nameColumnWidth,
+    { nameWidth: nameWidthSize, nameFactor, columnWidth: columnWidthSize },
   );
   const {
     days,
@@ -194,7 +195,11 @@ export const HabitGrid = memo(function HabitGrid({
       rightmostDay,
     ],
   );
-  const baseRowHeight = gridRowHeight(rowSpacing, fontScale);
+  const baseRowHeight = gridRowHeight(
+    rowHeightSize,
+    fontScale,
+    screenLongSide(),
+  );
   const rowGeometry = `${nameWidth}:${baseRowHeight}:${fontScale}`;
   const { heights: rowHeights, measure: measureRow } =
     useMeasuredRowHeights(rowGeometry);
@@ -375,6 +380,7 @@ export const HabitGrid = memo(function HabitGrid({
           cancelReorder();
           prepareResize();
           setWidth(nextWidth);
+          onWidthChange?.(nextWidth);
         }
       }}
     >
@@ -427,6 +433,7 @@ export const HabitGrid = memo(function HabitGrid({
         <DateNavigationSheet
           date={timingDate(ordinal(today) - rightmostDay)}
           today={today}
+          weekStart={weekStart}
           onClose={() => setDatePickerOpen(false)}
           onChoose={(date) => {
             feedback('selection');

@@ -49,18 +49,22 @@ test('app and system text sizes share adaptive grid geometry in portrait and lan
     for (const app of [0.85, 1, 1.15, 1.3, 1.5]) {
       for (const system of [1, 1.3, 2]) {
         const scale = combinedTextScale(system, app);
-        for (const spacing of ['compact', 'standard', 'roomy']) {
-          const layout = gridLayout(width, scale, spacing);
+        for (const size of [44, 'auto', 64]) {
+          const layout = gridLayout(width, scale, {
+            nameWidth: 'auto',
+            nameFactor: 1,
+            columnWidth: size,
+          });
           assert.ok(
             Number.isInteger(layout.visibleDays) && layout.visibleDays >= 1,
           );
           assert.ok(layout.columnWidth >= Math.min(layout.dateWidth, 44));
           assert.equal(layout.nameWidth + layout.dateWidth, width);
-          assert.ok(gridRowHeight(spacing, scale) >= 44);
+          assert.ok(gridRowHeight(size, scale, 874) >= 44);
         }
       }
     }
   }
   assert.ok(gridLayout(366, 1.5).visibleDays < gridLayout(366, 1).visibleDays);
-  assert.ok(gridRowHeight('standard', 1.5) > gridRowHeight('standard', 1));
+  assert.ok(gridRowHeight('auto', 1.5, 874) > gridRowHeight('auto', 1, 874));
 });
