@@ -9,6 +9,7 @@ import type {
   NameColumnWidth,
   WeekStart,
 } from '../displayPreferences.ts';
+import type { GridSize } from '../gridSizing.ts';
 
 export type StoredState = {
   habits: Habit[];
@@ -18,6 +19,9 @@ export type StoredState = {
   columnSpacing?: ColumnSpacing;
   columnDensity?: ColumnSpacing;
   nameColumnWidth?: NameColumnWidth;
+  gridNameWidth?: GridSize;
+  gridColumnWidth?: GridSize;
+  gridRowHeight?: GridSize;
   weekStart?: WeekStart;
   dateFading?: boolean;
   checkboxStyle?: CheckboxStyle;
@@ -59,6 +63,10 @@ export type Change =
   | { kind: 'columnSpacing'; before: ColumnSpacing; after: ColumnSpacing }
   | { kind: 'columnDensity'; before: ColumnSpacing; after: ColumnSpacing }
   | { kind: 'nameColumnWidth'; before: NameColumnWidth; after: NameColumnWidth }
+  // v18: before is null until the first numeric/automatic choice is saved.
+  | { kind: 'gridNameWidth'; before: GridSize | null; after: GridSize }
+  | { kind: 'gridColumnWidth'; before: GridSize | null; after: GridSize }
+  | { kind: 'gridRowHeight'; before: GridSize | null; after: GridSize }
   | { kind: 'weekStart'; before: WeekStart; after: WeekStart }
   | { kind: 'weekDividers'; before: boolean; after: boolean }
   | { kind: 'tapAnimations'; before: boolean; after: boolean }
@@ -75,6 +83,9 @@ export type PreferenceChange = Extract<
       | 'columnSpacing'
       | 'columnDensity'
       | 'nameColumnWidth'
+      | 'gridNameWidth'
+      | 'gridColumnWidth'
+      | 'gridRowHeight'
       | 'weekStart'
       | 'weekDividers'
       | 'tapAnimations'
@@ -87,7 +98,24 @@ export type PreferenceChange = Extract<
 export type HabitChange = Exclude<Change, PreferenceChange>;
 export type EventMeta = {
   version:
-    1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17;
+    | 1
+    | 2
+    | 3
+    | 4
+    | 5
+    | 6
+    | 7
+    | 8
+    | 9
+    | 10
+    | 11
+    | 12
+    | 13
+    | 14
+    | 15
+    | 16
+    | 17
+    | 18;
   id: string;
   sequence: number;
   recordedAt: string;
@@ -100,7 +128,7 @@ export type LegacyChangeEvent = EventMeta & { version: 1 } & (
   );
 export type CurrentChangeEvent = EventMeta & {
   version:
-    2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17;
+    2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18;
 } & (
     | { type: 'change'; groupId: string; change: HabitChange }
     | { type: 'undo' | 'redo'; targetId: string; change: HabitChange }
@@ -141,4 +169,5 @@ export type Replay = {
   hasV15: boolean;
   hasV16: boolean;
   hasV17: boolean;
+  hasV18: boolean;
 };

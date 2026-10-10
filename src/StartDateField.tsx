@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { localDateKey } from './calendar';
+import { DateCalendar } from './DateCalendar';
+import type { WeekStart } from './displayPreferences';
 
 export type StartDateFieldProps = {
   value: string;
@@ -10,6 +12,7 @@ export type StartDateFieldProps = {
   colour: string;
   label?: string;
   help?: string;
+  weekStart?: WeekStart;
 };
 export function StartDateField({
   value,
@@ -17,7 +20,9 @@ export function StartDateField({
   colour,
   label = 'Start date',
   help = 'Choose an earlier date to fill in old records. Statistics begin here.',
+  weekStart,
 }: StartDateFieldProps) {
+  // Android opens our calendar inline beneath the field, inside this editor.
   const [open, setOpen] = useState(false);
   const date = new Date(`${value}T12:00:00`);
   return (
@@ -48,28 +53,25 @@ export function StartDateField({
               borderRadius: 10,
             }}
           />
-        ) : Platform.OS === 'ios' || open ? (
+        ) : Platform.OS === 'ios' ? (
           <DateTimePicker
             accessibilityLabel={
               label === 'Start date' ? 'Habit start date' : label
             }
             value={date}
             mode="date"
-            display={Platform.OS === 'ios' ? 'compact' : 'default'}
+            display="compact"
             themeVariant="dark"
             accentColor={colour}
-            onValueChange={(_, selected) => {
-              onChange(localDateKey(selected));
-              setOpen(false);
-            }}
-            onDismiss={() => setOpen(false)}
+            onValueChange={(_, selected) => onChange(localDateKey(selected))}
             style={{ minHeight: 44 }}
           />
         ) : (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${label}, ${date.toLocaleDateString()}`}
-            onPress={() => setOpen(true)}
+            accessibilityState={{ expanded: open }}
+            onPress={() => setOpen((shown) => !shown)}
             style={{
               minHeight: 44,
               justifyContent: 'center',
@@ -88,6 +90,18 @@ export function StartDateField({
           </Pressable>
         )}
       </View>
+      {open && Platform.OS === 'android' && (
+        <DateCalendar
+          value={value}
+          today={localDateKey(new Date())}
+          accent={colour}
+          weekStart={weekStart}
+          onChange={(day) => {
+            onChange(day);
+            setOpen(false);
+          }}
+        />
+      )}
       {!!help && (
         <Text style={{ color: '#999999', fontSize: 12, lineHeight: 18 }}>
           {help}

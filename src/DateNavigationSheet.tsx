@@ -12,15 +12,19 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Text, TextInput } from './Typography';
 import { localDateKey } from './calendar';
 import { validTimingDate } from './goalTiming';
+import { DateCalendar } from './DateCalendar';
+import type { WeekStart } from './displayPreferences';
 
 export function DateNavigationSheet({
   date,
   today,
+  weekStart,
   onClose,
   onChoose,
 }: {
   date: string;
   today: string;
+  weekStart?: WeekStart;
   onClose: () => void;
   onChoose: (date: string) => void;
 }) {
@@ -72,12 +76,19 @@ export function DateNavigationSheet({
                 maxLength={10}
                 style={styles.input}
               />
+            ) : Platform.OS === 'android' ? (
+              <DateCalendar
+                value={chosen}
+                today={today}
+                weekStart={weekStart}
+                onChange={setChosen}
+              />
             ) : (
               <DateTimePicker
                 accessibilityLabel="Choose grid date"
                 value={new Date(`${chosen}T12:00:00`)}
                 mode="date"
-                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                display="inline"
                 themeVariant="dark"
                 accentColor="#DDDDDD"
                 onValueChange={(_, value) => setChosen(localDateKey(value))}

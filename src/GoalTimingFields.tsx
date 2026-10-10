@@ -321,6 +321,7 @@ export function GoalTimingFields({
                   onChange({ ...value, cycle: { ...cycle, anchor } })
                 }
                 colour={colour}
+                weekStart={weekStart}
               />
             </View>
           )}

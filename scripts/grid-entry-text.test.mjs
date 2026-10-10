@@ -10,7 +10,7 @@ import {
 import { gridRowHeight } from '../src/rowSpacing.ts';
 import { combinedTextScale } from '../src/textSize.ts';
 
-test('cell line capacity follows row spacing and combined text scale without fitting more through shrinking', () => {
+test('cell line capacity follows row height and combined text scale without fitting more through shrinking', () => {
   assert.equal(gridEntryTextLines(44, 1), 2);
   assert.equal(gridEntryTextLines(52, 1), 2);
   assert.equal(gridEntryTextLines(64, 1), 3);
@@ -18,8 +18,8 @@ test('cell line capacity follows row spacing and combined text scale without fit
   for (const app of [0.85, 1, 1.15, 1.5]) {
     for (const system of [1, 1.3, 2]) {
       const scale = combinedTextScale(system, app);
-      for (const spacing of ['compact', 'standard', 'roomy']) {
-        const height = gridRowHeight(spacing, scale);
+      for (const size of [40, 44, 'auto', 64, 80]) {
+        const height = gridRowHeight(size, scale, 874);
         const lines = gridEntryTextLines(height, scale);
         assert.ok(lines >= 1 && lines <= 3);
         assert.ok(lines * GRID_ENTRY_LINE_HEIGHT * scale <= height - 12);

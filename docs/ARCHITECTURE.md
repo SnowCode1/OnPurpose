@@ -43,7 +43,8 @@ scripts/       local preview receiver and its integration tests
 Native SQLite and a real change-history browser are implemented. There is no
 backend, account flow, scheduler, analytics SDK,
 or navigation library. The web target is a development convenience; iOS is the
-release target. Android is not part of the committed release scope.
+release target. Android is not part of the committed release scope; the founder
+started Android porting and device testing on 8 October 2026 (see DECISIONS.md).
 
 ## Grid behaviour
 

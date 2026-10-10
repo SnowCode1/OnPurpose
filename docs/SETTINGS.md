@@ -172,3 +172,21 @@ Temporary Undo fades out over 180 ms after its four-second lifetime. Hiding or
 archiving a row eases remaining names and cells together over 220 ms. Restoring
 rows through Undo uses the same shared positions. Both respect Reduce Motion;
 rotation and font/spacing geometry changes remain immediate.
+
+## Grid size sliders and automatic sizing (v18)
+
+Founder request (9 October 2026): replace the three-choice spacing controls with
+sliders, and stop narrower phones getting a sparser grid. Appearance now starts
+with a live preview (three sample habits at the real grid width, scaled to fit,
+with "N days fit on this screen"), then Name column, Day columns and Rows sliders,
+then Text size. Dragging updates the preview only; releasing saves one v18
+preference. Each slider shows "Auto · N" until moved and has Reset to automatic.
+The grid itself still applies sizes when Settings closes, as before.
+
+Automatic sizes (assistant rule): name width is 40% of the grid between 120 and
+200 points; days are at least 48 points; rows are 6% of the physical screen's
+longer side, rounded to 2 points, between 44 and 56. All scale with text size.
+A 402-point iPhone 16 Pro keeps its earlier 146-point names, 48-point days and
+52-point rows. A 360-point Galaxy S21 now gets 130-point names, four days and
+48-point rows instead of three days and 52-point rows. The physical screen, not
+the app window, sets row height, because Android windows exclude system bars.

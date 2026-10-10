@@ -1,20 +1,16 @@
 import { useState } from 'react';
-import type { RowSpacing } from './rowSpacing.ts';
-import type {
-  ColumnSpacing,
-  NameColumnWidth,
-  CheckboxStyle,
-  WeekStart,
-} from './displayPreferences.ts';
+import type { CheckboxStyle, WeekStart } from './displayPreferences.ts';
+import type { GridSize } from './gridSizing.ts';
 
 export type GridDisplayPreferences = {
-  rowSpacing: RowSpacing;
+  nameWidth: GridSize;
+  nameFactor: number;
+  columnWidth: GridSize;
+  rowHeight: GridSize;
   checkboxStyle: CheckboxStyle;
   weekDividers: boolean;
   tapAnimations: boolean;
   weekStart: WeekStart;
-  columnSpacing: ColumnSpacing;
-  nameColumnWidth: NameColumnWidth;
   textScale: number;
   dateFading: boolean;
   hideCompleted: boolean;

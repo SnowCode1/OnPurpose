@@ -50,6 +50,7 @@ export const emptyReplay = (): Replay => ({
   hasV15: false,
   hasV16: false,
   hasV17: false,
+  hasV18: false,
 });
 export const GROUP_INACTIVITY_MS = 2 * 60 * 1000;
 
@@ -175,6 +176,7 @@ function reduceEvent(
       hasV15: event.version >= 15,
       hasV16: event.version >= 16,
       hasV17: event.version >= 17,
+      hasV18: event.version >= 18,
     };
   }
   insist(
@@ -220,6 +222,10 @@ function reduceEvent(
   insist(
     !previous.hasV11 || event.version >= 11,
     'Older events cannot follow version-11 events.',
+  );
+  insist(
+    !previous.hasV18 || event.version >= 18,
+    'Older events cannot follow version-18 events.',
   );
   insist(
     !previous.hasV17 || event.version >= 17,
@@ -395,6 +401,7 @@ function reduceEvent(
     hasV15: previous.hasV15 || event.version >= 15,
     hasV16: previous.hasV16 || event.version >= 16,
     hasV17: previous.hasV17 || event.version >= 17,
+    hasV18: previous.hasV18 || event.version >= 18,
   };
 }
 export function applyChange(state: StoredState, change: Change): StoredState {
@@ -404,7 +411,7 @@ function reduceChange(
   state: StoredState,
   change: Change,
   mutable: boolean,
-  version = 17,
+  version = 18,
 ): StoredState {
   validateChange(change, version);
   let next: StoredState;
@@ -427,6 +434,16 @@ function reduceChange(
           ? effectiveColumnSpacing(state)
           : (state[change.kind] ?? displayDefaults[change.kind])) ===
         change.before,
+      'Preference precondition failed.',
+    );
+    next = { ...state, [change.kind]: change.after };
+  } else if (
+    change.kind === 'gridNameWidth' ||
+    change.kind === 'gridColumnWidth' ||
+    change.kind === 'gridRowHeight'
+  ) {
+    insist(
+      (state[change.kind] ?? null) === change.before,
       'Preference precondition failed.',
     );
     next = { ...state, [change.kind]: change.after };
@@ -594,6 +611,18 @@ export function replayEvents(input: unknown): {
   return { events, replay };
 }
 export function describeChange(change: Change, state: StoredState): string {
+  if (
+    change.kind === 'gridNameWidth' ||
+    change.kind === 'gridColumnWidth' ||
+    change.kind === 'gridRowHeight'
+  )
+    return `${
+      change.kind === 'gridNameWidth'
+        ? 'Name column width'
+        : change.kind === 'gridColumnWidth'
+          ? 'Day column width'
+          : 'Row height'
+    } · ${change.after === 'auto' ? 'automatic' : change.after}`;
   if (change.kind === 'nameColumnWidth') return 'Name column width';
   if (change.kind === 'columnDensity')
     return `Column spacing · ${change.after}`;

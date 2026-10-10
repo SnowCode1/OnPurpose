@@ -4,6 +4,8 @@
 
 Run `npm run check` for TypeScript, ESLint, and formatting. Run `npm run doctor`
 for Expo diagnostics, and `npm run export:ios` to catch iOS bundle problems.
+Run `npm run export:android` too when touching platform-specific code; it first
+passed on 8 October 2026.
 An exported JS bundle does not validate native compilation, signing, installation,
 or actual phone performance.
 
@@ -19,6 +21,73 @@ on the Linux host, also run under a systemd user scope with `MemoryMax=768M`,
 Heap limits do not cap every kind of native allocation. Assert booleans or small
 values for DOM checks rather than asking Node to print a complete jsdom element:
 an unexpected element can make assertion output traverse a huge browser graph.
+
+## Android first run (8 October 2026)
+
+Connect the phone as described in DEVELOPMENT.md ("Android phone over USB").
+First device: Samsung Galaxy S21 (SM-G991B), Android 15 (API 35), One UI 7,
+Expo Go 57.0.9. With adb connected, an assistant can take screenshots
+(`npm run android:screenshot`), tap by accessibility label with
+`adb shell uiautomator dump` plus `adb shell input tap`, and read crash logs
+(`adb logcat -d -t 300 '*:E'`). Check that Expo Go is the focused app before
+scripted taps: a stray tap once landed on the home screen. adb cannot judge
+haptics, smoothness or gesture comfort; the founder reports those.
+
+Founder observations: development-mode performance is slow, as it was on the
+iPhone 16 Pro in Expo Go. The grid would not get more compact than 3 columns,
+sheets could not be swiped closed, and the date picker looked out of place.
+
+Fixed and checked on the Galaxy by assistant-driven adb tests:
+
+- **Grid spacing.** Settings changes never reached the grid: React Native's Modal
+  `onDismiss` is iOS-only, so deferred grid preferences were never released.
+  `SheetModal` now reports dismissal on Android. Compact columns show 4 days on
+  this 360-point-wide screen (Standard shows 3; the iPhone 16 Pro is 402 wide).
+- **Sheets (gesture version, 9 October).** Statistics, History and Settings
+  close with a downward drag anywhere when the touched content is at its top
+  (150/300/600 ms drags all closed Settings). A scrolled History list scrolls
+  back up instead of closing; at the top the next drag closes it. Statistics
+  still pages sideways, and Back closes sheets.
+- **Grid sizing (v18, 9 October).** Automatic sizes on the S21: four days,
+  130-point names, 48-point rows. Appearance preview and sliders: Day columns 40
+  plus Name column 96 previewed five days; after closing, the grid showed five
+  days with a 96-point name column. Reset returned both to Auto and the preview
+  to four days. History was unaffected. The preview mirrors grid name cells
+  (icon, gap, name, unit) using the first three real habits; with a 96-point name
+  and 40-point days it showed five days, matching the grid after closing.
+  Not yet checked on the iPhone.
+- **Category entry swipe.** Swiping the entry sheet down closed it at 150 and
+  500 ms drags; category taps still toggle.
+- **Category entry (9 October).** Backdrop fades in place while the sheet slides;
+  tapping outside discards unapplied choices; New category added "Swim", which
+  saved with the entry as two History actions (Habit edited, then the entry).
+  The sheet stays above the keyboard. Not yet checked on the iPhone.
+- **Date pickers.** Android has no inline system picker, and in Expo Go its
+  dialog is always light-themed. Jump to date and start dates now use the dark
+  `DateCalendar` inside our own card/editor, with a month/year chooser.
+- **Far date jumps.** Jump to date and Today from far away stopped 3 days short:
+  Android FlashList re-applies its initial index after the first layout, undoing
+  the arrival animation. Android now lands directly on the date (no slide).
+  Near jumps and Today still animate.
+- **Keyboard.** Number, text and new-habit dialogs did not open the keyboard;
+  `useKeyboardFocus` focuses after the dialog appears. Entering 30 and pressing
+  the keyboard's Done saved it.
+- **Landscape.** The grid shows 10 days and clears the camera cutout and the
+  navigation bar; Settings fits.
+
+Still to check on Android:
+
+- With the keyboard open, the number dialog's Close/Done buttons are below the
+  keyboard and need scrolling (the keyboard Done key saves). Decide whether that
+  is acceptable or the dialog should be more compact.
+- Expo Go's floating developer button sits over today's second-row cell; it is
+  Expo Go's own control and is absent from real builds.
+- `Platform.OS === 'ios'` branches in DescriptionEditor, CategoryEditor,
+  GoalVersionForm and DevPreviewCapture; the rich description editor and its
+  bottom toolbar above the keyboard.
+- Text fitting (`minimumFontScale` is iOS-only) with large values and system text.
+- Hold-to-reorder, future pull, rapid taps, reload persistence in saved data,
+  backup export/restore (Android share sheet and file picker), TalkBack, haptics.
 
 ## Live description editor and statistics checks
 

@@ -1,4 +1,4 @@
-# Development on Linux with an iPhone
+# Development on Linux with an iPhone or Android phone
 
 Verified against official sources on 4 October 2026. Versions and service
 requirements can change; recheck the linked sources before an upgrade/release.
@@ -49,19 +49,22 @@ and detailed runtime/accessibility checks remain to be recorded.
 
 ## Commands
 
-| Command                  | Use                                                        |
-| ------------------------ | ---------------------------------------------------------- |
-| `npm start`              | Start Expo Go development over the local network           |
-| `npm run start:clear`    | Restart with a cleared Metro cache                         |
-| `npm run start:tunnel`   | Try a tunnel if Wi-Fi isolation blocks local access        |
-| `npm run web`            | Browser preview for convenient Linux layout work           |
-| `npm run typecheck`      | TypeScript checks                                          |
-| `npm run lint`           | ESLint checks                                              |
-| `npm run format`         | Format source and docs                                     |
-| `npm run check`          | All local static checks                                    |
-| `npm run doctor`         | Expo's environment/dependency diagnostics                  |
-| `npm run export:ios`     | Compile/export iOS JavaScript and assets locally           |
-| `npm run benchmark:grid` | Synthetic CPU timings for grid preparation and store edits |
+| Command                      | Use                                                        |
+| ---------------------------- | ---------------------------------------------------------- |
+| `npm start`                  | Start Expo Go development over the local network           |
+| `npm run start:clear`        | Restart with a cleared Metro cache                         |
+| `npm run start:tunnel`       | Try a tunnel if Wi-Fi isolation blocks local access        |
+| `npm run web`                | Browser preview for convenient Linux layout work           |
+| `npm run typecheck`          | TypeScript checks                                          |
+| `npm run lint`               | ESLint checks                                              |
+| `npm run format`             | Format source and docs                                     |
+| `npm run check`              | All local static checks                                    |
+| `npm run doctor`             | Expo's environment/dependency diagnostics                  |
+| `npm run export:ios`         | Compile/export iOS JavaScript and assets locally           |
+| `npm run export:android`     | Compile/export Android JavaScript and assets locally       |
+| `npm run android`            | Start Expo Go development and open it on a USB Android     |
+| `npm run android:screenshot` | Save the USB Android screen to `.dev/android/latest.png`   |
+| `npm run benchmark:grid`     | Synthetic CPU timings for grid preparation and store edits |
 
 Stop a foreground server with Ctrl+C. Do not use `expo run:ios` or the simulator
 shortcut on Linux: the Apple toolchain and iOS simulator require macOS.
@@ -117,6 +120,64 @@ scan the ordinary port-8081 QR to return to sample data/dev tools.
 - Some Expo troubleshooting pages still describe the earlier App Store freeze
   at SDK 54. The live App Store listing checked for this setup lists SDK 57-era
   Expo Go. Use the installed version and current download listing as evidence.
+
+## Android phone over USB
+
+The founder asked on 8 October 2026 to start porting and testing on Android.
+iOS remains the release target until Android release scope is decided (see the
+8 October entry in DECISIONS.md). Unlike iOS, Android can be driven from Linux:
+`adb` (Android Debug Bridge) lets the computer, and an assistant with terminal
+access, install, open, screenshot and read logs from a USB-connected phone.
+
+SDK 57 / React Native 0.86 require **Android 7.0 (API 24) or later** (from
+`minSdk` in `node_modules/react-native/gradle/libs.versions.toml`). Check
+Settings → About phone → Android version before anything else.
+
+1. On the phone, open Settings → About phone and tap **Build number** seven times
+   to show Developer options. In Developer options, turn on **USB debugging**.
+2. On Ubuntu, install the tools (`android-sdk-platform-tools-common` supplies the
+   udev rules that let a normal user reach the phone; `scrcpy` is optional screen
+   mirroring with mouse/keyboard control):
+
+   ```sh
+   sudo apt install adb android-sdk-platform-tools-common scrcpy
+   ```
+
+3. Connect with a data-capable USB cable, unlock the phone and accept **Allow USB
+   debugging?** (tick "Always allow from this computer"). `adb devices -l` must
+   list the phone as `device`, not `unauthorized` or empty. If `lsusb` does not
+   show the phone at all, try another cable or port; many cables only charge.
+4. Install [Expo Go from Google Play](https://play.google.com/store/apps/details?id=host.exp.exponent)
+   or the APK listed at [expo.dev/go](https://expo.dev/go). Its SDK must match
+   `package.json` (57). Expo Go has announced a store release supporting only
+   SDK 58: in Google Play, open Expo Go → ⋮ → untick **Enable auto update** so it
+   stays on 57 until the project upgrades. The iPhone's Expo Go faces the same
+   change; check its App Store auto-update setting too.
+5. Run `npm run android`. It forwards port 8081 over the cable (`adb reverse`)
+   and opens `exp://127.0.0.1:8081` in Expo Go, so Wi-Fi is not involved. On
+   8 October 2026 the computer's Wi-Fi address (`exp://<LAN IP>:8081`) never reached
+   Metro from the Galaxy and Expo Go showed "Something went wrong"; the USB
+   route loaded immediately. The Wi-Fi cause (firewall or network) is unknown.
+   If Metro is already running from `npm start`, run
+   `adb reverse tcp:8081 tcp:8081` and
+   `adb shell am start -a android.intent.action.VIEW -d exp://127.0.0.1:8081 host.exp.exponent`.
+
+Useful device commands (read-only unless noted):
+
+| Command                                      | Use                                          |
+| -------------------------------------------- | -------------------------------------------- |
+| `adb devices -l`                             | Confirm the phone is connected/authorized    |
+| `adb shell getprop ro.build.version.release` | Android version                              |
+| `npm run android:screenshot`                 | Save the screen to `.dev/android/latest.png` |
+| `adb logcat -d -t 300 '*:E'`                 | Recent native errors after a crash           |
+| `scrcpy`                                     | Mirror and control the phone on the desktop  |
+| `adb reverse tcp:8081 tcp:8081`              | Reach Metro over USB when Wi-Fi blocks it    |
+
+Screenshots taken with adb need no preview receiver, gesture or pairing token;
+they stay in ignored `.dev/`. The face-down preview gesture uploads over Wi-Fi to
+the LAN receiver, so it is untested and may hit the same Wi-Fi block on Android.
+Expo's "Failed to resolve the Android SDK path" messages are harmless here: Expo
+Go needs only the system `adb`, not the full Android SDK.
 
 ## MCP and testing
 

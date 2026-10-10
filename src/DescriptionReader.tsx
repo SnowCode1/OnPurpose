@@ -6,6 +6,7 @@ import {
   descriptionReadingPassages,
   type ReadingPassage,
 } from './descriptionReading';
+import { useSheetScroll } from './SheetModal';
 
 // Reading content lives in the habit sheet, without another presentation step.
 export const DescriptionReader = memo(function DescriptionReader({
@@ -33,8 +34,10 @@ export const DescriptionReader = memo(function DescriptionReader({
     ),
     [colour],
   );
+  const sheetScroll = useSheetScroll();
   return (
     <FlatList
+      {...sheetScroll}
       testID="habit-notes"
       data={passages}
       keyExtractor={(item) => item.key}

@@ -20,6 +20,7 @@ import { habitTypeLabel } from './habits';
 import { Icon } from './Icon';
 import { HabitSymbol } from './HabitSymbol';
 import { appear, disappear, rowTransition } from './motion';
+import { useSheetScroll } from './SheetModal';
 export function confirmArchivedHabitDeletion(
   habit: Habit,
   count: number,
@@ -80,8 +81,9 @@ export function ArchivedHabits({
       ),
     [habits],
   );
+  const sheetScroll = useSheetScroll();
   return (
-    <ScrollView contentContainerStyle={styles.body}>
+    <ScrollView contentContainerStyle={styles.body} {...sheetScroll}>
       <Text style={styles.description}>
         Restore a habit to return it to its place in the grid. Deleting removes
         it and its records; you can undo this in History.

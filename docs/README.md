@@ -5,7 +5,7 @@ requirements, proposed scope, and questions to discuss with the founder.
 
 | Document                                   | Purpose                                                               |
 | ------------------------------------------ | --------------------------------------------------------------------- |
-| [DEVELOPMENT.md](DEVELOPMENT.md)           | Linux tools, iPhone setup, commands, MCP limits                       |
+| [DEVELOPMENT.md](DEVELOPMENT.md)           | Linux tools, iPhone and Android setup, commands, MCP limits           |
 | [ARCHITECTURE.md](ARCHITECTURE.md)         | Current code and proposed next architecture                           |
 | [STORAGE.md](STORAGE.md)                   | Incremental changes, export, replay, and history design               |
 | [HABIT_MANAGEMENT.md](HABIT_MANAGEMENT.md) | Habit actions, editing, ordering, archival, and statistics limits     |

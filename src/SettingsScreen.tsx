@@ -7,15 +7,13 @@ import { InfoNote } from './InfoNote';
 import {
   checkboxStyleOptions,
   type CheckboxStyle,
-  columnSpacingOptions,
-  nameColumnWidthOptions,
   weekStartOptions,
-  type ColumnSpacing,
-  type NameColumnWidth,
   type WeekStart,
 } from './displayPreferences';
-import { rowSpacingOptions, type RowSpacing } from './rowSpacing';
+import type { GridSize, GridSizeKind, GridSizing } from './gridSizing';
+import { GridSizeSettings } from './GridSizeSettings';
 import type { StoreSnapshot } from './storage/store';
+import { useSheetScroll } from './SheetModal';
 
 export const settingsTitles = {
   index: 'Settings',
@@ -34,12 +32,9 @@ type Props = {
   backupBusy: boolean;
   textScale: number;
   onTextScaleChange: (value: number) => void;
-  rowSpacing: RowSpacing;
-  onRowSpacingChange: (value: RowSpacing) => void;
-  columnSpacing: ColumnSpacing;
-  nameColumnWidth: NameColumnWidth;
-  onColumnSpacingChange: (value: ColumnSpacing) => void;
-  onNameColumnWidthChange: (value: NameColumnWidth) => void;
+  gridWidth: number;
+  sizing: GridSizing;
+  onGridSizeChange: (kind: GridSizeKind, value: GridSize) => void;
   weekStart: WeekStart;
   onWeekStartChange: (value: WeekStart) => void;
   weekDividers: boolean;
@@ -189,8 +184,10 @@ function Choice<T extends string>({
 export function SettingsScreen(p: Props) {
   const disabled = !!p.snapshot.error || p.snapshot.busy || p.backupBusy;
   const count = p.snapshot.replay.state.habits.filter((h) => h.archived).length;
+  const sheetScroll = useSheetScroll();
   return (
     <ScrollView
+      {...sheetScroll}
       key={p.page}
       contentContainerStyle={styles.body}
       showsVerticalScrollIndicator={false}
@@ -253,26 +250,14 @@ export function SettingsScreen(p: Props) {
       {p.page === 'appearance' && (
         <>
           <Group>
-            <Choice
-              label="Name column width"
-              value={p.nameColumnWidth}
-              options={nameColumnWidthOptions}
-              onChange={p.onNameColumnWidthChange}
-              disabled={disabled}
-            />
-            <Choice
-              label="Column spacing"
-              value={p.columnSpacing}
-              options={columnSpacingOptions}
-              onChange={p.onColumnSpacingChange}
-              disabled={disabled}
-            />
-            <Choice
-              label="Row spacing"
-              value={p.rowSpacing}
-              options={rowSpacingOptions}
-              onChange={p.onRowSpacingChange}
-              disabled={disabled}
+            <GridSizeSettings
+              sizing={p.sizing}
+              gridWidth={p.gridWidth}
+              habits={p.snapshot.replay.state.habits.filter(
+                (habit) => !habit.archived,
+              )}
+              editable={!disabled}
+              onChange={p.onGridSizeChange}
             />
             <View style={styles.control}>
               <TextSizeSetting
@@ -313,7 +298,7 @@ export function SettingsScreen(p: Props) {
           </Group>
           <InfoNote
             label="About appearance"
-            text="Text size applies everywhere and follows your iPhone’s text size too. Recorded entries stay bright when dates fade."
+            text="Automatic sizes adapt to this screen; moving a slider sets an exact size, and Reset returns to automatic. Text size applies everywhere and follows your phone’s text size too. Recorded entries stay bright when dates fade."
           />
         </>
       )}

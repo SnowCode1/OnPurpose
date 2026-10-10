@@ -1,3 +1,5 @@
+import { autoRowHeight } from './gridSizing.ts';
+
 export const rowSpacingOptions = [
   { value: 'compact', label: 'Compact', height: 44 },
   { value: 'standard', label: 'Standard', height: 52 },
@@ -7,9 +9,12 @@ export type RowSpacing = (typeof rowSpacingOptions)[number]['value'];
 export function isRowSpacing(value: unknown): value is RowSpacing {
   return rowSpacingOptions.some((option) => option.value === value);
 }
-export function gridRowHeight(spacing: RowSpacing, fontScale: number) {
-  const height = rowSpacingOptions.find(
-    (option) => option.value === spacing,
-  )!.height;
-  return Math.max(height, Math.ceil((height - 4) * fontScale));
+// Rows grow with larger text so wrapped names and values stay readable.
+export function gridRowHeight(
+  height: number | 'auto',
+  fontScale: number,
+  screenLongSide: number,
+) {
+  const base = height === 'auto' ? autoRowHeight(screenLongSide) : height;
+  return Math.max(base, Math.ceil((base - 4) * fontScale));
 }

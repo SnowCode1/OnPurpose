@@ -8,6 +8,7 @@ import { createRoot } from 'react-dom/client';
 import { JSDOM } from 'jsdom';
 import { recentNumericTotals } from '../src/numericSuggestions.ts';
 import { gridLayout } from '../src/gridLayout.ts';
+import { gridSizing } from '../src/gridSizing.ts';
 import {
   effectiveColumnSpacing,
   displayDefaults,
@@ -72,10 +73,12 @@ test('name widths preserve whole columns, readable target sizes, and the old Com
     }),
     'compact',
   );
-  for (const width of [366, 680, 812])
+  const layoutFor = (width, scale, spacing, names) =>
+    gridLayout(width, scale, gridSizing({ nameColumnWidth: names }, spacing));
+  for (const width of [324, 366, 680, 812])
     for (const scale of [1, 1.5, 2]) {
       const layouts = ['narrow', 'standard', 'wide'].map((names) =>
-        gridLayout(width, scale, 'standard', names),
+        layoutFor(width, scale, 'standard', names),
       );
       assert.ok(
         layouts[0].nameWidth <= layouts[1].nameWidth &&
@@ -83,7 +86,7 @@ test('name widths preserve whole columns, readable target sizes, and the old Com
       );
       for (const names of ['narrow', 'standard', 'wide'])
         for (const spacing of ['compact', 'standard', 'roomy']) {
-          const layout = gridLayout(width, scale, spacing, names);
+          const layout = layoutFor(width, scale, spacing, names);
           assert.ok(layout.columnWidth >= Math.min(layout.dateWidth, 44));
           assert.ok(
             Math.abs(
@@ -94,9 +97,9 @@ test('name widths preserve whole columns, readable target sizes, and the old Com
           );
         }
     }
-  assert.equal(gridLayout(366, 1, 'standard').visibleDays, 4);
-  assert.equal(gridLayout(366, 1, 'compact').visibleDays, 5);
-  assert.equal(gridLayout(366, 1, 'roomy').visibleDays, 3);
+  assert.equal(layoutFor(366, 1, 'standard').visibleDays, 4);
+  assert.equal(layoutFor(366, 1, 'compact').visibleDays, 5);
+  assert.equal(layoutFor(366, 1, 'roomy').visibleDays, 3);
 });
 test('arbitrary history/future windows retain overlapping dates without filling intervening years', () => {
   const cache = createGridDayCache('2026-03-10');
@@ -374,7 +377,7 @@ test('v17 width/density preferences persist in SQLite/backup without changing le
     digest,
   );
   const decoded = await decodeArchive(backup, digest);
-  assert.equal(JSON.parse(backup).version, 17);
+  assert.equal(JSON.parse(backup).version, 18);
   assert.deepEqual(decoded.events, events);
   await store.exclusive(() => store.replace(decoded.events));
   assert.equal(store.redo(), true);
@@ -387,7 +390,7 @@ test('v17 width/density preferences persist in SQLite/backup without changing le
         type: 'preference',
         change: { kind: 'haptics', before: true, after: false },
       }),
-    /version-17/,
+    /version-18/,
   );
   const previous = JSON.parse(
     readFileSync(

@@ -16,6 +16,7 @@ import { colorOnBlack } from './colors';
 import { InfoNote } from './InfoNote';
 import { GoalSummary } from './GoalSummary';
 import { evaluateGoal } from './habitGoals';
+import { useSheetScroll } from './SheetModal';
 
 export const RecordStatsScreen = memo(function RecordStatsScreen({
   habit,
@@ -300,8 +301,10 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
       </Text>
     </View>
   );
+  const sheetScroll = useSheetScroll();
   return (
     <FlatList<DailyRecord>
+      {...sheetScroll}
       testID="habit-statistics"
       data={stats.records}
       keyExtractor={(item) => item.date}

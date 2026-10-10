@@ -15,6 +15,7 @@ import {
   isWeekStart,
 } from '../displayPreferences.ts';
 import { isRowSpacing } from '../rowSpacing.ts';
+import { isGridSize } from '../gridSizing.ts';
 import { isHabitIcon } from '../habitIcons.ts';
 import { habitType, type Habit } from '../habits.ts';
 import { isPreference, sameValue } from './changeUtils.ts';
@@ -204,7 +205,7 @@ function dailyValue(value: unknown, version: number) {
 export function entryFits(
   habit: Habit,
   value: EntryValue | null,
-  version = 17,
+  version = 18,
 ) {
   if (value === null) return true;
   switch (habitType(habit)) {
@@ -225,7 +226,7 @@ export function entryFits(
 }
 export function validateChange(
   value: unknown,
-  version = 17,
+  version = 18,
 ): asserts value is Change {
   object(value);
   if (value.kind === 'entry') {
@@ -326,6 +327,18 @@ export function validateChange(
       isNameColumnWidth(value.before) && isNameColumnWidth(value.after),
       'Invalid name column width.',
     );
+  } else if (
+    value.kind === 'gridNameWidth' ||
+    value.kind === 'gridColumnWidth' ||
+    value.kind === 'gridRowHeight'
+  ) {
+    keys(value, ['kind', 'before', 'after']);
+    insist(version >= 18, 'Grid size sliders require version 18.');
+    insist(
+      (value.before === null || isGridSize(value.kind, value.before)) &&
+        isGridSize(value.kind, value.after),
+      'Invalid grid size.',
+    );
   } else if (value.kind === 'weekDividers' || value.kind === 'tapAnimations') {
     keys(value, ['kind', 'before', 'after']);
     insist(version >= 16, 'Grid appearance toggles require version 16.');
@@ -401,7 +414,8 @@ export function validateEvent(value: unknown): asserts value is StoredEvent {
       value.version === 14 ||
       value.version === 15 ||
       value.version === 16 ||
-      value.version === 17,
+      value.version === 17 ||
+      value.version === 18,
     'Unsupported event version.',
   );
   id(value.id);
