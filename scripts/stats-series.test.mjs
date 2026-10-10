@@ -16,6 +16,7 @@ import {
   niceMaximum,
   observations,
   statsWindow,
+  streakRows,
   streakRuns,
   successMode,
   timeTicks,
@@ -245,4 +246,33 @@ test('category colours are stable, distinct and readable on black', () => {
     categories: [...habit.categories, { id: 'yoga', label: 'Yoga' }],
   });
   for (const [id, colour] of colours) assert.equal(extended.get(id), colour);
+});
+
+test('streak rows: one row for a month, month rows for a year, quarter rows beyond', () => {
+  const to = dayNumber(today);
+  const month = streakRows(to - 29, to);
+  assert.equal(month.unit, 'window');
+  assert.equal(month.rows.length, 1);
+  assert.deepEqual(
+    [month.rows[0].from, month.rows[0].to, month.rows[0].scale],
+    [to - 29, to, 30],
+  );
+  const year = streakRows(to - 364, to);
+  assert.equal(year.unit, 'month');
+  assert.equal(year.rows.length, 13, 'Oct 2025 to Oct 2026');
+  assert.match(year.rows[0].label, /2025/);
+  assert.ok(year.rows.every((row) => row.scale === 31));
+  assert.equal(year.rows[0].from, to - 364, 'first row starts in the window');
+  assert.equal(year.rows.at(-1).to, to);
+  for (let i = 1; i < year.rows.length; i++)
+    assert.equal(year.rows[i].from, year.rows[i - 1].to + 1, 'contiguous');
+  const long = streakRows(to - 900, to);
+  assert.equal(long.unit, 'quarter');
+  assert.ok(long.rows.every((row) => row.scale === 92));
+  assert.match(long.rows[0].label, /^Q\d \d{4}$/);
+  assert.equal(
+    long.rows.reduce((sum, row) => sum + row.to - row.from + 1, 0),
+    901,
+    'every day appears once',
+  );
 });

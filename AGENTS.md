@@ -43,8 +43,8 @@ The requested preset icon update uses normal undoable edits in
   guard; exclusive restore and pre-restore copies remain in ChangeStore/adapters.
   Both statistics screens share `StatsLayout.tsx` (range tabs, ‹ › period
   stepping, titled sections with (i) explanations, tiles), `ChartFrame.tsx`
-  (tap/‹ ›/VoiceOver selection keyed by date, axes, ticks, one reserved reading
-  line), `ValueChart`, `SuccessChart`, `StreakChart`, `StatsCalendar`,
+  (tap, hold-and-drag thumb tracking that pauses paging via `ChartScrubLock`,
+  ‹ › and VoiceOver selection keyed by date, axes, ticks, one reading line), `ValueChart`, `SuccessChart`, `StreakChart`, `StatsCalendar`,
   `TimeOfDayChart` and `CategoryMatrix`; never import each other's screen.
   Pure `statsSeries.ts` owns day outcomes (walking the goal timeline without the
   shared goal cache), bins, observations, the centred smoothed trend and streak runs;

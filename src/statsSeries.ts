@@ -426,6 +426,61 @@ export function streakRuns(
   return runs;
 }
 
+export type StreakRow = {
+  label: string;
+  /** Day at x = 0 and the number of days the row's width represents. */
+  start: number;
+  scale: number;
+  /** Days of the window inside this row. */
+  from: number;
+  to: number;
+};
+
+/**
+ * One row up to about six weeks; longer windows get a row per month (days
+ * line up down the rows), and histories beyond about a year a row per quarter,
+ * so short streaks stay wide enough to see and tap.
+ */
+export function streakRows(from: number, to: number) {
+  const span = to - from + 1;
+  if (span <= 45)
+    return {
+      unit: 'window' as const,
+      rows: [{ label: '', start: from, scale: span, from, to }] as StreakRow[],
+    };
+  const quarter = span > 400,
+    rows: StreakRow[] = [];
+  let cursor = from;
+  while (cursor <= to) {
+    const date = dateKey(cursor),
+      year = Number(date.slice(0, 4)),
+      month = Number(date.slice(5, 7)) - 1,
+      first = quarter ? month - (month % 3) : month,
+      after = first + (quarter ? 3 : 1),
+      start = dayNumber(`${year}-${String(first + 1).padStart(2, '0')}-01`),
+      next = dayNumber(
+        after >= 12
+          ? `${year + 1}-${String(after - 11).padStart(2, '0')}-01`
+          : `${year}-${String(after + 1).padStart(2, '0')}-01`,
+      ),
+      at = new Date(`${dateKey(start)}T12:00:00`);
+    rows.push({
+      label: quarter
+        ? `Q${first / 3 + 1} ${year}`
+        : at.toLocaleDateString(undefined, {
+            month: 'short',
+            ...(first === 0 || !rows.length ? { year: 'numeric' } : {}),
+          }),
+      start,
+      scale: quarter ? 92 : 31,
+      from: Math.max(from, start),
+      to: Math.min(to, next - 1),
+    });
+    cursor = next;
+  }
+  return { unit: quarter ? ('quarter' as const) : ('month' as const), rows };
+}
+
 /** Ticks for a time axis: weeks, months or years depending on the span. */
 export function timeTicks(
   from: number,

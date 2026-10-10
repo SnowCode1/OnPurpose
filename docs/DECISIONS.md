@@ -1489,3 +1489,15 @@ signing and device enrolment are still prerequisites, not completed deployment.
   calendar timeline of runs with a best-three list, so any streak length reads
   well. The number entry puts Close (X) at the top right and Done beside the
   field, both above the keyboard; Android's keyboard Done still saves.
+
+## 10 October 2026: thumb tracking and streak rows
+
+- Founder request: track through charts with the thumb, not only tap; give the
+  streak timeline several rows so it does not get crowded.
+- Assistant choices: tracking starts after a short hold (about 0.2 s) so quick
+  swipes keep scrolling the screen and paging between Notes and Statistics;
+  paging pauses while tracking; one selection haptic confirms the hold; the
+  reading stays after release. Streak rows are monthly beyond six weeks and
+  quarterly beyond about 13 months. The time-of-day chart moved onto the shared
+  chart frame. Android and tests verified; iPhone feel, including the page
+  sheet's own swipe, still to be checked by the founder.

@@ -443,10 +443,12 @@ test('backup work ignores rapid duplicate presses and sample mode, releases its 
   assert.equal(shares, 1);
 });
 
-test('the shared chart frame preserves tap-to-clear, stepping, accessible selection and date identity', async (t) => {
+test('the shared chart frame supports tap, hold-and-drag tracking across rows, stepping, accessibility and date identity', async (t) => {
   const render = await mount(t);
   let chart;
   const controls = {};
+  const scrub = {};
+  const locks = [];
   function Pressable(props) {
     if (props.accessibilityLabel === 'Trend chart') chart = props;
     else controls[props.accessibilityLabel] = props;
@@ -458,21 +460,37 @@ test('the shared chart frame preserves tap-to-clear, stepping, accessible select
         : props.children,
     );
   }
-  const { ChartFrame } = load('ChartFrame.tsx', {
+  // A recording stand-in for the gesture-handler pan used for thumb tracking.
+  const pan = {
+    activateAfterLongPress: (ms) => ((scrub.hold = ms), pan),
+    runOnJS: () => pan,
+    onStart: (f) => ((scrub.start = f), pan),
+    onUpdate: (f) => ((scrub.update = f), pan),
+    onFinalize: (f) => ((scrub.finalize = f), pan),
+  };
+  const frame = load('ChartFrame.tsx', {
     ...common,
     'react-native': {
       View: Container,
       Pressable,
       StyleSheet: { create: (value) => value },
     },
+    'react-native-gesture-handler': {
+      Gesture: { Pan: () => pan },
+      GestureDetector: ({ children }) => children,
+      GestureHandlerRootView: Container,
+    },
     'react-native-svg': {
       default: Container,
       Line: () => null,
+      Rect: () => null,
       __esModule: true,
     },
     './Typography': { Text },
     './Icon': { Icon: () => null },
+    './haptics': { feedback: () => {} },
   });
+  const { ChartFrame, ChartScrubLock } = frame;
   const first = {
     key: '2026-10-01',
     x0: 0,
@@ -487,28 +505,47 @@ test('the shared chart frame preserves tap-to-clear, stepping, accessible select
     title: '2 Oct',
     value: '80%',
   };
-  const show = (slots) =>
+  const show = (slots, height = 140) =>
     render(
-      React.createElement(ChartFrame, {
-        name: 'Trend chart',
-        slots,
-        ticks: [],
-        axis: [],
-        legend: 'Days completed (%)',
-        colour: '#82E6BC',
-        draw: () => null,
-      }),
+      React.createElement(
+        ChartScrubLock.Provider,
+        { value: (locked) => locks.push(locked) },
+        React.createElement(ChartFrame, {
+          name: 'Trend chart',
+          slots,
+          ticks: [],
+          axis: [],
+          legend: 'Days completed (%)',
+          colour: '#82E6BC',
+          height,
+          draw: () => null,
+        }),
+      ),
     );
   await show([first, second]);
   await act(() => chart.onLayout({ nativeEvent: { layout: { width: 300 } } }));
-  await act(() => chart.onPress({ nativeEvent: { locationX: 200 } }));
+  await act(() =>
+    chart.onPress({ nativeEvent: { locationX: 200, locationY: 50 } }),
+  );
   assert.equal(chart.accessibilityValue.text, '2 Oct: 80%');
   await act(() => controls.Previous.onPress());
   assert.equal(chart.accessibilityValue.text, '1 Oct: 40%', 'steps back');
-  await act(() => chart.onPress({ nativeEvent: { locationX: 10 } }));
-  assert.equal(chart.accessibilityValue.text, 'Nothing selected');
   await act(() =>
-    chart.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } }),
+    chart.onPress({ nativeEvent: { locationX: 10, locationY: 50 } }),
+  );
+  assert.equal(chart.accessibilityValue.text, 'Nothing selected');
+  // Hold, then drag: the reading follows the thumb and paging pauses.
+  assert.ok(scrub.hold > 0, 'tracking starts after a hold');
+  await act(() => scrub.start({ x: 20, y: 60 }));
+  assert.equal(chart.accessibilityValue.text, '1 Oct: 40%');
+  assert.deepEqual(locks, [true]);
+  await act(() => scrub.update({ x: 280, y: 200 }));
+  assert.equal(chart.accessibilityValue.text, '2 Oct: 80%', 'beyond the plot');
+  await act(() => scrub.finalize());
+  assert.deepEqual(locks, [true, false]);
+  assert.equal(chart.accessibilityValue.text, '2 Oct: 80%', 'reading stays');
+  await act(() =>
+    chart.onAccessibilityAction({ nativeEvent: { actionName: 'decrement' } }),
   );
   assert.equal(chart.accessibilityValue.text, '1 Oct: 40%');
   await show([second, first]);
@@ -517,10 +554,51 @@ test('the shared chart frame preserves tap-to-clear, stepping, accessible select
     '1 Oct: 40%',
     'selection follows the dated slot, not its old index',
   );
+  // Two rows: one streak drawn in both, another below. Tracking follows rows,
+  // and stepping treats a streak shown in two places as one item.
+  const top = {
+    key: 'a',
+    x0: 0.5,
+    x1: 1,
+    y0: 0,
+    y1: 0.4,
+    title: 'A',
+    value: '9 days',
+  };
+  const wrap = {
+    key: 'a',
+    x0: 0,
+    x1: 0.2,
+    y0: 0.6,
+    y1: 1,
+    title: 'A',
+    value: '9 days',
+  };
+  const below = {
+    key: 'b',
+    x0: 0.6,
+    x1: 0.8,
+    y0: 0.6,
+    y1: 1,
+    title: 'B',
+    value: '3 days',
+  };
+  await show([top, wrap, below], 100);
+  await act(() => scrub.start({ x: 30, y: 85 }));
+  assert.equal(chart.accessibilityValue.text, 'A: 9 days', 'second row, A');
+  await act(() => scrub.update({ x: 200, y: 85 }));
+  assert.equal(chart.accessibilityValue.text, 'B: 3 days', 'stays in the row');
+  await act(() => scrub.update({ x: 200, y: 15 }));
+  assert.equal(chart.accessibilityValue.text, 'A: 9 days', 'moves up a row');
+  await act(() => scrub.finalize());
+  await act(() => controls.Next.onPress());
+  assert.equal(chart.accessibilityValue.text, 'B: 3 days', 'one step per item');
   await act(() => controls['Clear selection'].onPress());
   assert.equal(chart.accessibilityValue.text, 'Nothing selected');
   await show([]);
-  await act(() => chart.onPress({ nativeEvent: { locationX: 1 } }));
+  await act(() =>
+    chart.onPress({ nativeEvent: { locationX: 1, locationY: 1 } }),
+  );
   await act(() =>
     chart.onAccessibilityAction({ nativeEvent: { actionName: 'decrement' } }),
   );

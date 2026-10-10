@@ -139,7 +139,11 @@ month-arrow details in Screen above; calculation rules below are unchanged.
   three streaks of all time with dates. Runs are carried across days off and
   rest periods, an unfinished today keeps the streak, and period goals count
   periods; the longest run equals the longest-streak tile and the ongoing run
-  the current streak (tested).
+  the current streak (tested). Windows up to about six weeks use one row;
+  longer ones get a row per month (labelled, days 1–31 aligned down the rows)
+  and histories beyond about 13 months a row per quarter, as the founder asked,
+  so short streaks stay visible. A streak crossing rows continues with squared
+  ends and shows its length on its last part.
 - **Calendar:** up to ~3 months, continuous rows of weeks (values inside number
   days, category dots, a dot for text); successful days in a row join into one
   bar, bridged across days off within the row; tapping edits as before. Longer
@@ -153,10 +157,16 @@ month-arrow details in Screen above; calculation rules below are unchanged.
 - **Entries:** a month-grouped journal, newest first: day number and weekday,
   category chips or text, goal status when an entry can miss its goal, and the
   entry time when it was made that day.
-- **Interaction:** every chart uses `ChartFrame`: tap a bar, step with ‹ ›,
-  clear with ✕; VoiceOver adjusts by slot. Selection follows a date key, so
-  data changes never move it to another period. Press-and-drag scrubbing is
-  deferred: it needs a scroll lock between the pager, the sheet and the chart.
+- **Interaction:** every chart, including time of day, uses `ChartFrame`: tap
+  a bar, hold for about 0.2 s and drag to track through it with the thumb (a
+  selection haptic confirms the hold; the reading follows the finger, across
+  rows on the streak timeline, and stays after release), step with ‹ ›, clear
+  with ✕; VoiceOver adjusts item by item. A quick swipe still scrolls or pages:
+  only a hold starts tracking, and Notes/Statistics paging pauses while it
+  lasts (`ChartScrubLock`). Each chart has its own gesture-handler root view,
+  because the iOS page sheet has none. Selection follows a date key, so data
+  changes never move it to another period. Requested by the founder; tested in
+  code and on Android, iPhone feel pending.
 
 `scripts/stats-series.test.mjs` checks day outcomes against `evaluateGoal` for
 every sample habit and day, streak lines against the streak tiles, period

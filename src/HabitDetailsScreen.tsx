@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useHabitPages } from './useHabitPages';
 import { DescriptionReader } from './DescriptionReader';
 import { HabitStatsScreen } from './HabitStatsScreen';
+import { ChartScrubLock } from './ChartFrame';
 import { HabitSymbol } from './HabitSymbol';
 import { Icon } from './Icon';
 import { colorOnBlack, contrastOnBlack } from './colors';
@@ -53,6 +54,8 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
       : HabitStatsScreen;
   const [width, setWidth] = useState(0);
   const [islandHeight, setIslandHeight] = useState(54);
+  // While a chart is thumb-tracked, sideways drags read it instead of paging.
+  const [chartScrubbing, setChartScrubbing] = useState(false);
   const { fontScale } = useAppWindowDimensions();
   const pages = useHabitPages(!!habit.description, width);
   const { tab, visited, offset, pageWidth } = pages;
@@ -121,70 +124,73 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
       >
         {width > 0 && (
           <>
-            <Animated.ScrollView
-              testID="habit-pager"
-              ref={pages.pager}
-              horizontal
-              pagingEnabled
-              directionalLockEnabled
-              bounces={false}
-              alwaysBounceVertical={false}
-              alwaysBounceHorizontal={false}
-              showsHorizontalScrollIndicator={false}
-              contentInsetAdjustmentBehavior="never"
-              contentContainerStyle={{ height: '100%' }}
-              scrollEventThrottle={16}
-              onScroll={pages.onScroll}
-              onScrollBeginDrag={pages.prepare}
-              onContentSizeChange={pages.align}
-            >
-              <View
-                testID="habit-notes-panel"
-                style={{ width, height: '100%' }}
-                pointerEvents={tab === 'notes' ? 'auto' : 'none'}
-                accessibilityElementsHidden={tab !== 'notes'}
-                aria-hidden={tab !== 'notes'}
-                importantForAccessibility={
-                  tab === 'notes' ? 'auto' : 'no-hide-descendants'
-                }
+            <ChartScrubLock.Provider value={setChartScrubbing}>
+              <Animated.ScrollView
+                testID="habit-pager"
+                ref={pages.pager}
+                horizontal
+                pagingEnabled
+                scrollEnabled={!chartScrubbing}
+                directionalLockEnabled
+                bounces={false}
+                alwaysBounceVertical={false}
+                alwaysBounceHorizontal={false}
+                showsHorizontalScrollIndicator={false}
+                contentInsetAdjustmentBehavior="never"
+                contentContainerStyle={{ height: '100%' }}
+                scrollEventThrottle={16}
+                onScroll={pages.onScroll}
+                onScrollBeginDrag={pages.prepare}
+                onContentSizeChange={pages.align}
               >
-                {visited.notes && (
-                  <DescriptionReader
-                    description={habit.description}
-                    colour={habit.color}
-                    editable={editable}
-                    onEdit={onDescriptionEdit}
-                    onVersions={onDescriptionVersions}
-                    bottomInset={bottomInset}
-                  />
-                )}
-              </View>
-              <View
-                testID="habit-statistics-panel"
-                style={{ width, height: '100%' }}
-                pointerEvents={tab === 'statistics' ? 'auto' : 'none'}
-                accessibilityElementsHidden={tab !== 'statistics'}
-                aria-hidden={tab !== 'statistics'}
-                importantForAccessibility={
-                  tab === 'statistics' ? 'auto' : 'no-hide-descendants'
-                }
-              >
-                {visited.statistics && (
-                  <StatsContent
-                    habit={habit}
-                    weekStart={weekStart}
-                    values={values}
-                    events={events}
-                    actions={actions}
-                    today={today}
-                    editable={editable}
-                    onCellPress={onCellPress}
-                    onGoalEdit={onGoalEdit}
-                    bottomInset={bottomInset}
-                  />
-                )}
-              </View>
-            </Animated.ScrollView>
+                <View
+                  testID="habit-notes-panel"
+                  style={{ width, height: '100%' }}
+                  pointerEvents={tab === 'notes' ? 'auto' : 'none'}
+                  accessibilityElementsHidden={tab !== 'notes'}
+                  aria-hidden={tab !== 'notes'}
+                  importantForAccessibility={
+                    tab === 'notes' ? 'auto' : 'no-hide-descendants'
+                  }
+                >
+                  {visited.notes && (
+                    <DescriptionReader
+                      description={habit.description}
+                      colour={habit.color}
+                      editable={editable}
+                      onEdit={onDescriptionEdit}
+                      onVersions={onDescriptionVersions}
+                      bottomInset={bottomInset}
+                    />
+                  )}
+                </View>
+                <View
+                  testID="habit-statistics-panel"
+                  style={{ width, height: '100%' }}
+                  pointerEvents={tab === 'statistics' ? 'auto' : 'none'}
+                  accessibilityElementsHidden={tab !== 'statistics'}
+                  aria-hidden={tab !== 'statistics'}
+                  importantForAccessibility={
+                    tab === 'statistics' ? 'auto' : 'no-hide-descendants'
+                  }
+                >
+                  {visited.statistics && (
+                    <StatsContent
+                      habit={habit}
+                      weekStart={weekStart}
+                      values={values}
+                      events={events}
+                      actions={actions}
+                      today={today}
+                      editable={editable}
+                      onCellPress={onCellPress}
+                      onGoalEdit={onGoalEdit}
+                      bottomInset={bottomInset}
+                    />
+                  )}
+                </View>
+              </Animated.ScrollView>
+            </ChartScrubLock.Provider>
             <LinearGradient
               colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.85)', '#000000']}
               locations={[0, 0.72, 1]}
