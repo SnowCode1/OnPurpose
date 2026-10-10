@@ -200,3 +200,39 @@ periods, rest periods and boundary fragments are distinct from failed finished
 periods. Only complete finished windows wholly in the selected range enter its
 period totals. Period streaks are all-time; raw logging metrics stay separate.
 Daily success streaks are hidden while a period goal is active. See GOALS.md.
+
+## Time of day
+
+Added 10 October 2026. Both statistics screens show a Time of day section after
+the period charts: 24 hourly bars for the selected period, the most common hour,
+and how many of the period's recorded days the chart covers. Tap a bar, or use
+the VoiceOver adjustable actions, to inspect an hour. `src/timeOfDay.ts` owns the
+pure calculation; `src/TimeOfDayChart.tsx` is the shared chart.
+
+Founder decisions:
+
+- Only entries recorded on the same local day they belong to count. Backdated
+  entries stay in every other statistic but are left out of this chart; the
+  caption says how many were left out.
+- Undone changes never count, here or in any other statistic.
+
+Assistant choices, accepted by the founder where noted:
+
+- Times use the UTC offset captured with each edit, so an entry made while
+  travelling keeps the local time where it was made (recommended and accepted).
+- The time counted is when the entry last went from empty to recorded. Later
+  corrections, such as raising a numeric total, keep that time; clearing and
+  re-entering it later moves it. A correction group counts from its first edit.
+- Checkbox Off (an explicit 0) is not a recorded entry; numeric zero, text and
+  category selections are. Days that succeed only through a dated checkbox
+  default have no tap and no time.
+- The period is the selected range, bounded by the habit's start date.
+
+The calculation reads the active History actions (`replay.undo`), which already
+exclude undone groups and restore redone ones with their original time. No
+event, preference, schema or backup format changes. Sample presets now record
+deterministic typical times of day (for example Meditate around 6:45, Read
+around 21:30), sorted within each day so History stays in time order. Sample
+Workout/Daily highlight records are entered on a later day and show the empty
+state. `scripts/time-of-day.test.mjs` covers offsets, backdating, Undo/Redo,
+corrections, checkbox Off, numeric zero, period bounds and the sample shapes.

@@ -6,7 +6,9 @@ import { Text, useAppWindowDimensions } from './Typography';
 import { entryLabel, cellEntryLabel, type EntryValues } from './entries';
 import type { Habit } from './habits';
 import { habitTypeLabel } from './habits';
-import type { StoredEvent } from './storage/model';
+import type { HistoryAction, StoredEvent } from './storage/model';
+import { timeOfDayStatistics } from './timeOfDay';
+import { TimeOfDayChart } from './TimeOfDayChart';
 import { entryDay, type EntryDay } from './calendar';
 import { monthDays, type StatsRange } from './statistics';
 import { recordStatistics, type DailyRecord } from './recordStatistics';
@@ -22,6 +24,7 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
   habit,
   values,
   events,
+  actions,
   today,
   weekStart,
   editable,
@@ -32,6 +35,7 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
   habit: Habit;
   values: EntryValues;
   events: StoredEvent[];
+  actions: HistoryAction[];
   today: string;
   weekStart: WeekStart;
   editable: boolean;
@@ -45,6 +49,17 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
   const stats = useMemo(
     () => recordStatistics(habit, values, events, today, range),
     [habit, values, events, today, range],
+  );
+  const timeOfDay = useMemo(
+    () =>
+      timeOfDayStatistics(
+        habit,
+        values,
+        actions,
+        stats.start > stats.trackingStart ? stats.start : stats.trackingStart,
+        today,
+      ),
+    [habit, values, actions, stats.start, stats.trackingStart, today],
   );
   const calendar = monthDays(month, weekStart),
     weekDays = weekDayOrder(weekStart);
@@ -201,6 +216,13 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
           }
         />
       </View>
+      <TimeOfDayChart
+        key={`${habit.id}-${range}`}
+        stats={timeOfDay}
+        colour={habit.color}
+        sectionStyle={styles.section}
+        headingStyle={styles.heading}
+      />
       <View style={styles.section}>
         <View style={styles.metric}>
           <Text

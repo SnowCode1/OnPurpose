@@ -13,7 +13,9 @@ import {
   statisticDateLabel as dateLabel,
 } from './statisticsFormatting';
 import type { Habit } from './habits';
-import type { StoredEvent } from './storage/model';
+import type { HistoryAction, StoredEvent } from './storage/model';
+import { timeOfDayStatistics } from './timeOfDay';
+import { TimeOfDayChart } from './TimeOfDayChart';
 import { habitStatistics, monthDays, type StatsRange } from './statistics';
 import { InfoNote } from './InfoNote';
 import { checkmarkColor, colorOnBlack } from './colors';
@@ -43,6 +45,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   weekStart,
   values,
   events,
+  actions,
   today,
   onCellPress,
   editable,
@@ -53,6 +56,7 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   weekStart: WeekStart;
   values: EntryValues;
   events: StoredEvent[];
+  actions: HistoryAction[];
   today: string;
   onCellPress: (habit: Habit, day: EntryDay) => void;
   editable: boolean;
@@ -67,6 +71,17 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   const stats = useMemo(
     () => habitStatistics(habit, values, events, today, range),
     [habit, values, events, today, range],
+  );
+  const timeOfDay = useMemo(
+    () =>
+      timeOfDayStatistics(
+        habit,
+        values,
+        actions,
+        stats.start > stats.trackingStart ? stats.start : stats.trackingStart,
+        today,
+      ),
+    [habit, values, actions, stats.start, stats.trackingStart, today],
   );
   const calendar = monthDays(month, weekStart);
   const weekDays = weekDayOrder(weekStart);
@@ -330,6 +345,13 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
           );
         })}
       </View>
+      <TimeOfDayChart
+        key={`${habit.id}-${range}`}
+        stats={timeOfDay}
+        colour={habit.color}
+        sectionStyle={styles.section}
+        headingStyle={styles.sectionTitle}
+      />
       <View style={styles.section}>
         <View style={styles.axis}>
           <Text

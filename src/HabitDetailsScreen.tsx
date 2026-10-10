@@ -13,7 +13,7 @@ import { Icon } from './Icon';
 import { colorOnBlack, contrastOnBlack } from './colors';
 import type { Habit } from './habits';
 import type { WeekStart } from './displayPreferences';
-import type { StoredEvent } from './storage/model';
+import type { HistoryAction, StoredEvent } from './storage/model';
 import type { EntryDay } from './calendar';
 
 export const HabitDetailsScreen = memo(function HabitDetailsScreen({
@@ -21,6 +21,7 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
   weekStart,
   values,
   events,
+  actions,
   today,
   Heading,
   onBack,
@@ -35,6 +36,7 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
   weekStart: WeekStart;
   values: EntryValues;
   events: StoredEvent[];
+  actions: HistoryAction[];
   today: string;
   Heading: ComponentType<TextProps>;
   onBack: () => void;
@@ -177,6 +179,7 @@ export const HabitDetailsScreen = memo(function HabitDetailsScreen({
                     weekStart={weekStart}
                     values={values}
                     events={events}
+                    actions={actions}
                     today={today}
                     editable={editable}
                     onCellPress={onCellPress}

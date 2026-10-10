@@ -1436,3 +1436,16 @@ signing and device enrolment are still prerequisites, not completed deployment.
   active-habit cap without a time limit; archived habits do not count.
 - In-app purchase needs a development build; Expo Go cannot test it. Choose the
   purchase library (for example `expo-iap` or RevenueCat) when implementing.
+
+## 10 October 2026: time-of-day statistics
+
+- Founder request: time-of-day histograms in statistics, built before the
+  storage migration.
+- Founder decisions: count only entries recorded on the same day they belong
+  to; undone changes never appear in any statistic.
+- Assistant recommendation, accepted: use each edit's captured local time, so
+  travel keeps the time where the entry was made.
+- Assistant choice (founder did not specify): an entry's time is when it last
+  went from empty to recorded; corrections keep it. Checkbox Off is not an entry.
+- Read from active History actions rather than raw events, so Undo/Redo rules
+  stay identical to History. No storage or backup change. See STATISTICS.md.

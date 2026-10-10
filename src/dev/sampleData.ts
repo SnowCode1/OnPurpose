@@ -30,6 +30,36 @@ function meta(sequence: number, date: Date, prefix: string): EventMeta {
     utcOffsetMinutes: -date.getTimezoneOffset(),
   };
 }
+// Typical local minute and +/- spread for each preset, so time-of-day charts
+// show plausible shapes. Morning habits shift an hour later at weekends.
+const SAMPLE_TIMES: Record<string, [number, number, boolean?]> = {
+  walk: [7 * 60 + 15, 30, true],
+  read: [21 * 60 + 30, 45],
+  water: [9 * 60 + 30, 90],
+  stretch: [7 * 60, 30, true],
+  journal: [22 * 60, 30],
+  outside: [13 * 60, 120],
+  meditate: [6 * 60 + 45, 20, true],
+  cook: [18 * 60 + 45, 40],
+  tidy: [20 * 60, 60],
+  connect: [19 * 60, 120],
+  learn: [20 * 60 + 30, 60],
+  sleep: [22 * 60 + 30, 30],
+};
+function sampleMinute(habitId: string, key: string, weekend: boolean) {
+  const [centre, spread, morning] = SAMPLE_TIMES[habitId] ?? [9 * 60, 60];
+  const noise = hash(`${habitId}:${key}:time`);
+  // Some walks happen after work instead of before it.
+  const evening = habitId === 'walk' && noise % 3 === 0 ? 11 * 60 : 0;
+  const offset = Math.round(((noise % 1001) / 500 - 1) * spread);
+  return Math.max(
+    5 * 60,
+    Math.min(
+      23 * 60 + 50,
+      centre + evening + offset + (morning && weekend ? 60 : 0),
+    ),
+  );
+}
 // Synthetic history only: never receives real values or a persistent repository.
 export function createSampleEvents(today: string): StoredEvent[] {
   const started = calendarDay(today, SAMPLE_DAYS - 1);
@@ -49,6 +79,7 @@ export function createSampleEvents(today: string): StoredEvent[] {
     const key = localDateKey(date);
     const progress = (SAMPLE_DAYS - 1 - ago) / (SAMPLE_DAYS - 1);
     const weekend = date.getDay() === 0 || date.getDay() === 6;
+    const day: { minute: number; habitId: string; value: number }[] = [];
     for (const [index, habit] of demoHabits.entries()) {
       const noise = hash(`${habit.id}:${key}`);
       let value: number;
@@ -93,7 +124,16 @@ export function createSampleEvents(today: string): StoredEvent[] {
           continue;
         value = 1;
       }
-      date.setHours(9, index, 0, 0);
+      day.push({
+        minute: sampleMinute(habit.id, key, weekend),
+        habitId: habit.id,
+        value,
+      });
+    }
+    // Keep each day's edits in time order so History reads naturally.
+    day.sort((left, right) => left.minute - right.minute);
+    for (const { minute, habitId, value } of day) {
+      date.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
       const metadata = meta(events.length + 1, date, 'sample_entry');
       events.push({
         ...metadata,
@@ -101,7 +141,7 @@ export function createSampleEvents(today: string): StoredEvent[] {
         groupId: metadata.id,
         change: {
           kind: 'entry',
-          habitId: habit.id,
+          habitId,
           date: key,
           before: null,
           after: value,

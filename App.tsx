@@ -768,6 +768,7 @@ function PersistentApp({
                         habit={statsHabit}
                         values={values}
                         events={snapshot.events}
+                        actions={snapshot.replay.undo}
                         today={today}
                         Heading={PreviewHeading}
                         editable={editable}
