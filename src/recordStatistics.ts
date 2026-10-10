@@ -2,7 +2,10 @@ import { periodStatistics } from './periodStatistics.ts';
 import type { EntryValue, EntryValues } from './entries.ts';
 import type { Habit } from './habits.ts';
 import type { StoredEvent } from './storage/model.ts';
-import { completionStatistics } from './completionStatistics.ts';
+import {
+  completionStatistics,
+  summarizeCompletion,
+} from './completionStatistics.ts';
 import {
   dayNumber,
   dateKey,
@@ -17,10 +20,13 @@ export function recordStatistics(
   events: StoredEvent[],
   today: string,
   range: StatsRange,
+  // A stepped-back window; streaks and goals still describe today.
+  endKey: string = today,
 ) {
   const trackingStart = habitTrackingStart(habit, values, events, today);
   const first = dayNumber(trackingStart),
-    end = dayNumber(today);
+    now = dayNumber(today),
+    end = Math.min(now, dayNumber(endKey));
   const start = range === 'all' ? Math.min(first, end) : end - range + 1;
   const completion = completionStatistics(
     habit,
@@ -34,10 +40,12 @@ export function recordStatistics(
     .map(([key, value]) => ({ date: key.slice(habit.id.length + 1), value }))
     .filter((item) => item.date >= trackingStart && item.date <= today)
     .sort((a, b) => b.date.localeCompare(a.date));
-  const records = all.filter((item) => dayNumber(item.date) >= start);
+  const records = all.filter(
+    (item) => dayNumber(item.date) >= start && dayNumber(item.date) <= end,
+  );
   const eligible = Math.max(0, end - Math.max(start, first) + 1);
   let streak = 0,
-    expected = all[0]?.date === today ? end : end - 1;
+    expected = all[0]?.date === today ? now : now - 1;
   for (const item of all) {
     if (dayNumber(item.date) !== expected) break;
     streak++;
@@ -86,8 +94,13 @@ export function recordStatistics(
       today,
       dateKey(start),
     ),
-    completion,
+    // Goal totals for the selected window; streaks and data still use today.
+    completion: {
+      ...completion,
+      ...summarizeCompletion(completion, dateKey(start), dateKey(end)),
+    },
     start: dateKey(start),
+    end: dateKey(end),
     eligible,
     recorded: records.length,
     records,

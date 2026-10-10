@@ -1,19 +1,23 @@
 import { PeriodProgress } from './PeriodProgress';
-import { summarizeCompletion } from './completionStatistics';
 import { memo, useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
-import { Text, useAppWindowDimensions } from './Typography';
-import { entryLabel, cellEntryLabel, type EntryValues } from './entries';
+import { Text } from './Typography';
+import { Icon } from './Icon';
+import { entryLabel, type EntryValues } from './entries';
 import type { Habit } from './habits';
 import type { HistoryAction, StoredEvent } from './storage/model';
-import { timeOfDayStatistics } from './timeOfDay';
+import { entryMinutes, timeOfDayStatistics } from './timeOfDay';
 import { TimeOfDayChart } from './TimeOfDayChart';
 import { entryDay, type EntryDay } from './calendar';
-import { monthDays, type StatsRange } from './statistics';
-import { recordStatistics, type DailyRecord } from './recordStatistics';
-import { StatsChart } from './StatsChart';
 import {
-  MonthArrows,
+  dateKey,
+  dayNumber,
+  habitTrackingStart,
+  type StatsRange,
+} from './statistics';
+import { recordStatistics } from './recordStatistics';
+import {
+  PeriodNavigator,
   RangePicker,
   StatTiles,
   StatsSection,
@@ -21,13 +25,38 @@ import {
   streakTiles,
   type StatTile,
 } from './StatsLayout';
-import { statisticDateLabel } from './statisticsFormatting';
-import { weekDayOrder, type WeekStart } from './displayPreferences';
+import {
+  statisticDateLabel,
+  statisticMonthLabel,
+  statisticSpanLabel,
+} from './statisticsFormatting';
+import type { WeekStart } from './displayPreferences';
 import { colorOnBlack } from './colors';
 import { InfoNote } from './InfoNote';
 import { GoalSummary } from './GoalSummary';
-import { evaluateGoal } from './habitGoals';
 import { useSheetScroll } from './SheetModal';
+import {
+  binSeries,
+  habitSeries,
+  observations,
+  statsWindow,
+  streakValues,
+  successMode,
+  successUnit,
+  trendRates,
+  TREND_HALF_LIFE_DAYS,
+  TREND_MINIMUM_WEIGHT,
+  type SeriesDay,
+} from './statsSeries';
+import { SuccessChart } from './SuccessChart';
+import { StreakChart } from './StreakChart';
+import { StatsCalendar } from './StatsCalendar';
+import { CategoryMatrix } from './CategoryMatrix';
+import { categoryColours } from './categoryColours';
+
+type JournalRow =
+  | { kind: 'month'; key: string; label: string; count: number }
+  | { kind: 'entry'; key: string; item: SeriesDay };
 
 export const RecordStatsScreen = memo(function RecordStatsScreen({
   habit,
@@ -53,76 +82,173 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
   onGoalEdit: () => void;
 }) {
   const [range, setRange] = useState<StatsRange>(30);
-  const [month, setMonth] = useState(today.slice(0, 7));
-  const { fontScale } = useAppWindowDimensions();
-  const stats = useMemo(
-    () => recordStatistics(habit, values, events, today, range),
-    [habit, values, events, today, range],
+  const [offset, setOffset] = useState(0);
+  const [category, setCategory] = useState<string | null>(null);
+  const trackingStart = useMemo(
+    () => habitTrackingStart(habit, values, events, today),
+    [habit, values, events, today],
   );
-  const timeOfDay = useMemo(
+  const window = statsWindow(range, offset, trackingStart, today);
+  // Charts start at the habit's start when the window reaches further back.
+  const from = window.shown,
+    end = dateKey(window.to),
+    span = window.to - from + 1;
+  const stats = useMemo(
+    () => recordStatistics(habit, values, events, today, range, end),
+    [habit, values, events, today, range, end],
+  );
+  const history = useMemo(
     () =>
-      timeOfDayStatistics(
+      habitSeries(
         habit,
         values,
-        actions,
-        stats.start > stats.trackingStart ? stats.start : stats.trackingStart,
+        trackingStart,
         today,
+        dayNumber(trackingStart),
+        dayNumber(today),
       ),
-    [habit, values, actions, stats.start, stats.trackingStart, today],
+    [habit, values, trackingStart, today],
   );
-  const calendar = monthDays(month, weekStart),
-    weekDays = weekDayOrder(weekStart);
-  const changeMonth = (delta: number) =>
-    setMonth((previous) => {
-      const date = new Date(`${previous}-01T12:00:00Z`);
-      date.setUTCMonth(date.getUTCMonth() + delta);
-      return date.toISOString().slice(0, 7);
+  const days = useMemo(
+    () => habitSeries(habit, values, trackingStart, today, from, window.to),
+    [habit, values, trackingStart, today, from, window.to],
+  );
+  const mode = successMode(history);
+  const period = mode === 'period' ? history.at(-1)?.goal?.period : undefined;
+  const observed = useMemo(
+    () => observations(habit, history, mode, today),
+    [habit, history, mode, today],
+  );
+  const trend = useMemo(
+    () =>
+      // Period goals are judged once per period: weigh the last ~4 periods.
+      trendRates(
+        observed,
+        from,
+        window.to,
+        period ? period.days * 4 : TREND_HALF_LIFE_DAYS,
+        period ? 1.5 : TREND_MINIMUM_WEIGHT,
+      ),
+    [observed, from, window.to, period],
+  );
+  const streakLine = useMemo(() => {
+    const all = streakValues(habit, history, mode, observed, today),
+      first = dayNumber(trackingStart);
+    return Array.from({ length: span }, (_, index) => {
+      const day = from + index;
+      return day < first || day - first >= all.length ? 0 : all[day - first];
     });
-  const dateLabel = (key: string) =>
-    new Date(`${key}T12:00:00`).toLocaleDateString(undefined, {
-      day: 'numeric',
-      month: 'short',
-      ...(key.slice(0, 4) !== today.slice(0, 4) ? { year: 'numeric' } : {}),
-    });
+  }, [habit, history, mode, observed, today, trackingStart, span, from]);
+  const timeOfDay = useMemo(
+    () => timeOfDayStatistics(habit, values, actions, dateKey(from), end),
+    [habit, values, actions, from, end],
+  );
+  const minutes = useMemo(() => entryMinutes(habit, actions), [habit, actions]);
+  const colours = useMemo(() => categoryColours(habit), [habit]);
   const goalShown = stats.completion.active || stats.completion.eligible > 0;
-  const days = (count: number) => `${count} ${count === 1 ? 'day' : 'days'}`;
-  const showYear = stats.start.slice(0, 4) !== today.slice(0, 4);
+  const plural = (count: number, noun = 'day') =>
+    `${count} ${count === 1 ? noun : `${noun}s`}`;
+  const periodNoun = period?.unit === 'week' ? 'weeks' : 'periods';
   const tiles: StatTile[] = [];
-  if (goalShown)
+  // When the goal is simply "record something", recording numbers repeat
+  // the goal numbers: show each fact once.
+  const sameDays =
+      stats.recorded === stats.completion.successes &&
+      stats.eligible === stats.completion.eligible,
+    sameStreaks =
+      stats.streak === stats.completion.streak &&
+      stats.bestStreak === stats.completion.bestStreak;
+  if (goalShown && !sameDays)
     tiles.push({
       label: 'Days recorded',
       value: `${stats.recorded} of ${stats.eligible}`,
     });
-  if (goalShown && !stats.periodGoals.current)
+  const goalStreaks = goalShown && !stats.periodGoals.current;
+  if (goalStreaks)
     tiles.push(
       ...streakTiles(
-        tiles.length + 1,
+        tiles.length + (sameStreaks ? 0 : 1),
         'Current streak',
         stats.completion.streak,
         stats.completion.bestStreak,
       ),
     );
-  tiles.push(
-    ...streakTiles(
-      tiles.length,
-      'Days recorded in a row',
-      stats.streak,
-      stats.bestStreak,
-    ),
-  );
+  if (!goalStreaks || !sameStreaks)
+    tiles.push(
+      ...streakTiles(
+        tiles.length,
+        'Days recorded in a row',
+        stats.streak,
+        stats.bestStreak,
+      ),
+    );
+  const trendNow = trend.findLast((value) => value !== null);
+  const longest = Math.max(0, ...streakLine);
+  const selectedLabel = habit.categories?.find(
+    (option) => option.id === category,
+  )?.label;
+  // The journal: newest first, grouped by month, optionally one category.
+  const journal = useMemo(() => {
+    const rows: JournalRow[] = [];
+    const entries = days
+      .filter(
+        (item) =>
+          item.value !== undefined &&
+          item.outcome !== 'future' &&
+          item.outcome !== 'outside' &&
+          (!category ||
+            (Array.isArray(item.value) && item.value.includes(category))),
+      )
+      .reverse();
+    let header: Extract<JournalRow, { kind: 'month' }> | null = null;
+    for (const item of entries) {
+      const month = item.date.slice(0, 7);
+      if (!header || header.key !== month) {
+        header = {
+          kind: 'month',
+          key: month,
+          label: statisticMonthLabel(`${month}-01`),
+          count: 0,
+        };
+        rows.push(header);
+      }
+      header.count++;
+      rows.push({ kind: 'entry', key: item.date, item });
+    }
+    return rows;
+  }, [days, category]);
+  const changeRange = (next: StatsRange) => {
+    setRange(next);
+    setOffset(0);
+  };
+  const time = (minute: number) =>
+    new Date(
+      2000,
+      0,
+      1,
+      Math.floor(minute / 60),
+      minute % 60,
+    ).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
   const header = (
     <View style={styles.header}>
-      <RangePicker range={range} onChange={setRange} />
+      <RangePicker range={range} onChange={changeRange} />
       <View style={statsStyles.overview}>
-        <Text style={statsStyles.period}>
-          {stats.eligible
-            ? `${statisticDateLabel(stats.start, showYear)} – ${statisticDateLabel(today, showYear)}`
-            : `Starts ${dateLabel(stats.trackingStart)}`}
-        </Text>
+        <PeriodNavigator
+          label={
+            stats.eligible
+              ? statisticSpanLabel(dateKey(from), end, today)
+              : `Starts ${statisticDateLabel(stats.trackingStart, true)}`
+          }
+          canGoBack={window.canGoBack}
+          canGoForward={window.canGoForward}
+          onStep={(delta) =>
+            setOffset((previous) => Math.max(0, previous - delta))
+          }
+        />
         <Text style={statsStyles.headline}>
           {goalShown
-            ? `${stats.completion.successes} of ${days(stats.completion.eligible)}`
-            : `${stats.recorded} of ${days(stats.eligible)}`}
+            ? `${stats.completion.successes} of ${plural(stats.completion.eligible)}`
+            : `${stats.recorded} of ${plural(stats.eligible)}`}
         </Text>
         <Text style={statsStyles.headlineNote}>
           {goalShown
@@ -140,195 +266,274 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
         onPress={onGoalEdit}
         disabled={!editable}
       />
-      <PeriodProgress data={stats.periodGoals} colour={habit.color} />
+      {offset === 0 && (
+        <PeriodProgress data={stats.periodGoals} colour={habit.color} />
+      )}
       {habit.type === 'categorical' && (
         <StatsSection
           title="Categories"
-          info="Each category counts the days it was selected in this period. Several categories can be recorded on the same day, so these counts can add up to more than the number of recorded days. Renamed and archived options keep their records."
+          subtitle={
+            selectedLabel
+              ? `Showing ${selectedLabel} · tap again for all`
+              : null
+          }
+          info="Each row shows when that category was chosen; longer ranges shade each week or month by how often. Several categories can share a day, so rows are never added together. The number is days in this period. Tap a row to show only that category in the calendar and entries. Renamed and archived options keep their records."
         >
-          {stats.categories
-            .filter((option) => !option.archived || option.count)
-            .map((option) => (
-              <View
-                key={option.id}
-                accessible
-                accessibilityLabel={`${option.label}${option.archived ? ', archived' : ''}, ${days(option.count)}`}
-                style={{ gap: 6 }}
-              >
-                <View style={styles.metric}>
-                  <Text style={[styles.caption, { flex: 1 }]}>
-                    {option.label}
-                    {option.archived ? ' · archived' : ''}
-                  </Text>
-                  <Text style={styles.metricValue}>{days(option.count)}</Text>
-                </View>
-                <View style={styles.track}>
-                  <View
-                    style={{
-                      height: 4,
-                      backgroundColor: habit.color,
-                      borderRadius: 3,
-                      width: `${stats.eligible ? (option.count / stats.eligible) * 100 : 0}%`,
-                    }}
-                  />
-                </View>
-              </View>
-            ))}
+          <CategoryMatrix
+            habit={habit}
+            days={days}
+            colours={colours}
+            weekStart={weekStart}
+            selected={category}
+            onSelect={setCategory}
+          />
         </StatsSection>
       )}
       <StatsSection
-        title={goalShown ? 'Days meeting the goal' : 'Days recorded'}
-        info={`Each bar shows the share of ${goalShown ? 'scheduled days meeting the goal effective on that day' : 'days with an entry'}${stats.buckets.length && stats.buckets[0].start !== stats.buckets[0].end ? ', with several days per bar' : ''}. Tap a bar to see its value.`}
+        title={mode === 'recording' ? 'Days recorded' : 'Success over time'}
+        subtitle={
+          trendNow === undefined || trendNow === null
+            ? null
+            : `Trend ${Math.round(trendNow * 100)}%${offset ? ` on ${statisticDateLabel(end)}` : ''}`
+        }
+        info={
+          mode === 'period'
+            ? `Columns show whether each finished period met its target. The line is a trend that weighs recent ${periodNoun} more; rest periods and the current period don’t count.`
+            : mode === 'recording'
+              ? 'Columns show the share of days with an entry. The line is a trend that weighs recent days more: a day’s weight halves every two weeks. Today counts once it’s recorded.'
+              : 'Columns show the share of scheduled days that met the goal. The line is a trend that weighs recent days more: a day’s weight halves every two weeks. Days off don’t count, and today counts once it’s done.'
+        }
       >
-        <StatsChart
-          key={`${habit.id}:${range}:${today}`}
-          buckets={
-            goalShown
-              ? stats.buckets.map((bucket) => {
-                  const goal = summarizeCompletion(
-                    stats.completion,
-                    bucket.start,
-                    bucket.end,
-                  );
-                  return {
-                    ...bucket,
-                    eligible: goal.eligible,
-                    value: goal.rate === null ? null : goal.rate * 100,
-                  };
-                })
-              : stats.buckets
-          }
+        <SuccessChart
+          key={`${habit.id}:${range}:${offset}`}
           colour={habit.color}
-          numeric={false}
-          unit=""
-          recording={!goalShown}
-          legend={goalShown ? 'Days meeting the goal (%)' : 'Days recorded (%)'}
+          bins={binSeries(habit, days, successUnit(span), weekStart)}
+          unit={successUnit(span)}
+          observations={observed}
+          trend={trend}
+          mode={mode}
+          periodNoun={periodNoun}
+          from={from}
+          to={window.to}
+          today={today}
+          weekStart={weekStart}
+        />
+      </StatsSection>
+      <StatsSection
+        title="Streaks"
+        subtitle={
+          longest
+            ? `Longest in this period: ${plural(longest, mode === 'period' ? periodNoun.replace(/s$/, '') : 'day')}`
+            : 'No streak in this period'
+        }
+        info={
+          mode === 'period'
+            ? 'The line counts finished periods in a row that met their target and drops to zero after a missed period. Rest periods hold it. The dot marks the longest streak in this period.'
+            : mode === 'recording'
+              ? 'The line counts days in a row with an entry and drops to zero after a day without one. An unfinished today keeps yesterday’s streak. The dot marks the longest streak in this period.'
+              : 'The line rises by one for each successful scheduled day and drops to zero after a miss. Days off hold it, and an unfinished today keeps yesterday’s streak. The dot marks the longest streak in this period.'
+        }
+      >
+        <StreakChart
+          key={`${habit.id}:${range}:${offset}`}
+          colour={habit.color}
+          values={streakLine}
+          noun={mode === 'period' ? periodNoun : 'days'}
+          from={from}
+          to={window.to}
+          today={today}
+          weekStart={weekStart}
+        />
+      </StatsSection>
+      <StatsSection
+        title="Calendar"
+        info={
+          habit.type === 'categorical'
+            ? 'Tap a day to read or edit its entry. Dots show the categories chosen, in their colours. Days meeting their goal are brighter and join into one bar while the streak lasts.'
+            : 'Tap a day to read or edit its entry. Days meeting their goal are brighter and join into one bar while the streak lasts.'
+        }
+      >
+        <StatsCalendar
+          key={`${habit.id}:${range}:${offset}`}
+          habit={habit}
+          days={days}
+          from={from}
+          to={window.to}
+          today={today}
+          weekStart={weekStart}
+          editable={editable}
+          allowFuture={offset === 0}
+          onDayPress={onCellPress}
+          categoryColours={colours}
+          highlight={category}
         />
       </StatsSection>
       <TimeOfDayChart
-        key={`${habit.id}-${range}`}
+        key={`${habit.id}:${range}:${offset}`}
         stats={timeOfDay}
         colour={habit.color}
       />
       <StatsSection
-        title={new Date(`${month}-01T12:00:00`).toLocaleDateString(undefined, {
-          month: 'long',
-          year: 'numeric',
-        })}
-        info="Tap a day to read or edit its entry. Days meeting their goal are brighter."
-        accessory={
-          <MonthArrows
-            previousDisabled={month <= stats.trackingStart.slice(0, 7)}
-            nextDisabled={month >= today.slice(0, 7)}
-            onChange={changeMonth}
-          />
-        }
-      >
-        <View style={styles.calendar}>
-          {weekDays.map((day) => (
-            <Text key={day} style={styles.calendarHeading}>
-              {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][day]}
-            </Text>
-          ))}
-          {Array.from({ length: calendar.padding }, (_, index) => (
-            <View key={`blank:${index}`} style={styles.day} />
-          ))}
-          {calendar.days.map((date) => {
-            const value = values[`${habit.id}:${date}`],
-              day = entryDay(date),
-              recorded = value !== undefined;
-            const goal = evaluateGoal(habit, value, date);
-            return (
-              <Pressable
-                key={date}
-                testID={`record-day-${habit.id}-${date}`}
-                accessibilityRole="button"
-                accessibilityLabel={`${habit.name}, ${day.fullLabel}, ${recorded ? entryLabel(habit, value) : 'not recorded'}, ${goal.active ? (goal.met ? 'goal met' : 'goal not met') : 'tracking only'}${goal.active && !goal.scheduled ? ', not scheduled' : ''}`}
-                accessibilityHint="Read or edit this day's entry"
-                accessibilityState={{ disabled: !editable }}
-                disabled={!editable}
-                onPress={() => onCellPress(habit, day)}
-                style={[styles.day, { minHeight: 64 * Math.max(1, fontScale) }]}
-              >
-                <View
-                  style={[
-                    styles.face,
-                    {
-                      backgroundColor: recorded
-                        ? colorOnBlack(habit.color, goal.met ? 0.3 : 0.13)
-                        : '#151515',
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.date,
-                      { color: date > today ? '#666666' : '#A0A0A0' },
-                    ]}
-                  >
-                    {Number(date.slice(-2))}
-                  </Text>
-                  <Text
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                    style={[
-                      styles.dayValue,
-                      { color: recorded ? habit.color : '#555555' },
-                    ]}
-                  >
-                    {cellEntryLabel(habit, value)}
-                  </Text>
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
-      </StatsSection>
-      <StatsSection
         title="Entries"
-        subtitle={stats.records.length ? 'Selected period, newest first' : null}
+        subtitle={
+          journal.length
+            ? selectedLabel
+              ? `Days with ${selectedLabel}, newest first`
+              : 'Newest first'
+            : null
+        }
+        accessory={
+          selectedLabel ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Show all entries, not only ${selectedLabel}`}
+              onPress={() => setCategory(null)}
+              style={({ pressed }) => [
+                styles.filter,
+                {
+                  backgroundColor: colorOnBlack(
+                    colours.get(category!) ?? habit.color,
+                    0.2,
+                  ),
+                  opacity: pressed ? 0.6 : 1,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  { color: colours.get(category!) ?? habit.color },
+                ]}
+              >
+                {selectedLabel}
+              </Text>
+              <Icon name="close" size={13} color="#BBBBBB" />
+            </Pressable>
+          ) : undefined
+        }
       />
     </View>
   );
   const sheetScroll = useSheetScroll();
   return (
-    <FlatList<DailyRecord>
+    <FlatList<JournalRow>
       {...sheetScroll}
       testID="habit-statistics"
-      data={stats.records}
-      keyExtractor={(item) => item.date}
+      data={journal}
+      keyExtractor={(row) => `${row.kind}:${row.key}`}
       directionalLockEnabled
       alwaysBounceVertical
       contentInsetAdjustmentBehavior="never"
-      initialNumToRender={10}
-      maxToRenderPerBatch={6}
+      initialNumToRender={12}
+      maxToRenderPerBatch={8}
       windowSize={7}
       contentContainerStyle={[styles.body, { paddingBottom: bottomInset }]}
       ListHeaderComponent={header}
-      renderItem={({ item }) => (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${dateLabel(item.date)}, ${entryLabel(habit, item.value)}`}
-          accessibilityHint="Edit this day's entry"
-          accessibilityState={{ disabled: !editable }}
-          disabled={!editable}
-          onPress={() => onCellPress(habit, entryDay(item.date))}
-          style={styles.entry}
-        >
-          <Text style={styles.entryDate}>{dateLabel(item.date)}</Text>
-          <Text numberOfLines={3} style={styles.entryValue}>
-            {entryLabel(habit, item.value)}
-          </Text>
-        </Pressable>
-      )}
+      renderItem={({ item: row }) => {
+        if (row.kind === 'month')
+          return (
+            <Text accessibilityRole="header" style={styles.month}>
+              {row.label} · {row.count} {row.count === 1 ? 'entry' : 'entries'}
+            </Text>
+          );
+        const { item } = row,
+          minute = minutes.get(item.date),
+          date = new Date(`${item.date}T12:00:00`),
+          met = item.outcome === 'met',
+          // "Record anything" goals are met by every entry: no need to say so.
+          scheduled =
+            item.goal?.rule.kind !== 'recorded' &&
+            (met || item.outcome === 'missed' || item.outcome === 'open');
+        return (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${entryDay(item.date).fullLabel}${minute === undefined ? '' : `, entered ${time(minute)}`}, ${entryLabel(habit, item.value)}${scheduled ? (met ? ', goal met' : ', goal not met') : ''}`}
+            accessibilityHint="Edit this day's entry"
+            accessibilityState={{ disabled: !editable }}
+            disabled={!editable}
+            onPress={() => onCellPress(habit, entryDay(item.date))}
+            style={({ pressed }) => [
+              styles.entry,
+              { opacity: pressed ? 0.6 : 1 },
+            ]}
+          >
+            <View style={styles.when}>
+              <Text style={styles.dayNumber}>{date.getDate()}</Text>
+              <Text style={styles.weekday}>
+                {date.toLocaleDateString(undefined, { weekday: 'short' })}
+              </Text>
+            </View>
+            <View style={{ flex: 1, gap: 6 }}>
+              {Array.isArray(item.value) ? (
+                <View style={styles.chips}>
+                  {item.value.map((id) => {
+                    const colour = colours.get(id) ?? habit.color;
+                    const label =
+                      habit.categories?.find((option) => option.id === id)
+                        ?.label ?? id;
+                    return (
+                      <View
+                        key={id}
+                        style={[
+                          styles.chip,
+                          {
+                            backgroundColor: colorOnBlack(colour, 0.18),
+                            opacity: !category || category === id ? 1 : 0.45,
+                          },
+                        ]}
+                      >
+                        <Text style={[styles.chipText, { color: colour }]}>
+                          {label}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : (
+                <Text numberOfLines={4} style={styles.entryText}>
+                  {entryLabel(habit, item.value)}
+                </Text>
+              )}
+              {(minute !== undefined || scheduled) && (
+                <View style={styles.meta}>
+                  {scheduled && (
+                    <View
+                      style={[
+                        styles.goalDot,
+                        met
+                          ? { backgroundColor: habit.color }
+                          : { borderWidth: 1, borderColor: '#666666' },
+                      ]}
+                    />
+                  )}
+                  <Text style={styles.metaText}>
+                    {[
+                      scheduled ? (met ? 'Goal met' : 'Goal not met') : '',
+                      minute === undefined ? '' : time(minute),
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </Pressable>
+        );
+      }}
       ListEmptyComponent={
-        <Text style={styles.caption}>Nothing recorded in this period.</Text>
+        <Text style={styles.empty}>
+          {selectedLabel
+            ? `No days with ${selectedLabel} in this period.`
+            : 'Nothing recorded in this period.'}
+        </Text>
       }
       ListFooterComponent={
-        <InfoNote
-          label="How recording statistics work"
-          text="Recording counts use all calendar days since the start. Success counts use scheduled days and the goal effective on each date. Off-days leave success streaks intact; logging streaks require consecutive calendar entries. An unfinished today has a streak grace period. Future and pre-start entries are kept, but excluded from statistics."
-        />
+        <View style={{ paddingTop: 20 }}>
+          <InfoNote
+            label="How recording statistics work"
+            text="Recording counts use all calendar days since the start. Success counts use scheduled days and the goal effective on each date. Off-days leave success streaks intact; logging streaks require consecutive calendar entries. An unfinished today has a streak grace period. Use the arrows beside the dates to step back through earlier periods. Future and pre-start entries are kept, but excluded from statistics."
+          />
+        </View>
       }
     />
   );
@@ -336,46 +541,51 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
 const styles = StyleSheet.create({
   body: {
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 8,
     width: '100%',
     maxWidth: 720,
     alignSelf: 'center',
   },
-  header: { gap: 20, paddingBottom: 12 },
-  caption: { color: '#989898', fontSize: 13, lineHeight: 19 },
-  metric: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  metricValue: {
-    color: '#DDDDDD',
-    fontSize: 14,
+  header: { gap: 22, paddingBottom: 4 },
+  month: {
+    color: '#8A8A8A',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    paddingTop: 18,
+    paddingBottom: 6,
+  },
+  entry: {
+    flexDirection: 'row',
+    gap: 14,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#222222',
+  },
+  when: { width: 38, alignItems: 'center', paddingTop: 1 },
+  dayNumber: {
+    color: '#E4E4E4',
+    fontSize: 19,
+    fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },
-  track: { height: 4, borderRadius: 3, backgroundColor: '#202020' },
-  calendar: { flexDirection: 'row', flexWrap: 'wrap' },
-  calendarHeading: {
-    width: '14.285714%',
-    textAlign: 'center',
-    color: '#888888',
-    fontSize: 11,
-    paddingVertical: 8,
-  },
-  day: { width: '14.285714%', minHeight: 64, padding: 3 },
-  face: {
-    flex: 1,
-    borderRadius: 9,
-    padding: 5,
-    justifyContent: 'center',
+  weekday: { color: '#7E7E7E', fontSize: 11 },
+  entryText: { color: '#D6D6D6', fontSize: 15, lineHeight: 22 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chip: { borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4 },
+  chipText: { fontSize: 13, fontWeight: '600' },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  goalDot: { width: 7, height: 7, borderRadius: 4 },
+  metaText: { color: '#7E7E7E', fontSize: 12 },
+  filter: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    minHeight: 32,
+    paddingHorizontal: 10,
+    borderRadius: 16,
   },
-  date: { fontSize: 11 },
-  dayValue: { fontSize: 12, textAlign: 'center', width: '100%' },
-  entry: {
-    minHeight: 54,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#242424',
-    gap: 4,
-  },
-  entryDate: { color: '#888888', fontSize: 11 },
-  entryValue: { color: '#D0D0D0', fontSize: 15, lineHeight: 22 },
+  filterText: { fontSize: 13, fontWeight: '600' },
+  empty: { color: '#8E8E8E', fontSize: 13, paddingVertical: 12 },
 });

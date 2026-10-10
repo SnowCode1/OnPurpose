@@ -98,6 +98,64 @@ above; calculations are unchanged.
   header Close is an X in the other full-screen editors and sheets. Paired
   bottom actions (Close/Done in the numeric dialog) and back links keep text.
 
+## Charts (10 October 2026)
+
+Founder decisions: merge the numeric value and completion charts by colour;
+add success over time as weekly columns with a weighted trend line; give
+categories their own colour-coded view; make every chart and the calendar follow
+the selected range; ranges stay "ending today" with ‹ › to step back; the year
+calendar shows 12 small months; category colours are automatic OKLCH; entries
+stay at the bottom. Assistant implementation, reviewed on the Android phone with
+sample data; iPhone review pending. These supersede the chart, calendar and
+month-arrow details in Screen above; calculation rules below are unchanged.
+
+- **Windows.** `statsWindow` gives the range ending today, stepped back by whole
+  ranges; ‹ is disabled once the window reaches the habit's start. Charts and the
+  calendar begin at the start when the window reaches further back. Headline,
+  tiles, weekday and time-of-day figures follow the window; current/longest
+  streak tiles and current period progress still describe today.
+- **One colour language** (`outcomeColours.ts`): met = habit colour; scheduled
+  but missed = the same hue faded; not scheduled/rest = neutral grey; combined
+  weeks/months step brightness by the share of scheduled days met. The calendar
+  tints missed days faintly, keeps days off black and today neutral until done.
+- **Daily totals** (number habits): one bar per day up to ~3 months, coloured by
+  that day's goal outcome, with the effective goal as one continuous dashed line
+  (a band for "between"). Longer windows show the average per calendar day of
+  each week (year) or month (all time) so bars compare with the daily goal.
+- **Success over time:** faint columns are each week's (month's) share of
+  scheduled days met; the line is a weighted success rate where a day's weight
+  halves every 14 days (normalised, so early values are unbiased). It uses the
+  whole history, a fixed half-life (the current value does not change with the
+  range), skips days off, counts today only once it succeeds, and appears after
+  ~3 observations. Period goals use finished whole periods with a half-life of
+  four periods; habits without a goal show days recorded.
+- **Streaks:** the streak each day ended with — it climbs with each success and
+  drops to zero on a miss; days off, rest periods and an unfinished today hold
+  it. It ends at the current-streak tile and peaks at the longest (tested);
+  period goals count periods. The dot marks the longest in the window.
+- **Calendar:** up to ~3 months, continuous rows of weeks (values inside number
+  days, category dots, a dot for text); successful days in a row join into one
+  bar, bridged across days off within the row; tapping edits as before. Longer
+  windows show compact months (3 per row; 4 beyond a year); tapping selects a
+  day and shows its reading with an Edit button.
+- **Categories:** one row per category in saved order with automatic OKLCH
+  colours (golden-angle hue steps from the habit colour, fixed lightness), as a
+  timeline (days, or weeks/months shaded by how often) or by weekday. Rows never
+  stack, because several categories can share a day. Tapping a row filters the
+  calendar dots and the entries list; tapping again or the chip clears it.
+- **Entries:** a month-grouped journal, newest first: day number and weekday,
+  category chips or text, goal status when an entry can miss its goal, and the
+  entry time when it was made that day.
+- **Interaction:** every chart uses `ChartFrame`: tap a bar, step with ‹ ›,
+  clear with ✕; VoiceOver adjusts by slot. Selection follows a date key, so
+  data changes never move it to another period. Press-and-drag scrubbing is
+  deferred: it needs a scroll lock between the pager, the sheet and the chart.
+
+`scripts/stats-series.test.mjs` checks day outcomes against `evaluateGoal` for
+every sample habit and day, streak lines against the streak tiles, period
+observations against period results, the trend weighting, bins, windows, axis
+helpers and category colours.
+
 ## Calculation rules
 
 - Read current values from the replayed projection, not a count of raw edit events.

@@ -1461,3 +1461,21 @@ signing and device enrolment are still prerequisites, not completed deployment.
   STATISTICS.md. Reviewed on the Android phone; iPhone review pending.
 - `npm run android:screenshot` now runs a small Node script so it also works on
   Windows, where npm scripts run in cmd.exe.
+
+## 10 October 2026: statistics charts
+
+- Founder decisions: merge the numeric totals and completion charts by colour;
+  success over time as weekly columns plus a two-week weighted trend; a
+  dedicated, colour-coded category view; every chart and the calendar follow the
+  selected range; ranges end today with ‹ › stepping back; 12 small months for
+  the year calendar; automatic OKLCH category colours; entries stay at the
+  bottom. The founder asked the assistant to build and iterate on the phone.
+- Assistant choices: a fixed 14-day half-life (four periods for period goals) so
+  the current trend never changes with the range; trend shown after about three
+  observations; average per calendar day for weekly/monthly value bars; the
+  sawtooth streak line instead of ranked streak bars; charts start at the habit
+  start; recording tiles hidden when they repeat the goal tiles; goal status
+  omitted on entries for "record anything" goals. Press-and-drag scrubbing is
+  deferred until a scroll lock can be tested on both platforms.
+- No storage, event or backup change. Pure series code walks the goal timeline
+  without filling the shared goal cache; the old StatsChart is removed.

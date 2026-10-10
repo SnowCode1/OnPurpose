@@ -1,15 +1,12 @@
 import { PeriodProgress } from './PeriodProgress';
-import { summarizeCompletion } from './completionStatistics';
 import type { EntryValues } from './entries';
 import { GoalSummary } from './GoalSummary';
-import { evaluateGoal, checkboxChecked } from './habitGoals';
 import { Text, useAppWindowDimensions } from './Typography';
 import { weekDayOrder, type WeekStart } from './displayPreferences';
 import { memo, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { StatsChart } from './StatsChart';
+import { ScrollView, View } from 'react-native';
 import {
-  MonthArrows,
+  PeriodNavigator,
   RangePicker,
   StatTiles,
   StatsSection,
@@ -20,15 +17,38 @@ import {
 import {
   formatStatistic as format,
   statisticDateLabel as dateLabel,
+  statisticSpanLabel,
 } from './statisticsFormatting';
 import type { Habit } from './habits';
 import type { HistoryAction, StoredEvent } from './storage/model';
 import { timeOfDayStatistics } from './timeOfDay';
 import { TimeOfDayChart } from './TimeOfDayChart';
-import { habitStatistics, monthDays, type StatsRange } from './statistics';
+import {
+  dateKey,
+  dayNumber,
+  habitStatistics,
+  habitTrackingStart,
+  type StatsRange,
+} from './statistics';
+import {
+  binSeries,
+  habitSeries,
+  observations,
+  statsWindow,
+  streakValues,
+  successMode,
+  successUnit,
+  trendRates,
+  TREND_HALF_LIFE_DAYS,
+  TREND_MINIMUM_WEIGHT,
+  valueUnit,
+} from './statsSeries';
+import { ValueChart } from './ValueChart';
+import { SuccessChart } from './SuccessChart';
+import { StreakChart } from './StreakChart';
+import { StatsCalendar } from './StatsCalendar';
 import { InfoNote } from './InfoNote';
-import { checkmarkColor, colorOnBlack } from './colors';
-import { entryDay, type EntryDay } from './calendar';
+import type { EntryDay } from './calendar';
 import { useSheetScroll } from './SheetModal';
 
 export const HabitStatsScreen = memo(function HabitStatsScreen({
@@ -55,47 +75,77 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
   onGoalEdit: () => void;
 }) {
   const { fontScale } = useAppWindowDimensions();
-  const calendarHeight = Math.max(44, Math.ceil(44 * fontScale));
   const [range, setRange] = useState<StatsRange>(30);
-  const [month, setMonth] = useState(today.slice(0, 7));
-  const stats = useMemo(
-    () => habitStatistics(habit, values, events, today, range),
-    [habit, values, events, today, range],
+  const [offset, setOffset] = useState(0);
+  const trackingStart = useMemo(
+    () => habitTrackingStart(habit, values, events, today),
+    [habit, values, events, today],
   );
-  const timeOfDay = useMemo(
+  const window = statsWindow(range, offset, trackingStart, today);
+  // Charts start at the habit's start when the window reaches further back.
+  const from = window.shown,
+    end = dateKey(window.to),
+    span = window.to - from + 1;
+  const stats = useMemo(
+    () => habitStatistics(habit, values, events, today, range, end),
+    [habit, values, events, today, range, end],
+  );
+  // Whole history for trends and streaks; the window for everything shown.
+  const history = useMemo(
     () =>
-      timeOfDayStatistics(
+      habitSeries(
         habit,
         values,
-        actions,
-        stats.start > stats.trackingStart ? stats.start : stats.trackingStart,
+        trackingStart,
         today,
+        dayNumber(trackingStart),
+        dayNumber(today),
       ),
-    [habit, values, actions, stats.start, stats.trackingStart, today],
+    [habit, values, trackingStart, today],
   );
-  const calendar = monthDays(month, weekStart);
-  const weekDays = weekDayOrder(weekStart);
-  const monthMax = Math.max(
-    1,
-    ...calendar.days.map((day) => {
-      const value = values[`${habit.id}:${day}`];
-      return typeof value === 'number' ? value : 0;
-    }),
+  const days = useMemo(
+    () => habitSeries(habit, values, trackingStart, today, from, window.to),
+    [habit, values, trackingStart, today, from, window.to],
   );
-  const unit = habit.unit ?? '';
-  function changeMonth(delta: number) {
-    setMonth((previous) => {
-      const date = new Date(`${previous}-01T12:00:00Z`);
-      date.setUTCMonth(date.getUTCMonth() + delta);
-      return date.toISOString().slice(0, 7);
+  const mode = successMode(history);
+  const period = mode === 'period' ? history.at(-1)?.goal?.period : undefined;
+  const observed = useMemo(
+    () => observations(habit, history, mode, today),
+    [habit, history, mode, today],
+  );
+  const trend = useMemo(
+    () =>
+      // Period goals are judged once per period: weigh the last ~4 periods.
+      trendRates(
+        observed,
+        from,
+        window.to,
+        period ? period.days * 4 : TREND_HALF_LIFE_DAYS,
+        period ? 1.5 : TREND_MINIMUM_WEIGHT,
+      ),
+    [observed, from, window.to, period],
+  );
+  const streakLine = useMemo(() => {
+    const all = streakValues(habit, history, mode, observed, today),
+      first = dayNumber(trackingStart);
+    return Array.from({ length: span }, (_, index) => {
+      const day = from + index;
+      return day < first || day - first >= all.length ? 0 : all[day - first];
     });
-  }
+  }, [habit, history, mode, observed, today, trackingStart, span, from]);
+  const timeOfDay = useMemo(
+    () => timeOfDayStatistics(habit, values, actions, dateKey(from), end),
+    [habit, values, actions, from, end],
+  );
+  const weekDays = weekDayOrder(weekStart);
+  const unit = habit.unit ?? '';
   const sheetScroll = useSheetScroll();
-  const showYear = stats.start.slice(0, 4) !== today.slice(0, 4);
   const goalShown = stats.completion.active || stats.completion.eligible > 0;
-  const days = (count: number) => `${count} ${count === 1 ? 'day' : 'days'}`;
+  const plural = (count: number, noun = 'day') =>
+    `${count} ${count === 1 ? noun : `${noun}s`}`;
   const withUnit = (value: number | null) =>
     `${format(value)}${unit ? ` ${unit}` : ''}`;
+  const periodNoun = period?.unit === 'week' ? 'weeks' : 'periods';
   const tiles: StatTile[] = [];
   if (stats.numeric) {
     if (goalShown)
@@ -126,10 +176,12 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
         stats.bestStreak,
       ),
     );
-  const numericGoalMarks =
-    stats.numeric &&
-    stats.bucketDays === 1 &&
-    !!habit.goals?.some((goal) => goal.rule.kind === 'number');
+  const trendNow = trend.findLast((value) => value !== null);
+  const longest = Math.max(0, ...streakLine);
+  const changeRange = (next: StatsRange) => {
+    setRange(next);
+    setOffset(0);
+  };
   return (
     <ScrollView
       {...sheetScroll}
@@ -140,26 +192,33 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
       contentContainerStyle={[statsStyles.body, { paddingBottom: bottomInset }]}
       showsVerticalScrollIndicator={false}
     >
-      <RangePicker range={range} onChange={setRange} />
+      <RangePicker range={range} onChange={changeRange} />
       <View style={statsStyles.overview}>
-        <Text style={statsStyles.period}>
-          {stats.eligible
-            ? `${dateLabel(stats.start, showYear)} – ${dateLabel(today, showYear)}`
-            : `Starts ${dateLabel(stats.trackingStart, true)}`}
-        </Text>
+        <PeriodNavigator
+          label={
+            stats.eligible
+              ? statisticSpanLabel(dateKey(from), end, today)
+              : `Starts ${dateLabel(stats.trackingStart, true)}`
+          }
+          canGoBack={window.canGoBack}
+          canGoForward={window.canGoForward}
+          onStep={(delta) =>
+            setOffset((previous) => Math.max(0, previous - delta))
+          }
+        />
         <Text style={statsStyles.headline}>
           {stats.numeric
             ? stats.recorded
               ? withUnit(stats.total)
               : 'Nothing recorded'
             : stats.eligible
-              ? `${stats.successes} of ${days(stats.eligible)}`
+              ? `${stats.successes} of ${plural(stats.eligible)}`
               : 'No days yet'}
         </Text>
         <Text style={statsStyles.headlineNote}>
           {stats.numeric
             ? stats.recorded
-              ? `Recorded on ${stats.recorded} of ${days(stats.eligible)}`
+              ? `Recorded on ${stats.recorded} of ${plural(stats.eligible)}`
               : 'Your records will appear here.'
             : stats.rate === null
               ? 'Your records will appear here.'
@@ -174,76 +233,106 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
         onPress={onGoalEdit}
         disabled={!editable}
       />
-      <PeriodProgress data={stats.periodGoals} colour={habit.color} />
-      {stats.numeric && goalShown && (
+      {offset === 0 && (
+        <PeriodProgress data={stats.periodGoals} colour={habit.color} />
+      )}
+      {stats.numeric && (
         <StatsSection
-          title="Days meeting the condition"
-          info="Each bar shows the share of scheduled days in that period whose total met the goal effective on that day. Days without an entry never meet it. Tap a bar to see its value."
+          title={valueUnit(span) === 'day' ? 'Daily totals' : 'Average per day'}
+          subtitle={stats.recorded ? null : 'Nothing recorded in this period'}
+          info={
+            valueUnit(span) === 'day'
+              ? `Each bar is one day’s total. ${goalShown ? 'Bright bars met that day’s goal, faded bars missed it, and grey bars were on days off. The dashed line (or band) is the goal.' : 'Add a goal to colour days by success.'} Tap a bar to see it, then step with the arrows.`
+              : `Each bar is the average per day for a ${valueUnit(span)}, counting blank days as zero, so it compares with the daily goal line.${goalShown ? ' Brighter bars met the goal on more of their scheduled days.' : ''} Tap a bar to see its total.`
+          }
         >
-          <StatsChart
-            buckets={stats.buckets.map((bucket) => {
-              const goal = summarizeCompletion(
-                stats.completion,
-                bucket.start,
-                bucket.end,
-              );
-              return {
-                ...bucket,
-                eligible: goal.eligible,
-                value: goal.rate === null ? null : goal.rate * 100,
-              };
-            })}
-            colour={habit.color}
-            numeric={false}
-            unit=""
-            legend="Days meeting the goal (%)"
+          <ValueChart
+            key={`${habit.id}:${range}:${offset}`}
+            habit={habit}
+            bins={binSeries(habit, days, valueUnit(span), weekStart)}
+            unit={valueUnit(span)}
+            from={from}
+            to={window.to}
+            today={today}
+            weekStart={weekStart}
           />
         </StatsSection>
       )}
       <StatsSection
-        title={stats.numeric ? 'Daily totals' : 'Successful days'}
+        title={mode === 'recording' ? 'Days recorded' : 'Success over time'}
         subtitle={
-          !stats.recorded && !stats.successes
-            ? 'Nothing recorded in this period'
-            : null
+          trendNow === undefined || trendNow === null
+            ? null
+            : `Trend ${Math.round(trendNow * 100)}%${offset ? ` on ${dateLabel(end)}` : ''}`
         }
-        info={[
-          stats.numeric
-            ? stats.bucketDays > 1
-              ? `Each bar adds together the totals of up to ${stats.bucketDays} days.`
-              : 'Each bar is one day’s total.'
-            : `Each bar shows the share of scheduled days that were successful${stats.bucketDays > 1 ? `, up to ${stats.bucketDays} days per bar` : ''}.`,
-          numericGoalMarks
-            ? 'Dashed marks show the goal for each scheduled day.'
-            : '',
-          'Tap a bar to see its value.',
-        ]
-          .filter(Boolean)
-          .join(' ')}
+        info={
+          mode === 'period'
+            ? `Columns show whether each finished period met its target. The line is a trend that weighs recent ${periodNoun} more; rest periods and the current period don’t count.`
+            : mode === 'recording'
+              ? 'Columns show the share of days with an entry. The line is a trend that weighs recent days more: a day’s weight halves every two weeks. Today counts once it’s recorded.'
+              : 'Columns show the share of scheduled days that met the goal. The line is a trend that weighs recent days more: a day’s weight halves every two weeks. Days off don’t count, and today counts once it’s done.'
+        }
       >
-        <StatsChart
-          key={`${habit.id}-${range}-${today}`}
-          buckets={stats.buckets}
+        <SuccessChart
+          key={`${habit.id}:${range}:${offset}`}
           colour={habit.color}
-          numeric={stats.numeric}
-          unit={unit}
-          legend={
-            stats.numeric
-              ? `${unit ? unit[0].toUpperCase() + unit.slice(1) : 'Total'} per ${stats.bucketDays > 1 ? 'bar' : 'day'}`
-              : 'Days successful (%)'
-          }
-          targets={
-            stats.numeric && stats.bucketDays === 1
-              ? stats.buckets.map((bucket) => {
-                  const goal = evaluateGoal(habit, undefined, bucket.start);
-                  return goal.scheduled && goal.rule.kind === 'number'
-                    ? goal.rule.operator === 'between'
-                      ? [goal.rule.target, goal.rule.upper!]
-                      : [goal.rule.target]
-                    : [];
-                })
-              : undefined
-          }
+          bins={binSeries(habit, days, successUnit(span), weekStart)}
+          unit={successUnit(span)}
+          observations={observed}
+          trend={trend}
+          mode={mode}
+          periodNoun={periodNoun}
+          from={from}
+          to={window.to}
+          today={today}
+          weekStart={weekStart}
+        />
+      </StatsSection>
+      <StatsSection
+        title="Streaks"
+        subtitle={
+          longest
+            ? `Longest in this period: ${plural(longest, mode === 'period' ? periodNoun.replace(/s$/, '') : 'day')}`
+            : 'No streak in this period'
+        }
+        info={
+          mode === 'period'
+            ? 'The line counts finished periods in a row that met their target and drops to zero after a missed period. Rest periods hold it. The dot marks the longest streak in this period.'
+            : mode === 'recording'
+              ? 'The line counts days in a row with an entry and drops to zero after a day without one. An unfinished today keeps yesterday’s streak. The dot marks the longest streak in this period.'
+              : 'The line rises by one for each successful scheduled day and drops to zero after a miss. Days off hold it, and an unfinished today keeps yesterday’s streak. The dot marks the longest streak in this period.'
+        }
+      >
+        <StreakChart
+          key={`${habit.id}:${range}:${offset}`}
+          colour={habit.color}
+          values={streakLine}
+          noun={mode === 'period' ? periodNoun : 'days'}
+          from={from}
+          to={window.to}
+          today={today}
+          weekStart={weekStart}
+        />
+      </StatsSection>
+      <StatsSection
+        title="Calendar"
+        info={
+          stats.numeric
+            ? 'Tap a day to edit its total. Bright days met their goal and faded days missed it; without a goal, brightness follows the total. Successful days in a row join into one bar, bridged across days off.'
+            : 'Tap a day to check or uncheck it. Successful days are coloured and join into one bar while the streak lasts, bridged across days off.'
+        }
+      >
+        <StatsCalendar
+          key={`${habit.id}:${range}:${offset}`}
+          habit={habit}
+          days={days}
+          from={from}
+          to={window.to}
+          today={today}
+          weekStart={weekStart}
+          editable={editable}
+          allowFuture={offset === 0}
+          onDayPress={onCellPress}
         />
       </StatsSection>
       <StatsSection
@@ -301,141 +390,18 @@ export const HabitStatsScreen = memo(function HabitStatsScreen({
         })}
       </StatsSection>
       <TimeOfDayChart
-        key={`${habit.id}-${range}`}
+        key={`${habit.id}:${range}:${offset}`}
         stats={timeOfDay}
         colour={habit.color}
       />
-      <StatsSection
-        title={new Date(`${month}-01T12:00:00`).toLocaleDateString(undefined, {
-          month: 'long',
-          year: 'numeric',
-        })}
-        info={
-          stats.numeric
-            ? 'Tap a day to edit its total. Days meeting their goal are brighter; without a goal, brightness follows the total. Zero is still a recorded value.'
-            : 'Tap a day to check or uncheck it. Coloured days are completed.'
-        }
-        accessory={
-          <MonthArrows
-            previousDisabled={month <= stats.trackingStart.slice(0, 7)}
-            nextDisabled={month >= today.slice(0, 7)}
-            onChange={changeMonth}
-          />
-        }
-      >
-        <View style={styles.calendar}>
-          {weekDays.map((day) => (
-            <Text
-              key={day}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.65}
-              style={styles.calendarHeading}
-            >
-              {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][day]}
-            </Text>
-          ))}
-          {Array.from({ length: calendar.padding }, (_, index) => (
-            <View
-              key={`blank-${index}`}
-              style={[styles.day, { height: calendarHeight }]}
-            />
-          ))}
-          {calendar.days.map((day) => {
-            const entry = values[`${habit.id}:${day}`];
-            const value = typeof entry === 'number' ? entry : undefined;
-            const recorded = stats.numeric
-              ? value !== undefined
-              : checkboxChecked(habit, value, day);
-            const goal = evaluateGoal(habit, value, day);
-            const date = entryDay(day);
-            const highlighted = stats.numeric ? recorded : goal.met;
-            const background = highlighted
-              ? colorOnBlack(
-                  habit.color,
-                  stats.numeric
-                    ? goal.met
-                      ? 0.75
-                      : 0.2 + (0.3 * (value ?? 0)) / monthMax
-                    : 1,
-                )
-              : day > today
-                ? '#0C0C0C'
-                : '#161616';
-            return (
-              <Pressable
-                key={day}
-                accessibilityRole={stats.numeric ? 'button' : 'checkbox'}
-                accessibilityState={{
-                  disabled: !editable,
-                  ...(stats.numeric ? {} : { checked: recorded }),
-                }}
-                accessibilityLabel={`${habit.name}, ${date.fullLabel}${day === today ? ', today' : ''}${day > today ? ', future date' : ''}, ${recorded ? (stats.numeric ? `${format(value ?? null)} ${unit}` : 'checked') : stats.numeric ? 'not recorded' : 'unchecked'}, ${goal.active ? (goal.met ? 'goal met' : recorded ? 'goal not met' : 'not recorded') : 'tracking only'}${!goal.scheduled && goal.active ? ', not scheduled' : ''}`}
-                accessibilityHint={
-                  stats.numeric ? 'Edit daily total' : 'Toggle checkbox'
-                }
-                disabled={!editable}
-                onPress={() => onCellPress(habit, date)}
-                style={({ pressed }) => [
-                  styles.day,
-                  { minHeight: calendarHeight, opacity: pressed ? 0.6 : 1 },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.dayFace,
-                    {
-                      backgroundColor: background,
-                    },
-                  ]}
-                >
-                  <Text
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.65}
-                    style={{
-                      color: highlighted
-                        ? checkmarkColor(background)
-                        : day > today
-                          ? '#606060'
-                          : '#A0A0A0',
-                      fontSize: 13,
-                    }}
-                  >
-                    {Number(day.slice(-2))}
-                  </Text>
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
-      </StatsSection>
       <InfoNote
         label="How statistics work"
         text={`${
           stats.numeric
             ? 'Averages divide totals by calendar days since the start, including today and blank days. Blanks stay empty; zero is a recorded total. A logging streak counts consecutive days with an entry.'
             : 'Success rates use scheduled days since the start, including today. Off-days do not break a success streak; an unfinished today has a grace period.'
-        } Success uses each day’s effective goal and schedule, with blank days never successful. Numeric averages still include every calendar day. Future entries and records before the start date are excluded from charts and statistics. Earlier records stay saved; edit the start date to include them.`}
+        } Success uses each day’s effective goal and schedule, with blank days never successful. Use the arrows beside the dates to step back through earlier periods. Future entries and records before the start date are excluded from charts and statistics. Earlier records stay saved; edit the start date to include them.`}
       />
     </ScrollView>
   );
-});
-const styles = StyleSheet.create({
-  calendar: { flexDirection: 'row', flexWrap: 'wrap' },
-  calendarHeading: {
-    width: '14.2857%',
-    textAlign: 'center',
-    color: '#777777',
-    fontSize: 11,
-    paddingBottom: 10,
-  },
-  day: { width: '14.2857%', padding: 3, minHeight: 44 },
-  dayFace: {
-    minHeight: 38,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-  },
 });

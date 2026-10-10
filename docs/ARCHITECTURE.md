@@ -352,8 +352,8 @@ is nested in the existing App overlays for grid and statistics recording.
 `RecordStatsScreen` retains recording range/month state and virtualizes daily
 entry rows; `recordStatistics` shares calendar/start rules without interpreting
 text or categories as numbers. The old numerical/checkbox statistics stay in
-`HabitStatsScreen`. Both screens import the independent `StatsChart`, which has
-an explicit recording-label mode and owns its selection/plot styles. Shared
+`HabitStatsScreen`. Both screens build their charts from `statsSeries.ts` and
+the shared `ChartFrame`-based components (see STATISTICS.md, Charts). Shared
 number/date display helpers live in `statisticsFormatting.ts`.
 
 ## Effective-dated completion goals

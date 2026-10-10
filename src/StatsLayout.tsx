@@ -56,14 +56,16 @@ export function RangePicker({
   );
 }
 
-export function MonthArrows({
+export function StepArrows({
   previousDisabled,
   nextDisabled,
   onChange,
+  labels = ['Previous month', 'Next month'],
 }: {
   previousDisabled: boolean;
   nextDisabled: boolean;
   onChange: (delta: -1 | 1) => void;
+  labels?: [string, string];
 }) {
   return (
     <View style={styles.arrows}>
@@ -73,7 +75,7 @@ export function MonthArrows({
           <Pressable
             key={delta}
             accessibilityRole="button"
-            accessibilityLabel={delta === -1 ? 'Previous month' : 'Next month'}
+            accessibilityLabel={delta === -1 ? labels[0] : labels[1]}
             accessibilityState={{ disabled }}
             disabled={disabled}
             onPress={() => onChange(delta)}
@@ -92,6 +94,33 @@ export function MonthArrows({
           </Pressable>
         );
       })}
+    </View>
+  );
+}
+
+/** The window's dates, with ‹ › to step back a whole range at a time. */
+export function PeriodNavigator({
+  label,
+  canGoBack,
+  canGoForward,
+  onStep,
+}: {
+  label: string;
+  canGoBack: boolean;
+  canGoForward: boolean;
+  onStep: (delta: -1 | 1) => void;
+}) {
+  return (
+    <View style={styles.periodRow}>
+      <Text style={[statsStyles.period, { flex: 1 }]}>{label}</Text>
+      {(canGoBack || canGoForward) && (
+        <StepArrows
+          previousDisabled={!canGoBack}
+          nextDisabled={!canGoForward}
+          onChange={onStep}
+          labels={['Earlier period', 'Later period']}
+        />
+      )}
     </View>
   );
 }
@@ -288,6 +317,12 @@ const styles = StyleSheet.create({
     borderTopColor: '#262626',
   },
   arrows: { flexDirection: 'row' },
+  periodRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 32,
+    marginRight: -8,
+  },
   titleRow: { flexDirection: 'row', alignItems: 'center', minHeight: 32 },
   title: { flex: 1, color: '#E2E2E2', fontSize: 17, fontWeight: '600' },
   subtitle: { color: '#8E8E8E', fontSize: 13, lineHeight: 19, marginTop: -6 },

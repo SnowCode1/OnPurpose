@@ -41,11 +41,15 @@ The requested preset icon update uses normal undoable edits in
   dialogs inside the current native statistics presentation when open.
   `useBackupActions.ts` owns native confirmation/errors and the in-flight busy
   guard; exclusive restore and pre-restore copies remain in ChangeStore/adapters.
-  Both statistics screens import `StatsChart.tsx`, `TimeOfDayChart.tsx` and
-  `StatsLayout.tsx` (range tabs, titled sections with (i) explanations, tiles)
-  (pure `timeOfDay.ts`, same-day entries from active History actions only),
-  never each other's screen for
-  shared chart controls. `statisticsFormatting.ts` owns shared display helpers.
+  Both statistics screens share `StatsLayout.tsx` (range tabs, ‹ › period
+  stepping, titled sections with (i) explanations, tiles), `ChartFrame.tsx`
+  (tap/‹ ›/VoiceOver selection keyed by date, axes, ticks, one reserved reading
+  line), `ValueChart`, `SuccessChart`, `StreakChart`, `StatsCalendar`,
+  `TimeOfDayChart` and `CategoryMatrix`; never import each other's screen.
+  Pure `statsSeries.ts` owns day outcomes (walking the goal timeline without the
+  shared goal cache), bins, observations, the weighted trend and streak lines;
+  `categoryColours.ts` derives OKLCH category hues; `outcomeColours.ts` is the
+  one colour language. `statisticsFormatting.ts` owns shared display helpers.
 - `src/GridCells.tsx` selects individual entries/date-heading state from the store.
   Keep grid callbacks/definitions stable across save acknowledgements. Cache colour
   levels in `gridAppearance.ts` and retain date identities when extending history.

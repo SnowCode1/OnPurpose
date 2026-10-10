@@ -75,8 +75,12 @@ export function habitStatistics(
   events: StoredEvent[],
   todayKey: string,
   range: StatsRange,
+  // The selected window can step back in time; streaks, goals and the
+  // tracking start still describe today.
+  endKey: string = todayKey,
 ) {
   const today = dayNumber(todayKey),
+    end = Math.min(today, dayNumber(endKey)),
     numeric = isNumericHabit(habit),
     prefix = `${habit.id}:`,
     explicitStart = habit.startDate ? dayNumber(habit.startDate) : -Infinity;
@@ -98,7 +102,7 @@ export function habitStatistics(
     records[0]?.day ?? Infinity,
   );
   const start =
-    range === 'all' ? Math.min(today, trackingStart) : today - range + 1;
+    range === 'all' ? Math.min(today, trackingStart) : end - range + 1;
   const completion = completionStatistics(
     habit,
     values,
@@ -145,8 +149,8 @@ export function habitStatistics(
         : null,
     };
   }
-  const summary = summarize(start, today);
-  const span = today - start + 1;
+  const summary = summarize(start, end);
+  const span = end - start + 1;
   const previous = summarize(start - span, start - 1);
   const bucketDays = numeric
     ? span <= 30
@@ -158,8 +162,8 @@ export function habitStatistics(
       ? 7
       : Math.ceil(span / 24);
   const buckets: StatsBucket[] = [];
-  for (let from = start; from <= today; from += bucketDays) {
-    const to = Math.min(today, from + bucketDays - 1),
+  for (let from = start; from <= end; from += bucketDays) {
+    const to = Math.min(end, from + bucketDays - 1),
       part = summarize(from, to);
     buckets.push({
       start: dateKey(from),
@@ -177,7 +181,7 @@ export function habitStatistics(
   }
   const weekday = Array.from({ length: 7 }, (_, index) => {
     const day = (index + 1) % 7,
-      part = summarize(start, today, day);
+      part = summarize(start, end, day);
     return {
       day,
       value: numeric
@@ -215,8 +219,13 @@ export function habitStatistics(
       todayKey,
       dateKey(start),
     ),
-    completion,
+    // Goal totals for the selected window; streaks and data still use today.
+    completion: {
+      ...completion,
+      ...summarizeCompletion(completion, dateKey(start), dateKey(end)),
+    },
     start: dateKey(start),
+    end: dateKey(end),
     today: todayKey,
     trackingStart: dateKey(
       habit.startDate ? trackingStart : Math.min(today, trackingStart),

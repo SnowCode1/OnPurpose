@@ -442,16 +442,22 @@ test('backup work ignores rapid duplicate presses and sample mode, releases its 
   assert.equal(shares, 1);
 });
 
-test('the independent statistics chart preserves tap-to-clear, accessible selection and date identity when buckets change', async (t) => {
+test('the shared chart frame preserves tap-to-clear, stepping, accessible selection and date identity', async (t) => {
   const render = await mount(t);
-  let chart, clear;
+  let chart;
+  const controls = {};
   function Pressable(props) {
     if (props.accessibilityLabel === 'Trend chart') chart = props;
-    else clear = props;
-    return React.createElement('button', null, props.children);
+    else controls[props.accessibilityLabel] = props;
+    return React.createElement(
+      'button',
+      null,
+      typeof props.children === 'function'
+        ? props.children({ pressed: false })
+        : props.children,
+    );
   }
-  const formatting = load('statisticsFormatting.ts', {});
-  const { StatsChart } = load('StatsChart.tsx', {
+  const { ChartFrame } = load('ChartFrame.tsx', {
     ...common,
     'react-native': {
       View: Container,
@@ -461,45 +467,61 @@ test('the independent statistics chart preserves tap-to-clear, accessible select
     'react-native-svg': {
       default: Container,
       Line: () => null,
-      Rect: () => null,
       __esModule: true,
     },
     './Typography': { Text },
     './Icon': { Icon: () => null },
-    './statisticsFormatting': formatting,
   });
-  const first = { start: '2026-10-01', end: '2026-10-01', value: 40 };
-  const second = { start: '2026-10-02', end: '2026-10-02', value: 80 };
-  const show = (buckets) =>
+  const first = {
+    key: '2026-10-01',
+    x0: 0,
+    x1: 0.5,
+    title: '1 Oct',
+    value: '40%',
+  };
+  const second = {
+    key: '2026-10-02',
+    x0: 0.5,
+    x1: 1,
+    title: '2 Oct',
+    value: '80%',
+  };
+  const show = (slots) =>
     render(
-      React.createElement(StatsChart, {
-        buckets,
+      React.createElement(ChartFrame, {
+        name: 'Trend chart',
+        slots,
+        ticks: [],
+        axis: [],
+        legend: 'Days completed (%)',
         colour: '#82E6BC',
-        numeric: false,
-        unit: '',
+        draw: () => null,
       }),
     );
   await show([first, second]);
+  await act(() => chart.onLayout({ nativeEvent: { layout: { width: 300 } } }));
   await act(() => chart.onPress({ nativeEvent: { locationX: 200 } }));
-  assert.match(chart.accessibilityValue.text, /80% completed/);
-  await act(() => chart.onPress({ nativeEvent: { locationX: 200 } }));
-  assert.equal(chart.accessibilityValue.text, 'No period selected');
+  assert.equal(chart.accessibilityValue.text, '2 Oct: 80%');
+  await act(() => controls.Previous.onPress());
+  assert.equal(chart.accessibilityValue.text, '1 Oct: 40%', 'steps back');
+  await act(() => chart.onPress({ nativeEvent: { locationX: 10 } }));
+  assert.equal(chart.accessibilityValue.text, 'Nothing selected');
   await act(() =>
     chart.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } }),
   );
-  assert.match(chart.accessibilityValue.text, /40% completed/);
+  assert.equal(chart.accessibilityValue.text, '1 Oct: 40%');
   await show([second, first]);
-  assert.match(
+  assert.equal(
     chart.accessibilityValue.text,
-    /40% completed/,
-    'selection follows the dated bucket, not its old index',
+    '1 Oct: 40%',
+    'selection follows the dated slot, not its old index',
   );
-  await act(() => clear.onPress());
-  assert.equal(chart.accessibilityValue.text, 'No period selected');
+  await act(() => controls['Clear selection'].onPress());
+  assert.equal(chart.accessibilityValue.text, 'Nothing selected');
   await show([]);
   await act(() => chart.onPress({ nativeEvent: { locationX: 1 } }));
   await act(() =>
     chart.onAccessibilityAction({ nativeEvent: { actionName: 'decrement' } }),
   );
-  assert.equal(chart.accessibilityValue.text, 'No period selected');
+  assert.equal(chart.accessibilityValue.text, 'Nothing selected');
 });
