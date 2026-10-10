@@ -1531,7 +1531,7 @@ signing and device enrolment are still prerequisites, not completed deployment.
   and colourfulness and only lighten or darken to reach 4.5:1. Saved habit
   colours are never rewritten. Backgrounds are limited to a readable lightness
   range per scheme, which is applied at display time rather than in validation.
-  The pages offer six presets per scheme (the founder later added Dark forest). Light themes use white ticks on
+  The pages offer six presets per scheme. Light themes use white ticks on
   filled colours and pale note highlights. The mounted grid switches theme when
   Settings dismisses, like other presentation settings.
 - Behaviour change on black: a custom habit colour below 4.5:1 is now shown
@@ -1568,3 +1568,8 @@ signing and device enrolment are still prerequisites, not completed deployment.
   touch-interaction setting. iOS is unchanged and still follows System Haptics.
   Pulse strength on Android is Expo's preset waveform; tune it if it feels too
   faint or buzzy on the phone.
+- Founder follow-up: a separate darker "Dark forest" preset was replaced by
+  making every tinted dark preset darker by that same step (OKLCH lightness
+  -0.042, colourfulness x1.23 so tints stay recognisable). Black is unchanged;
+  Graphite #0D0D0D, Midnight #030A1D, Forest #01110A, Plum #110718, Espresso
+  #130C07. Saved custom colours are untouched.

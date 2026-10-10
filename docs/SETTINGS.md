@@ -205,7 +205,7 @@ Older logs and new installs show those until a choice is made.
 Appearance now starts with **Theme** (System / Dark / Light), then **Dark
 background** and **Light background** rows showing the current name and swatch.
 Each opens a page with a live grid preview drawn in the draft colour,
-presets (seven dark, including the founder-requested Dark forest; six light), Hue / Colourfulness / Lightness sliders (the OKLCH sliders from the
+six presets (the dark ones deliberately deep, at OKLCH lightness 0.15–0.16), Hue / Colourfulness / Lightness sliders (the OKLCH sliders from the
 habit colour picker), hex entry and Reset. Sliders preview while dragging and
 save once on release; presets and hex save immediately. Lightness is limited to
 a readable range for each scheme (dark at most OKLCH 0.34, light at least 0.86,

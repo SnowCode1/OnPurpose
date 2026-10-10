@@ -527,4 +527,4 @@ never rewritten: other backgrounds only change how a colour is displayed.
 Current writers/exports use v19, retaining exact v1–v18 prefixes and SQL schema
 1\. Versions 1–18 reject the new kinds, and older events cannot follow v19
 events. The [v19 example](examples/storage-v19.json) extends the exact v18 prefix
-with Light theme, a White light background and a Midnight dark background.
+with Light theme, a White light background and a custom navy dark background.

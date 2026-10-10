@@ -290,12 +290,11 @@ export const backgroundPresets: Record<
 > = {
   dark: [
     { name: 'Black', value: '#000000' },
-    { name: 'Graphite', value: '#161616' },
-    { name: 'Midnight', value: '#0B1424' },
-    { name: 'Forest', value: '#0B1A14' },
-    { name: 'Dark forest', value: '#021109' },
-    { name: 'Plum', value: '#1A1120' },
-    { name: 'Espresso', value: '#1C1611' },
+    { name: 'Graphite', value: '#0D0D0D' },
+    { name: 'Midnight', value: '#030A1D' },
+    { name: 'Forest', value: '#01110A' },
+    { name: 'Plum', value: '#110718' },
+    { name: 'Espresso', value: '#130C07' },
   ],
   light: [
     { name: 'Paper', value: '#F6F3EC' },
