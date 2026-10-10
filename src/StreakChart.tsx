@@ -1,12 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import {
-  Defs,
-  LinearGradient,
-  Path,
-  Rect,
-  Stop,
-  Text as SvgText,
-} from 'react-native-svg';
+import { Path, Rect, Text as SvgText } from 'react-native-svg';
 import { Text } from './Typography';
 import { ChartFrame, type ChartSlot } from './ChartFrame';
 import { checkmarkColor, colorOnBlack } from './colors';
@@ -174,12 +167,6 @@ export function StreakChart({
           const px = (row: Row, day: number) => x(row, day) * width;
           return (
             <>
-              <Defs>
-                <LinearGradient id="streak-earlier" x1="0" y1="0" x2="1" y2="0">
-                  <Stop offset="0" stopColor={TRACK} stopOpacity={1} />
-                  <Stop offset="1" stopColor={TRACK} stopOpacity={0} />
-                </LinearGradient>
-              </Defs>
               {headings.map((heading) => (
                 <SvgText
                   key={`year:${heading.year}`}
@@ -227,9 +214,9 @@ export function StreakChart({
                     selectedKey !== `${segment.run.from}`
                       ? 0.45
                       : 1;
-                // Round only the real start and end of the streak; where it
-                // continues on another row the end stays square. One shape, so
-                // dimming never doubles up at the joins.
+                // Round only the real start and end of the streak. Where it
+                // continues on another row, or began before this period, the
+                // end stays square. One shape, so dimming never doubles up.
                 const roundLeft = segment.from === segment.run.from,
                   roundRight = segment.to === segment.run.to;
                 return [
@@ -246,18 +233,6 @@ export function StreakChart({
                     fill={fill}
                     opacity={opacity}
                   />,
-                  // A streak that began before this window fades in.
-                  segment.from === from && segment.run.from < from ? (
-                    <Rect
-                      key={`earlier:${segment.run.from}`}
-                      x={x0}
-                      y={y}
-                      width={Math.min(28, w)}
-                      height={bar}
-                      rx={r}
-                      fill="url(#streak-earlier)"
-                    />
-                  ) : null,
                 ];
               })}
               {segments.map((segment) => {

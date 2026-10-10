@@ -330,10 +330,10 @@ export const RecordStatsScreen = memo(function RecordStatsScreen({
         }
         info={
           mode === 'period'
-            ? 'Each bar is a streak of finished periods in a row that met their target; rest periods hold it and a missed period breaks it. A bar fading in from the left began earlier. Tap a bar for its length and dates.'
+            ? 'Each bar is a streak of finished periods in a row that met their target; rest periods hold it and a missed period breaks it. A bar cut off square at the left edge began earlier; square ends between rows mean the streak continues. Tap a bar for its length and dates.'
             : mode === 'recording'
-              ? 'Each bar is a streak of days in a row with an entry; a day without one breaks it, and an unfinished today keeps it. A bar fading in from the left began earlier. Tap a bar for its length and dates.'
-              : 'Each bar is a streak of successful scheduled days in a row, carried across days off; a missed day breaks it, and an unfinished today keeps it. A bar fading in from the left began earlier. Tap a bar for its length and dates.'
+              ? 'Each bar is a streak of days in a row with an entry; a day without one breaks it, and an unfinished today keeps it. A bar cut off square at the left edge began earlier; square ends between rows mean the streak continues. Tap a bar for its length and dates.'
+              : 'Each bar is a streak of successful scheduled days in a row, carried across days off; a missed day breaks it, and an unfinished today keeps it. A bar cut off square at the left edge began earlier; square ends between rows mean the streak continues. Tap a bar for its length and dates.'
         }
       >
         <StreakChart

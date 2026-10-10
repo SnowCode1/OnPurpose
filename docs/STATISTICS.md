@@ -134,8 +134,8 @@ month-arrow details in Screen above; calculation rules below are unchanged.
 - **Streaks:** the founder found the first, climbing-line streak chart broke
   down for long streaks. Now a timeline: each bar spans the calendar days a
   streak lasted and gaps are breaks, so 5-day and 500-day streaks read alike;
-  the ongoing streak is brightest, a streak that began before the window fades
-  in from the left, and bars wide enough show their length. Below it, the best
+  the ongoing streak is brightest, a streak that began before the window is cut
+  off square at the left edge, and bars wide enough show their length. Below it, the best
   three streaks of all time with dates. Runs are carried across days off and
   rest periods, an unfinished today keeps the streak, and period goals count
   periods; the longest run equals the longest-streak tile and the ongoing run
