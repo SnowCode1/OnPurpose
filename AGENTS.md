@@ -201,7 +201,9 @@ of Git. `EXPO_PUBLIC_*` variables are public in the app, not secret storage.
 Keep deployment and signing manual until release automation is deliberately set
 up. Do not claim App Store readiness from a successful JavaScript bundle export.
 Preserve the Expo template notice in `docs/licenses/EXPO_TEMPLATE_LICENSE.txt`.
-Project licence, pricing, final bundle identifier, and final brand remain open.
+The project is GPLv3-or-later (LICENSE; copyright notice in README). Pricing is a
+free tier plus a one-time US$10 unlock; its free limit, the final bundle
+identifier and the final brand remain open.
 
 `src/habitCompletion.ts` centralizes completion rules; do not infer completion
 from a record without an explicit rule; use its effective date and keep blank distinct from zero.

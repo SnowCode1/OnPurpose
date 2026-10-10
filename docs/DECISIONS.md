@@ -1349,29 +1349,6 @@ signing and device enrolment are still prerequisites, not completed deployment.
   identical. New controller tests cover real hook transitions with bounded mocks;
   these checks do not prove phone layout/gesture or frame-rate behaviour.
 
-## 10 October 2026: pricing and licence
-
-- Founder decision: the app earns income through a free tier plus a one-time
-  US$10 unlock for unlimited use. No subscription; the app has no server costs
-  that would justify one. A later subscription is only worth considering for a
-  feature with ongoing costs, such as cloud sync.
-- Founder decision: release the source under GPLv3, with the founder as sole
-  copyright holder. Copyleft keeps the project open source while discouraging
-  paid closed clones; sole ownership keeps App Store publication with the
-  founder. Accept outside contributions only under an agreement that preserves
-  this, such as a contributor licence agreement.
-- LICENSE holds the unmodified GPLv3 text from gnu.org. README carries the
-  copyright notice (Daniel Adams) and the standard "version 3 or any later
-  version" grant; package metadata uses `GPL-3.0-or-later`. Third-party MIT
-  notices stay in docs/licenses.
-- Payment must never lock existing records, export, backups or History. Reaching
-  the free limit only prevents adding more.
-- Open: the free-tier limit. The founder first proposed five active habits and
-  is weighing a seven-day free trial instead. Assistant recommendation: an
-  active-habit cap without a time limit; archived habits do not count.
-- In-app purchase needs a development build; Expo Go cannot test it. Choose the
-  purchase library (for example `expo-iap` or RevenueCat) when implementing.
-
 ## 8 October 2026: Android testing support
 
 - Founder asked to support porting and testing on Android, starting with an
@@ -1436,3 +1413,26 @@ signing and device enrolment are still prerequisites, not completed deployment.
   not memory exhaustion or USB faults. Assistant suggestion: drive displays from
   the NVIDIA GPU or test VS Code with `--disable-gpu`; screenshots are now taken
   sparingly in favour of UI text dumps.
+
+## 10 October 2026: pricing and licence
+
+- Founder decision: the app earns income through a free tier plus a one-time
+  US$10 unlock for unlimited use. No subscription; the app has no server costs
+  that would justify one. A later subscription is only worth considering for a
+  feature with ongoing costs, such as cloud sync.
+- Founder decision: release the source under GPLv3, with the founder as sole
+  copyright holder. Copyleft keeps the project open source while discouraging
+  paid closed clones; sole ownership keeps App Store publication with the
+  founder. Accept outside contributions only under an agreement that preserves
+  this, such as a contributor licence agreement.
+- LICENSE holds the unmodified GPLv3 text from gnu.org. README carries the
+  copyright notice (Daniel Adams) and the standard "version 3 or any later
+  version" grant; package metadata uses `GPL-3.0-or-later`. Third-party MIT
+  notices stay in docs/licenses.
+- Payment must never lock existing records, export, backups or History. Reaching
+  the free limit only prevents adding more.
+- Open: the free-tier limit. The founder first proposed five active habits and
+  is weighing a seven-day free trial instead. Assistant recommendation: an
+  active-habit cap without a time limit; archived habits do not count.
+- In-app purchase needs a development build; Expo Go cannot test it. Choose the
+  purchase library (for example `expo-iap` or RevenueCat) when implementing.
