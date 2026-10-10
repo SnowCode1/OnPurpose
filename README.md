@@ -64,9 +64,15 @@ The initial workspace is already configured. See the
 - [Contributing](CONTRIBUTING.md)
 - [Agent instructions](AGENTS.md) and [Claude entry point](CLAUDE.md)
 
-## Open-source intent
+## Licence
 
-This project is intended to be open source. Its project licence and copyright
-holder have not yet been chosen; select and add a root licence before public
-release. The generated Expo template's MIT notice is retained separately under
-[docs/licenses](docs/licenses/EXPO_TEMPLATE_LICENSE.txt).
+Copyright (C) 2026 Daniel Adams
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version. It is distributed WITHOUT ANY WARRANTY; see [LICENSE](LICENSE) for the
+full terms.
+
+The generated Expo template's MIT notice and other third-party notices are
+retained under [docs/licenses](docs/licenses/EXPO_TEMPLATE_LICENSE.txt).

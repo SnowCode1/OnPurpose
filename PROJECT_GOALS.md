@@ -220,7 +220,7 @@ and incremental history are desired scope, not excluded candidates.
 | Export/import format, backup location, and cross-device sync?          | Version-13 JSON backup; v1–v12 import retained; sync deferred                      |
 | Any reminders or widgets required for version one?                     | Open                                                                               |
 | Free, paid, donations, or another model?                               | Free tier plus one-time US$10 unlock; free-tier limit (habit cap or trial) open    |
-| Licence and copyright holder?                                          | GPLv3 confirmed; add LICENSE with the founder's copyright notice                   |
+| Licence and copyright holder?                                          | GPLv3 or later; LICENSE added, copyright Daniel Adams                              |
 | Final name and visual personality?                                     | Name open; black background and habit colours confirmed                            |
 | iOS version, Expo account, Apple Developer membership?                 | iPhone 16 Pro confirmed; account/OS status open                                    |
 

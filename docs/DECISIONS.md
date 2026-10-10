@@ -1360,6 +1360,10 @@ signing and device enrolment are still prerequisites, not completed deployment.
   paid closed clones; sole ownership keeps App Store publication with the
   founder. Accept outside contributions only under an agreement that preserves
   this, such as a contributor licence agreement.
+- LICENSE holds the unmodified GPLv3 text from gnu.org. README carries the
+  copyright notice (Daniel Adams) and the standard "version 3 or any later
+  version" grant; package metadata uses `GPL-3.0-or-later`. Third-party MIT
+  notices stay in docs/licenses.
 - Payment must never lock existing records, export, backups or History. Reaching
   the free limit only prevents adding more.
 - Open: the free-tier limit. The founder first proposed five active habits and

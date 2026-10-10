@@ -10,5 +10,7 @@ For PRs, explain the user-visible problem, the resulting behaviour, and how it
 was verified. Include a screenshot or recording when it helps assess UI changes.
 
 Update docs with setup or behaviour changes. Keep demo data separate from real
-user data. Never commit credentials, signing keys, or tokens. The project licence
-must be chosen before public contributions and release; see README.md.
+user data. Never commit credentials, signing keys, or tokens. The project is
+GPLv3 with a single copyright holder so the founder can publish it on the App
+Store. Contributions need an agreement that preserves this; ask before opening
+a substantial pull request.
