@@ -694,7 +694,7 @@ Configure them when the founder's accounts and final identifiers are available.
 
 ## 005 — Licensing remains a founder decision
 
-Date: 4 October 2026. Status: open.
+Date: 4 October 2026. Status: resolved; see 10 October 2026: pricing and licence.
 
 Open source is confirmed; a particular licence is not. Preserve the generated
 Expo template notice separately. Choose a project licence and copyright holder
@@ -1348,3 +1348,22 @@ signing and device enrolment are still prerequisites, not completed deployment.
 - Function comparison found all 26 storage and 11 moved grid-handler bodies
   identical. New controller tests cover real hook transitions with bounded mocks;
   these checks do not prove phone layout/gesture or frame-rate behaviour.
+
+## 10 October 2026: pricing and licence
+
+- Founder decision: the app earns income through a free tier plus a one-time
+  US$10 unlock for unlimited use. No subscription; the app has no server costs
+  that would justify one. A later subscription is only worth considering for a
+  feature with ongoing costs, such as cloud sync.
+- Founder decision: release the source under GPLv3, with the founder as sole
+  copyright holder. Copyleft keeps the project open source while discouraging
+  paid closed clones; sole ownership keeps App Store publication with the
+  founder. Accept outside contributions only under an agreement that preserves
+  this, such as a contributor licence agreement.
+- Payment must never lock existing records, export, backups or History. Reaching
+  the free limit only prevents adding more.
+- Open: the free-tier limit. The founder first proposed five active habits and
+  is weighing a seven-day free trial instead. Assistant recommendation: an
+  active-habit cap without a time limit; archived habits do not count.
+- In-app purchase needs a development build; Expo Go cannot test it. Choose the
+  purchase library (for example `expo-iap` or RevenueCat) when implementing.

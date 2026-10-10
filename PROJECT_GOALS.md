@@ -1,6 +1,6 @@
 # OnPurpose — project goals
 
-Status: living product brief. Last updated: 7 October 2026.
+Status: living product brief. Last updated: 10 October 2026.
 “OnPurpose” is a working name, not a final brand or reserved App Store name.
 
 ## Primary goal
@@ -15,7 +15,9 @@ and uncertainty about whether something was saved.
 ## Confirmed by the founder
 
 - Build an iOS habit tracker intended for an actual App Store release.
-- Release the source under an open-source licence, still to be selected.
+- Release the source under GPLv3, with the founder as sole copyright holder.
+- Earn income through a free tier plus a one-time US$10 unlock, with no
+  subscription. Payment never locks existing records, export, backups or History.
 - Use a compact, spreadsheet-like home screen: habits run vertically, dates run
   horizontally. Fit as many whole day columns as space and text size allow;
   support portrait and landscape, with more dates visible in landscape.
@@ -37,7 +39,7 @@ and uncertainty about whether something was saved.
   so empty cells remain visible. The history fade starts at day 5 and reaches its
   dimmest level at day 8, then stays bounded.
 - The founder has published the repository at https://github.com/SnowCode1/OnPurpose
-  and authorised local commits. A project licence is still to be selected.
+  and authorised local commits.
 - Use [Loop Habit Tracker for Android](https://github.com/iSoron/uhabits) as a
   product reference. This is inspiration for behaviour, not a decision to copy
   its code, assets, scoring formula, or every feature.
@@ -217,8 +219,8 @@ and incremental history are desired scope, not excluded candidates.
 | Which app changes enter the history; how do deletion and undo work?    | Active habit actions; preferences excluded; archived Delete undoable; erasure open |
 | Export/import format, backup location, and cross-device sync?          | Version-13 JSON backup; v1–v12 import retained; sync deferred                      |
 | Any reminders or widgets required for version one?                     | Open                                                                               |
-| Free, paid, donations, or another model?                               | Open                                                                               |
-| Licence and copyright holder?                                          | Open; choose before public release                                                 |
+| Free, paid, donations, or another model?                               | Free tier plus one-time US$10 unlock; free-tier limit (habit cap or trial) open    |
+| Licence and copyright holder?                                          | GPLv3 confirmed; add LICENSE with the founder's copyright notice                   |
 | Final name and visual personality?                                     | Name open; black background and habit colours confirmed                            |
 | iOS version, Expo account, Apple Developer membership?                 | iPhone 16 Pro confirmed; account/OS status open                                    |
 
